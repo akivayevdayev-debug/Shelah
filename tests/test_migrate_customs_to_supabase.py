@@ -652,7 +652,8 @@ class TestEmitSql:
 
     def test_main_emit_sql_never_connects(self, monkeypatch, tmp_path, capsys):
         monkeypatch.setattr(mc, "create_client", lambda *a: pytest.fail("--emit-sql must not connect"))
-        monkeypatch.setattr(sys, "argv", ["migrate", "--emit-sql", str(tmp_path / "sql")])
+        monkeypatch.setattr(mc, "EMIT_SQL_DIR", tmp_path / "sql")
+        monkeypatch.setattr(sys, "argv", ["migrate", "--emit-sql"])
         mc.main()
         assert "Wrote" in capsys.readouterr().out
         assert len(list((tmp_path / "sql").glob("*.sql"))) == 14

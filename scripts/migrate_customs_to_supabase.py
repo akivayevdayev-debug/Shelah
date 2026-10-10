@@ -12,7 +12,7 @@ Usage:
   python3 scripts/migrate_customs_to_supabase.py                     # upsert only
   python3 scripts/migrate_customs_to_supabase.py --prune             # upsert, then delete stale rows
   python3 scripts/migrate_customs_to_supabase.py --community Ashkenaz
-  python3 scripts/migrate_customs_to_supabase.py --emit-sql DIR      # no network: one SQL file per community
+  python3 scripts/migrate_customs_to_supabase.py --emit-sql          # no network: one SQL file per community, in build/customs_sql/
 
 Row ids hash community|topic|source, so a topic or source that is renamed gets a
 new id and strands the old row. --prune (or the delete in each emitted SQL file)
@@ -39,6 +39,9 @@ except Exception as exc:  # pragma: no cover
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CUSTOMS_DIR = PROJECT_ROOT / "customs"
+# Where --emit-sql writes. A fixed, gitignored location rather than a path taken from the
+# command line: the output is a snapshot of the corpus that must never land in a tracked folder.
+EMIT_SQL_DIR = PROJECT_ROOT / "build" / "customs_sql"
 
 # Not communities: the JSON Schema, and the retired flat aggregate (backend/customs.py
 # skips it too). Its rows are removed by --prune via LEGACY_COMMUNITY_NAMES.
@@ -469,12 +472,12 @@ def main() -> None:
                         help="Parse JSON and print sample payloads without writing")
     parser.add_argument("--prune", action="store_true",
                         help="After upserting, delete this corpus's rows that no longer exist in the JSON")
-    parser.add_argument("--emit-sql", metavar="DIR", default="",
-                        help="Write one SQL file per community to DIR instead of connecting to Supabase")
+    parser.add_argument("--emit-sql", action="store_true",
+                        help="Write one SQL file per community to build/customs_sql/ instead of connecting to Supabase")
     args = parser.parse_args()
 
     if args.emit_sql:
-        for path in emit_sql(CUSTOMS_DIR, args.table, Path(args.emit_sql), community_filter=args.community):
+        for path in emit_sql(CUSTOMS_DIR, args.table, EMIT_SQL_DIR, community_filter=args.community):
             print(f"Wrote {path}")
         return
 

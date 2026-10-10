@@ -58,12 +58,12 @@ The rest of the block:
 python scripts/migrate_customs_to_supabase.py --dry-run              # parse, print sample payloads, write nothing
 python scripts/migrate_customs_to_supabase.py --community Sefardic   # one lens key only
 python scripts/migrate_customs_to_supabase.py --prune                # upsert, then delete rows no longer in the JSON
-python scripts/migrate_customs_to_supabase.py --emit-sql ./out       # write SQL files instead of connecting
+python scripts/migrate_customs_to_supabase.py --emit-sql             # write SQL files to build/customs_sql/ instead of connecting
 ```
 
 - Row ids are `sha256(community|topic|source)[:32]`, so re-running is idempotent. Changing a topic or source label makes a new id, which leaves the old row behind until you run with `--prune`.
 - `--prune` only deletes rows whose `community_name` is one this corpus has used (each file's `lens_key` and `name`, plus the retired aggregate's `Kafkazi`, `Sephardic`, `Ashkenazic` and `Bukharian`), and only ids that are not in the current JSON. It never touches any other `community_name`.
-- `--emit-sql DIR` writes one transaction per community (`delete` that community's rows, then `insert ... on conflict (id) do update`) plus `00_retired_customs_db_cleanup.sql`. Paste the files into the Supabase SQL Editor, which runs as the table owner. Use this when no Supabase secret key is available locally. The output is a snapshot of the corpus, so keep it out of git.
+- `--emit-sql` writes (to `build/customs_sql/`, which is gitignored) one transaction per community (`delete` that community's rows, then `insert ... on conflict (id) do update`) plus `00_retired_customs_db_cleanup.sql`. Paste the files into the Supabase SQL Editor, which runs as the table owner. Use this when no Supabase secret key is available locally. The output is a snapshot of the corpus, which is why the folder is fixed and ignored by git.
 - A direct run needs `SUPABASE_URL` and `SUPABASE_SECRET_KEY` in the environment. Writes to `community_knowledge` are server-side only; the table has no insert, update or delete policy for `anon` or `authenticated`.
 
 ## Editing guidance

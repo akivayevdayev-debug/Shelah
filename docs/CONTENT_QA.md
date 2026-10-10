@@ -94,7 +94,7 @@ Two automated checks sit around that data:
    shape), normalizes each entry's text, derives a deterministic id via
    `sha256(community|topic|source)`, and upserts rows into Supabase's
    `community_knowledge` table, keyed by each file's `runtime.lens_key`
-   (`--dry-run`, `--community <lens key>`, `--prune` and `--emit-sql DIR`
+   (`--dry-run`, `--community <lens key>`, `--prune` and `--emit-sql`
    are supported). Reviewer-only fields are left out of the rows. This is an
    ETL/deterministic-upsert step, not a content-review step — it does not evaluate whether a ruling is
    correct, only reshapes and loads what is already in the JSON files.

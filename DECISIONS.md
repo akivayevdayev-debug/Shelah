@@ -699,6 +699,16 @@ This is the area you already flagged as weakest. Concrete, ordered roughly by ex
 - **What would break if removed:** The reader blanks on the second settings change again (`tests_js/motion.test.js`, "fadeOpacity starts from the opacity the element has now").
 - **Not changed, on purpose:** the address bar. Reader display settings are the visitor's own and stay out of the URL (audit U-8); only a link that brought them keeps them.
 
+## SonarCloud new-code findings fixed in the code, not suppressed
+
+> Added 2026-10-10, after the quality gate failed on Security and Reliability ratings (7 open new-code issues).
+
+- **What was chosen:** (1) `migrate_customs_to_supabase.py --emit-sql` is now a flag that writes to the fixed, git-ignored `build/customs_sql/` instead of taking a directory from the command line. (2) `tailwind.input.css` no longer repeats `source(none)` on the theme import and writes the `space-y-*` selectors nesting-relative (`> x`) instead of `& > x` / `:where(&) > x`. (3) A test no longer asserts a call equals itself.
+- **Problem it solves:** Sonar traced the argparse value into `Path.mkdir`/`write_text` (path traversal, S8707) and its CSS rules (stylelint `at-rule-prelude-no-invalid`, `nesting-selector-no-missing-scoping-root`) rejected two valid Tailwind 4 constructs. Each one dragged a rating to C and failed the gate.
+- **Alternatives that existed:** `NOSONAR`, marking the issues Won't Fix, or excluding the files from analysis (rejected: it hides a finding instead of removing it, and the repo owner's rule is that the gate is met by fixing code). Keeping a validated `--emit-sql DIR` (rejected: Sonar does not recognise a hand-written containment check as a sanitizer, and the only caller wants a scratch folder anyway).
+- **Why this won:** Verified before pushing: stylelint with those two rules reproduced exactly the three CSS findings on the old file and none on the new one, and the Tailwind build of the new input is byte-identical to the old one except that the custom-property reset now has specificity `.space-y-N > :not(:last-child)` rather than `:where(.space-y-N) > ...` (nothing else reads `--tw-space-y-reverse`).
+- **What would break if removed:** Re-adding a second modifier to a Tailwind `@import`, or `&` inside `@utility`, brings back three Sonar bugs; a path-taking CLI flag that reaches a file write brings back S8707.
+
 ## Dual Sentry setup (backend `sentry_sdk` + browser CDN bundle), conditional on env var
 
 - **What was chosen:** Two independent Sentry integrations, both gated purely by env-var presence, both structured so absence means zero SDK activity. Backend: `sentry_sdk.init()` at module import, guarded by a DSN check. Browser: the entire script block (CDN bundle + `sentry-init.js`) is wrapped in a Jinja conditional — when unset, the script tag itself is never emitted, not just an inert init call.

@@ -91,7 +91,7 @@ User-saved texts, references, and AI answers. Base table: [`scripts/sql/bookmark
 
 ### `community_knowledge`
 
-Shared reference knowledge base (not user-scoped). Base table: [`scripts/sql/rag_identity_cache_setup.sql`](../scripts/sql/rag_identity_cache_setup.sql). Populated by `scripts/migrate_customs_to_supabase.py` from `customs/*.json` (see [`customs/DEVELOPER_NOTES.md`](../customs/DEVELOPER_NOTES.md)). `--prune` removes rows the JSON no longer has; `--emit-sql DIR` writes the same load as SQL files for the Supabase SQL Editor.
+Shared reference knowledge base (not user-scoped). Base table: [`scripts/sql/rag_identity_cache_setup.sql`](../scripts/sql/rag_identity_cache_setup.sql). Populated by `scripts/migrate_customs_to_supabase.py` from `customs/*.json` (see [`customs/DEVELOPER_NOTES.md`](../customs/DEVELOPER_NOTES.md)). `--prune` removes rows the JSON no longer has; `--emit-sql` writes the same load as SQL files (to the git-ignored `build/customs_sql/`) for the Supabase SQL Editor.
 
 | Column | Type | Nullable | Default | Description |
 |---|---|---|---|---|

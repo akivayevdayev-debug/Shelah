@@ -15,9 +15,11 @@
 
   Scan only the two places utility classes are written. v4 would otherwise
   scan the whole repository (docs, tests, Python) and ship every false-positive
-  word it found as a utility.
+  word it found as a utility. `source(none)` on the utilities import does that;
+  it is not repeated on the theme import (which has no utilities to scan for),
+  so each @import carries a single modifier and stays valid CSS for linters.
 */
-@import "tailwindcss/theme.css" theme(reference inline) source(none);
+@import "tailwindcss/theme.css" theme(reference inline);
 @import "./tailwind.palette-v3.css";
 @import "tailwindcss/preflight.css";
 @import "tailwindcss/utilities.css" source(none);
@@ -67,14 +69,17 @@
   sets that to a word: calc() over it is invalid at computed-value time and
   the built-in margins fall back to 0, while every other margin declaration
   (a child's own mb-*, the app's .sk-row { margin-bottom }) still applies.
+  The selectors are nesting-relative (`> x`, no `&`): inside @utility there is no
+  parent style rule for a linter to resolve `&` against, and the output is the
+  same selector with the utility class prefixed.
 */
 @utility space-y-* {
-  & > :not([hidden]) ~ :not([hidden]) {
+  > :not([hidden]) ~ :not([hidden]) {
     margin-block-start: calc(0.25rem * --value(number));
     margin-block-end: 0;
   }
 
-  :where(&) > :not(:last-child) {
+  > :not(:last-child) {
     --tw-space-y-reverse: disabled;
   }
 }

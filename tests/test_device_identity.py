@@ -25,8 +25,10 @@ class TestOwnerForToken:
         assert device.is_device_owner(owner)
 
     def test_same_token_same_owner_different_token_different_owner(self):
-        assert device.owner_for_token(TOKEN) == device.owner_for_token(TOKEN)
-        assert device.owner_for_token(TOKEN) != device.owner_for_token("b" * 40)
+        first, again = device.owner_for_token(TOKEN), device.owner_for_token(TOKEN)
+        other = device.owner_for_token("b" * 40)
+        assert first == again
+        assert first != other
 
     @pytest.mark.parametrize("bad", [None, "", "short", "x" * 100, "has spaces " * 4, "semi;colon" * 5])
     def test_a_cookie_we_did_not_issue_is_no_identity(self, bad):
