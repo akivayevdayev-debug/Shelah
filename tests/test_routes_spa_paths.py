@@ -332,6 +332,74 @@ def test_vercel_json_has_no_catch_all_rewrite():
     assert "routes" not in config
 
 
+class TestVercelAppHostRedirect:
+    """vercel.json sends this project's stable ``*.vercel.app`` production
+    aliases to the same page on https://shelah.org, path kept (and the query
+    string, which Vercel carries over on its own). Vercel can't be run locally,
+    so the rule's source and host patterns are translated to Python regexes
+    here and checked for the properties that matter: it can never match the
+    real host, it leaves preview deployments alone, and it spares the cron
+    endpoints (Vercel crons don't follow a redirect, so a redirected cron
+    would silently stop)."""
+
+    @staticmethod
+    def _rule():
+        config = json.loads((REPO_ROOT / "vercel.json").read_text(encoding="utf-8"))
+        rules = config["redirects"]
+        assert len(rules) == 1
+        return rules[0]
+
+    def test_it_is_a_permanent_redirect_to_the_canonical_host(self):
+        rule = self._rule()
+        assert rule["permanent"] is True
+        # The same path on the canonical host, not just the home page.
+        assert rule["destination"] == "https://shelah.org/:path"
+
+    def test_only_the_production_aliases_match_the_host(self):
+        (condition,) = self._rule()["has"]
+        assert condition["type"] == "host"
+        host = re.compile(condition["value"])
+        for redirected in (
+            "shelah-app.vercel.app",
+            "shelah-akivayevdayev-debugs-projects.vercel.app",
+            "shelah-git-main-akivayevdayev-debugs-projects.vercel.app",
+        ):
+            assert host.fullmatch(redirected), redirected
+        for untouched in (
+            "shelah.org",
+            "www.shelah.org",
+            "shelah-git-some-branch-akivayevdayev-debugs-projects.vercel.app",
+            "shelah-ibutu2gni-akivayevdayev-debugs-projects.vercel.app",
+            "shelahapp-git-main-akivayevdayev-debugs-projects.vercel.app",
+            "evil-shelah-app.vercel.app",
+            "shelah-app.vercel.app.example.com",
+        ):
+            assert not host.fullmatch(untouched), untouched
+
+    def test_every_path_is_captured_except_the_cron_endpoints(self):
+        source = self._rule()["source"]
+        assert source.startswith("/:path(") and source.endswith(")")
+        # Vercel's ``/:path(<regex>)`` is path-to-regexp: one named group.
+        path_re = re.compile("/(?P<path>" + source[len("/:path("):-1] + ")")
+        for path, captured in (
+            ("/", ""),
+            ("/text/Genesis.1", "text/Genesis.1"),
+            ("/static/css/tokens.css", "static/css/tokens.css"),
+            ("/api/text/Genesis%201", "api/text/Genesis%201"),
+        ):
+            match = path_re.fullmatch(path)
+            assert match and match.group("path") == captured, path
+        assert not path_re.fullmatch("/api/devtools/budget-check")
+        assert not path_re.fullmatch("/api/devtools/retention-enforce")
+
+    def test_the_cron_paths_in_vercel_json_are_the_ones_spared(self):
+        config = json.loads((REPO_ROOT / "vercel.json").read_text(encoding="utf-8"))
+        source = self._rule()["source"]
+        path_re = re.compile("/(?P<path>" + source[len("/:path("):-1] + ")")
+        for cron in config["crons"]:
+            assert not path_re.fullmatch(cron["path"]), cron["path"]
+
+
 class TestLegacyQueryRedirect:
     """``/?text=`` / ``?prayer=`` / ``?community=`` 308 to their path form, with
     the same precedence page_meta uses for the canonical tag."""

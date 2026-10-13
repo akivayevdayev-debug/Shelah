@@ -7,6 +7,19 @@
     },
     "regions": ["iad1"],
     "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':(exclude)*.md' ':(exclude)docs/**'",
+    "redirects": [
+        {
+            "source": "/:path((?!api/devtools/).*)",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "(shelah-app|shelah-akivayevdayev-debugs-projects|shelah-git-main-akivayevdayev-debugs-projects)\\.vercel\\.app"
+                }
+            ],
+            "destination": "https://shelah.org/:path",
+            "permanent": true
+        }
+    ],
     "crons": [
         {
             "path": "/api/devtools/budget-check",

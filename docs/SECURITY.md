@@ -74,8 +74,9 @@ tracked in the working tree at the start of the first security pass.
 - A `gitleaks` 8.30.1 scan over every commit reachable from all refs of the
   rewritten history (497 commits, 2026-09-18) reported 4 findings, all the same
   false positive (`shelah-sw-v2-migrated` / `shelah-sw-v3-migrated`, held in a
-  `migrationKey` constant in `templates/index.html` — a client-side
-  localStorage migration-flag string, not a credential).
+  `migrationKey` constant in `templates/index.html`, since 2026-10-13 in
+  `static/js/shell.js` — a client-side localStorage migration-flag string, not a
+  credential; `.gitleaks.toml` allowlists it).
 - `.env` is never tracked (`.gitignore` covers `.env`/`.env.*`; only
   `.env.example`, which ships placeholder values, is committed). The
   `gitleaks` and `bandit` pre-commit hooks run locally and again in CI over
@@ -498,7 +499,7 @@ Other controls:
   native FastAPI route, which rejects an empty question with `400` before it
   looks at auth, so that request can't tell the two states apart.
 
-## 7. Vercel WAF (dashboard-configured) — entered 2026-08-26, last confirmed 2026-10-03
+## 7. Vercel WAF (dashboard-configured) — entered 2026-08-26, last confirmed 2026-10-13
 
 The one layer that makes a flood *free*: per Vercel's WAF rate-limiting docs,
 WAF-mitigated traffic incurs no CDN request, no Fast Data Transfer and no
@@ -536,6 +537,82 @@ paths" (Deny) and the Log-mode method rule above.
 No slot is held in reserve for incident response; if one is needed it has to
 come from merging two rules (e.g. scanner-path-deny and method-deny) or from
 upgrading off Hobby.
+
+### Managed rulesets, and AI crawlers (checked 2026-10-13)
+
+Besides the three custom rules, the project has three **managed** rulesets.
+They are not custom rules, so they use no slot (`vercel firewall rules list`):
+
+| Ruleset | ID | Action (checked 2026-10-13) |
+| --- | --- | --- |
+| Bot Protection | `bot-protection` | Log |
+| AI Bots | `ai-bots` | **Log** (was Deny until 2026-10-13) |
+| BotID | `bot-id` | Basic |
+
+**AI Bots is what blocked AI crawlers, not Bot Protection and not the custom
+rules.** With it on Deny, `curl -A "GPTBot/1.1" https://shelah.org/` (and the
+same for ClaudeBot, anthropic-ai, PerplexityBot, Bytespider, CCBot and a
+`Google-Extended` UA string) answers **403** with `x-vercel-mitigated: deny`,
+while Googlebot and a browser UA get 200. `robots.txt` cannot change that:
+the request never reaches the app. Nothing here is a bug in the rate-limit or
+scanner rules; both stay as they are.
+
+**Intended posture: AI Bots = Log.** The site is public reference material
+(Tanakh text, siddur, community customs, about/help pages) and the goal is for
+answer engines to be able to read and cite it. Private views stay out of
+reach by other means: `X-Robots-Tag: noindex` on answers, history and
+conversations, `/api/` disallowed in `robots.txt`, and the `/ask` rate limit
+and cost breaker untouched. Two consequences to know before applying it:
+
+- The ruleset is all-or-nothing for the AI-crawler category. Log lets in every
+  bot Vercel classifies as one, including ones not named above; per-bot
+  control would need a custom rule, and all three slots are in use.
+- Log records those requests instead of blocking them, so they show up in the
+  firewall traffic view (`vercel firewall traffic`) and can be reviewed.
+
+Apply with the Vercel CLI (a draft until published), or the dashboard
+(Project → Firewall → Bot Management → AI Bots → Log):
+
+```
+vercel firewall rules edit ai-bots --action log --project shelah --yes
+vercel firewall diff --project shelah
+vercel firewall publish --project shelah
+```
+
+Check afterwards, expecting 200 for each:
+
+```
+curl -s -o /dev/null -w '%{http_code}\n' -A 'GPTBot/1.1' https://shelah.org/
+curl -s -o /dev/null -w '%{http_code}\n' -A 'ClaudeBot/1.0' https://shelah.org/text/Genesis.1
+```
+
+Status: **applied and published 2026-10-13.** `vercel firewall rules list` shows
+AI Bots on Log and `vercel firewall diff` shows no pending draft. Live check the
+same day: `GPTBot`, `ClaudeBot`, `anthropic-ai`, `Google-Extended`,
+`PerplexityBot`, `Bytespider` and `CCBot` each get **200** on `/` and
+`/text/Genesis.1` (all 403 before); `/.env` and `/.git/config` are still **403**
+(rule 2), and the `/ask` rate limit (rule 1) and the method rule (rule 3, Log)
+are unchanged. To go back: `vercel firewall rules edit ai-bots --action deny
+--project shelah --yes`, then `vercel firewall publish --project shelah`.
+
+### The `*.vercel.app` aliases
+
+`vercel.json` carries one `redirects` entry that sends the project's three
+stable production aliases (`shelah-app.vercel.app`,
+`shelah-akivayevdayev-debugs-projects.vercel.app`,
+`shelah-git-main-akivayevdayev-debugs-projects.vercel.app`) to
+`https://shelah.org/<same path>` (so `shelah-app.vercel.app/text/Genesis.1`
+goes to `shelah.org/text/Genesis.1`) with a permanent (308) redirect; the query
+string is carried over. Before it, `shelah-app.vercel.app` served the whole app
+with a 200, a second copy of every page for crawlers to find. The redirect is
+host-scoped, so it does nothing on `shelah.org`. It is deliberately **not**
+`*.vercel.app`: preview deployments (`shelah-git-<branch>-…`, per-commit URLs)
+must keep serving, or a pull request could not be checked. It also skips
+`/api/devtools/*`, because Vercel cron jobs do not follow redirects and a
+redirected cron (`budget-check`, `retention-enforce`) would stop silently.
+`tests/test_routes_spa_paths.py::TestVercelAppHostRedirect` pins all of this.
+Old-name aliases (`shelahapp-…`) point at deployments from before the rename
+and keep whatever those deployments do.
 
 Two things to remember when changing these:
 
