@@ -76,7 +76,10 @@ def _shell_marker(html):
 
 class TestShellPaths:
     @pytest.mark.parametrize("path", SHELL_PATHS)
-    def test_serves_the_same_shell_as_home(self, test_client, path):
+    def test_serves_the_same_shell_as_home(self, test_client, monkeypatch, path):
+        # The plain shell. A /text/ chapter is also sent with its text in the
+        # body; what that changes, and nothing else, is tests/test_text_ssr.py.
+        monkeypatch.setenv("TEXT_SSR_ENABLED", "0")
         home = test_client.get("/")
         response = test_client.get(path)
         assert response.status_code == 200, path

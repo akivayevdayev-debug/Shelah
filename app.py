@@ -1253,7 +1253,9 @@ def apply_response_cache_policy(response):
         return response
 
     if response.mimetype in {"text/html", "application/xhtml+xml"}:
-        response.headers["Cache-Control"] = (
+        # A handler that knows its page is a stopgap (g.html_cache_control,
+        # e.g. a /text/ page whose server render failed) asks for less.
+        response.headers["Cache-Control"] = getattr(g, "html_cache_control", None) or (
             f"public, max-age={RESOURCE_RELOAD_SECONDS}, must-revalidate"
         )
 
@@ -1362,12 +1364,14 @@ def index():
 VIEW_TRANSITIONS_ENABLED = (os.environ.get("VIEW_TRANSITIONS") or "").strip().lower() == "true"
 
 
-def render_spa_shell(meta):
+def render_spa_shell(meta, ssr_text=None):
     """The SPA shell with this URL's title/og:url/canonical (backend/page_meta.py).
-    Shared by index() and the path deep links in backend/routes_spa_paths.py."""
+    Shared by index() and the path deep links in backend/routes_spa_paths.py.
+    ``ssr_text``: a /text/ page's server-rendered chapter (backend/text_ssr.py)."""
     return render_template(
         "index.html",
         page_meta=meta,
+        ssr_text=ssr_text,
         view_transitions=VIEW_TRANSITIONS_ENABLED,
         module_url=module_versions.module_url,
         module_import_map=module_versions.import_map(),

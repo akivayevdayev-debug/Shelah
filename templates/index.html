@@ -48,6 +48,11 @@
         "logo": "https://shelah.org/static/favicon-512.png"
     }
     </script>
+    {% if page_meta.jsonld %}
+    {# A server-rendered text page (backend/text_ssr.py): its own BreadcrumbList and Article. #}
+    {% for block in page_meta.jsonld %}<script type="application/ld+json">{{ block|tojson }}</script>
+    {% endfor %}
+    {% else %}
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -62,6 +67,7 @@
         ]
     }
     </script>
+    {% endif %}
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/static/favicon-192.png" type="image/png" sizes="192x192">
     <link rel="icon" href="/static/favicon-512.png" type="image/png" sizes="512x512">
@@ -95,10 +101,43 @@
     <script>(function(){try{var m=document.cookie.match(/(?:^|;\s*)__client_uat(?:_[^=]*)?=([^;]*)/);if(m&&m[1]&&m[1]!=='0')document.documentElement.classList.add('auth-likely-in');}catch(e){}})()</script>
     <!-- A cold load of a page view (/text/, /prayer/, /community/, /history, or their old
          query forms) paints the reader and its skeleton, not the home grid it
-         is about to replace (#homeGrid / #reader rules in the <style> by the
-         footer). finishViewSwap() and goHome() clear the flag; the timer
+         is about to replace (#homeGrid / #reader rules in the <style> just below).
+         finishViewSwap() and goHome() clear the flag; the timer
          only matters if the app script never runs. -->
     <script>(function(){try{var d=document.documentElement,p=location.pathname,q=new URLSearchParams(location.search);if(/^\/(text|prayer|community)\/./.test(p)||/^\/history\/?$/.test(p)||q.get('text')||q.get('prayer')||q.get('community')||q.get('history')){d.setAttribute('data-cold-view',/^\/text\/./.test(p)||q.get('text')?'text':'');setTimeout(function(){d.removeAttribute('data-cold-view');},8000);}}catch(e){}})()</script>
+    <!-- The cold-load rules sit in the head, not with the footer's CSS further down: a
+         first paint that comes before they are parsed puts the home grid on screen and
+         then moves the reader (CLS), which a long server-rendered text page makes likely. -->
+    <style>
+    /* Cold load of a page view: the reader and its skeleton from
+       the first paint (audit L-1), and no home grid to paint and
+       take away again. */
+    html[data-cold-view] #homeGrid {
+        display: none;
+    }
+    html[data-cold-view] #reader.hidden {
+        display: block;
+    }
+    html[data-cold-view] #reader.hidden #readerSkeleton.hidden {
+        display: flex;
+    }
+    /* A text's toolbar takes its place from the first paint, unseen, so
+       the column below it doesn't drop when the app shows it (the skeleton's
+       rows, or a server-rendered chapter, would move with it). */
+    html[data-cold-view="text"] #readerTopBar.hidden {
+        display: flex;
+        visibility: hidden;
+    }
+    /* A /text/ page arrives with its rows in the side-by-side layout
+       (backend/text_ssr.py). Below 1024px the reader draws the
+       interleaved one instead, whose English block sits 0.5rem
+       lower; the same gap here, so the swap moves nothing. */
+    @media (max-width: 1023px) {
+        .reader-side-row > .reader-text-en {
+            margin-top: 0.5rem;
+        }
+    }
+    </style>
     {% if sentry_dsn_browser %}
     <!-- Sentry error monitoring. Loaded from Sentry's own CDN
          (not npm/jsdelivr — no frontend bundling step exists yet) with an SRI hash, placed before the other CDN scripts
@@ -1102,7 +1141,7 @@
 
 
             <!-- HOME: BROWSE THE LIBRARY GRID -->
-            <div id="homeGrid"
+            <div id="homeGrid"{% if ssr_text %} style="display: none"{% endif %}
                 class="home-typography w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-12">
                 <section class="home-topic-hero mb-10">
                     <p class="home-section-label" data-en="Parasha of the Week" data-he="פרשת השבוע">Parasha of the Week
@@ -1458,9 +1497,9 @@
             <script>swapPendingLanguage(document.getElementById('homeGrid'))</script>
 
             <!-- READER: SCHOLARLY ARTICLE VIEW -->
-            <article id="reader" class="hidden w-full max-w-4xl mx-auto p-4 sm:p-6 lg:p-12 pb-24 sm:pb-32">
+            <article id="reader" class="{% if not ssr_text %}hidden {% endif %}w-full max-w-4xl mx-auto p-4 sm:p-6 lg:p-12 pb-24 sm:pb-32">
                 <header class="mb-10 text-center">
-                    <h1 id="readerTitle" class="text-2xl lg:text-3xl font-serif text-navy mb-4 font-bold"></h1>
+                    <h1 id="readerTitle" class="text-2xl lg:text-3xl font-serif text-navy mb-4 font-bold">{% if ssr_text %}{{ ssr_text.title }}{% endif %}</h1>
                     <p id="readerSubtitle" class="hidden text-sm text-slate-500 font-serif -mt-2 mb-4"></p>
                     <!-- Hidden until setCurrentView knows the page is Sh'elah's own
                          (a community page), never over Sefaria's text. -->
@@ -1497,7 +1536,13 @@
                 </div>
 
                 <!-- Sefaria Side-by-Side Dual Pane Sources -->
-                <div id="readerSources" class="mt-12 space-y-8 pt-10"></div>
+                <div id="readerSources" class="mt-12 space-y-8 pt-10">{% if ssr_text %}<div class="reader-source-clean mb-6" data-text-chunk-index="0" data-text-chunk-ref="{{ ssr_text.requested_ref }}"><div class="reader-source-lines">{{ ssr_text.rows_html }}</div></div>{% endif %}</div>
+                {% if ssr_text %}
+                {# The same payload /api/text/<ref> sends, so readText can adopt the rows above
+                   instead of fetching them again (takeServerRenderedText). A data block: not run,
+                   not counted by the CSP. #}
+                <script type="application/json" id="ssrTextPayload">{{ {"requestedRef": ssr_text.requested_ref, "payload": ssr_text.payload}|tojson }}</script>
+                {% endif %}
 
             </article>
 
@@ -1531,24 +1576,6 @@
                     visibility: hidden;
                 }
 
-                /* Cold load of a page view: the reader and its skeleton from
-                   the first paint (audit L-1), and no home grid to paint and
-                   take away again. */
-                html[data-cold-view] #homeGrid {
-                    display: none;
-                }
-                html[data-cold-view] #reader.hidden {
-                    display: block;
-                }
-                html[data-cold-view] #readerSkeleton.hidden {
-                    display: flex;
-                }
-                /* A text's toolbar will take this much of the column's top
-                   (#mainContainer padding, style.css): held from the first
-                   paint so the skeleton doesn't drop when it comes. */
-                html[data-cold-view="text"] #mainContainer {
-                    padding-top: calc(var(--reader-topbar-track-h, 2.25rem) + 2px);
-                }
 
                 /* Below 1024px, .mobile-bottom-tabs (static/style.css) is an
                    in-flow row of the body's flex column, not an overlay, so
@@ -9732,7 +9759,9 @@
             }
         }
 
-        function applyReaderPreferences() {
+        // `adoptRenderedText`: the rows on the page came from the server, so
+        // they are redrawn in place rather than faded out and back in.
+        function applyReaderPreferences({ adoptRenderedText = false } = {}) {
             const layout = getNormalizedReaderLayout();
             appState.prefs.readerLayout = layout;
             syncReaderDisplayRoute();
@@ -9746,10 +9775,12 @@
                 // M-6: a layout/vowel/size toggle fades the rebuilt text in
                 // rather than snapping; nothing to fade from on the first
                 // render, so that case skips straight to rendering.
-                if (hasRenderedText) {
+                if (hasRenderedText && !adoptRenderedText) {
                     swapContent(sourcesDiv, () => renderCurrentTextByLayout({ preserveScroll: hasRenderedText }));
                 } else {
-                    renderCurrentTextByLayout({ preserveScroll: hasRenderedText });
+                    // Adopting the server's rows: nothing above them changes, so
+                    // there is no position to hold (holding one moved the page).
+                    renderCurrentTextByLayout({ preserveScroll: hasRenderedText && !adoptRenderedText });
                 }
             }
             // The siddur draws its own layout / vowels / cantillation.
@@ -12555,6 +12586,30 @@
             if (firstKey) textPayloadCache.delete(firstKey);
         }
 
+        // A /text/<ref> page can arrive with its chapter already in the HTML
+        // (backend/text_ssr.py), and the payload it was built from in
+        // #ssrTextPayload. Hands that payload to readText once, for the ref the
+        // page was rendered for, and seeds the cache with it so nothing is
+        // fetched again. Null when there is none, or it is for another ref.
+        function takeServerRenderedText(requestedRef) {
+            const holder = document.getElementById('ssrTextPayload');
+            if (!holder) return null;
+            holder.remove();
+            try {
+                const { requestedRef: renderedRef, payload } = JSON.parse(holder.textContent || '{}');
+                if (!payload || !Array.isArray(payload.lines) || !payload.lines.length) return null;
+                if (String(renderedRef || '').replace(/\s+/g, ' ').trim() !== requestedRef) return null;
+                // The flat arrays /api/text also sends, rebuilt from the lines.
+                payload.he = payload.lines.filter((line) => line.he).map((line) => line.he);
+                payload.en = payload.lines.filter((line) => line.en).map((line) => line.en);
+                cacheTextPayload(requestedRef, payload);
+                cacheTextPayload(payload.ref, payload);
+                return payload;
+            } catch (_) {
+                return null;
+            }
+        }
+
         async function recoverFromStaleServiceWorker() {
             if (textLoadServiceWorkerRecoveryAttempted) return false;
             textLoadServiceWorkerRecoveryAttempted = true;
@@ -12816,17 +12871,31 @@
 
             leaveViewScroll();
             appState.shownView = null;
-            // A retry stays on the view it's retrying: no transition.
-            await swapView(() => {
+            // The chapter is already on the page (server-rendered): no
+            // skeleton, no fetch, no fade; the rows are redrawn below with
+            // this reader's own preferences, which look the same by default.
+            const serverText = options.fromRoute ? takeServerRenderedText(normalizedRequestRef) : null;
+            if (serverText) {
                 homeGrid.style.display = 'none';
-                showReaderSkeleton(normalizedRequestRef || String(ref || ''), { toolbar: true });
                 closeMobilePanels();
                 closeChapterGrid();
                 closeReaderSettingsPanel();
                 setReaderSubtitle('');
                 collapseCommentaryPanel();
                 resetSelectionInsights();
-            }, { transition: options.loadRetryAttempt == null });
+            } else {
+                // A retry stays on the view it's retrying: no transition.
+                await swapView(() => {
+                    homeGrid.style.display = 'none';
+                    showReaderSkeleton(normalizedRequestRef || String(ref || ''), { toolbar: true });
+                    closeMobilePanels();
+                    closeChapterGrid();
+                    closeReaderSettingsPanel();
+                    setReaderSubtitle('');
+                    collapseCommentaryPanel();
+                    resetSelectionInsights();
+                }, { transition: options.loadRetryAttempt == null });
+            }
             if (myRequestId !== _readTextRequestGen) return;
 
             try {
@@ -12838,7 +12907,7 @@
                 // for last) with no error.
                 if (myRequestId !== _readTextRequestGen) return;
 
-                hideReaderSkeleton({ loaded: !data.error });
+                hideReaderSkeleton({ loaded: !data.error && !serverText });
                 reader.classList.remove('hidden');
                 applySidebarVisibility();
 
@@ -12912,7 +12981,7 @@
                 // Continuous reading uses per-chunk section headers; avoid duplicating old single-subtitle logic.
                 setReaderSubtitle('');
 
-                applyReaderPreferences();
+                applyReaderPreferences({ adoptRenderedText: Boolean(serverText) });
 
                 const sidebarReference = isHebrewMode()
                     ? localizeReferenceLabel(data.ref || normalizedRequestRef || ref)
@@ -12928,7 +12997,9 @@
                     </div>`;
 
                 // Back/Forward to this text: the verse it was left at (U-7).
-                if (!restoreViewScroll(options.restoreScroll, 'text')) scrollPrimaryToTop('smooth');
+                // A server-rendered page is already at its top, and a reader
+                // who started scrolling before the app booted stays where they are.
+                if (!restoreViewScroll(options.restoreScroll, 'text') && !serverText) scrollPrimaryToTop('smooth');
 
                 // Adjacent (prev/next) refs are only needed for infinite-scroll
                 // continuation, not for painting the current chunk — fetch them

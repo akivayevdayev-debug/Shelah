@@ -24,6 +24,8 @@ from backend import siddur_data
 
 SITE_BASE_URL = "https://shelah.org"
 SITE_NAME = "Sh'elah"
+# The crawlable index of the Tanakh's chapters (backend/routes_pages.py).
+TANAKH_HUB_PATH = "/tanakh"
 SITE_TITLE = "Sh'elah - Torah Encyclopedia"
 _TITLE_SEPARATOR = " · "
 _HOME_DESCRIPTION = (
@@ -122,6 +124,13 @@ def text_ref(raw_slug):
     return slug_to_ref(_slug_value(raw_slug)).strip()
 
 
+def ref_has_sections(ref):
+    """True for a ref that names a page of text ("Genesis 1", "Berakhot 2a"),
+    False for a book on its own ("Genesis"), which the reader opens as a
+    chapter grid."""
+    return bool(_REF_SECTIONS_RE.match(str(ref or "").strip()))
+
+
 def text_meta(raw_slug):
     ref = text_ref(raw_slug)
     if not ref:
@@ -131,6 +140,45 @@ def text_meta(raw_slug):
         description=f"Read {ref} with sources and commentary on {SITE_NAME}, the AI-powered Torah encyclopedia.",
         canonical_path=text_path(ref),
     )
+
+
+def text_jsonld(raw_slug, categories=()):
+    """Structured data for a text page whose body is server-rendered
+    (backend/text_ssr.py): a BreadcrumbList and an Article, both naming the
+    page's own canonical. Replaces the shell's static one-item breadcrumb.
+    The Tanakh hub is a breadcrumb step only for Tanakh texts; there is no
+    page to name for the other categories."""
+    meta = text_meta(raw_slug)
+    ref = text_ref(raw_slug)
+    canonical = meta["canonical"]
+    home = f"{SITE_BASE_URL}/"
+    steps = [(SITE_NAME, home)]
+    if categories and categories[0] == "Tanakh":
+        steps.append(("Tanakh", f"{SITE_BASE_URL}{TANAKH_HUB_PATH}"))
+    steps.append((ref, canonical))
+    return [
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": position, "name": name, "item": url}
+                for position, (name, url) in enumerate(steps, start=1)
+            ],
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "Article",
+            "headline": ref,
+            "name": ref,
+            "description": meta["description"],
+            "url": canonical,
+            "mainEntityOfPage": canonical,
+            "inLanguage": ["he", "en"],
+            "isPartOf": {"@type": "WebSite", "name": SITE_NAME, "url": home},
+            "publisher": {"@type": "Organization", "name": SITE_NAME, "url": home},
+            "isBasedOn": {"@type": "WebSite", "name": "Sefaria", "url": "https://www.sefaria.org/"},
+        },
+    ]
 
 
 def prayer_meta(raw_slug):

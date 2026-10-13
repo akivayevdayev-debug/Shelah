@@ -18,9 +18,14 @@ the router's own grammar (_parse_tail), so a segment that fits nowhere is a
 real 404 rather than an endless supply of soft-404 shells. The view values
 themselves aren't validated: a malformed one still gets the shell, and the
 router drops it (router.js parsePath/normalizeRoute) and shows home. The
-one exception is a text the reader has already found doesn't exist
-(sefaria_library.is_known_missing_text, never a Sefaria request here): its
+exception is a text Sefaria doesn't have (sefaria_library.is_known_missing_text,
+learned from an earlier lookup or from the one this request makes): its
 shell comes with a real 404 status, kept out of search results.
+
+/text/<ref> for a ref with sections also carries the chapter itself in the
+HTML (backend/text_ssr.py), so a crawler that doesn't run JavaScript reads the
+text. That waits on Sefaria for a few seconds at most; past that, or on any
+failure, the plain shell goes out as it always did.
 
 No vercel.json rewrite is needed (or wanted): Vercel's implicit routing
 already sends every path to the one ASGI function with the path intact, and
@@ -32,10 +37,10 @@ the other real pages keep their own routes; nothing here overlaps them.
 import re
 from urllib.parse import quote, urlencode
 
-from flask import Blueprint, abort, make_response, redirect, request
+from flask import Blueprint, abort, g, make_response, redirect, request
 
 from app import render_spa_shell
-from backend import page_meta, sefaria_library, siddur_data
+from backend import page_meta, sefaria_library, siddur_data, text_ssr
 
 routes_spa_paths = Blueprint("spa_paths", __name__)
 
@@ -173,9 +178,22 @@ def _noindex_legacy_answer_links(response):
 @routes_spa_paths.route("/text/<path:ref>", methods=["GET"])
 def text_path(ref):
     ref, _ = _view_and_tail(ref)
-    if sefaria_library.is_known_missing_text(page_meta.text_ref(ref)):
+    text_ref = page_meta.text_ref(ref)
+    if sefaria_library.is_known_missing_text(text_ref):
         return _noindex_shell(404)
-    return render_spa_shell(page_meta.text_meta(ref))
+    rendered = text_ssr.build(text_ref)
+    meta = page_meta.text_meta(ref)
+    if rendered is None:
+        # The lookup may just have learned the text doesn't exist.
+        if text_ssr.applies(text_ref):
+            if sefaria_library.is_known_missing_text(text_ref):
+                return _noindex_shell(404)
+            # Sefaria was slow or failing: the shell below is a stopgap and
+            # must not sit in a cache for the usual five minutes.
+            g.html_cache_control = text_ssr.FALLBACK_CACHE_CONTROL
+        return render_spa_shell(meta)
+    meta["jsonld"] = page_meta.text_jsonld(ref, rendered["payload"].get("categories") or ())
+    return render_spa_shell(meta, ssr_text=rendered)
 
 
 @routes_spa_paths.route("/prayer/<path:name>", methods=["GET"])
