@@ -1,8 +1,8 @@
 # Frontend architecture
 
-**Status (2026-10-02):** a single-page shell, `templates/index.html` (about 14,500 lines), plus 31 ES and classic modules under `static/js/`, 16 stylesheets under `static/css/` (plus the legacy `static/style.css`), and a service worker. There is no bundler: modules are served as written, with content-hashed URLs from an import map. Tests: `npm test` runs `node --test tests_js/*.test.js` (31 test files, one per module family).
+**Status (2026-10-02):** a single-page shell, `templates/index.html` (about 2,800 lines of markup) with its classic main script `static/js/shell.js` (about 12,200 lines), plus 31 ES and classic modules under `static/js/`, 16 stylesheets under `static/css/` (plus the legacy `static/style.css`), and a service worker. There is no bundler: modules are served as written, with content-hashed URLs from an import map. Tests: `npm test` runs `node --test tests_js/*.test.js` (31 test files, one per module family).
 
-The shell is migrating, one feature at a time, from its inline classic `<script>` to modules. The inline script still owns the reader, the library tree, view switching and the settings menus; everything newer (conversations, routing, stored answers, the siddur, the calendar detail card, citations) lives in modules.
+The shell is migrating, one feature at a time, from its classic main script, `static/js/shell.js` (a deferred file; it was inline in `index.html` until 2026-10-13, ~600 KB of the HTML parsed ahead of the first paint), to modules. `shell.js` still owns the reader, the library tree, view switching and the settings menus; everything newer (conversations, routing, stored answers, the siddur, the calendar detail card, citations) lives in modules.
 
 ---
 
@@ -12,7 +12,7 @@ The shell is migrating, one feature at a time, from its inline classic `<script>
 
 1. **No-flash bootstraps** (tiny inline scripts, run before first paint): theme (`data-theme` and `theme-dark` on `<html>`, from `localStorage["Sh'elahPrefs"].theme`, falling back to `prefers-color-scheme`), view transitions (`shelah.viewTransitions`), language and direction (`?lang=`, then the saved preference, then Hebrew by default for an Asia/Jerusalem time zone), a `auth-likely-in` class from the Clerk `__client_uat` cookie, and a `data-cold-view` flag for deep links to a text, prayer, community or history page so the shell shows a skeleton instead of the home grid.
 2. **Third-party scripts, each pinned** (SRI hash where the host allows it): Sentry browser bundle, `marked`, `DOMPurify` and FullCalendar from jsDelivr, Clerk (publishable key from the server), Cloudflare Turnstile, `motion` (vanilla `animate()`), Vercel Speed Insights. The CSP that allows exactly these hosts is in `docs/SECURITY.md` §3.
-3. **Classic helper scripts** that expose window globals the inline script reads: `sentry-init.js`, `topbar_shared.js`, `hebrew-ref.js`, `community-labels.js`, `load-region.js`, `clerk-appearance.js`. `actions.js` loads separately, **after** the big inline script (see "Click handlers" below).
+3. **Classic helper scripts** that expose window globals `shell.js` reads: `sentry-init.js`, `topbar_shared.js`, `hebrew-ref.js`, `community-labels.js`, `load-region.js`, `clerk-appearance.js`. `shell.js` itself is a `defer`red classic script, and `actions.js` is `defer`red **after** it (see "Click handlers" below): deferred scripts run in document order, before `DOMContentLoaded`. Jinja values the old inline script interpolated are now data: the Phosphor icon paths are a `<script type="application/json" id="phosphorPaths">` block `shell.js` reads, and `shell.js` is served as a plain file, so it can be cached by its content hash.
 4. **The import map** (`module_import_map`, built by `backend/module_versions.py`): each module's plain URL (`/static/js/router.js`) maps to `/static/js/router.js?v=<12-char sha256 of its bytes>`. A changed module is a new URL and an unchanged one keeps its cached copy, so a CDN or service-worker cache can never hand a new `main.js` an old `router.js`. The entry `<script type="module">` tags (`motion.js`, `calendar-detail.js`, `main.js`) use `module_url(name)` for the same URL, so a module that is both an entry and an import runs once. Classic scripts (no top-level `import`/`export`) are not in the map; they carry a hand-bumped `?v=` query instead.
 
 Stylesheets load in this order (tokens first, always): `tokens.css`, `style.css`, `typography.css`, `reader.css`, `sidebar.css`, `halacha.css`, `prayer.css`, `siddur.css`, `ai.css`, `conversation.css`, `history.css`, `calendar.css`, `calendar-detail.css`, `loading.css`, `tailwind.css`. The legal pages use `legal.css` through `templates/components/legal_*.html`.
@@ -31,7 +31,7 @@ There are no inline event-handler attributes: the Content-Security-Policy forbid
 
 For an argument built from text at runtime, write it with `encodeURIComponent()` and add `data-onclick-encoding="uri"`; the dispatcher decodes it. HTML built in a JS template string follows the same rules. To make a new function callable this way, add its name to `ACTIONS` in `static/js/actions.js` (sorted; the list is a security boundary, and a test fails on a name that is not used or not defined). Code that wants a different target later changes the attribute, as `loadParashaQuickLink` does with `data-onclick-arg`; assigning `el.onclick = ...` on such an element would run both.
 
-`actions.js` loads after the big inline script on purpose. Its listener is a capture-phase listener on `document`, and those run in registration order; the inline script registers the one that records the clicked control, which `markTriggerPending` reads, and an inline `onclick` always ran after every capture listener. The legal pages load it from `components/legal_scripts.html`.
+`actions.js` loads after `shell.js` on purpose (both `defer`red, so document order decides). Its listener is a capture-phase listener on `document`, and those run in registration order; `shell.js` registers the one that records the clicked control, which `markTriggerPending` reads, and an inline `onclick` always ran after every capture listener. The legal pages load it from `components/legal_scripts.html`.
 
 ### Page zones in `index.html`
 
@@ -49,7 +49,7 @@ Other templates: `404`, `about`, `acceptable-use`, `accessibility`, `ai-disclosu
 
 ## 2. Module map: `static/js/`
 
-`main.js` is the one entry point that wires the modules to the inline script. It builds explicit `deps` objects from `window.*` in one place (`buildZmanimDeps`, `buildSiddurDeps`) so no module reaches for an undeclared inline global, then assigns the bridge objects in section 3.
+`main.js` is the one entry point that wires the modules to `shell.js`. It builds explicit `deps` objects from `window.*` in one place (`buildZmanimDeps`, `buildSiddurDeps`) so no module reaches for an undeclared inline global, then assigns the bridge objects in section 3.
 
 ### State, routing and bootstrap
 
@@ -110,18 +110,18 @@ The AI mark (the star, the Ask button, the glow) is custom and is **not** a Phos
 
 ---
 
-## 3. Bridges between the inline script and the modules
+## 3. Bridges between `shell.js` and the modules
 
-Window globals are the documented seam. Anything the inline script needs from a module is exposed in one place:
+Window globals are the documented seam. Anything `shell.js` needs from a module is exposed in one place:
 
 | Global | Set by | Purpose |
 |---|---|---|
 | `ShelahModules` | `main.js` | `askAi`, `loadSemanticBookmarks`, `saveSemanticBookmark`, `prewarmDailyStudy`, the zmanim functions, and `getState`/`setState`/`subscribe` |
 | `ShelahState` | `state.js` | `getState`, `setState`, `subscribe` (never the raw object) |
-| `ShelahRouter` | `router.js` | the router API; the inline script calls `pushRoute`/`clearRoute` from its view switches and `main.js` installs `window.hydrateRoute` |
+| `ShelahRouter` | `router.js` | the router API; `shell.js` calls `pushRoute`/`clearRoute` from its view switches and `main.js` installs `window.hydrateRoute` |
 | `ShelahConversationUI` / `ShelahConversationEntry` | `conversation-ui.js` / `conversation-entry.js` | open the panel, choose the Ask surface |
 | `ShelahSiddur` | `main.js` (`createSiddur`) | `prepare` / `mount` for the inline `displaySiddur()` |
-| `ShelahSourceCards`, `ShelahCommentaryPreload`, `ShelahAskHistory`, `ShelahAnswerLink` | `main.js` | the module APIs the inline script calls |
+| `ShelahSourceCards`, `ShelahCommentaryPreload`, `ShelahAskHistory`, `ShelahAnswerLink` | `main.js` | the module APIs `shell.js` calls |
 | `ShelahPrefs` | `index.html` | `set('mode' \| 'community', value)`, called by the chat settings menu to save the defaults |
 | `ShelahMotion`, `ShelahCalendarDetail`, `ShelahLoadRegion`, `ShelahHebrewRef`, `ShelahClerkAppearance` | their own files | as named |
 
@@ -131,7 +131,7 @@ When the last inline caller of a bridged function is gone, delete its entry rath
 
 ## 4. State
 
-`state.js` exports `getState()`, `setState(patch)` (deep-merges plain objects, then notifies) and `subscribe(listener)` (returns an unsubscribe function; a throwing listener never breaks the others). The store **is** `window.appState`: the inline script builds `appState` first, and `state.js` adopts it when present, otherwise it starts with the small default shape below.
+`state.js` exports `getState()`, `setState(patch)` (deep-merges plain objects, then notifies) and `subscribe(listener)` (returns an unsubscribe function; a throwing listener never breaks the others). The store **is** `window.appState`: `shell.js` builds `appState` first, and `state.js` adopts it when present, otherwise it starts with the small default shape below.
 
 What the modules read and write:
 
@@ -311,8 +311,8 @@ The checked-in Edot HaMizrach siddur (`data/siddur/`, built by `scripts/build_si
 ## 12. Adding a module
 
 1. Create `static/js/my-feature.js` with real `import`/`export` (a file with neither is treated as a classic script and is not versioned by the import map).
-2. Export an `installMyFeature(deps)` function that attaches listeners and subscribes to state. Take anything it needs from the inline script as an explicit `deps` argument.
-3. Import and call it from `main.js`; if the inline script must call it, add it to the bridge in section 3 and remove the entry when the last caller is gone.
+2. Export an `installMyFeature(deps)` function that attaches listeners and subscribes to state. Take anything it needs from `shell.js` as an explicit `deps` argument.
+3. Import and call it from `main.js`; if `shell.js` must call it, add it to the bridge in section 3 and remove the entry when the last caller is gone.
 4. Add `tests_js/my_feature.test.js` (the suite is `node --test`; modules that touch `window` are tested through the harness in `tests_js/helpers/`).
 5. If it is part of the app shell, add it to `CORE_ASSETS` in `static/service-worker.js` and bump `CACHE_VERSION`.
 6. Add its stylesheet to the `index.html` link list after `tokens.css`, and wrap every async region in `ShelahLoadRegion`.

@@ -200,13 +200,13 @@ class TestSitemapXmlRoute:
 
     def test_tanakh_chapter_table_matches_the_readers_grid(self):
         """routes_pages._TANAKH_CHAPTERS mirrors CHAPTER_GRID_BOOKS in
-        templates/index.html; the two can't drift apart."""
+        static/js/shell.js; the two can't drift apart."""
         import re
         from pathlib import Path
 
         from backend.routes_pages import _TANAKH_CHAPTERS
 
-        html = (Path(__file__).resolve().parent.parent / "templates" / "index.html").read_text(encoding="utf-8")
+        html = (Path(__file__).resolve().parent.parent / "static" / "js" / "shell.js").read_text(encoding="utf-8")
         block = re.search(r"const CHAPTER_GRID_BOOKS = Object\.freeze\(\{(.*?)\}\);", html, re.S).group(1)
         grid = [(name.strip("'\""), int(count))
                 for name, count in re.findall(r"^\s*('[^']+'|\w+):\s*(\d+),", block, re.M)]

@@ -17,9 +17,11 @@
  * - Noise filtering + a per-session cap, protecting the 5,000 events/month
  *   free-tier quota.
  *
- * Loaded as a plain (non-module) script, synchronously, after the Sentry CDN
- * bundle and before any other app script — so it can capture errors from
- * everything that loads after it. Written as a small UMD-lite module (no
+ * Loaded as a plain (non-module) `defer` script, after the (also deferred)
+ * Sentry CDN bundle and ahead of the module scripts. Neither blocks the parser
+ * (they used to, which held the first paint); errors thrown before they run
+ * are caught by a small queue in index.html's <head> and reported from here
+ * (flushEarlyErrors). Written as a small UMD-lite module (no
  * import/export syntax) so the exact same file can be `require()`d from a
  * Node test (tests_js/sentry_init.test.js) without a build step.
  */
@@ -244,6 +246,19 @@
         };
     }
 
+    // Hands the SDK what index.html's <head> queue caught while it was loading
+    // (root.__shelahEarlyErrors: the error, or a message string) and stops the
+    // queue. Goes through beforeSend like any other event.
+    function flushEarlyErrors(Sentry) {
+        var queued = root.__shelahEarlyErrors;
+        if (typeof root.__shelahEarlyErrorsStop === 'function') root.__shelahEarlyErrorsStop();
+        root.__shelahEarlyErrors = [];
+        if (!Array.isArray(queued) || typeof Sentry.captureException !== 'function') return;
+        queued.forEach(function (err) {
+            try { Sentry.captureException(err); } catch (e) { /* never break the app */ }
+        });
+    }
+
     // ── Browser bootstrap (never runs under Node/`require`) ─────────────────
 
     function initSentry() {
@@ -273,6 +288,7 @@
                 beforeSend: makeBeforeSend(allowedOrigin),
                 beforeBreadcrumb: makeBeforeBreadcrumb(),
             });
+            flushEarlyErrors(Sentry);
         } catch (e) {
             // Error-monitoring setup must never break the app itself.
         }
@@ -290,6 +306,7 @@
         isOffOriginNoise: isOffOriginNoise,
         makeBeforeSend: makeBeforeSend,
         makeBeforeBreadcrumb: makeBeforeBreadcrumb,
+        flushEarlyErrors: flushEarlyErrors,
         initSentry: initSentry,
     };
 

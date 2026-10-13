@@ -20,10 +20,16 @@ ACTIONS_JS = (REPO / "static/js/actions.js").read_text(encoding="utf-8")
 # How the templates ask for the dispatcher (backend/module_versions.asset_url).
 ACTIONS_TAG = "{{ asset_url('js/actions.js') }}"
 INDEX_HTML = (REPO / "templates/index.html").read_text(encoding="utf-8")
+# The app's main script, formerly inline at the end of index.html's <body>.
+SHELL_JS = (REPO / "static/js/shell.js").read_text(encoding="utf-8")
+SHELL_TAG = "{{ asset_url('js/shell.js') }}"
 
 
 def _tracked(*prefixes: str, suffixes: tuple[str, ...]) -> list[Path]:
-    names = subprocess.check_output(["git", "ls-files", *prefixes], cwd=REPO, text=True).split("\n")
+    # --others: a new file counts before its first commit, not only after it.
+    names = subprocess.check_output(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", *prefixes], cwd=REPO, text=True
+    ).split("\n")
     return [REPO / n for n in names if n.endswith(suffixes)]
 
 
@@ -94,21 +100,24 @@ def test_actions_list_is_sorted_and_unique():
 
 
 def test_answer_html_cannot_carry_the_action_attributes():
-    # DOMPurify keeps data-* by default; the literal in index.html is read
+    # DOMPurify keeps data-* by default; the literal in shell.js is read
     # before actions.js loads, so it duplicates ATTRIBUTES and must match.
-    literal = re.search(r"const ACTION_ATTRIBUTES = \[(.*?)\];", INDEX_HTML, re.S)
-    assert literal, "ACTION_ATTRIBUTES is gone from index.html"
+    literal = re.search(r"const ACTION_ATTRIBUTES = \[(.*?)\];", SHELL_JS, re.S)
+    assert literal, "ACTION_ATTRIBUTES is gone from shell.js"
     assert re.findall(r"'([^']+)'", literal.group(1)) == ATTRIBUTES
-    assert "FORBID_ATTR: ACTION_ATTRIBUTES" in INDEX_HTML
+    assert "FORBID_ATTR: ACTION_ATTRIBUTES" in SHELL_JS
 
 
 def test_the_dispatcher_loads_after_the_script_that_records_the_clicked_control():
-    # Capture listeners on `document` run in registration order. The inline
-    # script's listener records the clicked control (markTriggerPending reads
-    # it), and an inline onclick always ran after every capture listener.
-    tracker = INDEX_HTML.index("_lastClickedControl = event.target")
-    dispatcher = INDEX_HTML.index(f'<script src="{ACTIONS_TAG}"')
-    assert dispatcher > tracker
+    # Capture listeners on `document` run in registration order. shell.js's
+    # listener records the clicked control (markTriggerPending reads it), and
+    # an inline onclick always ran after every capture listener.
+    assert "_lastClickedControl = event.target" in SHELL_JS
+    # Deferred scripts run in document order, so both must be `defer`red: a
+    # synchronous actions.js would run first and register its listener first.
+    shell = INDEX_HTML.index(f'<script defer src="{SHELL_TAG}"')
+    dispatcher = INDEX_HTML.index(f'<script defer src="{ACTIONS_TAG}"')
+    assert dispatcher > shell
 
 
 def test_every_page_with_a_dispatcher_attribute_loads_the_dispatcher():

@@ -56,6 +56,24 @@ class TestSentryBrowserIntegration:
         assert '"preview"' in html
         assert '"abc123def"' in html
 
+    def test_sdk_is_deferred_and_early_errors_are_queued(self, monkeypatch, test_client):
+        """A synchronous cross-origin <script> in the head held the first paint
+        for a DNS + TLS + download round. Both Sentry scripts are `defer`red (in
+        order, ahead of the module scripts); an inline queue catches what is
+        thrown before they run, and sentry-init.js hands it to the SDK."""
+        import re
+
+        import app as flask_app_module
+
+        monkeypatch.setattr(flask_app_module, "SENTRY_DSN_BROWSER", "https://fakekey@o1.ingest.us.sentry.io/1")
+        html = test_client.get("/").get_data(as_text=True)
+
+        sdk = re.search(r'<script\b[^>]*browser\.sentry-cdn\.com[^>]*>', html).group(0)
+        init = re.search(r'<script\b[^>]*sentry-init\.js[^>]*>', html).group(0)
+        assert re.search(r"\sdefer(\s|>)", sdk) and re.search(r"\sdefer(\s|>)", init)
+        queue = html.index("w.__shelahEarlyErrors=[]")
+        assert queue < html.index(sdk) < html.index(init) < html.index('<script type="module"')
+
     def test_set_dsn_does_not_load_replay_bundle(self, monkeypatch, test_client):
         """Deviation 6: omit the Replay integration entirely
         rather than zeroing its sample rates — verified by pinning the

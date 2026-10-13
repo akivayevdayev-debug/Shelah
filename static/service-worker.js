@@ -34,6 +34,7 @@ const CORE_ASSETS = [
     "/static/offline.html",
     "/manifest.webmanifest",
     "/service-worker.js",
+    "/static/js/shell.js",
     "/static/js/main.js",
     "/static/js/state.js",
     "/static/js/ai-service.js",

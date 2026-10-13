@@ -1,6 +1,6 @@
 """The AI answer's community-customs list names each community by the `name`
 in its customs/*.json file (backend/customs.py), and the Hebrew interface
-renders it through COMMUNITY_HE_MAP in templates/index.html. A new or renamed
+renders it through COMMUNITY_HE_MAP in static/js/shell.js. A new or renamed
 customs file with no entry there leaves its name in Latin letters in an
 otherwise Hebrew answer, so this keeps the two in step."""
 
@@ -15,9 +15,9 @@ _NOT_COMMUNITIES = {"schema.json", "customs_db.json"}
 
 
 def _community_he_map_keys() -> set[str]:
-    html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+    html = (ROOT / "static" / "js" / "shell.js").read_text(encoding="utf-8")
     block = re.search(r"const COMMUNITY_HE_MAP = \{(.*?)\n        \};", html, re.DOTALL)
-    assert block, "COMMUNITY_HE_MAP not found in templates/index.html"
+    assert block, "COMMUNITY_HE_MAP not found in static/js/shell.js"
     return set(re.findall(r"^\s*'([^']+)':\s*'[^']+',?\s*$", block.group(1), re.MULTILINE))
 
 

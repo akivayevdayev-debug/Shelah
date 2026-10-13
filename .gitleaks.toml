@@ -1,0 +1,18 @@
+# Used by the gitleaks hook in .pre-commit-config.yaml (and so by CI, which runs
+# the same hooks). Everything in gitleaks' default ruleset stays on; the one
+# allowlist entry below is a known false positive (docs/SECURITY.md, "gitleaks"
+# scan note).
+
+title = "Sh'elah gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Names of localStorage flags, not credentials"
+# static/js/shell.js: `const migrationKey = 'shelah-sw-v3-migrated'` (and the v2
+# name). The service worker's one-time cache-migration flag; generic-api-key
+# matches it only because the constant is called "...Key".
+regexes = [
+    '''shelah-sw-v[0-9]+-migrated''',
+]

@@ -33,8 +33,10 @@
  * one of these. (An inline onclick would have been stripped; a data attribute
  * is not.)
  *
- * Loaded as a plain classic <script> so it is live before the page's own
- * (large) inline script has finished parsing. Also loadable from Node for
+ * Loaded as a plain classic <script defer>, right after shell.js (the page's
+ * main script): both run in document order before DOMContentLoaded, and this
+ * listener has to be registered after shell.js's (see "Click handlers" in
+ * docs/FRONTEND.md). Also loadable from Node for
  * tests_js/actions.test.js.
  */
 (function (root) {

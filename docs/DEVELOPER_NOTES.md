@@ -18,7 +18,7 @@ A practical map for someone about to change the code: what runs where, which fil
 ## 1. Runtime flow
 
 1. A browser requests `/` (or any deep-link path such as `/library/...`, `/siddur/...`, `/conversations/...`). Flask renders `templates/index.html`; `backend/page_meta.py` fills the per-URL `<head>` values and `backend/routes_spa_paths.py` serves the path deep links.
-2. The page is a single-page app with no bundler. A classic inline script in `templates/index.html` owns most of the UI; ES modules under `static/js/` own the newer surfaces and meet the inline script through `window.Shelah*` bridges (see [`FRONTEND.md`](FRONTEND.md)).
+2. The page is a single-page app with no bundler. A classic deferred script, `static/js/shell.js` (loaded by `templates/index.html`), owns most of the UI; ES modules under `static/js/` own the newer surfaces and meet it through `window.Shelah*` bridges (see [`FRONTEND.md`](FRONTEND.md)).
 3. The page calls `/api/*` for texts, the library, prayers and the siddur, zmanim, holidays, the parasha, communities, bookmarks, history and conversations, and `POST /ask` for AI answers.
 4. In production the whole app is one Vercel function (`api/index.py` re-exports `asgi.app`). FastAPI serves only `POST /ask` and `GET /api/async/health` natively; every other route is Flask, mounted through `WSGIMiddleware`. Request handling therefore has two worlds:
    - **Async** (`asgi.py`, `backend/ask_pipeline.py`, `backend/claude.py`'s async entry points): must never block the event loop. Use `asyncio.to_thread` or async `httpx`.

@@ -316,3 +316,62 @@ test('isOffOriginNoise treats an unparseable frame filename as same-origin (fail
     };
     assert.equal(sentryInit.isOffOriginNoise(event, ALLOWED_ORIGIN), false);
 });
+
+// ── flushEarlyErrors (errors thrown while the deferred SDK was still loading) ─
+
+test('flushEarlyErrors reports what the head queue caught, stops the queue and empties it', () => {
+    const captured = [];
+    let stopped = 0;
+    const boom = new Error('boom');
+    withGlobals({
+        __shelahEarlyErrors: [boom, 'a message', undefined],
+        __shelahEarlyErrorsStop: () => { stopped += 1; },
+    }, () => {
+        sentryInit.flushEarlyErrors({ captureException: (err) => { captured.push(err); } });
+        assert.deepEqual(globalThis.__shelahEarlyErrors, []);
+    });
+    assert.deepEqual(captured, [boom, 'a message', undefined]);
+    assert.equal(stopped, 1);
+});
+
+test('flushEarlyErrors is harmless with no queue, no stop hook or no captureException', () => {
+    withGlobals({ __shelahEarlyErrors: undefined, __shelahEarlyErrorsStop: undefined }, () => {
+        assert.doesNotThrow(() => sentryInit.flushEarlyErrors({ captureException() {} }));
+    });
+    let stopped = 0;
+    withGlobals({ __shelahEarlyErrors: [new Error('x')], __shelahEarlyErrorsStop: () => { stopped += 1; } }, () => {
+        assert.doesNotThrow(() => sentryInit.flushEarlyErrors({}));
+    });
+    assert.equal(stopped, 1);
+});
+
+test('flushEarlyErrors keeps going when the SDK throws on one of them', () => {
+    const captured = [];
+    withGlobals({ __shelahEarlyErrors: ['first', 'second'], __shelahEarlyErrorsStop: () => {} }, () => {
+        sentryInit.flushEarlyErrors({
+            captureException: (err) => {
+                if (err === 'first') throw new Error('sdk failure');
+                captured.push(err);
+            },
+        });
+    });
+    assert.deepEqual(captured, ['second']);
+});
+
+test('initSentry reports the queued early errors once the SDK is initialised', () => {
+    const order = [];
+    const sentry = {
+        init: () => { order.push('init'); },
+        captureException: (err) => { order.push(`capture:${err}`); },
+    };
+    withGlobals({
+        Sentry: sentry,
+        __SHELAH_SENTRY_DSN__: 'https://example.ingest.sentry.io/1',
+        location: { origin: 'https://shelah.org' },
+        __shelahEarlyErrors: ['early'],
+        __shelahEarlyErrorsStop: () => { order.push('stop'); },
+    }, () => {
+        sentryInit.initSentry();
+    });
+    assert.deepEqual(order, ['init', 'stop', 'capture:early']);
+});

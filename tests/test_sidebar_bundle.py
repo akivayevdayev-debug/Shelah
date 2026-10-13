@@ -468,8 +468,8 @@ class TestSidebarRoute:
 
 
 def test_commentary_priority_matches_the_client_list():
-    html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+    html = (ROOT / "static" / "js" / "shell.js").read_text(encoding="utf-8")
     block = re.search(r"const COMMENTARY_PRIORITY = \[(.*?)\];", html, re.DOTALL)
-    assert block, "COMMENTARY_PRIORITY not found in templates/index.html"
+    assert block, "COMMENTARY_PRIORITY not found in static/js/shell.js"
     client = [a or b for a, b in re.findall(r"'([^']*)'|\"([^\"]*)\"", block.group(1))]
     assert tuple(client) == sb.COMMENTARY_PRIORITY

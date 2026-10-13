@@ -87,6 +87,13 @@ graphify-out/
 # read a config file that was never actually version-controlled.
 !.pa11yci.json
 
+# gitleaks config (one allowlist entry for a known false positive: a
+# localStorage flag called "...Key"), read by the gitleaks hook in
+# .pre-commit-config.yaml and so by CI -- without this exception the blanket
+# `.*` rule above keeps it out of every commit and the hook falls back to its
+# defaults, which flag that string.
+!.gitleaks.toml
+
 # Python 3.14 migration (2026-08-21): pins the interpreter version for
 # Vercel (https://vercel.com/docs/functions/runtimes/python/python-version)
 # and any local `pyenv`/`uv`-aware tooling -- without this exception the
