@@ -1,8 +1,8 @@
-{#- Shared footer for the About/Help/Glossary trio, which cross-link to each
+{#- Shared footer for the About/Help/Glossary/Tanakh pages, which cross-link to each
     other (skipping whichever one is the current page) before the standard
     legal links. Set via {% with current='about' %}{% include
     'components/site_footer.html' %}{% endwith %} (current is one of 'about',
-    'help', 'glossary'). about.html additionally passes show_copyright=true
+    'help', 'glossary', 'tanakh'). about.html additionally passes show_copyright=true
     to render the copyright line the other two pages omit. -#}
 <footer class="border-t py-6 text-center text-xs"
         style="border-color: var(--surface-border); color: var(--ink-secondary); background: var(--surface-1);">
@@ -27,6 +27,11 @@
             {%- if current != 'glossary' %}
             <a href="/glossary" class="hover:underline" style="color: var(--ink-secondary);"
                 data-en="Glossary" data-he="מילון מונחים">Glossary</a>
+            &nbsp;·&nbsp;
+            {%- endif %}
+            {%- if current != 'tanakh' %}
+            <a href="/tanakh" class="hover:underline" style="color: var(--ink-secondary);"
+                data-en="Tanakh" data-he="תנ״ך">Tanakh</a>
             &nbsp;·&nbsp;
             {%- endif %}
             <a href="/terms" class="hover:underline font-medium" style="color: var(--ink-heading);"

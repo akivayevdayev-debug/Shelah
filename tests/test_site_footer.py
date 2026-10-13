@@ -1,10 +1,10 @@
-"""about.html, help.html, and glossary.html share
-templates/components/site_footer.html, which cross-links the other two of
-the trio (skipping whichever is the current page) before the standard legal
-links. Driven by a `current` variable each page sets via {% with
-current='<page>' %} -- Jinja treats an unset or mistyped `current` as an
-ordinary falsy value, so a page that forgets it (or misspells it) would
-render a footer that links to itself, or omits a sibling, with no error.
+"""about.html, help.html, glossary.html and tanakh.html share
+templates/components/site_footer.html, which cross-links the other three
+(skipping whichever is the current page) before the standard legal links.
+Driven by a `current` variable each page sets via {% with current='<page>'
+%} -- Jinja treats an unset or mistyped `current` as an ordinary falsy value,
+so a page that forgets it (or misspells it) would render a footer that links
+to itself, or omits a sibling, with no error.
 These tests make that failure loud, mirroring test_legal_footer.py's
 coverage of the analogous seven-legal-page component.
 """
@@ -15,7 +15,7 @@ import re
 
 import pytest
 
-TRIO_PAGES = ["about", "help", "glossary"]
+SIBLING_PAGES = ["about", "help", "glossary", "tanakh"]
 _LEGAL_LINKS = ["/terms", "/privacy", "/ai-disclosure", "/acceptable-use", "/dmca", "/accessibility", "/licenses"]
 
 _LINK = re.compile(r'<a href="(?P<href>[^"]*)"(?P<attrs>[^>]*)>', re.DOTALL)
@@ -27,19 +27,19 @@ def _footer_links(html: str):
     return [(m.group("href"), m.group("attrs")) for m in _LINK.finditer(footer.group(0))]
 
 
-@pytest.mark.parametrize("page", TRIO_PAGES)
-def test_footer_links_to_the_other_two_of_the_trio_and_every_legal_page(test_client, page):
+@pytest.mark.parametrize("page", SIBLING_PAGES)
+def test_footer_links_to_the_other_siblings_and_every_legal_page(test_client, page):
     links = _footer_links(test_client.get(f"/{page}").get_data(as_text=True))
     hrefs = [href for href, _ in links]
 
-    siblings = [f"/{p}" for p in TRIO_PAGES if p != page]
+    siblings = [f"/{p}" for p in SIBLING_PAGES if p != page]
     assert hrefs == ["/"] + siblings + _LEGAL_LINKS
 
     # The page never links to itself.
     assert f"/{page}" not in siblings
 
 
-@pytest.mark.parametrize("page", TRIO_PAGES)
+@pytest.mark.parametrize("page", SIBLING_PAGES)
 def test_terms_of_service_is_always_emphasised_regardless_of_current_page(test_client, page):
     links = _footer_links(test_client.get(f"/{page}").get_data(as_text=True))
     attrs_by_href = dict(links)

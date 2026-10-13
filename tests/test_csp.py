@@ -27,6 +27,7 @@ HTML_ROUTES = [
     "/privacy",
     "/help",
     "/glossary",
+    "/tanakh",
     "/licenses",
     "/dmca",
     "/accessibility",

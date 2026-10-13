@@ -42,6 +42,7 @@ _SITEMAP_PATHS = [
     ("/about", "monthly", "0.6"),
     ("/help", "monthly", "0.6"),
     ("/glossary", "monthly", "0.6"),
+    (page_meta.TANAKH_HUB_PATH, "monthly", "0.7"),
     ("/terms", "yearly", "0.3"),
     ("/privacy", "yearly", "0.3"),
     ("/ai-disclosure", "yearly", "0.3"),
@@ -67,6 +68,32 @@ _TANAKH_CHAPTERS = (
     ("Daniel", 12), ("Ezra", 10), ("Nehemiah", 13), ("I Chronicles", 29),
     ("II Chronicles", 36),
 )
+
+
+# The three divisions of the Tanakh, as consecutive runs of _TANAKH_CHAPTERS:
+# (English name, Hebrew name, number of books).
+_TANAKH_DIVISIONS = (
+    ("Torah", "תורה", 5),
+    ("Prophets", "נביאים", 21),
+    ("Writings", "כתובים", 13),
+)
+
+
+def _tanakh_hub_divisions():
+    """The hub page's data: each division with its books and, for every
+    chapter, the canonical /text/ path. Static, like the sitemap."""
+    divisions, start = [], 0
+    for name_en, name_he, book_count in _TANAKH_DIVISIONS:
+        books = [
+            {
+                "name": book,
+                "chapters": [(chapter, page_meta.text_path(f"{book} {chapter}")) for chapter in range(1, chapters + 1)],
+            }
+            for book, chapters in _TANAKH_CHAPTERS[start:start + book_count]
+        ]
+        divisions.append({"name_en": name_en, "name_he": name_he, "books": books})
+        start += book_count
+    return divisions
 
 
 def _library_sitemap_paths():
@@ -147,6 +174,18 @@ def glossary():
     )
 
 
+@routes_pages.route(page_meta.TANAKH_HUB_PATH, methods=["GET"])
+def tanakh_hub():
+    """A plain-HTML index of every Tanakh chapter: real links to /text/<ref>
+    that a crawler (or a visitor without JavaScript) can follow."""
+    return render_template(
+        "tanakh.html",
+        divisions=_tanakh_hub_divisions(),
+        clerk_publishable_key=CLERK_PUBLISHABLE_KEY,
+        clerk_enforce_auth=CLERK_ENFORCE_AUTH,
+    )
+
+
 @routes_pages.route("/robots.txt", methods=["GET"])
 def robots_txt():
     lines = [
@@ -173,6 +212,7 @@ _LLMS_PAGES = {
     "/about": ("About", "About Sh'elah", "A solo-built Torah library with community-aware customs and an AI assistant that cites primary sources and points back to your rabbi."),
     "/help": ("About", "Help", "How to ask a good question, what the answer modes mean, reader features like Shul Mode and bookmarks, and a tour of the calendar and zmanim."),
     "/glossary": ("About", "Glossary", "Halachic terms such as kezayit, muktzeh and eruv, defined the way the AI assistant defines them."),
+    page_meta.TANAKH_HUB_PATH: ("Library", "Tanakh chapters", "Every chapter of the Hebrew Bible, book by book, each linking to its Hebrew and English text."),
     "/ai-disclosure": ("About", "AI disclosure", "Which AI models are used, how retrieval works, the risk of hallucination, and what the AI does not do."),
     "/terms": ("Legal and policies", "Terms of service", "The rules, disclaimers and legal terms for using the service."),
     "/privacy": ("Legal and policies", "Privacy policy", "What data is collected, how it is used, who it is shared with, and your rights."),

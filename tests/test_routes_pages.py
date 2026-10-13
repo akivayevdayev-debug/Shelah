@@ -5,6 +5,7 @@ Covers:
   - GET /about      -> HTML
   - GET /help       -> HTML
   - GET /glossary   -> HTML, renders glossary.json entries
+  - GET /tanakh     -> HTML hub of plain links to every chapter
   - GET /robots.txt -> text/plain, references sitemap
   - GET /sitemap.xml -> application/xml, lists stable public routes
 """
@@ -50,6 +51,75 @@ class TestGlossaryRoute:
         html = test_client.get("/glossary").get_data(as_text=True)
         assert "Kezayit" in html
         assert "Muktzeh" in html
+
+
+class TestTanakhHub:
+    """/tanakh is the crawlable door into the library: every chapter as a real
+    <a href>, in the page's HTML with no script needed."""
+
+    @staticmethod
+    def _chapter_links(html):
+        import re
+
+        return re.findall(r'<a href="(/text/[^"]+)">', html)
+
+    def test_returns_html(self, test_client):
+        response = test_client.get("/tanakh")
+        assert response.status_code == 200
+        assert "text/html" in response.content_type.lower()
+
+    def test_links_every_chapter_once_in_book_order(self, test_client):
+        from backend import page_meta
+        from backend.routes_pages import _TANAKH_CHAPTERS
+
+        links = self._chapter_links(test_client.get("/tanakh").get_data(as_text=True))
+        expected = [page_meta.text_path(f"{book} {n}") for book, count in _TANAKH_CHAPTERS for n in range(1, count + 1)]
+        assert links == expected
+        assert len(links) == 929
+
+    def test_the_links_are_the_sitemaps_canonical_urls(self, test_client):
+        import re
+
+        sitemap = test_client.get("/sitemap.xml").get_data(as_text=True)
+        listed = {loc[len("https://shelah.org"):] for loc in re.findall(r"<loc>(.*?)</loc>", sitemap)
+                  if loc.startswith("https://shelah.org/text/")}
+        assert set(self._chapter_links(test_client.get("/tanakh").get_data(as_text=True))) == listed
+
+    def test_every_link_names_its_book_for_readers_and_crawlers(self, test_client):
+        """The drawn label is the chapter number; the book is in the link text
+        (visually hidden) so "1" is "Genesis 1" to a screen reader or a crawler."""
+        html = test_client.get("/tanakh").get_data(as_text=True)
+        assert '<a href="/text/Genesis.1"><span class="visually-hidden">Genesis </span>1</a>' in html
+        assert '<a href="/text/II_Chronicles.36"><span class="visually-hidden">II Chronicles </span>36</a>' in html
+
+    def test_divisions_partition_the_books(self):
+        from backend.routes_pages import _TANAKH_CHAPTERS, _TANAKH_DIVISIONS, _tanakh_hub_divisions
+
+        assert sum(count for _en, _he, count in _TANAKH_DIVISIONS) == len(_TANAKH_CHAPTERS)
+        divisions = _tanakh_hub_divisions()
+        assert [d["name_en"] for d in divisions] == ["Torah", "Prophets", "Writings"]
+        flat = [book["name"] for d in divisions for book in d["books"]]
+        assert flat == [book for book, _count in _TANAKH_CHAPTERS]
+        assert [b["name"] for b in divisions[0]["books"]] == ["Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy"]
+        assert divisions[1]["books"][0]["name"] == "Joshua" and divisions[1]["books"][-1]["name"] == "Malachi"
+        assert divisions[2]["books"][0]["name"] == "Psalms" and divisions[2]["books"][-1]["name"] == "II Chronicles"
+
+    def test_is_canonical_in_the_sitemap_and_llms_txt(self, test_client):
+        html = test_client.get("/tanakh").get_data(as_text=True)
+        assert '<link rel="canonical" href="https://shelah.org/tanakh">' in html
+        assert "<loc>https://shelah.org/tanakh</loc>" in test_client.get("/sitemap.xml").get_data(as_text=True)
+        assert "(https://shelah.org/tanakh)" in test_client.get("/llms.txt").get_data(as_text=True)
+
+    def test_is_linked_from_home_and_the_site_pages(self, test_client):
+        """Reachable by following links alone: the app shell's footer and the
+        footer shared by the About/Help/Glossary pages both point at it."""
+        for page in ("/", "/about", "/help", "/glossary"):
+            assert 'href="/tanakh"' in test_client.get(page).get_data(as_text=True), page
+
+    def test_text_pages_breadcrumb_points_at_it(self, test_client):
+        """The BreadcrumbList on a chapter page names this hub as a step."""
+        html = test_client.get("/text/Genesis.1").get_data(as_text=True)
+        assert "https://shelah.org/tanakh" in html
 
 
 class TestRobotsTxtRoute:
@@ -226,7 +296,7 @@ class TestNewPagesLinkToLegalFooter:
     the cross-linking convention tests/test_routes_legal.py enforces for the
     legal pages themselves."""
 
-    NEW_PAGES = ["/about", "/help", "/glossary"]
+    NEW_PAGES = ["/about", "/help", "/glossary", "/tanakh"]
     LEGAL_PATHS = [
         "/terms", "/privacy", "/ai-disclosure", "/acceptable-use",
         "/dmca", "/accessibility", "/licenses",

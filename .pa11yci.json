@@ -18,6 +18,7 @@
     "http://127.0.0.1:5001/ai-disclosure",
     "http://127.0.0.1:5001/acceptable-use",
     "http://127.0.0.1:5001/dmca",
-    "http://127.0.0.1:5001/licenses"
+    "http://127.0.0.1:5001/licenses",
+    "http://127.0.0.1:5001/tanakh"
   ]
 }
