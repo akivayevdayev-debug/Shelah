@@ -82,11 +82,14 @@ Use the project virtualenv (`.venv`); the local Python version is pinned in `.py
 | JS coverage (as CI runs it) | `npm run test:coverage` |
 | Lint | `.venv/bin/ruff check .` |
 | Rebuild Tailwind | `npm run build:css` |
+| Rebuild `static/min/` (after editing a stylesheet or script) | `npm run build:assets`, then `npm run build:critical` if a stylesheet or page markup changed |
+| Check `static/min/` is current (CI) | `npm run check:assets` |
 | Accessibility scan, both themes | `npm run test:a11y` |
 | Stack health, live services | `.venv/bin/python scripts/verify_integrations.py` |
 
 Notes:
 
+- The page serves `static/min/` (minified CSS/JS, critical CSS inlined) only while its manifest matches the sources; an unbuilt edit silently falls back to the originals. Set `SHELAH_SOURCE_ASSETS=1` to always serve the originals while developing, and run the two build commands before committing (`docs/FRONTEND.md` §1).
 - Use `asgi-dev` when you touch `/ask`. The Flask-only server answers `/ask` through the sync copy in `app.py`, which has no per-stage ceilings, no progress stream and no `RateLimitMiddleware` (that is registered once, in `asgi.py`).
 - `uvicorn --reload` can miss edits to `templates/index.html`. When a template change does not appear, restart the server fully.
 - A local `/ask` returns 429 when Redis is not configured, because the `llm` rate-limit class fails closed. Set `RATE_LIMIT_REDIS_URL` (see `.env.example`) or test through the unit suite.

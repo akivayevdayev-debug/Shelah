@@ -143,7 +143,7 @@ Notes:
 | `backend/zmanim_engine.py`, `backend/calendar_service.py` | Zmanim and the Hebrew calendar (pyluach first, Hebcal cross-checks); month events for FullCalendar |
 | `backend/siddur_data.py`, `siddur_day.py`, `siddur_lines.py` | The checked-in siddur (`data/siddur/`), what changes on a Hebrew day, and typed lines |
 | `backend/cache.py`, `backend/cache_policy.py` | A bounded TTL/LRU cache with an optional Redis tier; the single source of truth for `Cache-Control` tiers |
-| `backend/page_meta.py`, `backend/module_versions.py` | Per-URL `<head>` values for the SPA shell; content-hashed ES module URLs and the import map |
+| `backend/page_meta.py`, `backend/module_versions.py` | Per-URL `<head>` values for the SPA shell; content-hashed ES module URLs and the import map; serves the committed `static/min/` build (minified CSS and scripts, critical CSS) while its manifest matches the sources |
 | `backend/health_check.py` | Circuit breakers for Sefaria, Hebcal, Gemini and Claude (per process); state shown by `/api/devtools/reliability` |
 | `backend/logging_setup.py` | JSON logging, request/user/client contextvars, Sentry init and scrubbing, `log_mitigation` |
 | `backend/ref_aliases.py`, `backend/citation_markers.py`, `backend/ask_payloads.py`, `backend/ask_progress.py` | Mishneh Torah spelling aliases; numbered source markers; the response-body builders shared by both ask transports; live progress events |
