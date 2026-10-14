@@ -457,6 +457,28 @@ test('scripts are network-first: a new deploy\'s module runs on the first load a
 });
 
 
+test('the minified build (static/min/js) is network-first like the originals', async (t) => {
+    let deploy = 1;
+    let online = true;
+    const { dispatch } = loadWorker(t, {
+        fetchImpl: async () => {
+            if (!online) throw new TypeError('offline');
+            return new Response(`export const v = ${deploy};`, { status: 200 });
+        },
+    });
+    for (const path of ['/static/min/js/main.js?v=aaaaaaaaaaaa', '/static/min/js/chunks/chunk-ABC123.js']) {
+        deploy = 1;
+        online = true;
+        await dispatch(path);
+        deploy = 2;
+        const next = await dispatch(path);
+        assert.equal(await next.response.text(), 'export const v = 2;', `${path}: the fresh copy, not the cached one`);
+        assert.equal(next.waited, 0, `${path}: no background refresh`);
+        online = false;
+        assert.equal(await (await dispatch(path)).response.clone().text(), 'export const v = 2;', `${path}: offline, the cached copy`);
+    }
+});
+
 
 // ── The siddur, kept for offline use (R6) ─────────────────────────────────
 

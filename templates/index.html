@@ -179,14 +179,33 @@
          bytes (backend/module_versions.py), so a deploy's main.js never runs
          an old router.js from a cache (audit L-10). Before any module loads. -->
     <script type="importmap">{{ module_import_map | tojson }}</script>
-    <script src="{{ asset_url('js/topbar_shared.js') }}"></script>
-    <script src="{{ asset_url('js/hebrew-ref.js') }}"></script>
-    <script src="{{ asset_url('js/community-labels.js') }}"></script>
+    <!-- Stylesheets marked data-async-css are fetched without holding the first
+         paint (media="print" until they have loaded, then this listener makes them
+         apply). The listener comes before the first of them, and a capture listener
+         on document is what sees a <link>'s load event, which does not bubble.
+         window.ShelahStyles.ready settles once the one marked data-css-gate (the
+         full stylesheet bundle behind the inlined critical CSS) has applied -- or
+         failed, or four seconds have passed: whatever builds markup the critical
+         CSS never saw (a deep-linked view) waits for it so that markup never
+         shows unstyled. With no such link (the originals are linked below) it is
+         already settled. -->
+    <script>(function(d,w){var s=function(){},p=new Promise(function(r){s=r});w.ShelahStyles={ready:p};function gate(t){return t&&t.tagName==='LINK'&&t.hasAttribute('data-css-gate')}d.addEventListener('load',function(e){var t=e.target;if(t&&t.tagName==='LINK'&&t.hasAttribute('data-async-css')){t.media='all';if(gate(t))s()}},true);d.addEventListener('error',function(e){if(gate(e.target)){e.target.media='all';s()}},true);d.addEventListener('DOMContentLoaded',function(){if(!d.querySelector('link[data-css-gate]'))s()});setTimeout(s,4000)})(document,window)</script>
+    <!-- topbar_shared.js and hebrew-ref.js are inline: the body's own inline scripts
+         call swapPendingLanguage() and window.ShelahHebrewRef while the parser is
+         still reading, so an external file here would be a blocking request ahead
+         of the first paint. -->
+    <script>{{ inline_asset('js/topbar_shared.js') }}</script>
+    <script>{{ inline_asset('js/hebrew-ref.js') }}</script>
+    <script defer src="{{ asset_url('js/community-labels.js') }}"></script>
     <!-- window.ShelahLoadRegion: how async regions load, fail and retry (audit L-8). -->
-    <script src="{{ asset_url('js/load-region.js') }}"></script>
-    <!-- Scholarly Typography -->
+    <script defer src="{{ asset_url('js/load-region.js') }}"></script>
+    <!-- Scholarly Typography. Swapped in after it loads (display=swap, so text is
+         never held for it); the metric-matched fallbacks in tokens.css keep that
+         swap from moving the page. -->
     <link href="https://fonts.googleapis.com/css2?family=Cardo:wght@400;700&family=Inter:wght@400;500;600&display=swap"
-        rel="stylesheet">
+        rel="stylesheet" media="print" data-async-css>
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Cardo:wght@400;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet"></noscript>
     <script defer src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"
             integrity="sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+"
             crossorigin="anonymous"></script>
@@ -194,9 +213,24 @@
     <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.4.9/dist/purify.min.js"
             integrity="sha384-6ZdfL2Azuen6KYvcTkbxqJS1d7txbNWrVfmURkxNeCn7DtzhLRL6Fi6WGG6ZLdKn"
             crossorigin="anonymous"></script>
+    {% set css = page_css(css_kind) %}
+    {% if css and css.critical %}
+    <!-- The CSS the first paint of this kind of page uses, inline (the paint no
+         longer waits for a stylesheet request), and the whole stylesheet bundle
+         behind it, which applies as soon as it has loaded. The bundle holds
+         every sheet listed in the fallback below, in that order, minified; the
+         critical CSS is the subset of it that matches the server-rendered page
+         (scripts/build_critical_css.mjs, npm run build:critical). -->
+    <style>{{ inline_asset(css.critical, 'style') }}</style>
+    <link rel="stylesheet" href="{{ css.bundle }}" media="print" data-async-css data-css-gate>
+    <noscript><link rel="stylesheet" href="{{ css.bundle }}"></noscript>
+    {% elif css %}
+    <link rel="stylesheet" href="{{ css.bundle }}">
+    {% else %}
+    <!-- The originals, in cascade order (scripts/build_assets.mjs CSS_ORDER; a test
+         keeps the two lists equal). Used while static/min/ is not current. -->
     <link rel="stylesheet" href="{{ asset_url('css/tokens.css') }}">
     <link rel="stylesheet" href="{{ asset_url('style.css') }}">
-    <!-- CSS modules (supplement style.css; do not replace) -->
     <link rel="stylesheet" href="{{ asset_url('css/typography.css') }}">
     <link rel="stylesheet" href="{{ asset_url('css/reader.css') }}">
     <link rel="stylesheet" href="{{ asset_url('css/sidebar.css') }}">
@@ -209,8 +243,8 @@
     <link rel="stylesheet" href="{{ asset_url('css/calendar.css') }}">
     <link rel="stylesheet" href="{{ asset_url('css/calendar-detail.css') }}">
     <link rel="stylesheet" href="{{ asset_url('css/loading.css') }}">
-    <!-- Tailwind CSS (pre-built; loads last so utilities override custom CSS — mirrors CDN runtime cascade behavior) -->
     <link rel="stylesheet" href="{{ asset_url('css/tailwind.css') }}">
+    {% endif %}
 
     <!-- FullCalendar -->
     <script defer src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"
@@ -2755,7 +2789,7 @@
             crossorigin="anonymous"></script>
     <script defer src="{{ asset_url('js/clerk-appearance.js') }}"></script>
     <script type="module" src="{{ module_url('motion.js') }}"></script>
-    <script type="module" src="{{ asset_url('js/calendar-detail.js') }}"></script>
+    <script type="module" src="{{ module_url('calendar-detail.js') }}"></script>
     <script type="module" src="{{ module_url('main.js') }}"></script>
 </body>
 

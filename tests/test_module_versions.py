@@ -72,6 +72,13 @@ class TestImportMap:
         assert module_versions.module_url("missing.js") == "/static/js/missing.js"
 
 
+@pytest.fixture
+def source_assets(monkeypatch):
+    """Serve the originals under static/js and static/css, not static/min/."""
+    monkeypatch.setenv("SHELAH_SOURCE_ASSETS", "1")
+
+
+@pytest.mark.usefixtures("source_assets")
 class TestShell:
     def test_the_real_modules_are_all_mapped(self):
         imports = module_versions.import_map()["imports"]
@@ -131,9 +138,12 @@ class TestAssetUrl:
 
 
 class TestShellAssetTags:
-    def test_every_stylesheet_and_script_tag_carries_a_content_hash(self, test_client):
+    @pytest.mark.parametrize("mode", ["source", "min"])
+    def test_every_stylesheet_and_script_tag_carries_a_content_hash(self, test_client, monkeypatch, mode):
+        if mode == "source":
+            monkeypatch.setenv("SHELAH_SOURCE_ASSETS", "1")
         html = test_client.get("/").get_data(as_text=True)
-        tags = re.findall(r'(?:href|src)="(/static/(?:css/|js/)?[\w.-]+\.(?:css|js))(\?v=[^"]*)?"', html)
+        tags = re.findall(r'(?:href|src)="(/static/(?:min/)?(?:css/|js/|js/chunks/)?[\w.-]+\.(?:css|js))(\?v=[^"]*)?"', html)
         assert tags
         unversioned = [path for path, query in tags if not query]
         hand_versioned = [path + q for path, q in tags if q and not module_versions.is_content_hash(q[3:])]

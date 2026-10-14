@@ -8,7 +8,7 @@
     - The siddur, whole, for offline use once a reader opens it.
 */
 
-const CACHE_VERSION = "v23-20260925";
+const CACHE_VERSION = "v24-20261013";
 const SHELL_CACHE = `shelah-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `shelah-runtime-${CACHE_VERSION}`;
 const API_CACHE = `shelah-api-${CACHE_VERSION}`;
@@ -30,16 +30,16 @@ const CORE_ASSETS = [
     "/static/apple-touch-icon.png",
     "/static/favicon-192.png",
     "/static/favicon-512.png",
-    "/static/style.css",
     "/static/offline.html",
     "/manifest.webmanifest",
     "/service-worker.js",
-    "/static/js/shell.js",
-    "/static/js/main.js",
-    "/static/js/state.js",
-    "/static/js/ai-service.js",
-    "/static/js/reader-ui.js",
-    "/static/js/zmanim.js",
+    // The minified build the page serves (scripts/build_assets.mjs): the
+    // stylesheet bundle, the page script and the module entries. The chunks
+    // the entries import (content-hashed names) are kept as they are fetched.
+    "/static/min/css/app.css",
+    "/static/min/js/shell.js",
+    "/static/min/js/main.js",
+    "/static/min/js/motion.js",
 ];
 
 const PRIVATE_API_PREFIXES = [
@@ -165,7 +165,7 @@ async function networkFirstApi(request, offlineResponse) {
 // cache still answers a fresh copy without a round trip. Offline, this exact
 // version comes from the cache, else the last version seen of that file.
 function isScript(pathname) {
-    return pathname.startsWith("/static/js/") && pathname.endsWith(".js");
+    return (pathname.startsWith("/static/js/") || pathname.startsWith("/static/min/js/")) && pathname.endsWith(".js");
 }
 
 async function networkFirstScript(request) {

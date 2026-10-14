@@ -110,6 +110,14 @@ jobs:
         # that puppeteer version is pinned to into ~/.cache/puppeteer.
         run: npx --no-install puppeteer browsers install chrome
 
+      - name: Minified assets are current (static/min/)
+        # static/min/ is committed build output (scripts/build_assets.mjs): the
+        # shell serves it only while its manifest matches the sources, so a stale
+        # build is a slower page rather than a wrong one -- this step is what makes
+        # it a red build instead. Fix: `npm run build:assets` (and `npm run
+        # build:critical` after a stylesheet or markup change), then commit static/min/.
+        run: npm run check:assets
+
       - name: Node unit tests (node --test)
         # Runs the whole tests_js suite. tests_js/sentry_init.test.js verifies that
         # halachic question/answer text, Clerk auth tokens, and session cookies never

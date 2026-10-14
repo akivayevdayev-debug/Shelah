@@ -756,7 +756,11 @@ def _inject_current_year():
 def _inject_asset_url():
     # Every template's stylesheets and scripts: /static/<name>?v=<hash of its
     # bytes> (backend/module_versions.py), so a changed file is a new URL.
-    return {"asset_url": module_versions.asset_url}
+    return {
+        "asset_url": module_versions.asset_url,
+        "inline_asset": module_versions.inline_asset,
+        "page_css": module_versions.page_css,
+    }
 
 
 # Configure structured JSON logging as early as possible so all log records
@@ -1220,9 +1224,13 @@ def apply_response_cache_policy(response):
         return response
 
     if path.startswith("/static/"):
-        if module_versions.is_content_hash(request.args.get("v")) and response.status_code == 200:
+        if (
+            module_versions.is_content_hash(request.args.get("v"))
+            or path.startswith("/static/min/js/chunks/")
+        ) and response.status_code == 200:
             # /static/<file>?v=<hash of its bytes> (module_versions.asset_url,
-            # the import map): this URL can never name different bytes, so the
+            # the import map), or a bundler chunk, whose file name is a hash of
+            # its bytes: this URL can never name different bytes, so the
             # browser keeps it for a year without asking again. A hand-written
             # or missing version keeps the short TTL below.
             response.headers["Cache-Control"] = STATIC_IMMUTABLE_CACHE_CONTROL
@@ -1364,6 +1372,24 @@ def index():
 VIEW_TRANSITIONS_ENABLED = (os.environ.get("VIEW_TRANSITIONS") or "").strip().lower() == "true"
 
 
+# Query keys that change nothing about the first paint: a link carrying only
+# these is the plain home page as far as the critical CSS goes.
+_PLAIN_HOME_QUERY_KEYS = {"lang", "fbclid", "gclid", "ref"}
+# /settings and /profile render the home page byte for byte (the account
+# panel is Clerk's modal, opened client-side over it).
+_HOME_SHELL_PATHS = {"/", "/settings", "/profile"}
+
+
+def _critical_css_kind(ssr_text):
+    """Which critical CSS the shell inlines (module_versions.page_css): the
+    server-rendered /text/ page, the plain home page, or any other deep link
+    (whose first paint is the home shell with a view-specific head class)."""
+    if ssr_text:
+        return "text"
+    keys = {key for key in request.args if key not in _PLAIN_HOME_QUERY_KEYS and not key.startswith("utm_")}
+    return "home" if request.path in _HOME_SHELL_PATHS and not keys else "app"
+
+
 def render_spa_shell(meta, ssr_text=None):
     """The SPA shell with this URL's title/og:url/canonical (backend/page_meta.py).
     Shared by index() and the path deep links in backend/routes_spa_paths.py.
@@ -1372,6 +1398,7 @@ def render_spa_shell(meta, ssr_text=None):
         "index.html",
         page_meta=meta,
         ssr_text=ssr_text,
+        css_kind=_critical_css_kind(ssr_text),
         view_transitions=VIEW_TRANSITIONS_ENABLED,
         module_url=module_versions.module_url,
         module_import_map=module_versions.import_map(),

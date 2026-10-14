@@ -71,7 +71,8 @@ def _head_values(html):
 
 def _shell_marker(html):
     # The SPA shell's own markers: the router's module entry and the AI panel.
-    return 'src="/static/js/main.js' in html and 'id="convPanel"' in html
+    # main.js is the bundled static/min/ copy while that build is current.
+    return bool(re.search(r'src="/static/(?:min/)?js/main\.js', html)) and 'id="convPanel"' in html
 
 
 class TestShellPaths:

@@ -51,7 +51,7 @@ class TestSentryBrowserIntegration:
 
         assert "https://browser.sentry-cdn.com/10.69.0/bundle.min.js" in html
         assert 'integrity="sha384-' in html
-        assert "/static/js/sentry-init.js" in html
+        assert re.search(r"/static/(?:min/)?js/sentry-init\.js", html)
         assert "fakekey@o1.ingest.us.sentry.io" in html
         assert '"preview"' in html
         assert '"abc123def"' in html
