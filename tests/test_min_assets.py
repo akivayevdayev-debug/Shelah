@@ -161,6 +161,49 @@ class TestShellInMinMode:
         assert "/static/js/router.js" in module_versions.import_map()["imports"]
 
 
+class TestLazyThirdPartyLibraries:
+    """FullCalendar, Motion and Clerk are fetched by window.ShelahLibs when
+    something asks for them, not by <script> tags in the page. The loader keeps
+    every SRI hash the tags had, and (like any inline script) is hashed into the
+    page's CSP by tests/test_csp.py."""
+
+    LIBRARIES = {
+        "fullcalendar": "fullcalendar@6.1.15/index.global.min.js",
+        "motion": "motion@12.43.0/dist/motion.js",
+    }
+
+    @staticmethod
+    def _loader(html):
+        loader = re.search(r"<script>\(function\(w,d\)\{var L=\{.*?\}\)\(window,document\)</script>", html, re.S)
+        assert loader, "the window.ShelahLibs loader is missing"
+        return loader.group(0)
+
+    @pytest.mark.parametrize("path", ["/", "/text/Genesis.1", "/prayer/shacharit"])
+    def test_no_page_loads_them_with_a_script_tag(self, test_client, path):
+        html = test_client.get(path).get_data(as_text=True)
+        assert not re.search(r"<script[^>]+src=[^>]*(?:fullcalendar|motion@|clerk-js)", html)
+
+    @pytest.mark.parametrize("name", sorted(LIBRARIES))
+    def test_the_loader_pins_each_library_with_an_sri_hash(self, test_client, name):
+        loader = self._loader(test_client.get("/").get_data(as_text=True))
+        entry = re.search(rf"{name}:\{{src:\"([^\"]+)\",integrity:\"(sha384-[A-Za-z0-9+/=]+)\"", loader)
+        assert entry, f"{name} is not described by the loader"
+        assert entry.group(1) == f"https://cdn.jsdelivr.net/npm/{self.LIBRARIES[name]}"
+
+    def test_clerk_is_described_only_when_the_site_has_a_publishable_key(self, test_client, monkeypatch):
+        import app as app_module
+
+        monkeypatch.setattr(app_module, "CLERK_PUBLISHABLE_KEY", "")
+        assert "clerk:" not in self._loader(test_client.get("/").get_data(as_text=True))
+
+        monkeypatch.setattr(app_module, "CLERK_PUBLISHABLE_KEY", "pk_test_example")
+        loader = self._loader(test_client.get("/").get_data(as_text=True))
+        entry = re.search(r"clerk:\{src:\"([^\"]+)\",integrity:\"sha384-[A-Za-z0-9+/=]+\",attrs:\{\"data-clerk-publishable-key\":\"(pk_test_[^\"]+)\"\}", loader)
+        assert entry, "clerk is not described by the loader"
+        assert entry.group(1).startswith("https://cdn.jsdelivr.net/npm/@clerk/clerk-js@")
+        assert entry.group(2) == "pk_test_example"
+
+
 class TestServedFiles:
     def test_a_chunk_is_cached_for_a_year(self, test_client):
         chunk = next((MIN / "js" / "chunks").glob("chunk-*.js"))

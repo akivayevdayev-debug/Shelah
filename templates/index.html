@@ -189,7 +189,7 @@
          CSS never saw (a deep-linked view) waits for it so that markup never
          shows unstyled. With no such link (the originals are linked below) it is
          already settled. -->
-    <script>(function(d,w){var s=function(){},p=new Promise(function(r){s=r});w.ShelahStyles={ready:p};function gate(t){return t&&t.tagName==='LINK'&&t.hasAttribute('data-css-gate')}d.addEventListener('load',function(e){var t=e.target;if(t&&t.tagName==='LINK'&&t.hasAttribute('data-async-css')){t.media='all';if(gate(t))s()}},true);d.addEventListener('error',function(e){if(gate(e.target)){e.target.media='all';s()}},true);d.addEventListener('DOMContentLoaded',function(){if(!d.querySelector('link[data-css-gate]'))s()});setTimeout(s,4000)})(document,window)</script>
+    <script>(function(d,w){var s=function(){},p=new Promise(function(r){s=function(){w.ShelahStyles.done=true;r()}});w.ShelahStyles={ready:p,done:false};function gate(t){return t&&t.tagName==='LINK'&&t.hasAttribute('data-css-gate')}d.addEventListener('load',function(e){var t=e.target;if(t&&t.tagName==='LINK'&&t.hasAttribute('data-async-css')){t.media='all';if(gate(t))s()}},true);d.addEventListener('error',function(e){if(gate(e.target)){e.target.media='all';s()}},true);d.addEventListener('DOMContentLoaded',function(){if(!d.querySelector('link[data-css-gate]'))s()});setTimeout(s,4000)})(document,window)</script>
     <!-- topbar_shared.js and hebrew-ref.js are inline: the body's own inline scripts
          call swapPendingLanguage() and window.ShelahHebrewRef while the parser is
          still reading, so an external file here would be a blocking request ahead
@@ -246,21 +246,25 @@
     <link rel="stylesheet" href="{{ asset_url('css/tailwind.css') }}">
     {% endif %}
 
-    <!-- FullCalendar -->
-    <script defer src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"
-            integrity="sha384-B1OFx8Gy9GjPu8UbUyXbGQpzll9ubAUQ9agInFJ8NnD7nYG1u/CLR+Sqr5yifl4q"
-            crossorigin="anonymous"></script>
+    <!-- Libraries a visit may never need are fetched when something asks for them,
+         not with the page (each pinned, with its SRI hash, as the script tags
+         were): FullCalendar when the calendar is about to open (shell.js
+         openCalendarModal and the calendar button's hover/focus/touch), Clerk
+         at once for a visit that may be signed in and otherwise when someone
+         reaches for the account (shell.js ensureClerk), Motion
+         once the visitor moves or a few seconds after load (static/js/motion.js
+         falls back to instant state changes until then).
+         window.ShelahLibs.load(name) resolves true once the library's global
+         exists, false if it could not be loaded; callers keep going without it. -->
+    <script>(function(w,d){var L={fullcalendar:{src:"https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js",integrity:"sha384-B1OFx8Gy9GjPu8UbUyXbGQpzll9ubAUQ9agInFJ8NnD7nYG1u/CLR+Sqr5yifl4q",ready:function(){return!!w.FullCalendar}},motion:{src:"https://cdn.jsdelivr.net/npm/motion@12.43.0/dist/motion.js",integrity:"sha384-hgVFh5YKDMdpcWEjpRqk2kPXOKBH7I9NBCKe3uR6dHKgy/BWPe8kyL01kiYuRn1u",ready:function(){return!!w.Motion}}{% if clerk_publishable_key %},clerk:{src:"https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5.127.0/dist/clerk.browser.js",integrity:"sha384-9BfgqxUZJLeppMqmDGDPFU1zC63bMyEwEXG8xMcQwhDz5qU3WUR4PwpVcZ4fKU8D",attrs:{"data-clerk-publishable-key":{{ clerk_publishable_key | tojson }}},ready:function(){return!!w.Clerk}}{% endif %}},P={};w.ShelahLibs={load:function(n){var l=L[n];if(!l)return Promise.resolve(false);if(l.ready())return Promise.resolve(true);return P[n]||(P[n]=new Promise(function(r){var s=d.createElement('script');s.src=l.src;s.integrity=l.integrity;s.crossOrigin='anonymous';if(l.attrs)for(var k in l.attrs)s.setAttribute(k,l.attrs[k]);s.onload=function(){r(l.ready())};s.onerror=function(){delete P[n];s.remove();r(false)};d.head.appendChild(s)}))}};function motion(){w.ShelahLibs.load('motion')}['pointerover','touchstart','keydown','scroll'].forEach(function(e){w.addEventListener(e,motion,{once:true,passive:true,capture:true})});w.addEventListener('load',function(){setTimeout(motion,3000)});if(L.clerk&&(d.documentElement.classList.contains('auth-likely-in')||/\/(signin|profile|settings|chat|history|answer|a|conversation)(\/|$)/.test(w.location.pathname)||/[?&](chat|conversation|a|history|auth)=/.test(w.location.search)))w.ShelahLibs.load('clerk')})(window,document)</script>
     <script>
         window.APP_CLERK = {
             publishableKey: {{ clerk_publishable_key | tojson }},
         enforceAuth: JSON.parse('{{ clerk_enforce_auth | tojson }}')
         };
     </script>
-    {% if clerk_publishable_key %}
-    <script defer crossorigin="anonymous" data-clerk-publishable-key="{{ clerk_publishable_key }}"
-        src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5.127.0/dist/clerk.browser.js"
-        integrity="sha384-9BfgqxUZJLeppMqmDGDPFU1zC63bMyEwEXG8xMcQwhDz5qU3WUR4PwpVcZ4fKU8D"></script>
-    {% endif %}
+    {# Clerk's SDK is loaded by window.ShelahLibs (above): early for a visit that may be
+       signed in, else when someone signs in (shell.js ensureClerk). #}
 
     <!-- Cloudflare Turnstile (Managed) -- anti-abuse gate for anonymous /ask
          traffic (backend/turnstile.py, docs/SECURITY.md §8). Token callbacks
@@ -2781,12 +2785,9 @@
          every capture listener, so this one has to as well.
          tests/test_inline_handlers.py pins the order. -->
     <script defer src="{{ asset_url('js/actions.js') }}"></script>
-    <!-- Motion One / motion.dev vanilla animation engine — static/js/motion.js wraps
-         this as window.Motion; degrades gracefully to instant state-changes if this
-         CDN script fails to load (see motion.js's _motionAnimate() fallback). -->
-    <script defer src="https://cdn.jsdelivr.net/npm/motion@12.43.0/dist/motion.js"
-            integrity="sha384-hgVFh5YKDMdpcWEjpRqk2kPXOKBH7I9NBCKe3uR6dHKgy/BWPe8kyL01kiYuRn1u"
-            crossorigin="anonymous"></script>
+    <!-- Motion One / motion.dev (vanilla animation engine): loaded by window.ShelahLibs
+         (head); static/js/motion.js wraps it as window.Motion and degrades gracefully
+         to instant state-changes until it has loaded (see its _motionAnimate() fallback). -->
     <script defer src="{{ asset_url('js/clerk-appearance.js') }}"></script>
     <script type="module" src="{{ module_url('motion.js') }}"></script>
     <script type="module" src="{{ module_url('calendar-detail.js') }}"></script>

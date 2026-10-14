@@ -125,11 +125,25 @@ export async function prewarmDailyStudy() {
     return refs;
 }
 
+// Warming today's texts is for a visitor who stays: it starts at their first
+// touch of the page (a tap, key press or scroll), or 12 s after load, so the
+// ~3 requests it makes never compete with the page's own load.
+const PREWARM_FALLBACK_MS = 12000;
+const PREWARM_WAKE_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"];
+
 export function installDailyPrewarm() {
     const run = () => {
-        window.setTimeout(() => {
-            void prewarmDailyStudy();
-        }, 2200);
+        let started = false;
+        const start = () => {
+            if (started) return;
+            started = true;
+            PREWARM_WAKE_EVENTS.forEach((type) => window.removeEventListener(type, start, true));
+            window.setTimeout(() => {
+                void prewarmDailyStudy();
+            }, 1000);
+        };
+        PREWARM_WAKE_EVENTS.forEach((type) => window.addEventListener(type, start, { capture: true, passive: true, once: true }));
+        window.setTimeout(start, PREWARM_FALLBACK_MS);
     };
 
     if (document.readyState === "complete") {

@@ -72,7 +72,7 @@
         "source": "sha256:4e5e1c00b67e3ee511f7776e5d3933a6295816e39b77fcfd1c7f428f55601679"
       },
       "shell.js": {
-        "source": "sha256:3b358826e2ed6652dea74a19f8ba45fdbb43af92f5b18c2084917dab70141c79"
+        "source": "sha256:d7736a763f070f2836d7299623e16e408dbe94738775b85351a64411e08eba55"
       },
       "topbar_shared.js": {
         "source": "sha256:65384daf7b59b10d4f48c0ac6fc81df153f099f6c6d9d716b8b544dd3c82fd8c"
@@ -111,7 +111,7 @@
         "siddur.js": "sha256:5c7c99c0bed9ec2b0141e0b199f28e6819560d43653fb083397c69c9dd543616",
         "source-cards.js": "sha256:c9cef423f5f53924f57b799e71be57831166c214dd48e22c294e7986f99f3363",
         "state.js": "sha256:bb2b6d0c60a7a63db07b48b701156eebb3b11cc361dca9b69ca4184f4590c395",
-        "zmanim.js": "sha256:41648c6b3dd629da15b1d315e61f7e752dd311683709fd4c00485058a14ca8fd"
+        "zmanim.js": "sha256:ca0ce2200fc8df521f330f14b134fbecb8b52799d60d3a6233a97ac3399d4f36"
       },
       "outputs": {
         "js/actions.js": "6102e24e9f74",
@@ -122,10 +122,10 @@
         "js/community-labels.js": "8a6529f6c365",
         "js/hebrew-ref.js": "ca943945d5f1",
         "js/load-region.js": "2833ed602bea",
-        "js/main.js": "e0673aaec124",
+        "js/main.js": "118cb6cf9434",
         "js/motion.js": "b05b24502966",
         "js/sentry-init.js": "715c0413cb78",
-        "js/shell.js": "b3fa7af9c52c",
+        "js/shell.js": "386ef7506ac2",
         "js/topbar_shared.js": "51f0e772633b"
       },
       "unreached": []

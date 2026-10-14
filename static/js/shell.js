@@ -2303,26 +2303,31 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             };
         }
 
+        // Markup this script builds is not in the server-rendered page the inlined
+        // critical CSS was extracted from, so it waits for the full stylesheet
+        // (window.ShelahStyles, set in index.html's head) instead of showing
+        // unstyled for the moment the bundle is still on its way.
+        function afterStyles(fn) {
+            const styles = window.ShelahStyles;
+            if (!styles || styles.done) return fn();
+            return styles.ready.then(fn);
+        }
+
         function queueBackgroundTask(task, timeout = 1200) {
             if (typeof task !== 'function') return;
-            if ('requestIdleCallback' in window) {
-                window.requestIdleCallback(() => {
-                    try {
-                        task();
-                    } catch (_) {
-                        // Keep background scheduling resilient.
-                    }
-                }, { timeout });
-                return;
-            }
-
-            setTimeout(() => {
+            const run = () => {
                 try {
-                    task();
+                    void afterStyles(task);
                 } catch (_) {
                     // Keep background scheduling resilient.
                 }
-            }, 0);
+            };
+            if ('requestIdleCallback' in window) {
+                window.requestIdleCallback(run, { timeout });
+                return;
+            }
+
+            setTimeout(run, 0);
         }
 
         const debouncedPushPrefsToServer = debounce(() => {
@@ -2492,6 +2497,40 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             return Boolean(window.APP_CLERK && window.APP_CLERK.publishableKey);
         }
 
+        // Clerk's SDK (~85 KB, plus two requests of its own) comes from
+        // window.ShelahLibs (index.html's head). It starts early for a visit
+        // that may be signed in -- Clerk's own cookie says a session exists
+        // (html.auth-likely-in), or the link names something that needs an
+        // identity -- and otherwise only when someone signs in, signs up or
+        // opens the account modal: with no Clerk cookie nobody is signed in,
+        // so there is nothing for it to report before then. clerkStart is that
+        // one start (a promise of whether Clerk is up); clerkLoaded settles
+        // once Clerk.load() has (true) or never will (false).
+        let clerkStart = null;
+        let clerkFailed = false;
+        let settleClerkLoaded = () => {};
+        const clerkLoaded = new Promise((resolve) => { settleClerkLoaded = resolve; });
+
+        function clerkNeededAtLoad() {
+            if (document.documentElement.classList.contains('auth-likely-in')) return true;
+            const route = window.ShelahRouter?.readRoute() || {};
+            return Boolean(route.auth || route.chat || route.history || route.conversation || route.a);
+        }
+
+        function ensureClerk() {
+            if (!isClerkConfigured()) return Promise.resolve(false);
+            if (!clerkStart) {
+                clerkStart = (async () => {
+                    if (!window.Clerk && window.ShelahLibs) await window.ShelahLibs.load('clerk');
+                    await initClerkAuth();
+                    clerkFailed = !window.Clerk?.loaded;
+                    if (clerkFailed) clerkStart = null; // the next sign-in click tries again
+                    return !clerkFailed;
+                })();
+            }
+            return clerkStart;
+        }
+
         // The account modal the URL names (router.js `auth`: /signin,
         // /profile, /settings, or the same word after a view).
         function currentAuthPage() {
@@ -2585,6 +2624,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (!isClerkConfigured()) return;
             if (!window.Clerk) {
                 console.warn('Clerk script did not load.');
+                settleClerkLoaded(false);
                 settleAuthSlot({ hide: true });
                 settleSavedLinkWithoutClerk();
                 return;
@@ -2594,12 +2634,14 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const publishableKey = String(window.APP_CLERK?.publishableKey || '').trim();
                 if (!publishableKey) {
                     console.warn('Clerk publishable key is missing.');
+                    settleClerkLoaded(false);
                     settleAuthSlot({ hide: true });
                     settleSavedLinkWithoutClerk();
                     return;
                 }
 
                 await window.Clerk.load({ publishableKey, appearance: window.ShelahClerkAppearance?.() });
+                settleClerkLoaded(true);
                 window.Clerk.addListener(async () => {
                     await refreshAuthUi();
                     await handleAuthRouteIntent();
@@ -2608,12 +2650,18 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 await handleAuthRouteIntent();
             } catch (err) {
                 console.error('Failed to initialize Clerk:', err);
+                settleClerkLoaded(false);
                 settleAuthSlot({ hide: true });
                 settleSavedLinkWithoutClerk();
             }
         }
 
         async function authHeaders(baseHeaders = {}) {
+            // Clerk is on its way (a signed-in visit): the request that asked
+            // waits a moment for the session rather than going out as a guest.
+            if (clerkStart && isClerkConfigured() && !window.Clerk?.loaded) {
+                await Promise.race([clerkLoaded, new Promise((resolve) => setTimeout(resolve, 4000))]);
+            }
             if (!isClerkConfigured() || !window.Clerk?.session) {
                 return baseHeaders;
             }
@@ -2771,7 +2819,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         }
 
         async function openAuthRoute(page) {
-            if (!window.Clerk) return;
+            if (!(await ensureClerk())) return;
             const router = window.ShelahRouter;
             if (router && currentAuthPage() !== page) {
                 router.pushRoute({ auth: page }, { overlay: 'auth' });
@@ -2792,6 +2840,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 return;
             }
             if (window.Clerk?.loaded) void showAuthModal(page);
+            else if (!clerkStart) void ensureClerk(); // its init opens the modal the URL names
         }
 
         async function handleSignIn() {
@@ -2802,6 +2851,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // modal, back to this same page afterwards. Without Clerk's sign-up
         // (or if it fails to open) the sign-in modal offers it too.
         async function handleSignUp() {
+            await ensureClerk();
             if (!window.Clerk?.openSignUp) {
                 await handleSignIn();
                 return;
@@ -3219,7 +3269,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         function askHistoryAuthState() {
             if (!isClerkConfigured()) return 'unavailable';
-            if (!window.Clerk) return document.readyState === 'loading' ? 'pending' : 'unavailable';
+            if (!window.Clerk) {
+                if (document.readyState === 'loading') return 'pending';
+                if (!clerkStart) return clerkFailed ? 'unavailable' : 'signed-out'; // never started: no Clerk cookie
+                return 'pending';
+            }
             if (window.Clerk.user && window.Clerk.session) return 'signed-in';
             return window.Clerk.loaded ? 'signed-out' : 'pending';
         }
@@ -10496,6 +10550,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const r = await fetch('/api/daily-study', { credentials: 'same-origin' });
                 if (!r.ok) throw new Error('daily-study unavailable');
                 const daily = await r.json().catch(() => ({}));
+                await afterStyles(() => {});
 
                 if (dateEl && daily?.hebrew_date && !hebrewDateFromLocation) {
                     // Go through refreshHebrewDateDisplay() (not a direct
@@ -10560,6 +10615,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     textsCache.popularTextsTs = Date.now();
                 }
 
+                await afterStyles(() => {});
                 let html = '';
                 const alignClass = isHebrewMode() ? 'text-end' : 'text-start';
                 const colors = {
@@ -10603,7 +10659,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             hydratePreferences();
             void populateDailyStudy();
             void loadParashaQuickLink();
-            void registerServiceWorker();
+            // The worker's install fetches the offline shell (~0.5 MB): after the
+            // page has settled, not alongside its own load.
+            const registerSoon = () => window.setTimeout(() => { void registerServiceWorker(); }, 3000);
+            if (document.readyState === 'complete') registerSoon();
+            else window.addEventListener('load', registerSoon, { once: true });
 
             // Measure topbar height and expose as CSS variable for mobile drawer alignment
             function syncTopbarHeight() {
@@ -10639,15 +10699,28 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             queueBackgroundTask(() => {
                 renderSiddurMenus();
             }, 1200);
-            queueBackgroundTask(() => {
-                void loadLibraryIndexViews();
-            }, 1600);
+            // The library tree sits in a closed <details>, and its index is
+            // ~360 KB: fetch it when that opens or is reached for (and with the
+            // Texts menu, openTextsMenu), not with every page load.
+            const libraryDetails = libraryIndexSidebar?.closest('details');
+            if (!libraryDetails || libraryDetails.open) {
+                queueBackgroundTask(() => {
+                    void loadLibraryIndexViews();
+                }, 1600);
+            } else {
+                const loadLibrary = () => { void loadLibraryIndexViews(); };
+                libraryDetails.addEventListener('toggle', () => {
+                    if (libraryDetails.open) loadLibrary();
+                });
+                const librarySummary = libraryDetails.querySelector(':scope > summary');
+                ['pointerenter', 'focus', 'touchstart'].forEach((type) => {
+                    librarySummary?.addEventListener(type, loadLibrary, { once: true, passive: true });
+                });
+            }
             queueBackgroundTask(() => {
                 void populatePopularTexts();
             }, 1800);
-            queueBackgroundTask(() => {
-                void fetchDevtoolsHeartbeat();
-            }, 2200);
+            // (The devtools heartbeat is fetched when the inspector opens.)
         });
 
         // Multi-language Toggle with data attributes
@@ -10890,7 +10963,19 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // no retry -- it just logs a warning and leaves the account button
         // permanently hidden. Deferring the call to DOMContentLoaded
         // guarantees the SDK script has already run by the time it fires.
-        document.addEventListener('DOMContentLoaded', initClerkAuth);
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!isClerkConfigured() || clerkNeededAtLoad()) {
+                void ensureClerk();
+                return;
+            }
+            // Nobody can be signed in without Clerk's cookie: show the Sign in
+            // button now, and fetch Clerk when someone reaches for the account.
+            void refreshAuthUi();
+            const warmClerk = () => { void ensureClerk(); };
+            ['pointerenter', 'focusin', 'touchstart'].forEach((type) => {
+                authControls?.addEventListener(type, warmClerk, { once: true, passive: true });
+            });
+        });
 
         let holidaysCalendar = null;
         let _calendarDidMount = false; // crossfade: skip animation on initial render
@@ -10982,11 +11067,13 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         (function wireCalendarPrefetch() {
             const btn = document.querySelector('.home-calendar-btn');
+            const warm = () => {
+                prefetchCalendar();
+                void window.ShelahLibs?.load('fullcalendar');
+            };
             ['pointerenter', 'focus', 'touchstart'].forEach((type) => {
-                btn?.addEventListener(type, prefetchCalendar, { once: true, passive: true });
+                btn?.addEventListener(type, warm, { once: true, passive: true });
             });
-            const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 2000));
-            window.addEventListener('load', () => idle(prefetchCalendar), { once: true });
         })();
 
         // Hebcal files every festival, fast, minor and modern day under the one
@@ -11202,7 +11289,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             retryBtn.addEventListener('click', () => {
                 calendarRetryAttempted = false;
                 clearCalendarLoadError();
-                holidaysCalendar?.refetchEvents();
+                if (holidaysCalendar) holidaysCalendar.refetchEvents();
+                else ensureCalendarLibrary();
             });
 
             el.append(msg, retryBtn);
@@ -11228,11 +11316,50 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             holidaysCalendar.render();
         }
 
-        function ensureCalendarReady() {
+        // The day a link or a holiday name asked the calendar to open on before
+        // FullCalendar had loaded (gotoCalendarDate).
+        let calendarGotoDate = null;
+
+        function gotoCalendarDate(date) {
+            if (!holidaysCalendar) {
+                calendarGotoDate = date;
+                return;
+            }
+            try { holidaysCalendar.gotoDate(date); } catch (_) { /* pre-render guard */ }
+        }
+
+        // FullCalendar comes from window.ShelahLibs (index.html's head) the first
+        // time the calendar is wanted; the button's hover/focus/touch starts that
+        // early (wireCalendarPrefetch). Builds the calendar once it is there.
+        function ensureCalendarLibrary() {
             if (holidaysCalendar) return;
+            const calendarEl = document.getElementById('calendar');
+            if (window.FullCalendar || !window.ShelahLibs) {
+                ensureCalendarReady();
+                return;
+            }
+            calendarEl?.setAttribute('aria-busy', 'true');
+            void window.ShelahLibs.load('fullcalendar').then((loaded) => {
+                calendarEl?.setAttribute('aria-busy', 'false');
+                if (!loaded) {
+                    showCalendarLoadError();
+                    return;
+                }
+                ensureCalendarReady();
+                if (document.getElementById('calendarModal')?.open) {
+                    holidaysCalendar?.updateSize();
+                    markCalendarDayKinds();
+                    if (calendarSelectedKey) renderCalendarAgenda();
+                }
+            });
+        }
+
+        function ensureCalendarReady() {
+            if (holidaysCalendar || !window.FullCalendar) return;
             const calendarEl = document.getElementById('calendar');
             holidaysCalendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
+                ...(calendarGotoDate ? { initialDate: calendarGotoDate } : {}),
                 ...calendarLanguageOptions(),
                 // FullCalendar's global build ships English only; these read
                 // the language at render time, so a language switch re-renders
@@ -11339,6 +11466,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 dayMaxEvents: true,
                 height: 'auto'
             });
+            calendarGotoDate = null;
             holidaysCalendar.render();
             document.getElementById('calendarModal')?.setAttribute('data-calendar-built', '1');
         }
@@ -11366,7 +11494,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             // on it. Measuring mid-entrance (the old 80ms timer) left the grid
             // a fraction of the card's width until something else re-laid it out.
             if (card) card.style.transform = 'none';
-            ensureCalendarReady();
+            ensureCalendarLibrary();
             holidaysCalendar?.updateSize();
             markCalendarDayKinds();
             if (calendarSelectedKey) renderCalendarAgenda(); // re-localise if the language changed
@@ -11425,7 +11553,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || ''))) return;
             window.openCalendarModal({ fromRoute: true });
             const [y, m, d] = dateKey.split('-').map(Number);
-            try { holidaysCalendar?.gotoDate(new Date(y, m - 1, d)); } catch (_) { /* pre-render guard */ }
+            gotoCalendarDate(new Date(y, m - 1, d));
             selectCalendarDay(dateKey, { scroll: true });
         }
 
@@ -11439,7 +11567,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || ''))) return;
             window.openCalendarModal();
             const [y, m, d] = dateKey.split('-').map(Number);
-            try { holidaysCalendar?.gotoDate(new Date(y, m - 1, d)); } catch (_) { /* pre-render guard */ }
+            gotoCalendarDate(new Date(y, m - 1, d));
             selectCalendarDay(dateKey, { scroll: true, pushUrl: true });
         }
 
@@ -12126,10 +12254,21 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         // `direction` ("back" | "forward" | null): how a Back/Forward moved,
         // from the router; the view transition (swapView) goes that way.
+        function routeOpensView(route) {
+            return ['text', 'prayer', 'siddur', 'community', 'chat', 'a', 'history', 'date', 'conversation', 'auth']
+                .some((key) => Boolean(route[key]));
+        }
+
         function hydrateRoute(route, { isInitial = false, direction = null, saved = null, left = null } = {}) {
             route = route || {};
             if (isInitial && !preferencesHydrated) {
                 pendingInitialRoute = route;
+                return;
+            }
+            // A deep link builds its view from script: after the full stylesheet
+            // has applied (the server-rendered first paint is already on screen).
+            if (isInitial && window.ShelahStyles && !window.ShelahStyles.done && routeOpensView(route)) {
+                void window.ShelahStyles.ready.then(() => hydrateRoute(route, { isInitial: true }));
                 return;
             }
             // The views opened below swap synchronously, inside this call.
