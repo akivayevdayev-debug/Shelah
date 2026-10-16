@@ -41,7 +41,7 @@ _RUN_RE = re.compile(rf"([ \t]*)((?:{_ONE})+)")
 # place_markers() reads them as one run (and writes them back flush: "[1][2]").
 _SPACED_RUN_RE = re.compile(rf"([ \t]*)((?:{_ONE})(?:[ \t]*(?:{_ONE}))*)")
 _NUMBER_OR_RANGE_RE = re.compile(r"(\d{1,2})(?:\s*[-\u2013]\s*(\d{1,2}))?")
-_NOTE_SPLIT_RE = re.compile(r"\s+[—–]\s+")
+_NOTE_SPLIT_RE = re.compile(r"(?<!\s)\s+[—–]\s+")
 
 
 def source_key(source: str) -> str:
@@ -117,7 +117,7 @@ def strip_markers(text: str) -> str:
 # brackets), whitespace, then more text. Initials and common abbreviations
 # ("R. Yochanan", "Dr. Smith", "e.g. the") end in a period but not a sentence.
 _BOUNDARY_RE = re.compile(r"[.!?\u2026\u05c3]+[\"'\u201d\u2019)\]]*\s+(?=\S)")
-_LAST_WORD_RE = re.compile(r"(\S+)$")
+_LAST_WORD_RE = re.compile(r"(?<!\S)(\S+)$")
 _ABBREVIATIONS = frozenset({
     "r", "rabbi", "rav", "dr", "mr", "mrs", "st", "vs", "cf", "etc", "ibid", "e.g", "i.e",
     "b", "bar", "ben", "no", "vol", "ch", "chap", "sec", "par", "ex", "lev", "num", "deut", "gen",

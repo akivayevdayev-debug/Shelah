@@ -25,7 +25,7 @@ def _not_found(message: str):
     return jsonify({"error": message}), 404
 
 
-@routes_siddur.route("/api/siddur/v2/toc/<rite>")
+@routes_siddur.route("/api/siddur/v2/toc/<rite>", methods=["GET"])
 def siddur_toc(rite):
     toc = siddur_data.get_toc(rite)
     if toc is None:
@@ -33,7 +33,7 @@ def siddur_toc(rite):
     return jsonify(toc)
 
 
-@routes_siddur.route("/api/siddur/v2/service/<rite>/<service>")
+@routes_siddur.route("/api/siddur/v2/service/<rite>/<service>", methods=["GET"])
 def siddur_service(rite, service):
     payload = siddur_data.get_service(rite, service)
     if payload is None:
@@ -41,7 +41,7 @@ def siddur_service(rite, service):
     return jsonify(payload)
 
 
-@routes_siddur.route("/api/siddur/v2/day")
+@routes_siddur.route("/api/siddur/v2/day", methods=["GET"])
 def siddur_day():
     raw_date = request.args.get("date", "")
     raw_il = request.args.get("il", "0")

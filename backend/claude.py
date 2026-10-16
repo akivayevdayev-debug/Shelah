@@ -1237,7 +1237,24 @@ def _normalize_structured_response(payload: Dict[str, Any], raw_text: str = "") 
 _RULING_KEY_RE = re.compile(r'"ruling"\s*:\s*"')
 _SOURCES_KEY_RE = re.compile(r'"sources"\s*:\s*\[')
 _SENTENCE_END_RE = re.compile(r"[.!?\u2026\u05c3](?:\[\d{1,2}\])*(?=\s|$)")
-_TRAILING_HEADINGS_RE = re.compile(r"(?:\n+#{1,6}[^\n]*)+\s*$")
+
+
+def _strip_trailing_headings(text: str) -> str:
+    """``text`` without the chain of markdown heading lines that ends it (and
+    the whitespace after the chain). A regex for the chain rescans it from
+    every newline, which is quadratic (python:S8786); this walks the lines
+    backwards once. A heading needs a newline before it, so a first line
+    that is a heading stays."""
+    lines = text.split("\n")
+    last = len(lines) - 1
+    while last >= 0 and not lines[last].strip():
+        last -= 1
+    if last < 1 or not lines[last].startswith("#"):
+        return text
+    first = last
+    while first > 1 and (not lines[first - 1] or lines[first - 1].startswith("#")):
+        first -= 1
+    return "\n".join(lines[:first])
 
 
 def _read_json_string(raw: str, start: int) -> Tuple[str, bool, int]:
@@ -1282,7 +1299,7 @@ def _salvage_truncated_payload(raw_text: str) -> Optional[Dict[str, Any]]:
     if not closed:
         sentences = list(_SENTENCE_END_RE.finditer(ruling))
         ruling = ruling[:sentences[-1].end()] if sentences else ruling
-        ruling = _TRAILING_HEADINGS_RE.sub("", ruling)
+        ruling = _strip_trailing_headings(ruling)
     if not ruling.strip():
         return None
     payload: Dict[str, Any] = {"ruling": ruling.strip()}
@@ -2039,7 +2056,7 @@ def _condense_assistant_answer(raw: Any) -> Tuple[str, List[str]]:
             if not stripped:
                 continue
             if stripped[0] in "-*•":
-                ref = re.split(r"\s+[—–]\s+", re.sub(r"^[-*•]\s*", "", stripped), maxsplit=1)[0].strip()
+                ref = re.split(r"(?<!\s)\s+[—–]\s+", re.sub(r"^[-*•]\s*", "", stripped), maxsplit=1)[0].strip()
                 if ref and len(cited) < _CITED_SOURCES_MAX:
                     cited.append(ref[:_CITED_SOURCE_CHARS])
                 continue
@@ -2577,7 +2594,7 @@ async def _call_primary_model_with_budget(prompt: str, dynamic_system_context: s
     return await asyncio.wait_for(
         _call_primary_model(
             prompt, dynamic_system_context, max_tokens,
-            **({"history_turns": history_turns} if history_turns else {})),
+            **{"history_turns": history_turns} if history_turns else {}),
         timeout=AI_TOTAL_BUDGET_SECONDS,
     )
 

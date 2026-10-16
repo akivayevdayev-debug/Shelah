@@ -60,7 +60,10 @@ _FOOTNOTE_RES = (
 )
 _BR_RE = re.compile(r"<br\s*/?>", re.IGNORECASE)
 _INLINE_SPACE_RE = re.compile(r"[ \t]+")
-_NEWLINE_SPACE_RE = re.compile(r"\s*\n\s*")
+# A whitespace run that holds a newline collapses to that newline. Anchoring at
+# the run's start ((?<!\s)) keeps the scan linear: starting at every space of a
+# long run was quadratic (python:S8786).
+_NEWLINE_SPACE_RE = re.compile(r"(?<!\s)[^\S\n]*\n\s*")
 _DIVINE_NAME_RES = ((re.compile(r"\bG\s+OD\b"), "GOD"), (re.compile(r"\bL\s+ORD\b"), "LORD"))
 
 def enabled():

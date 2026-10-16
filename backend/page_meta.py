@@ -28,6 +28,8 @@ SITE_NAME = "Sh'elah"
 TANAKH_HUB_PATH = "/tanakh"
 SITE_TITLE = "Sh'elah - Torah Encyclopedia"
 _TITLE_SEPARATOR = " · "
+# The JSON-LD key that names a node's schema.org type.
+_LD_TYPE = "@type"
 _HOME_DESCRIPTION = (
     "AI-powered Torah encyclopedia — search halacha, Talmud, Tanakh, and "
     "Jewish law with source citations and community-aware answers."
@@ -159,24 +161,24 @@ def text_jsonld(raw_slug, categories=()):
     return [
         {
             "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
+            _LD_TYPE: "BreadcrumbList",
             "itemListElement": [
-                {"@type": "ListItem", "position": position, "name": name, "item": url}
+                {_LD_TYPE: "ListItem", "position": position, "name": name, "item": url}
                 for position, (name, url) in enumerate(steps, start=1)
             ],
         },
         {
             "@context": "https://schema.org",
-            "@type": "Article",
+            _LD_TYPE: "Article",
             "headline": ref,
             "name": ref,
             "description": meta["description"],
             "url": canonical,
             "mainEntityOfPage": canonical,
             "inLanguage": ["he", "en"],
-            "isPartOf": {"@type": "WebSite", "name": SITE_NAME, "url": home},
-            "publisher": {"@type": "Organization", "name": SITE_NAME, "url": home},
-            "isBasedOn": {"@type": "WebSite", "name": "Sefaria", "url": "https://www.sefaria.org/"},
+            "isPartOf": {_LD_TYPE: "WebSite", "name": SITE_NAME, "url": home},
+            "publisher": {_LD_TYPE: "Organization", "name": SITE_NAME, "url": home},
+            "isBasedOn": {_LD_TYPE: "WebSite", "name": "Sefaria", "url": "https://www.sefaria.org/"},
         },
     ]
 

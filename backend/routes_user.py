@@ -9,7 +9,6 @@ and ``backend``.
 """
 
 import base64
-import binascii
 import json
 import re
 from datetime import datetime, timezone
@@ -63,10 +62,11 @@ def _encode_history_cursor(row):
 
 def _decode_history_cursor(cursor):
     """(created_at, id) for a cursor this API issued, or None."""
+    # Bad base64 (binascii.Error), non-ASCII (UnicodeError) and bad JSON are all ValueErrors.
     try:
         padded = cursor + "=" * (-len(cursor) % 4)
         created_at, entry_id = json.loads(base64.urlsafe_b64decode(padded.encode("ascii")))
-    except (ValueError, TypeError, binascii.Error, UnicodeError):
+    except (ValueError, TypeError):
         return None
     if not isinstance(created_at, str) or not isinstance(entry_id, str):
         return None

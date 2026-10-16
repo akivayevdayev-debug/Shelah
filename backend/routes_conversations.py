@@ -79,6 +79,7 @@ from app import (
 )
 
 routes_conversations = Blueprint("conversations", __name__)
+_CREATE_FAILED = "Failed to create conversation"
 
 _ERR_MISSING_USER_IDENTITY = "Missing user identity"
 _ERR_SUPABASE_NOT_CONFIGURED = "Supabase not configured"
@@ -196,11 +197,11 @@ def create_conversation():
         result = supabase.table(SUPABASE_CONVERSATIONS_TABLE).insert(record).execute()
         rows = result.data or []
         if not rows:
-            return jsonify({"error": "Failed to create conversation"}), 500
+            return jsonify({"error": _CREATE_FAILED}), 500
         conversation = rows[0]
     except Exception as e:
         _capture_backend_error("conversation_create_failed", e, {"user_id_hash": hash_user_id(user_id)})
-        return jsonify({"error": "Failed to create conversation"}), 500
+        return jsonify({"error": _CREATE_FAILED}), 500
 
     if not seed:
         return jsonify(conversation), 201
@@ -211,7 +212,7 @@ def create_conversation():
         # context: remove it rather than leave it half-made.
         _capture_backend_error("conversation_seed_failed", e, {"user_id_hash": hash_user_id(user_id)})
         _discard_conversation(supabase, conversation["id"], user_id)
-        return jsonify({"error": "Failed to create conversation"}), 500
+        return jsonify({"error": _CREATE_FAILED}), 500
     return jsonify(conversation), 201
 
 

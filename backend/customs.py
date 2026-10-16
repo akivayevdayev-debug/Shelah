@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 # Path to customs folder
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CUSTOMS_DIR = str(PROJECT_ROOT / "customs")
+_CUSTOMS_GLOB = "*.json"
 
 # Files in customs/ that are not community data.
 _NON_COMMUNITY_FILES = frozenset({"customs_db.json", "schema.json"})
@@ -61,7 +62,7 @@ def _validate_customs_file(data: dict) -> list[str]:
 def validate_all_customs_at_startup() -> None:
     """Validate all community JSON files at startup.  Logs an error per offending
     file without raising, so a single bad file does not crash the entire app."""
-    files = sorted(glob.glob(os.path.join(CUSTOMS_DIR, "*.json")))
+    files = sorted(glob.glob(os.path.join(CUSTOMS_DIR, _CUSTOMS_GLOB)))
     for filepath in files:
         if os.path.basename(filepath).lower() in _NON_COMMUNITY_FILES:
             continue
@@ -134,7 +135,7 @@ def _collect_trusted_authority_candidates(data):
 # reviewed"). The full text stays in the file; a source label is the name only.
 _NEGATIVE_STATEMENT_RE = re.compile(r"^(?:not|no|none|n/a)\b", re.IGNORECASE)
 _FOR_PREFIX_RE = re.compile(r"^for [^:]{1,60}:\s*(?=\S)", re.IGNORECASE)
-_AUTHORITY_NAME_END_RE = re.compile(r"\s+\(|\s+[\u2014\u2013]\s+|[;:,]\s")
+_AUTHORITY_NAME_END_RE = re.compile(r"(?<!\s)\s+\(|(?<!\s)\s+[\u2014\u2013]\s+|[;:,]\s")
 
 
 def _authority_name(text):
@@ -265,7 +266,7 @@ def _build_structured_customs_entry(data):
 
 def load_all_customs():
     """Load all JSON files from customs folder"""
-    files = sorted(glob.glob(os.path.join(CUSTOMS_DIR, "*.json")))
+    files = sorted(glob.glob(os.path.join(CUSTOMS_DIR, _CUSTOMS_GLOB)))
     signature = _build_customs_signature(files)
     if _CUSTOMS_CACHE.get("signature") == signature and isinstance(_CUSTOMS_CACHE.get("data"), dict):
         return _CUSTOMS_CACHE["data"]
@@ -310,7 +311,7 @@ def runtime_config():
     hard-coding them: {lens_key.lower(): {"name", "lens_key", "practice_baseline",
     "parameters"}}. Only files that declare runtime.lens_key appear. Re-read
     when a file's name or modification time changes, like load_all_customs()."""
-    files = sorted(glob.glob(os.path.join(CUSTOMS_DIR, "*.json")))
+    files = sorted(glob.glob(os.path.join(CUSTOMS_DIR, _CUSTOMS_GLOB)))
     signature = _build_customs_signature(files)
     if _RUNTIME_CACHE["signature"] == signature:
         return _RUNTIME_CACHE["data"]

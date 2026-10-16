@@ -141,7 +141,7 @@ def _combine_prayer_lines(refs, results):
     return combined_lines
 
 
-@routes_prayers.route("/api/siddur/section-refs/<path:prayer_name>")
+@routes_prayers.route("/api/siddur/section-refs/<path:prayer_name>", methods=["GET"])
 def get_siddur_section_refs(prayer_name):
     """Lightweight ref list for a legacy prayer-service name.
 

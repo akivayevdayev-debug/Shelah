@@ -175,20 +175,26 @@ def _render_nodes(nodes) -> str:
     return "".join(out)
 
 
-# Leading or trailing run of <br>s (with their adjoining whitespace). \s*
-# sits after the <br> literal in both branches, not before it inside the
-# repeated group, so there's only one way to split a match across
-# iterations -- SonarCloud python:S8786 flagged the old \s*<br> ordering as
-# superlinear on pathological input (the caller's trailing .strip() makes
-# the two forms produce the same final text either way).
-_EDGE_BR_RE = re.compile(r"(?:^\s*(?:<br>\s*)+)|(?:(?:<br>\s*)+$)")
+_BR = "<br>"
+
+
+def _trim_edge_brs(html: str) -> str:
+    """``html`` without a leading or trailing run of <br>s and the whitespace
+    around them. Peeled off one tag at a time: a regex for the trailing run
+    rescans the whole run from every <br> in it (python:S8786)."""
+    html = html.strip()
+    while html.startswith(_BR):
+        html = html[len(_BR):].lstrip()
+    while html.endswith(_BR):
+        html = html[:-len(_BR)].rstrip()
+    return html
 
 
 def _render(nodes) -> str:
     # Whitespace is collapsed once, over the whole fragment: trimming inside
     # each inline tag would glue "<small>ועונים הקהל: </small>בָּרוּךְ" together.
     html = _WS_RE.sub(" ", _render_nodes(nodes).replace(" ", " ")).strip()
-    return _EDGE_BR_RE.sub("", html).strip()
+    return _trim_edge_brs(html)
 
 
 def _significant(children) -> list:

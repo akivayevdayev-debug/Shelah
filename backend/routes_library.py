@@ -882,7 +882,7 @@ def get_text_links(ref):
     return jsonify(get_linked_texts(decoded_ref))
 
 
-@routes_library.route("/api/sidebar/<path:ref>")
+@routes_library.route("/api/sidebar/<path:ref>", methods=["GET"])
 def get_sidebar_bundle(ref):
     """Commentary-sidebar data for one verse, in two cached stages.
 

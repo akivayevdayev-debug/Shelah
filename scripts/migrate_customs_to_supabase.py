@@ -48,9 +48,10 @@ EMIT_SQL_DIR = PROJECT_ROOT / "build" / "customs_sql"
 SKIPPED_FILES = {"schema.json", "customs_db.json"}
 LEGACY_COMMUNITY_NAMES = ("Kafkazi", "Sephardic", "Ashkenazic", "Bukharian")
 
+_DEFAULT_SOURCE = "Community tradition"
 MAX_PRACTICES = 6
 MAX_VARIANTS = 4
-_SAFE_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_SAFE_IDENTIFIER = re.compile(r"^[A-Za-z_]\w*$", re.ASCII)
 
 # Caveats the AI must carry into an answer. "well-attested" needs none. Each
 # one ends by sending the user to their own rabbi: rabbis rule differently.
@@ -175,7 +176,7 @@ def _parse_unique_minhagim(payload: Dict[str, Any], community_name: str) -> List
             continue
         when = _normalize_text(item.get("when"), max_chars=200)
         topic = f"Distinctive custom: {name}"
-        halakhic_source = _normalize_text(item.get("source") or "Community tradition")
+        halakhic_source = _normalize_text(item.get("source") or _DEFAULT_SOURCE)
         content = _build_content(
             summary=description,
             common_practices=[f"When: {when}"] if when else None,
@@ -205,7 +206,7 @@ def _parse_modern_payload(payload: Dict[str, Any]) -> List[Dict[str, str]]:
         topic = _normalize_text(
             item.get("topic") or item.get("index") or "General")
         halakhic_source = _normalize_text(
-            item.get("source") or fallback_source or "Community tradition")
+            item.get("source") or fallback_source or _DEFAULT_SOURCE)
         content = _build_content(
             summary=item.get("summary"),
             common_practices=item.get("common_practices"),
@@ -242,7 +243,7 @@ def _parse_legacy_payload(payload: Dict[str, Any]) -> List[Dict[str, str]]:
 
             topic = _normalize_text(topic_key.replace("_", " "))
             halakhic_source = _normalize_text(
-                topic_data.get("source") or "Community tradition")
+                topic_data.get("source") or _DEFAULT_SOURCE)
             content = _build_content(
                 summary=topic_data.get("ruling"),
                 common_practices=topic_data.get("keywords"),

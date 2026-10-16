@@ -207,6 +207,7 @@ def sitemap_xml():
 # What /llms.txt says about each of the site's own pages: (section, title,
 # description). Keyed by the _SITEMAP_PATHS path so the two cannot drift -- a
 # test fails when a sitemap page has no entry here.
+_LEGAL_SECTION = "Legal and policies"
 _LLMS_PAGES = {
     "/": ("Ask and study", "Sh'elah home", "Ask a halachic or Torah question in plain language; every answer cites its sources."),
     "/about": ("About", "About Sh'elah", "A solo-built Torah library with community-aware customs and an AI assistant that cites primary sources and points back to your rabbi."),
@@ -214,12 +215,12 @@ _LLMS_PAGES = {
     "/glossary": ("About", "Glossary", "Halachic terms such as kezayit, muktzeh and eruv, defined the way the AI assistant defines them."),
     page_meta.TANAKH_HUB_PATH: ("Library", "Tanakh chapters", "Every chapter of the Hebrew Bible, book by book, each linking to its Hebrew and English text."),
     "/ai-disclosure": ("About", "AI disclosure", "Which AI models are used, how retrieval works, the risk of hallucination, and what the AI does not do."),
-    "/terms": ("Legal and policies", "Terms of service", "The rules, disclaimers and legal terms for using the service."),
-    "/privacy": ("Legal and policies", "Privacy policy", "What data is collected, how it is used, who it is shared with, and your rights."),
-    "/acceptable-use": ("Legal and policies", "Acceptable use policy", "The rules for using the service responsibly."),
-    "/dmca": ("Legal and policies", "Copyright (DMCA) policy", "How to report claimed copyright infringement."),
-    "/accessibility": ("Legal and policies", "Accessibility statement", "The commitment to an accessible experience, what is implemented, and how to report an issue."),
-    "/licenses": ("Legal and policies", "Content licenses and credits", "Credit and license terms for the sources and libraries Sh'elah depends on."),
+    "/terms": (_LEGAL_SECTION, "Terms of service", "The rules, disclaimers and legal terms for using the service."),
+    "/privacy": (_LEGAL_SECTION, "Privacy policy", "What data is collected, how it is used, who it is shared with, and your rights."),
+    "/acceptable-use": (_LEGAL_SECTION, "Acceptable use policy", "The rules for using the service responsibly."),
+    "/dmca": (_LEGAL_SECTION, "Copyright (DMCA) policy", "How to report claimed copyright infringement."),
+    "/accessibility": (_LEGAL_SECTION, "Accessibility statement", "The commitment to an accessible experience, what is implemented, and how to report an issue."),
+    "/licenses": (_LEGAL_SECTION, "Content licenses and credits", "Credit and license terms for the sources and libraries Sh'elah depends on."),
 }
 
 
