@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+# Least privilege: no job here writes to the repo (audit F4).
+permissions:
+  contents: read
+
 jobs:
   test:
     # Pinned, not ubuntu-latest: that label moves to Ubuntu 26.04 from

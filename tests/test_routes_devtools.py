@@ -397,6 +397,10 @@ class TestFeedbackDigest:
 
     URL = "/api/devtools/feedback-digest"
 
+    @pytest.fixture(autouse=True)
+    def _operator_is_admin(self, monkeypatch):
+        monkeypatch.setenv("ADMIN_USER_IDS", FAKE_USER_ID)
+
     @pytest.fixture
     def devtools_module(self):
         import backend.routes_devtools as module

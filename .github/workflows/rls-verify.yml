@@ -20,6 +20,10 @@ on:
   # touching auth/RLS config.
   workflow_dispatch: {}
 
+# Least privilege: no job here writes to the repo (audit F4).
+permissions:
+  contents: read
+
 jobs:
   verify-rls:
     # Pinned, not ubuntu-latest: that label moves to Ubuntu 26.04 from

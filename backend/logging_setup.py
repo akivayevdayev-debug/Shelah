@@ -140,6 +140,10 @@ def _build_sentry_init_kwargs(dsn: str) -> dict:
         # automatically. Halachic questions are routinely medical/marital/
         # mental-health/abuse-adjacent.
         "send_default_pii": False,
+        # Stack-frame locals would carry the user's question (``payload``,
+        # ``question``) into any captured exception, bypassing the key-based
+        # _scrub_error_context (security audit F2).
+        "include_local_variables": False,
         "traces_sampler": _traces_sampler,
         "before_send": _sentry_before_send,
         "environment": os.environ.get("VERCEL_ENV", "development"),
