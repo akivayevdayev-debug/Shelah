@@ -19,7 +19,6 @@ import json
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
@@ -101,20 +100,6 @@ def _int_env(name: str, default: int) -> int:
         return default
 
 
-@dataclass
-class HalakhicContext:
-    """Structured container for AI context to simplify function signatures."""
-    question: str
-    sefaria_sources: List[Dict] = field(default_factory=list)
-    customs: List[Dict] = field(default_factory=list)
-    user_memories: List[Dict] = field(default_factory=list)
-    wiki: List[Dict] = field(default_factory=list)
-    halachipedia: List[Dict] = field(default_factory=list)
-    mode: str = "balanced"
-    community_lens: str = "All"
-    tool_context: Optional[Dict] = None
-
-
 # Prompt-shaping constants, not per-deployment config -- these are tuned
 # against the model's actual context window and cost profile, a decision
 # that belongs in code review rather than an operator-settable env var.
@@ -193,15 +178,6 @@ def _model_call_timeout() -> float:
 AI_AGENTIC_TOOLS: bool = (
     os.environ.get("AI_AGENTIC_TOOLS", "false").strip().lower() == "true"
 )
-
-STRUCTURED_RESPONSE_FIELDS = {
-    "ruling",
-    "sources",
-    "is_prohibited",
-    "summary",
-    "practical_steps",
-    "rabbinic_disclaimer",
-}
 
 WEB_LAST_RESORT_WARNING = "**Warning:** No matches found in Sefaria or verified customs. The following info is from the general web and may not be Halakhically accurate. Consult a Rabbi."
 # Saved answers and model output may still open with the emoji form this
