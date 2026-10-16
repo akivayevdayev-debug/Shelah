@@ -652,6 +652,67 @@ class TestOnTopic:
         assert [row["id"] for _, row in ranked] == ["mikveh"]
 
 
+class TestCustomsStayOnTheQuestion:
+    """Irrelevant customs under most answers (2026-10-16): every stored row
+    carries a "Confidence:" line written for the model ("Rabbis differ; give each
+    side and tell the user to ask their own rabbi") and a citation, and a
+    question that mentioned a rabbi, a book or one word of a longer question
+    matched most of them."""
+
+    CONFIDENCE = "Confidence: disputed. Rabbis differ; give each side and tell the user to ask their own rabbi."
+
+    def test_the_lines_written_for_the_model_are_not_part_of_what_a_row_says(self):
+        content = (f"Wear them quietly.\n{self.CONFIDENCE}\nVariants: Yekke: with a beracha"
+                   "\nCommon practices: Remove before Hallel | Do not mix customs")
+        assert rag._substantive_content(content) == (
+            "Wear them quietly.\nYekke: with a beracha\nRemove before Hallel | Do not mix customs")
+
+    def test_a_word_only_the_instruction_line_contains_does_not_score(self):
+        row = _row("Tefillin on Chol HaMoed", f"Wear them quietly.\n{self.CONFIDENCE}")
+        assert rag._score_community_knowledge_row(row, ["differ", "side"], "All") == 0
+        assert rag._rank_community_knowledge_rows([row], ["differ", "side"], None, "All") == []
+
+    @pytest.mark.parametrize("word", ["torah", "rabbi", "rabbis", "talmud", "rashi", "ashkenazim",
+                                      "yemenites", "sephardim", "build", "among"])
+    def test_authorities_demonyms_and_everyday_verbs_are_not_topics(self, word):
+        assert rag._distinctive_keywords([word]) == []
+
+    def test_a_citation_is_not_what_a_row_is_about(self):
+        row = _row("Weddings", "A henna evening.", source="Magen Avot, Orach Chaim 31")
+        assert rag._rank_community_knowledge_rows([row], ["magen", "avot"], None, "All") == []
+
+    def test_one_word_of_a_longer_question_does_not_pick_the_row(self):
+        # "Can I eat chicken with cheese?" -- the Kapparot row says "chicken" only
+        row = _row("Kapparot with a chicken", "A chicken is swung over the head before Yom Kippur.")
+        assert rag._rank_community_knowledge_rows([row], ["chicken", "cheese"], None, "All") == []
+        assert len(rag._rank_community_knowledge_rows([row], ["kapparot", "chicken"], None, "All")) == 1
+
+    def test_a_word_met_only_in_passing_in_the_text_does_not_pick_the_row(self):
+        row = _row("Nusach and order of service", "The Shema is said after the morning blessings.")
+        assert rag._rank_community_knowledge_rows([row], ["shema"], None, "All") == []
+        assert rag._rank_community_knowledge_rows([row], ["shema", "morning"], None, "All") == []
+
+    def test_the_title_and_the_text_together_pick_the_row(self):
+        row = _row("Cemetery visits in Nissan", "Moroccan families visit graves in the month of Nissan.")
+        assert len(rag._rank_community_knowledge_rows([row], ["visit", "nissan"], None, "All")) == 1
+
+    def test_a_long_question_needs_half_of_its_topic_words(self):
+        row = _row("Tefillin on Chol HaMoed", "Debated among the subgroups.")
+        assert len(rag._rank_community_knowledge_rows([row], ["tefillin", "chol", "hamoed"], None, "All")) == 1
+        assert rag._rank_community_knowledge_rows([row], ["tefillin", "kiddush", "challah", "wine", "grape"], None, "All") == []
+
+    def test_retrieval_returns_nothing_for_a_question_about_a_sage(self, monkeypatch):
+        rows = [_row("Tefillin on Chol HaMoed", f"Wear them.\n{self.CONFIDENCE}", source="Rema, Orach Chaim 31:2")]
+        monkeypatch.setattr(app, "_get_supabase_client", lambda: _FakeSupabaseClient(data=rows))
+        monkeypatch.setattr(app, "RAG_TOP_KNOWLEDGE_ROWS", 5)
+        monkeypatch.setattr(app, "_extract_query_keywords",
+                            lambda q, max_keywords=10: ["rabbi", "akiva", "teach", "torah"])
+        monkeypatch.setattr(app, "SUPABASE_COMMUNITY_KNOWLEDGE_TABLE", "community_knowledge")
+        monkeypatch.setattr(app, "_normalize_rag_text", lambda text, max_chars=360: str(text or ""))
+        monkeypatch.setattr(app, "_detect_community_in_text", lambda q: None)
+        assert rag._retrieve_community_knowledge("What did Rabbi Akiva teach in the Torah?") == []
+
+
 class TestRetrieveSkipsQuestionsWithNoTopic:
     def test_only_generic_words_means_no_query_and_no_customs(self, monkeypatch):
         monkeypatch.setattr(app, "_get_supabase_client", lambda: _FakeSupabaseClient(data=[_row("anything")]))

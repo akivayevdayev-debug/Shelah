@@ -136,6 +136,19 @@ _CUSTOMS_STOPWORDS = frozenset({
     "communities", "jewish", "jews", "halacha", "halachah", "halakhah",
     "halakha", "halachic", "law", "laws", "rule", "rules", "ruling",
     "question", "answer", "what's", "isn't", "don't", "doesn't",
+    # The stored text is written for the model ("ask their own rabbi", "the
+    # Shulchan Aruch forbids ...", "in the Torah"), and a question about a
+    # rabbi, a sage or a book names an author, not a custom. Demonyms are
+    # community names too.
+    "torah", "rabbi", "rav", "talmud", "gemara", "mishnah", "mishna", "shulchan",
+    "aruch", "arukh", "berurah", "rema", "rambam", "ramban", "maimonides",
+    "rashi", "tosafot", "zohar", "sefer", "book", "chapter", "verse", "story",
+    "among", "teach", "view", "opinion", "meaning", "significance", "number",
+    "twice", "difference", "according", "happens", "become", "jew", "god",
+    "build", "built", "treat", "celebrate", "celebrated", "celebrating", "observe",
+    "observed", "observing", "perform", "performed", "follow", "followed", "hold",
+    "held", "handle", "begin", "start",
+    "ashkenazim", "sephardim", "sefardim", "mizrahim",
     *COMMUNITY_ALIASES,
     *(word for alias in COMMUNITY_ALIASES for word in alias.split()),
 })
@@ -147,8 +160,11 @@ def _distinctive_keywords(keywords):
     kept = []
     for keyword in keywords or []:
         word = str(keyword or "").strip().lower()
-        if len(word) >= 3 and word not in _CUSTOMS_STOPWORDS and word not in kept:
-            kept.append(word)
+        if len(word) < 3 or word in kept:
+            continue
+        if word in _CUSTOMS_STOPWORDS or (word.endswith("s") and word[:-1] in _CUSTOMS_STOPWORDS):
+            continue
+        kept.append(word)
     return kept
 
 
@@ -157,6 +173,22 @@ def _keyword_in(keyword, text):
     and "candles") -- but "eat" no longer finds "great"."""
     stem = keyword[:-1] if len(keyword) > 4 and keyword.endswith("s") else keyword
     return re.search(r"(?<![a-z0-9])" + re.escape(stem), text) is not None
+
+
+# The stored text of a row (scripts/migrate_customs_to_supabase.py) is the
+# summary, then lines written for the model: a "Confidence:" line ("Rabbis
+# differ; give each side and tell the user to ask their own rabbi"), and the
+# labels "Variants:" and "Common practices:". Matching a question against that
+# wording made every row about "rabbis", "users" and "sides".
+_MODEL_INSTRUCTION_LINE = re.compile(r"^Confidence:[^\n]*(?:\n|$)", re.MULTILINE)
+_ROW_LABEL = re.compile(r"^(?:Variants|Common practices):\s*", re.MULTILINE)
+
+
+def _substantive_content(content):
+    """What a row says about the custom: its content without the lines and
+    labels that address the model."""
+    text = _MODEL_INSTRUCTION_LINE.sub("", str(content or ""))
+    return _ROW_LABEL.sub("", text)
 
 
 def _keyword_match_score(keywords, topic, source, content):
@@ -188,10 +220,32 @@ def _is_on_topic(keywords, topic, source, content):
     return any(_keyword_in(anchor, haystack) for anchor in anchors)
 
 
+def _covers_the_question(keywords, topic, content):
+    """Whether a row speaks to what the question names, not to one word of it.
+    "Can I eat chicken with cheese?" must not get the Kapparot row because its
+    title says "chicken", and "When is the earliest time to say Shema?" must not
+    get every row that mentions the morning Shema in passing. Looked for in the
+    row's title and its text, never in its source line: a citation ("Shulchan
+    Aruch, Orach Chaim") says where the row comes from, not what it is about.
+
+    The title has to carry one of the question's topic keywords (a custom is
+    about its title; a passing mention is not an answer), and a question with
+    several has to be met by at least two of them, or half of them once it is
+    long."""
+    anchors = [keyword for keyword in keywords if keyword not in UMBRELLA_KEYWORDS]
+    if not anchors:
+        return True
+    in_title = [keyword for keyword in anchors if _keyword_in(keyword, topic)]
+    if not in_title:
+        return False
+    spoken = [keyword for keyword in anchors if keyword in in_title or _keyword_in(keyword, content)]
+    return len(spoken) >= min(len(anchors), max(2, -(-len(anchors) // 2)))
+
+
 def _score_community_knowledge_row(row, keywords, canonical_lens):
     topic = str(row.get("topic") or "").lower()
     source = str(row.get("halakhic_source") or "").lower()
-    content = str(row.get("content") or "").lower()
+    content = _substantive_content(row.get("content")).lower()
     community_name = str(row.get("community_name") or "").lower()
 
     score = 0
@@ -280,13 +334,13 @@ def _rank_community_knowledge_rows(rows, keywords, community_filter, canonical_l
         if keyword_score <= 0:
             continue  # off-topic for this question; skip regardless of community match
 
-        if not _is_on_topic(
-            keywords,
-            str(row.get("topic") or "").lower(),
-            str(row.get("halakhic_source") or "").lower(),
-            str(row.get("content") or "").lower(),
-        ):
+        topic = str(row.get("topic") or "").lower()
+        source = str(row.get("halakhic_source") or "").lower()
+        content = _substantive_content(row.get("content")).lower()
+        if not _is_on_topic(keywords, topic, source, content):
             continue  # shares only a broad word ("shabbat") with the question
+        if not _covers_the_question(keywords, topic, content):
+            continue  # speaks to one word of a longer question, or only cites it
 
         ranked.append((score, row))
     return ranked
