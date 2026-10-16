@@ -180,7 +180,9 @@ class TestHolidaysFallbackChain:
             sent_url = rsps.calls[0].request.url
             assert "geo=pos" not in sent_url
             assert "latitude=1" not in sent_url
-            assert "year=2026" in sent_url
+            # The unparseable value falls back to the current year, so only its
+            # shape is pinned: a bare four-digit integer, not the literal 2026.
+            assert re.search(r"[?&]year=\d{4}(?:&|$)", sent_url)
 
     def test_out_of_range_year_falls_back_to_current_year(self, test_client):
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
