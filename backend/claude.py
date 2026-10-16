@@ -791,6 +791,36 @@ def _is_retryable_gemini_error(exc: BaseException) -> bool:
         remaining >= _GEMINI_MIN_TIMEOUT_SECONDS + _GEMINI_RETRY_WAIT_MAX_SECONDS)
 
 
+# Status codes that say this request was bad, not that Gemini is down. A 400
+# is the exception when its message is about the API key (Gemini answers an
+# invalid key with 400 INVALID_ARGUMENT, "API key not valid").
+_GEMINI_REQUEST_SPECIFIC_STATUS_CODES = frozenset({400, 413, 422})
+_GEMINI_KEY_PROBLEM_MARKERS = ("api key", "api_key", "permission_denied", "expired")
+
+
+def _is_gemini_service_failure(exc: BaseException) -> bool:
+    """True when `exc` shows Gemini (or its key) is in trouble -- 401/403/404/
+    429/5xx, a timeout, a dropped connection, an unrecognised exception -- and
+    so counts toward the cooldown. False when only this request was at fault
+    (400/413/422 without an API-key complaint) or our own budget ran out before
+    the call could finish."""
+    if isinstance(exc, TimeoutError) and "ai_budget_exhausted" in str(exc):
+        return False
+    if getattr(exc, "code", None) in _GEMINI_REQUEST_SPECIFIC_STATUS_CODES:
+        message = str(exc).lower()
+        return any(marker in message for marker in _GEMINI_KEY_PROBLEM_MARKERS)
+    return True
+
+
+def _record_gemini_error(exc: BaseException) -> None:
+    """Feed one Gemini exception to the circuit: a real error counts toward the
+    cooldown, a request-specific one only hands back a half-open probe slot."""
+    if _is_gemini_service_failure(exc):
+        health.record_failure("gemini")
+    else:
+        health.release_probe("gemini")
+
+
 def _gemini_contents(prompt: str, history_turns: Optional[List[Dict[str, str]]] = None) -> Any:
     """Gemini ``contents``: the prompt alone, or the thread's earlier turns as
     user/model turns followed by the prompt as the newest user turn."""
@@ -866,15 +896,17 @@ def _call_gemini_model(
     """Low-level Gemini primary call using gemini-3.5-flash-lite. Falls back to Claude Haiku on any failure."""
     _PRIMARY_MODEL = _DEFAULT_GEMINI_MODEL
 
-    # Circuit-broken like every other outbound-provider call site. An open 'gemini' circuit means FAIL_THRESHOLD
-    # consecutive failures were already recorded, so this call would almost
-    # certainly burn the full request timeout before failing -- return the
-    # same error-dict shape a real failure returns so _call_primary_model
-    # falls through to the existing Claude leg instead, unchanged.
+    # Circuit-broken like every other outbound-provider call site. An open
+    # 'gemini' circuit means two real errors in a row already put it on a
+    # 30-60 minute cooldown (see health_check._COOLDOWN_POLICIES), so this call
+    # would only burn the request timeout -- return the same error-dict shape a
+    # real failure returns so _call_primary_model falls through to the existing
+    # Claude leg instead, unchanged. The first request after the cooldown is let
+    # through as the probe.
     if not health.is_healthy('gemini'):
         logger.warning(
-            "Gemini circuit is open — skipping the primary call and "
-            "falling through to the Claude fallback.")
+            "Gemini is cooling down after repeated errors — skipping the "
+            "primary call and answering with Claude.")
         return {
             "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
             "confidence": 0,
@@ -885,6 +917,7 @@ def _call_gemini_model(
 
     config_error = _configure_gemini_client()
     if config_error:
+        health.release_probe('gemini')
         return {
             "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
             "confidence": 0,
@@ -894,6 +927,7 @@ def _call_gemini_model(
         }
 
     if _cached_gemini_client is None:
+        health.release_probe('gemini')
         return {
             "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
             "confidence": 0,
@@ -922,12 +956,10 @@ def _call_gemini_model(
         )
         response_text = _extract_gemini_response_text(resp)
     except Exception as exc:
-        # Exactly one of record_failure/record_success fires per attempt (see
-        # the empty-response branch below and the success path at the end) --
-        # recording success on "the HTTP call returned" and failure on
-        # "the response was unusable" would let an endless run of empty
-        # responses reset the counter every time and never open the circuit.
-        health.record_failure('gemini')
+        # A real error (outage, rate limit, bad key, timeout) counts toward the
+        # cooldown; a request-specific rejection or our own exhausted budget
+        # does not (see _is_gemini_service_failure).
+        _record_gemini_error(exc)
         logger.warning(
             f"Gemini {model_name} failed: {exc}. Falling back to Claude Haiku."
         )
@@ -940,7 +972,10 @@ def _call_gemini_model(
         }
 
     if not response_text:
-        health.record_failure('gemini')
+        # The service answered, so this is no outage: an empty body is usually
+        # one prompt hitting a safety block or the token ceiling. It neither
+        # counts toward the cooldown nor proves Gemini healthy.
+        health.release_probe('gemini')
         logger.warning(
             f"Gemini {model_name} returned empty response. Falling back to Claude Haiku.")
         # The call still succeeded and billed tokens (resp exists) even
@@ -2843,6 +2878,34 @@ def _anthropic_messages(prompt: str, history_turns: Optional[List[Dict[str, str]
     return messages
 
 
+def _with_trailing_cache_breakpoint(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """A copy of an agent loop's ``messages`` with a cache breakpoint on the last
+    block of the last message. Every round of the loop re-sends the whole
+    conversation (the prompt, each assistant turn, each tool result) plus one new
+    turn, so the breakpoint moves forward each round and the next round reads
+    everything before it from the cache at a tenth of the price instead of paying
+    for it again. The caller's list is left untouched (it keeps growing between
+    rounds); a last block that is not a plain dict (an SDK object replayed from
+    the model) or has no text to anchor on is skipped, which only costs the saving."""
+    if not messages:
+        return messages
+    last = messages[-1]
+    content = last.get("content")
+    marker = {"type": "ephemeral"}
+    if isinstance(content, str):
+        if not content.strip():
+            return messages
+        marked: Any = [{"type": "text", "text": content, "cache_control": marker}]
+    elif isinstance(content, list) and content and isinstance(content[-1], dict):
+        tail = content[-1]
+        if tail.get("type") == "text" and not str(tail.get("text") or "").strip():
+            return messages
+        marked = [*content[:-1], {**tail, "cache_control": marker}]
+    else:
+        return messages
+    return [*messages[:-1], {**last, "content": marked}]
+
+
 def _anthropic_request_options(model_name: str, effort: str = "low") -> Dict[str, Any]:
     """Model-specific request fields. Haiku 5.5 thinks adaptively unless told
     otherwise and bills that thinking as output, so a chat answer asks for low
@@ -2863,7 +2926,7 @@ def _anthropic_usage_tokens(usage: Any) -> Tuple[int, int]:
 
     fresh, written, read = count("input_tokens"), count("cache_creation_input_tokens"), count("cache_read_input_tokens")
     if written or read:
-        logger.debug("anthropic cache: read=%d written=%d uncached=%d", read, written, fresh)
+        logger.info("anthropic cache: read=%d written=%d uncached=%d", read, written, fresh)
     equivalent = fresh + round(written * _CACHE_WRITE_RATE) + round(read * _CACHE_READ_RATE)
     return equivalent, count("output_tokens")
 
@@ -3042,7 +3105,11 @@ async def _call_anthropic_agentic_turn(
             else [{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}]
         ),
         "max_tokens": COMPLEX_ANSWER_MAX_TOKENS + CLAUDE_THINKING_HEADROOM_TOKENS,
-        "messages": messages,
+        # The prefix order is tools, system, messages. The system breakpoint
+        # caches the tool definitions with it; the trailing one carries the
+        # conversation so far into the next round. Not on the forced final
+        # round (no `tools`): nothing follows it, so it would only pay the write.
+        "messages": _with_trailing_cache_breakpoint(messages) if tools else messages,
         **_anthropic_request_options(model_name),
     }
     # Omit `tools` entirely (rather than passing []) on the forced final
@@ -3113,6 +3180,7 @@ async def _call_gemini_httpx_model(
 
     config_error = _configure_gemini_client()
     if config_error or _cached_gemini_client is None:
+        health.release_probe("gemini")
         return {
             "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
             "confidence": 0,
@@ -3122,6 +3190,7 @@ async def _call_gemini_httpx_model(
         }
 
     if not genai_types:
+        health.release_probe("gemini")
         return {
             "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
             "confidence": 0,
@@ -3149,6 +3218,17 @@ async def _call_gemini_httpx_model(
                 response_mime_type="application/json",
             ),
         )
+    except Exception as exc:
+        _record_gemini_error(exc)
+        return {
+            "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
+            "confidence": 0,
+            "error": f"gemini_sdk_error: {exc}",
+            "is_fallback": False,
+            "model": model_name,
+        }
+
+    try:
         usage = getattr(response, "usage_metadata", None)
         _log_gemini_usage(usage, model_name)
         await record_llm_call(
@@ -3174,7 +3254,9 @@ async def _call_gemini_httpx_model(
             "model": model_name,
         }
     except Exception as exc:
-        health.record_failure("gemini")
+        # Gemini answered, so whatever went wrong here (an empty body, an
+        # unparsable one) is not an outage and does not count toward the cooldown.
+        health.release_probe("gemini")
         return {
             "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
             "confidence": 0,
@@ -3320,8 +3402,17 @@ def summarize_with_gemini(segment_text: str, notes: str = "") -> Dict[str, Any]:
     )
 
     try:
+        # No Claude leg here -- the local note below is the fallback -- but the
+        # cooldown still applies: while Gemini is known to be failing there is
+        # nothing to gain from asking it, and this request can be the probe.
+        if not health.is_healthy("gemini"):
+            return {
+                "summary": _fallback_bookmark_summary(segment_text, notes),
+                "error": "gemini_circuit_open",
+            }
         config_error = _configure_gemini_client()
         if config_error or _cached_gemini_client is None:
+            health.release_probe("gemini")
             return {
                 "summary": _fallback_bookmark_summary(segment_text, notes),
                 "error": config_error or "gemini_sdk_missing",
@@ -3332,11 +3423,15 @@ def summarize_with_gemini(segment_text: str, notes: str = "") -> Dict[str, Any]:
             config = genai_types.GenerateContentConfig(  # type: ignore[attr-defined]
                 max_output_tokens=240,
             )
-        response = _cached_gemini_client.models.generate_content(  # type: ignore[attr-defined]
-            model=model_name,
-            contents=prompt,
-            config=config,
-        )
+        try:
+            response = _cached_gemini_client.models.generate_content(  # type: ignore[attr-defined]
+                model=model_name,
+                contents=prompt,
+                config=config,
+            )
+        except Exception as call_exc:
+            _record_gemini_error(call_exc)
+            raise
         usage = getattr(response, "usage_metadata", None)
         try:
             # Sync call site (Flask WSGI route, no running event loop) — the
@@ -3356,10 +3451,12 @@ def summarize_with_gemini(segment_text: str, notes: str = "") -> Dict[str, Any]:
         summary = _extract_gemini_response_text(response)
         clean_summary = summary.strip()
         if not clean_summary:
+            health.release_probe("gemini")
             return {
                 "summary": _fallback_bookmark_summary(segment_text, notes),
                 "error": "gemini_empty_summary",
             }
+        health.record_success("gemini")
         return {"summary": clean_summary, "error": ""}
     except Exception as exc:
         return {

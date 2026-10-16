@@ -279,14 +279,14 @@ class TestAsyncGeminiPrimary:
         assert result["error"] == "gemini_sdk_missing"
         assert result["is_fallback"] is False
 
-    async def test_an_empty_response_is_a_recorded_failure(self, monkeypatch):
+    async def test_an_empty_response_is_not_counted_as_an_outage(self, monkeypatch):
         monkeypatch.setattr(claude, "_cached_gemini_client", _gemini_client(_FakeGeminiModels(text="  ")))
 
         result = await claude._call_gemini_httpx_model("prompt")
 
         assert result["error"] == "gemini_sdk_error: empty_response"
         assert result["answer"] == claude._ERR_AI_PROVIDER_UNAVAILABLE
-        assert health._circuits["gemini"].failures == 1
+        assert health._circuits["gemini"].failures == 0
 
     async def test_an_sdk_exception_is_a_recorded_failure(self, monkeypatch):
         models = _FakeGeminiModels(error=RuntimeError("quota exceeded"))

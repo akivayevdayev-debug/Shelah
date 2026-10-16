@@ -119,7 +119,20 @@ Prices are defined in `cost_meter._PRICE_PER_M` (USD per 1M tokens). Update when
 | `RECOVERY_INTERVAL` | 120s | Seconds before half-open probe |
 | `REQUEST_TIMEOUT` | 5s | Per-probe timeout |
 
-**Services tracked:** actively probed — `sefaria`, `hebcal`, `gemini`, `claude`; passively tracked from real call outcomes — `translate_google`, `translate_mymemory`, `web`, `nominatim`, `community_knowledge`. Both AI providers are gated before every call, so an open circuit sends `/ask` down the fallback ladder (and ultimately to the local-corpus answer) without dialing the dead provider.
+**Services tracked:** actively probed — `sefaria`, `hebcal`, `claude` (Gemini is on its own policy, below); passively tracked from real call outcomes — `translate_google`, `translate_mymemory`, `web`, `nominatim`, `community_knowledge`. Both AI providers are gated before every call, so an open circuit sends `/ask` down the fallback ladder (and ultimately to the local-corpus answer) without dialing the dead provider.
+
+**Gemini cooldown.** Gemini is the primary model and Claude its fallback, so it has its own rule instead of the three-failures-and-two-minutes default:
+
+| Setting | Value | Meaning |
+|---|---|---|
+| `GEMINI_FAIL_THRESHOLD` | 2 | Consecutive real errors before Gemini is switched off |
+| `GEMINI_COOLDOWN_SECONDS` (env) | 2700 (45 min), clamped to 1800–3600 | How long every answer comes from Claude alone |
+
+- **What counts as a real error:** a provider outage, a rate limit or quota response (429), a bad or expired key, a 5xx, a timeout, a dropped connection. **What does not:** a request-specific rejection (a 400/413/422 that is not about the key), an empty answer (a safety block or the token ceiling on one prompt), a missing key or SDK, and our own AI budget running out. These neither count toward the two nor reset them; a success does.
+- **During the cooldown** no Gemini call is made (`_call_gemini_model`, `_call_gemini_httpx_model` and the bookmark summary all check first); `/ask` goes straight to Claude and the answer is marked as a fallback, exactly as for any failed Gemini call.
+- **After it** the next real request is the probe: the circuit turns `half-open`, that one request calls Gemini and every other request keeps using Claude until it reports back (a probe that never reports gives its slot up after 90 s). A good answer closes the circuit; an error starts another full cooldown. There is no models-list ping on this path, because a provider can list its models while every generate call fails.
+- **Across instances:** when `RATE_LIMIT_REDIS_URL` is set, the instance that opens the cooldown publishes its end time (`health:cooldown:gemini`) and the others adopt it within 20 s, so a Vercel deploy does not need every instance to fail twice. Without Redis each instance keeps its own cooldown. Redis trouble never affects a request.
+- `GET /api/stack/health` shows `gemini` as `down` during the cooldown and `half-open` while the probe is out.
 
 ```python
 from backend.health_check import health
@@ -129,7 +142,7 @@ if not health.is_healthy("sefaria"):
 health.record_success("sefaria")
 ```
 
-**Serverless note:** State is per-instance. Each cold start re-probes failing services on first request — intentional trade-off vs. adding Supabase latency to every request.
+**Serverless note:** State is per-instance (the Gemini cooldown is also shared through Redis when it is configured, see above). Each cold start re-probes failing services on first request — intentional trade-off vs. adding Supabase latency to every request.
 
 ---
 

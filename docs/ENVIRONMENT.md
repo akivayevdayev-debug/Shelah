@@ -26,6 +26,7 @@ Every value below already has a working default in code. Set one only to overrid
 | `FLASK_DEBUG` | `false` | Enables Flask's debug/reloader mode — only read in the `python3 app.py` direct-run path (`app.py`'s `__main__` block); has no effect under `uvicorn`/`gunicorn` |
 | `PORT` | `5001` | Server port for plain Flask mode |
 | `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Gemini model name override |
+| `GEMINI_COOLDOWN_SECONDS` | `2700` | How long `/ask` uses Claude only after Gemini fails twice in a row with real errors (`backend/health_check.py`); clamped to 1800–3600. The first request after it tries Gemini again, and a failure starts another full cooldown |
 | `GOOGLE_API_KEY` | — | Fallback for `GEMINI_API_KEY` (checked second); once resolved, both are normalized to the same value so the Gemini SDK doesn't warn about a mismatch |
 | `AI_AGENTIC_TOOLS` | `false` | `true` turns on the AI's tool-use loop (`backend/ask_pipeline.py::run_agentic_ask`, 22 tools in `backend/ai_tools.py`). Off, `/ask` answers from the up-front retrieval context only. Each tool round is another metered model call, so don't enable in production until `RATE_LIMIT_REDIS_URL` points at a shared store — see [AI_TOOLS.md](AI_TOOLS.md) |
 | `AI_TOTAL_BUDGET_SECONDS` | `45` | Wall-clock budget (seconds) for a full `/ask` AI synthesis call, shared by the Flask and FastAPI transports — must stay under `vercel.json`'s `functions.maxDuration` (90s) so the platform never kills the request before the graceful-fallback path can run |

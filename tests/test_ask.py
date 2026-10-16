@@ -1144,10 +1144,10 @@ class TestAskPrimaryAiCircuitBreaker:
         assert result["error"].startswith("gemini_error:")
         assert health_check_module.health._circuits["gemini"].failures == 1
 
-    def test_sync_gemini_empty_response_records_failure_not_success(self, monkeypatch):
-        """An endless run of empty responses must still be able to open the
-        circuit -- recording success on 'the HTTP call returned' would reset
-        the consecutive counter every time and it never would."""
+    def test_sync_gemini_empty_response_is_not_an_outage(self, monkeypatch):
+        """An empty body means Gemini answered (a safety block or the token
+        ceiling on one prompt): a run of them must not put the app on the
+        30-60 minute Claude-only cooldown, and must not count as a success."""
         import backend.claude as claude_module
         import backend.health_check as health_check_module
 
@@ -1162,10 +1162,13 @@ class TestAskPrimaryAiCircuitBreaker:
             claude_module, "_generate_gemini_content_with_retry",
             lambda *a, **k: _EmptyResponse())
 
+        health_check_module.health.record_failure("gemini")
         for _ in range(FAIL_THRESHOLD):
-            claude_module._call_gemini_model("prompt text")
+            result = claude_module._call_gemini_model("prompt text")
+            assert result["error"] == "gemini_error: empty_response"
 
-        assert health_check_module.health.is_healthy("gemini") is False
+        assert health_check_module.health.is_healthy("gemini") is True
+        assert health_check_module.health._circuits["gemini"].failures == 1
 
     def test_sync_gemini_success_records_circuit_success(self, monkeypatch):
         import backend.claude as claude_module
@@ -1176,7 +1179,8 @@ class TestAskPrimaryAiCircuitBreaker:
             candidates = []
             usage_metadata = None
 
-        health_check_module.health.record_failure("gemini")
+        # One failure short of the cooldown (GEMINI_FAIL_THRESHOLD is 2): a
+        # second one would skip the call this test is about.
         health_check_module.health.record_failure("gemini")
 
         monkeypatch.setattr(claude_module, "_configure_gemini_client", lambda: None)

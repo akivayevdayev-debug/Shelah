@@ -161,3 +161,77 @@ async def test_empty_tools_list_omits_tools_param_from_the_api_call(mock_outboun
     import json as _json
     payload = _json.loads(sent_body)
     assert "tools" not in payload
+
+
+# ─── Prompt caching across the rounds of the loop ───────────────────────────
+
+_MARK = {"type": "ephemeral"}
+_TOOLS = [{"name": "get_hebrew_date", "description": "d", "input_schema": {"type": "object", "properties": {}}}]
+
+
+def _sent_messages(route):
+    import json
+    return json.loads(route.calls.last.request.content)["messages"]
+
+
+class TestTrailingCacheBreakpoint:
+    def test_a_plain_prompt_becomes_a_marked_text_block(self):
+        marked = claude._with_trailing_cache_breakpoint([{"role": "user", "content": "hi"}])
+
+        assert marked == [{"role": "user", "content": [
+            {"type": "text", "text": "hi", "cache_control": _MARK}]}]
+
+    def test_only_the_last_block_of_the_last_message_is_marked(self):
+        messages = [
+            {"role": "user", "content": "question"},
+            {"role": "assistant", "content": [{"type": "tool_use", "id": "t1", "name": "x", "input": {}}]},
+            {"role": "user", "content": [
+                {"type": "tool_result", "tool_use_id": "t1", "content": "a"},
+                {"type": "tool_result", "tool_use_id": "t2", "content": "b"},
+            ]},
+        ]
+
+        marked = claude._with_trailing_cache_breakpoint(messages)
+
+        assert marked[:2] == messages[:2]
+        assert "cache_control" not in marked[2]["content"][0]
+        assert marked[2]["content"][1] == {
+            "type": "tool_result", "tool_use_id": "t2", "content": "b", "cache_control": _MARK}
+
+    def test_the_callers_messages_are_not_modified(self):
+        messages = [{"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t", "content": "a"}]}]
+
+        claude._with_trailing_cache_breakpoint(messages)
+
+        assert messages == [{"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": "t", "content": "a"}]}]
+
+    def test_nothing_to_anchor_on_leaves_the_messages_alone(self):
+        sdk_block = object()  # a block replayed from the SDK is not a plain dict
+        for messages in (
+            [],
+            [{"role": "user", "content": "   "}],
+            [{"role": "user", "content": []}],
+            [{"role": "assistant", "content": [sdk_block]}],
+            [{"role": "user", "content": [{"type": "text", "text": ""}]}],
+        ):
+            assert claude._with_trailing_cache_breakpoint(messages) is messages
+
+
+async def test_a_round_that_can_continue_sends_the_trailing_breakpoint(mock_outbound_httpx):
+    route = mock_outbound_httpx.post(url__regex=ANTHROPIC_MESSAGES_URL_RE)
+    messages = [{"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t", "content": "a"}]}]
+
+    await claude._call_anthropic_agentic_turn(messages=messages, system_text="sys", tools=_TOOLS)
+
+    assert _sent_messages(route)[-1]["content"][-1]["cache_control"] == _MARK
+    assert "cache_control" not in messages[-1]["content"][-1]
+
+
+async def test_the_forced_final_round_does_not_pay_for_a_breakpoint(mock_outbound_httpx):
+    route = mock_outbound_httpx.post(url__regex=ANTHROPIC_MESSAGES_URL_RE)
+
+    await claude._call_anthropic_agentic_turn(
+        messages=[{"role": "user", "content": "hi"}], system_text="sys", tools=[])
+
+    assert _sent_messages(route) == [{"role": "user", "content": "hi"}]
