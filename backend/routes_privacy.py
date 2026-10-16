@@ -31,6 +31,7 @@ from flask import Blueprint, g, jsonify, request
 
 from backend.auth import require_clerk_auth
 from backend.cost_meter import expire_stale_budget_reservations
+from backend.helpers import _json_object_body
 
 from app import (
     SUPABASE_PREFS_TABLE,
@@ -253,7 +254,7 @@ def delete_account():
     is deliberately left intact and the response says so, so the client
     can prompt the user to retry while still signed in.
     """
-    payload = request.get_json(silent=True) or {}
+    payload = _json_object_body()
     if str(payload.get("confirmation") or "").strip() != _DELETE_CONFIRMATION_PHRASE:
         return jsonify({
             "error": f'Send {{"confirmation": "{_DELETE_CONFIRMATION_PHRASE}"}} to confirm this irreversible action.',

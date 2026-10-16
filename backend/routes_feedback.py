@@ -20,10 +20,11 @@ feedback is still saved, just unlinked.
 import hashlib
 import re
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify
 
 from backend.claude import sanitize_user_query
 from backend.auth import maybe_require_clerk_auth
+from backend.helpers import _json_object_body
 
 from app import (
     SUPABASE_ANSWER_FEEDBACK_TABLE,
@@ -100,7 +101,7 @@ def _insert_feedback(supabase, record, link):
 @routes_feedback.route("/api/feedback", methods=["POST"])
 @maybe_require_clerk_auth
 def submit_feedback():
-    payload = request.get_json(silent=True) or {}
+    payload = _json_object_body()
 
     verdict = str(payload.get("verdict") or "").strip()
     if verdict not in _VALID_VERDICTS:

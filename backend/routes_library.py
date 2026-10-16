@@ -14,6 +14,7 @@ import re
 from flask import Blueprint, jsonify, request, send_file
 
 from backend.helpers import (
+    _json_object_body,
     QUICK_TEXT_ALIASES,
     COMMUNITIES,
     COMMUNITY_ALIASES,
@@ -742,7 +743,7 @@ def _parse_export_chapter_request(payload):
 @routes_library.route("/api/export/chapter", methods=["POST"])
 @maybe_require_clerk_auth
 def export_chapter():
-    payload = request.get_json(silent=True) or {}
+    payload = _json_object_body()
     title, ref, export_format, lines = _parse_export_chapter_request(payload)
 
     if export_format not in {"txt", "docx", "pdf"}:

@@ -52,6 +52,7 @@ from backend.cost_gates import (
 )
 from backend.helpers import (
     _coerce_int,
+    _json_object_body,
     _sanitize_answer_mode,
     _canonicalize_community_name,
     _compact_ai_sources,
@@ -174,7 +175,7 @@ def create_conversation():
     if error_response:
         return error_response
 
-    payload = request.get_json(silent=True) or {}
+    payload = _json_object_body()
     minhag = str(payload.get("minhag") or "").strip()[:80] or None
 
     # `from_history_id`: continue a search-bar answer (one of the caller's own
@@ -432,7 +433,7 @@ def create_message(conversation_id):
     if error_response:
         return error_response
 
-    payload = request.get_json(silent=True) or {}
+    payload = _json_object_body()
     role = str(payload.get("role") or "").strip()
     if role not in _VALID_ROLES:
         return jsonify({"error": f"role must be one of {_VALID_ROLES}"}), 400
@@ -488,7 +489,7 @@ def update_conversation(conversation_id):
     if error_response:
         return error_response
 
-    payload = request.get_json(silent=True) or {}
+    payload = _json_object_body()
     updates = {}
     if "title" in payload:
         updates["title"] = str(payload.get("title") or "").strip()[:200]
@@ -1155,7 +1156,7 @@ def ask_in_conversation(conversation_id):
     if error_response:
         return error_response
 
-    payload = request.get_json(silent=True) or {}
+    payload = _json_object_body()
     is_retry, retry_of = _parse_retry_of(payload)
     if is_retry and not retry_of:
         return _invalid_retry_response("retry_of must be the id of a failed answer in this conversation.")

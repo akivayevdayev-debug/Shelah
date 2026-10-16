@@ -323,6 +323,15 @@ def _coerce_int(value, default, min_value=1, max_value=100):
     return max(min_value, min(parsed, max_value))
 
 
+def _json_object_body():
+    """The request's JSON body when it is an object, else ``{}``: the value an
+    empty or unparsable body already gives, so the route's own validation
+    answers it. A JSON array, string or number used to reach ``.get()`` and
+    surface as a 500 (and an error-bot alert) for the caller's malformed body."""
+    payload = _flask_request.get_json(silent=True)
+    return payload if isinstance(payload, dict) else {}
+
+
 # Trust order verified against Vercel's own request-headers reference: Vercel
 # overwrites X-Forwarded-For (and sets X-Vercel-Forwarded-For) so client-
 # supplied values for those two headers cannot pass through unmodified.

@@ -18,7 +18,7 @@ from flask import Blueprint, jsonify, request, g
 
 from backend import cost_meter, rate_limit
 from backend.auth import CLERK_ENFORCE_AUTH, maybe_require_clerk_auth, require_clerk_auth
-from backend.helpers import _is_same_origin_request
+from backend.helpers import _is_same_origin_request, _json_object_body
 
 from app import (
     app,
@@ -341,7 +341,7 @@ def client_errors():
     if not _is_same_origin_request():
         return jsonify({"error": "forbidden"}), 403
 
-    payload = request.get_json(silent=True) or {}
+    payload = _json_object_body()
     context = {
         "url": str(payload.get("url") or "")[:400],
         "stack": str(payload.get("stack") or "")[:_CLIENT_ERROR_STACK_MAX_CHARS],
@@ -361,7 +361,7 @@ def client_errors():
 @routes_devtools.route("/api/devtools/segment-report", methods=["POST"])
 @maybe_require_clerk_auth
 def report_segment_issue():
-    payload = request.get_json(silent=True) or {}
+    payload = _json_object_body()
     # Security-audit fix: a non-string JSON value for any of
     # these fields (e.g. {"kind": 1}) used to short-circuit the `or` fallback
     # and crash `.strip()` with an unhandled AttributeError -> 500. str()

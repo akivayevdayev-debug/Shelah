@@ -16,7 +16,7 @@ from flask import Blueprint, g, jsonify, request, session
 from backend import sefaria
 from backend.data_service import ShelahEngine
 from backend.health_check import health
-from backend.helpers import _is_same_origin_request, _coerce_int
+from backend.helpers import _is_same_origin_request, _coerce_int, _json_object_body
 
 from app import (
     app,
@@ -41,7 +41,7 @@ def set_location():
     if not _is_same_origin_request():
         return jsonify({"error": "forbidden"}), 403
 
-    data = request.get_json(silent=True) or {}
+    data = _json_object_body()
     lat = _coerce_coordinate(data.get('lat'), -90, 90)
     lon = _coerce_coordinate(data.get('lon'), -180, 180)
     if lat is None or lon is None:

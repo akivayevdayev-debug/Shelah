@@ -24,6 +24,7 @@ from backend.auth import (
     maybe_require_clerk_auth,
 )
 from backend.device_identity import filter_owner, require_history_owner
+from backend.helpers import _json_object_body
 
 from app import (
     STRICT_SUPABASE_RLS,
@@ -98,7 +99,7 @@ def accept_legal():
     same LEGAL_TERMS_VERSION/LEGAL_PRIVACY_VERSION constants, so bumping
     either constant both re-shows the modal and produces a distinguishable
     acceptance record for the new version."""
-    payload = request.get_json(silent=True) or {}
+    payload = _json_object_body()
     age_attested = bool(payload.get("age_attested"))
     terms_version = str(payload.get("terms_version") or LEGAL_TERMS_VERSION)
     privacy_version = str(
@@ -221,7 +222,7 @@ def _user_preferences_put_response(table, user_id):
     payload. Split out to keep this branch out of that route's own
     complexity count (SonarCloud python:S3776).
     """
-    payload = request.get_json(silent=True) or {}
+    payload = _json_object_body()
     prefs = payload.get("prefs")
     if not isinstance(prefs, dict):
         return jsonify({"error": "prefs must be an object"}), 400
@@ -365,7 +366,7 @@ def semantic_bookmarks():
             )
             return jsonify({"items": result.data or []})
 
-        payload = request.get_json(silent=True) or {}
+        payload = _json_object_body()
         ref = str(payload.get("ref") or "").strip()[:260]
         return _semantic_bookmark_create_response(table, user_id, payload, ref)
     except Exception as e:

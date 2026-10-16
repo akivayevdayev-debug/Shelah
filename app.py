@@ -59,6 +59,7 @@ from backend.health_check import health as api_health  # noqa: F401
 from backend.csp import content_security_policy_for
 from backend.helpers import extract_ai_cited
 from backend.helpers import (
+    _json_object_body,
     _sanitize_answer_mode,
     _resolve_client_ip,
     _compact_ai_sources,
@@ -2257,7 +2258,7 @@ def _build_ask_critical_error_context(local_vars):
 @maybe_require_clerk_auth
 @issues_device_cookie
 def ask_question():
-    data = request.get_json(silent=True) or {}
+    data = _json_object_body()
     parsed_request = _parse_and_validate_ask_question_request(data)
     if parsed_request is None:
         return jsonify({"error": "No valid question provided"}), 400
