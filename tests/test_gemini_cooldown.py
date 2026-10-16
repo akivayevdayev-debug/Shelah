@@ -95,8 +95,8 @@ class TestOpeningTheCircuit:
             raise AssertionError("is_healthy('gemini') made a network call")
 
         monkeypatch.setattr(health_check.requests, "get", _boom)
-        _open(breaker)
         with freeze_time(START) as clock:
+            _open(breaker)
             clock.tick(timedelta(hours=2))
             assert breaker.is_healthy("gemini") is True  # the probe slot, no models-list request
 
