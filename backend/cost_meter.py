@@ -524,8 +524,12 @@ _RESERVATION_TTL_MINUTES = 10  # must match scripts/sql/check_and_reserve_user_b
 # plus the same on the Claude fallback) sits well inside that.
 _MAX_SINGLE_ASK_OUTPUT_TOKENS = 20_000
 _MAX_SINGLE_ASK_INPUT_TOKENS = 100_000
-_MAX_SINGLE_ASK_INPUT_PRICE_PER_M = 0.10   # claude-haiku-5-5 input rate
-_MAX_SINGLE_ASK_OUTPUT_PRICE_PER_M = 0.50  # claude-haiku-5-5 output rate
+# Read from the price table above so a price change cannot leave the
+# reservation on the old rate. Must name backend/claude.py:_CLAUDE_FALLBACK_MODEL
+# (a test pins that; this module cannot import claude, which imports it).
+_RESERVATION_PRICE_MODEL = "claude-haiku-5-5"
+_MAX_SINGLE_ASK_INPUT_PRICE_PER_M = _PRICE_PER_M[_RESERVATION_PRICE_MODEL]["input"]
+_MAX_SINGLE_ASK_OUTPUT_PRICE_PER_M = _PRICE_PER_M[_RESERVATION_PRICE_MODEL]["output"]
 
 
 def _max_single_ask_reservation_usd() -> float:

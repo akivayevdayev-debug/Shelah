@@ -204,6 +204,21 @@ def test_max_single_ask_reservation_is_positive_and_small():
     assert reservation < cost_meter._DEFAULT_PER_USER_DAILY_BUDGET_USD
 
 
+def test_reservation_is_priced_at_the_claude_fallback_model():
+    """The reservation is the worst case of the pricier dispatchable model.
+    If the fallback model changes in claude.py this fails until the
+    reservation is repriced, instead of reserving at the old model's rates."""
+    from backend import claude
+
+    assert cost_meter._RESERVATION_PRICE_MODEL == claude._CLAUDE_FALLBACK_MODEL
+    prices = cost_meter._PRICE_PER_M[claude._CLAUDE_FALLBACK_MODEL]
+    expected = (
+        cost_meter._MAX_SINGLE_ASK_INPUT_TOKENS * prices["input"]
+        + cost_meter._MAX_SINGLE_ASK_OUTPUT_TOKENS * prices["output"]
+    ) / 1_000_000
+    assert cost_meter._max_single_ask_reservation_usd() == pytest.approx(expected)
+
+
 # ─── _reserve_budget_or_deny ─────────────────────────────────────────────────
 
 def test_reserve_budget_or_deny_returns_allowed_true_when_no_supabase_client(monkeypatch):
