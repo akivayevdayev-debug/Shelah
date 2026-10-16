@@ -649,8 +649,10 @@ class TestFollowUpHistoryCondensing:
 
     def test_strips_headers_and_sources_block(self):
         text = claude._format_conversation_history([{"role": "assistant", "content": self.RENDERED}])
-        assert "##" not in text and "**" not in text
-        assert "Direct Answer" not in text and "Practical Steps" not in text
+        assert "##" not in text
+        assert "**" not in text
+        assert "Direct Answer" not in text
+        assert "Practical Steps" not in text
         assert "Wait six hours after meat" in text
         assert "Count from the end of the meal." in text
 
@@ -671,7 +673,8 @@ class TestFollowUpHistoryCondensing:
             "role": "assistant",
             "content": "## תשובה ישירה\n\nממתינים שש שעות.\n\n**מקורות**\n\n- שולחן ערוך יורה דעה פט",
         }])
-        assert "תשובה ישירה" not in text and "**" not in text
+        assert "תשובה ישירה" not in text
+        assert "**" not in text
         assert "ממתינים שש שעות." in text
         assert "[sources cited: שולחן ערוך יורה דעה פט]" in text
 
@@ -795,7 +798,8 @@ class TestAnswerDepthCalibration:
     def test_how_and_why_alone_no_longer_demand_a_full_explanation(self):
         for q in ("how long do I wait between meat and milk", "why do we cover the challah"):
             result = claude._detail_expectation_for_question(q, "balanced")
-            assert "Balanced mode" in result and "full explanation" not in result
+            assert "Balanced mode" in result
+            assert "full explanation" not in result
 
     def test_balanced_mode_asks_for_a_short_direct_answer(self):
         result = claude._detail_expectation_for_question("can I eat this", "balanced")

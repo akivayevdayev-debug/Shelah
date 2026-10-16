@@ -234,13 +234,15 @@ class TestPromptsAskForMarkers:
             claude.build_prompt("can I light a fire", [], []),
         ):
             assert "right after the sentence" in prompt
-            assert "same source" in prompt and "once" in prompt
+            assert "same source" in prompt
+            assert "once" in prompt
 
     def test_a_follow_up_sees_earlier_answers_without_markers(self):
         body, cited = claude._condense_assistant_answer(
             "## Direct Answer\n\nForbidden.[1][2]\n\n**Sources**\n\n- Shabbat 73b — labors\n"
         )
-        assert "[1]" not in body and "Forbidden." in body
+        assert "[1]" not in body
+        assert "Forbidden." in body
         assert cited == ["Shabbat 73b"]
 
 

@@ -379,7 +379,8 @@ class TestVercelAppHostRedirect:
 
     def test_every_path_is_captured_except_the_cron_endpoints(self):
         source = self._rule()["source"]
-        assert source.startswith("/:path(") and source.endswith(")")
+        assert source.startswith("/:path(")
+        assert source.endswith(")")
         # Vercel's ``/:path(<regex>)`` is path-to-regexp: one named group.
         path_re = re.compile("/(?P<path>" + source[len("/:path("):-1] + ")")
         for path, captured in (
@@ -389,7 +390,8 @@ class TestVercelAppHostRedirect:
             ("/api/text/Genesis%201", "api/text/Genesis%201"),
         ):
             match = path_re.fullmatch(path)
-            assert match and match.group("path") == captured, path
+            assert match, path
+            assert match.group("path") == captured, path
         assert not path_re.fullmatch("/api/devtools/budget-check")
         assert not path_re.fullmatch("/api/devtools/retention-enforce")
 

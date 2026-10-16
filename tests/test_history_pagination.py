@@ -237,7 +237,8 @@ class TestSearch:
     def test_filters_on_question_text_case_insensitively(self, test_client, db):
         body = _page(test_client, q="  SHABBAT  ")
         questions = [i["question"] for i in body["items"]]
-        assert questions and all("shabbat" in q.lower() for q in questions)
+        assert questions
+        assert all("shabbat" in q.lower() for q in questions)
         assert "Someone else's Shabbat question" not in questions
         assert db.history.queries[-1].ilike_pattern == "%SHABBAT%"
 

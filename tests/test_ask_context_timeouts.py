@@ -39,8 +39,10 @@ class TestWithinCeiling:
         async def boom():
             raise RuntimeError("upstream exploded")
 
+        failing = boom()
+
         with pytest.raises(RuntimeError, match="upstream exploded"):
-            await asgi._within("wiki", boom(), None)
+            await asgi._within("wiki", failing, None)
 
 
 class TestCollectAsyncContextDegrades:
@@ -167,10 +169,11 @@ class TestProgressTracked:
             raise RuntimeError("upstream down")
 
         events = []
+        tracked = flask_app_module._progress_tracked("customs", boom)
         token = ask_progress.bind(events.append)
         try:
             with pytest.raises(RuntimeError, match="upstream down"):
-                flask_app_module._progress_tracked("customs", boom)()
+                tracked()
         finally:
             ask_progress.unbind(token)
 

@@ -101,8 +101,10 @@ class TestTanakhHub:
         flat = [book["name"] for d in divisions for book in d["books"]]
         assert flat == [book for book, _count in _TANAKH_CHAPTERS]
         assert [b["name"] for b in divisions[0]["books"]] == ["Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy"]
-        assert divisions[1]["books"][0]["name"] == "Joshua" and divisions[1]["books"][-1]["name"] == "Malachi"
-        assert divisions[2]["books"][0]["name"] == "Psalms" and divisions[2]["books"][-1]["name"] == "II Chronicles"
+        assert divisions[1]["books"][0]["name"] == "Joshua"
+        assert divisions[1]["books"][-1]["name"] == "Malachi"
+        assert divisions[2]["books"][0]["name"] == "Psalms"
+        assert divisions[2]["books"][-1]["name"] == "II Chronicles"
 
     def test_is_canonical_in_the_sitemap_and_llms_txt(self, test_client):
         html = test_client.get("/tanakh").get_data(as_text=True)

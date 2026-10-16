@@ -569,7 +569,8 @@ class TestFormatThreeZero:
 
     def test_reviewer_text_never_reaches_a_loaded_entry(self, loaded):
         blob = json.dumps(loaded)
-        assert "Reviewer text" not in blob and "was not opened" not in blob
+        assert "Reviewer text" not in blob
+        assert "was not opened" not in blob
 
     def test_each_distinctive_custom_is_its_own_entry(self, loaded):
         entry = loaded["unique_meldado"]
@@ -678,7 +679,8 @@ class TestRuntimeConfig:
         data["runtime"] = {"lens_key": "Testanian", "parameters": {"not": "a list"}}
         _write_json(empty_customs_dir / "t.json", data)
         entry = customs.runtime_config()["testanian"]
-        assert entry["practice_baseline"] == "" and entry["parameters"] == []
+        assert entry["practice_baseline"] == ""
+        assert entry["parameters"] == []
 
     def test_result_is_cached_until_a_file_changes(self, empty_customs_dir):
         path = empty_customs_dir / "t.json"

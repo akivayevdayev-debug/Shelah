@@ -162,8 +162,9 @@ class TestRunAndMain:
         # The command line cannot name a file to read or write: the paths are
         # fixed in the script, so a stray flag is refused rather than followed.
         elsewhere = tmp_path / "elsewhere.json"
+        session = self.export()
 
         with pytest.raises(SystemExit):
-            vr.main([flag, str(elsewhere)], session=self.export())
+            vr.main([flag, str(elsewhere)], session=session)
 
         assert not elsewhere.exists()

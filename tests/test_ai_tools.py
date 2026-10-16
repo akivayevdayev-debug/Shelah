@@ -498,7 +498,8 @@ async def test_get_community_profile_for_every_real_community_is_complete():
         assert "error" not in result, (lens_key, result)
         assert result["practice_baseline"], lens_key
         assert result["practice_baseline"] == customs.runtime_config()[lens_key.lower()]["practice_baseline"]
-        assert isinstance(result["unique_minhagim"], list) and result["unique_minhagim"], lens_key
+        assert isinstance(result["unique_minhagim"], list), lens_key
+        assert result["unique_minhagim"], lens_key
         assert "\n" in result["historical_background"] or len(result["historical_background"]) > 40, lens_key
 
 
@@ -581,7 +582,8 @@ async def test_get_prayer_text_answers_a_section_name_from_the_curated_siddur(mo
     [section] = result["sections"]
     assert section["ref"] == "Siddur Edot HaMizrach, Weekday Shacharit, The Shema"
     assert section["path"] == "/siddur/edot-hamizrach/shacharit/keriat-shema"
-    assert len(section["lines"]) == 6 and section["truncated"] is True
+    assert len(section["lines"]) == 6
+    assert section["truncated"] is True
     assert section["line_count"] > 6
     first = section["lines"][0]
     assert first["type"] == "heading"

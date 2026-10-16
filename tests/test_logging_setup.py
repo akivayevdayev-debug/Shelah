@@ -209,7 +209,9 @@ class TestCaptureBackendError:
         error = APIError({"message": message, "code": "PGRST303", "hint": None, "details": None})
         logging_setup._capture_backend_error("user_preferences_sync_failed", error, {"user_id_hash": "h"})
 
-        assert errors == [] and posted == [] and sentry == []
+        assert errors == []
+        assert posted == []
+        assert sentry == []
         assert len(warnings) == 1
         assert warnings[0].startswith("OBS_EVENT_QUIET ")
         assert "user_preferences_sync_failed" in warnings[0]

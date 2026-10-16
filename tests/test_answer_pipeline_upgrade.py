@@ -59,7 +59,8 @@ class TestBuildHistoryTurns:
         long_answer = "Because the rule is long. " * 80
         thread = _thread(*[(f"Question {n}?", long_answer) for n in range(8)])
         turns = claude.build_history_turns(thread, assistant_chars=2400, max_total_chars=5000)
-        assert turns[0]["role"] == "user" and turns[-1]["role"] == "assistant"
+        assert turns[0]["role"] == "user"
+        assert turns[-1]["role"] == "assistant"
         assert turns[-2]["text"] == "Question 7?"
         assert sum(len(t["text"]) for t in turns) <= 5000
         assert "Question 0?" not in [t["text"] for t in turns]
@@ -177,7 +178,8 @@ class TestDropRepeatedContent:
     def test_a_summary_that_restates_the_ruling_is_dropped(self):
         summary, steps = claude._drop_repeated_content(
             self.RULING, "Cooking on Shabbat is forbidden, including reheating food on a flame.", [])
-        assert summary == "" and steps == []
+        assert summary == ""
+        assert steps == []
 
     def test_a_summary_that_adds_something_is_kept(self):
         summary, _ = claude._drop_repeated_content(
@@ -194,7 +196,8 @@ class TestDropRepeatedContent:
 
     def test_short_lines_are_never_judged(self):
         summary, steps = claude._drop_repeated_content(self.RULING, "Ask a rabbi.", ["Ask your rabbi."])
-        assert summary == "Ask a rabbi." and steps == ["Ask your rabbi."]
+        assert summary == "Ask a rabbi."
+        assert steps == ["Ask your rabbi."]
 
     def test_normalizing_a_payload_drops_the_echo(self):
         out = claude._normalize_structured_response({
@@ -202,9 +205,11 @@ class TestDropRepeatedContent:
             "summary": "Cooking on Shabbat is forbidden, including reheating food on an open flame.",
             "practical_steps": ["Do not reheat food on an open flame on Shabbat."],
         })
-        assert out["summary"] == "" and out["practical_steps"] == []
+        assert out["summary"] == ""
+        assert out["practical_steps"] == []
         markdown = claude.render_structured_markdown(out)
-        assert "## Summary" not in markdown and "## What to do" not in markdown
+        assert "## Summary" not in markdown
+        assert "## What to do" not in markdown
 
 
 # ─── Claude request shape: caching, history, effort ─────────────────────────
@@ -328,7 +333,8 @@ class TestAnthropicFallbackCall:
         await claude._call_anthropic_httpx_model("p")
 
         [entry] = holder.billed
-        assert entry["provider"] == "anthropic" and entry["model"] == "claude-haiku-5-5"
+        assert entry["provider"] == "anthropic"
+        assert entry["model"] == "claude-haiku-5-5"
         assert entry["input_tokens"] == 50 + 400
         assert entry["output_tokens"] == 200
 

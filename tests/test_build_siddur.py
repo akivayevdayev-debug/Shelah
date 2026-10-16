@@ -65,7 +65,8 @@ class TestBuild:
         }]
         assert toc["source"]["he"] == {"title": "Shaliehsaboo Edition", "license": "CC0", "source": ""}
         assert services["shacharit"]["sections"][1]["lines"][0]["when"] == ["barchenu"]
-        assert services["shacharit"]["version"] == toc["version"] and re.fullmatch(r"[0-9a-f]{12}", toc["version"])
+        assert services["shacharit"]["version"] == toc["version"]
+        assert re.fullmatch(r"[0-9a-f]{12}", toc["version"])
 
     def test_version_changes_with_content(self, small_curation):
         first, _ = build_siddur.build(_sources())
@@ -75,21 +76,23 @@ class TestBuild:
     def test_misaligned_english_is_dropped_and_flagged(self, small_curation):
         toc, services = build_siddur.build(_sources(en_morning=["a", "b", "c"]))
         amida = toc["occasions"][0]["services"][0]["sections"][1]
-        assert amida["englishOmitted"] == "misaligned" and amida["english"] == 0
+        assert amida["englishOmitted"] == "misaligned"
+        assert amida["english"] == 0
         assert all("en" not in line for line in services["shacharit"]["sections"][1]["lines"])
 
     @pytest.mark.parametrize("which", ["he", "en"])
     def test_unlicensed_versions_are_refused(self, small_curation, which):
-        kwargs = {f"{which}_license": "unknown"}
+        sources = _sources(**{f"{which}_license": "unknown"})
         with pytest.raises(SystemExit, match="only"):
-            build_siddur.build(_sources(**kwargs))
+            build_siddur.build(sources)
 
     def test_curation_must_cover_every_top_node(self, monkeypatch):
         monkeypatch.setattr(build_siddur, "OCCASIONS", [("weekday", {}, [
             ("Weekday Shacharit", "shacharit", "Shacharit", ""),
         ])])
+        sources = _sources()
         with pytest.raises(SystemExit, match="uncurated=\\['Bedtime Shema'\\]"):
-            build_siddur.build(_sources())
+            build_siddur.build(sources)
 
     @pytest.mark.parametrize("slug", ["full", "Bad_Slug", "calendar"])
     def test_router_reserved_or_malformed_slugs_are_refused(self, monkeypatch, slug):
@@ -97,16 +100,18 @@ class TestBuild:
             ("Weekday Shacharit", "shacharit", "Shacharit", ""),
             ("Bedtime Shema", slug, "Bedtime", ""),
         ])])
+        sources = _sources()
         with pytest.raises(SystemExit, match="bad slug"):
-            build_siddur.build(_sources())
+            build_siddur.build(sources)
 
     def test_duplicate_service_slugs_are_refused(self, monkeypatch):
         monkeypatch.setattr(build_siddur, "OCCASIONS", [("weekday", {}, [
             ("Weekday Shacharit", "shacharit", "Shacharit", ""),
             ("Bedtime Shema", "shacharit", "Bedtime", ""),
         ])])
+        sources = _sources()
         with pytest.raises(SystemExit, match="duplicate"):
-            build_siddur.build(_sources())
+            build_siddur.build(sources)
 
     @pytest.mark.parametrize("title, slug", [("Hanna's Prayer", "hannas-prayer"), (" Shacharit ", "shacharit"), ("Song for Shemini Atzeret", "song-for-shemini-atzeret")])
     def test_slugify(self, title, slug):
@@ -175,7 +180,8 @@ class TestCheckedInSnapshot:
                     assert set(line.get("when", [])) <= set(WHEN_KEYS)
                     for lang in ("he", "en"):
                         leftover = _ALLOWED_TAG_RE.sub("", line.get(lang, ""))
-                        assert "<" not in leftover and ">" not in leftover, (path.name, line["n"])
+                        assert "<" not in leftover, (path.name, line["n"])
+                        assert ">" not in leftover, (path.name, line["n"])
 
     def test_weekday_shacharit_has_every_sefaria_section(self):
         [shacharit] = [s for o in _toc()["occasions"] for s in o["services"] if s["slug"] == "shacharit"]

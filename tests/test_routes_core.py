@@ -70,7 +70,8 @@ class TestSentryBrowserIntegration:
 
         sdk = re.search(r'<script\b[^>]*browser\.sentry-cdn\.com[^>]*>', html).group(0)
         init = re.search(r'<script\b[^>]*sentry-init\.js[^>]*>', html).group(0)
-        assert re.search(r"\sdefer(\s|>)", sdk) and re.search(r"\sdefer(\s|>)", init)
+        assert re.search(r"\sdefer(\s|>)", sdk)
+        assert re.search(r"\sdefer(\s|>)", init)
         queue = html.index("w.__shelahEarlyErrors=[]")
         assert queue < html.index(sdk) < html.index(init) < html.index('<script type="module"')
 

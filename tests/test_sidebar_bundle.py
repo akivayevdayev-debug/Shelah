@@ -272,14 +272,16 @@ class TestBuildSidebarTexts:
             "translation_generated_count", "translation_source", "translation_note",
             "translation_attempted",
         }
-        assert "he" not in text and "en" not in text
+        assert "he" not in text
+        assert "en" not in text
 
     def test_flat_lists_are_kept_when_there_are_no_lines(self, stub_upstream):
         stub_upstream["payloads"]["Rashi on Genesis 1:1:1"] = {
             "ref": "Rashi on Genesis 1:1:1", "he": ["א"], "en": ["a"], "lines": [],
         }
         text = sb.build_sidebar_texts("Genesis 1:1")["texts"]["Rashi on Genesis 1:1:1"]
-        assert text["he"] == ["א"] and text["en"] == ["a"]
+        assert text["he"] == ["א"]
+        assert text["en"] == ["a"]
 
     def test_a_failing_or_errored_commentator_does_not_sink_the_rest(self, stub_upstream, monkeypatch):
         real = stub_upstream["payloads"]

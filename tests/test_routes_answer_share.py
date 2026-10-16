@@ -302,7 +302,8 @@ class TestOwnerErrors:
         db.error = RuntimeError("db down")
         response = getattr(test_client, method)(_share_url(), headers=AUTH_HEADERS)
         assert response.status_code == 500
-        assert captured and OWNER_ID not in repr(captured)
+        assert captured
+        assert OWNER_ID not in repr(captured)
 
 
 class TestPublicAnswer:

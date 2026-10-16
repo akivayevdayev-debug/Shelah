@@ -132,7 +132,8 @@ class TestCuratedTable:
 
     def test_every_list_is_a_unique_non_empty_list_of_refs(self):
         for keyword, ref_list in sefaria.TOPIC_REFS.items():
-            assert ref_list and len(ref_list) == len(set(ref_list)), keyword
+            assert ref_list, keyword
+            assert len(ref_list) == len(set(ref_list)), keyword
             assert all(isinstance(ref, str) and ref.strip() for ref in ref_list), keyword
 
     def test_umbrella_ambiguous_and_shabbat_only_keywords_exist_in_the_table(self):

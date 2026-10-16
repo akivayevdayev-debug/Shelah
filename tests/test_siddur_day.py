@@ -116,7 +116,9 @@ class TestOccasions:
     def test_chol_hamoed_and_festival_flags(self):
         day = g("2026-09-29")  # 18 Tishrei
         assert {"sukkot", "chol-hamoed-sukkot"} <= set(day["occasions"])
-        assert day["yaalehVeyavo"] and day["musaf"] and not day["alHanissim"]
+        assert day["yaalehVeyavo"]
+        assert day["musaf"]
+        assert not day["alHanissim"]
 
     def test_israel_second_day_is_chol_hamoed(self):
         assert "chol-hamoed-pesach" in g("2027-04-23", True)["occasions"]
@@ -124,12 +126,16 @@ class TestOccasions:
 
     def test_purim_and_shushan_purim(self):
         purim, shushan = g("2027-03-23"), g("2027-03-24")
-        assert purim["alHanissim"] and not purim["alHanissimJerusalem"]
-        assert shushan["alHanissimJerusalem"] and not shushan["alHanissim"]
+        assert purim["alHanissim"]
+        assert not purim["alHanissimJerusalem"]
+        assert shushan["alHanissimJerusalem"]
+        assert not shushan["alHanissim"]
 
     def test_fast_day(self):
         day = g("2026-09-14")  # Tzom Gedalia
-        assert "fast" in day["occasions"] and day["aneinu"] and day["aseretYemeiTeshuva"]
+        assert "fast" in day["occasions"]
+        assert day["aneinu"]
+        assert day["aseretYemeiTeshuva"]
 
     @pytest.mark.parametrize("date, fast", [
         ("2026-09-14", "fast-of-gedalya"),
@@ -147,11 +153,15 @@ class TestOccasions:
 
     def test_yom_kippur_has_musaf(self):
         day = g("2026-09-21")
-        assert "yom-kippur" in day["occasions"] and day["musaf"] and "fast" not in day["occasions"]
+        assert "yom-kippur" in day["occasions"]
+        assert day["musaf"]
+        assert "fast" not in day["occasions"]
 
     def test_ordinary_day(self):
         day = g("2026-10-20")
-        assert day["occasions"] == [] and not day["musaf"] and not day["yaalehVeyavo"]
+        assert day["occasions"] == []
+        assert not day["musaf"]
+        assert not day["yaalehVeyavo"]
 
     def test_omer(self):
         assert g("2027-04-22")["omer"] == {"today": None, "tonight": 1}

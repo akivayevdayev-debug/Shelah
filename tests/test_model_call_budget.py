@@ -147,10 +147,11 @@ def test_gemini_attempt_refuses_to_start_under_its_minimum_deadline(seconds_left
         def generate_content(self, **kwargs):  # pragma: no cover - must not run
             raise AssertionError("sent a request Gemini would reject")
 
+    client = SimpleNamespace(models=_Models())
     token = claude._model_deadline.set(time.monotonic() + seconds_left)
     try:
         with pytest.raises(TimeoutError, match="ai_budget_exhausted"):
-            claude._generate_gemini_content_with_retry(SimpleNamespace(models=_Models()), "m", "p")
+            claude._generate_gemini_content_with_retry(client, "m", "p")
     finally:
         claude._model_deadline.reset(token)
 

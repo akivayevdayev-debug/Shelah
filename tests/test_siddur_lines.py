@@ -20,7 +20,8 @@ class TestClassify:
 
     def test_pointed_small_is_conditional(self):
         line = sl.classify("<small><b>יִתְגַּדַּל</b> וְיִתְקַדַּשׁ שְׁמֵהּ רַבָּא.</small>")
-        assert line["t"] == "conditional" and "label" not in line
+        assert line["t"] == "conditional"
+        assert "label" not in line
         assert line["he"].startswith("<b>יִתְגַּדַּל</b>")
 
     def test_a_leading_unpointed_small_becomes_the_label(self):
@@ -30,7 +31,8 @@ class TestClassify:
     def test_a_long_unpointed_opener_stays_in_the_body(self):
         rubric = "אין אומרים " + "תיקון חצות " * 10
         line = sl.classify(f"<small><small>{rubric}</small> בָּרוּךְ אַתָּה</small>")
-        assert "label" not in line and rubric.strip() in line["he"]
+        assert "label" not in line
+        assert rubric.strip() in line["he"]
 
     def test_inline_notes_on_both_ends_are_prayer_not_a_wrapped_segment(self):
         # A regex over the string would read this as one <small>...</small>.
@@ -121,11 +123,13 @@ class TestBuildLines:
 
     def test_labelled_conditional_gets_when_from_its_label(self):
         [line] = sl.build_lines(["<small><small>בראש חדש:</small> רֹאשׁ חֹדֶשׁ הַזֶּה,</small>"])
-        assert line["when"] == ["rosh-chodesh"] and line["label"] == "בראש חדש:"
+        assert line["when"] == ["rosh-chodesh"]
+        assert line["label"] == "בראש חדש:"
 
     def test_prayer_lines_never_get_when(self):
         [line] = sl.build_lines(["<small>בשבת:</small> אֱלֹהֵינוּ"])
-        assert line["t"] == "prayer" and "when" not in line
+        assert line["t"] == "prayer"
+        assert "when" not in line
 
     @pytest.mark.parametrize("he, en, aligned", [
         (["a", "b"], ["x", "y"], True),

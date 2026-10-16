@@ -1169,7 +1169,8 @@ class TestAskCitesWhatTheAnswerCites:
             "Mishnah Berurah 318:1", "Shulchan Arukh, Orach Chayim 318:1",
         ]
         assert rows[0]["excerpt_en"] == "cooking on Shabbat"
-        assert rows[0]["excerpt_he"] is None and rows[0]["url"] is None
+        assert rows[0]["excerpt_he"] is None
+        assert rows[0]["url"] is None
 
     def test_a_cited_source_that_was_retrieved_gains_its_text_and_link(self, test_client, authed, monkeypatch):
         rows = self._ask(

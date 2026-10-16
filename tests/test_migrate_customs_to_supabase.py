@@ -617,7 +617,8 @@ class TestEmitSql:
     def test_build_sql_is_one_transaction_that_deletes_then_upserts(self):
         rows = [{"id": "i1", "community_name": "C", "topic": "It's", "halakhic_source": "S", "content": "a\nb"}]
         sql = mc.build_sql("community_knowledge", rows, ["C", "Old"])
-        assert sql.startswith("begin;\n") and sql.endswith("commit;\n")
+        assert sql.startswith("begin;\n")
+        assert sql.endswith("commit;\n")
         assert "delete from public.community_knowledge where community_name in ('C', 'Old');" in sql
         assert "'It''s'" in sql, "single quotes must be doubled"
         assert "on conflict (id) do update set" in sql
@@ -638,7 +639,8 @@ class TestEmitSql:
         assert [p.name for p in written] == [
             "00_retired_customs_db_cleanup.sql", "01_sefardic.sql", "02_yemenite.sql"]
         cleanup = written[0].read_text(encoding="utf-8")
-        assert "'Kafkazi'" in cleanup and "insert into" not in cleanup
+        assert "'Kafkazi'" in cleanup
+        assert "insert into" not in cleanup
         sefardic = written[1].read_text(encoding="utf-8")
         assert "community_name in ('Sefardic', 'Sephardi')" in sefardic
         assert "'Sephardic'" not in sefardic, "a community file must not delete another community's rows"

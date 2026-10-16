@@ -270,10 +270,11 @@ class TestGate:
 
     async def test_a_full_conversation_is_refused_with_403(self, history):
         history.extend(_row(n) for n in range(1, 9))
+        thread_ids = _ids(history)
         binding = device.bind_device({device.DEVICE_COOKIE: TOKEN})
         try:
             with pytest.raises(HTTPException) as caught:
-                await asgi._enforce_ask_async_guest_cap(None, "One more?", _ids(history))
+                await asgi._enforce_ask_async_guest_cap(None, "One more?", thread_ids)
         finally:
             device.release_device(binding)
         assert caught.value.status_code == 403

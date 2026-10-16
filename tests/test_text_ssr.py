@@ -134,16 +134,20 @@ class TestRows:
         assert 'class="source-grid segment-row reader-text-row reader-side-row grid grid-cols-1 lg:grid-cols-2' in html
         assert 'data-segment="7"' in html
         assert '<span class="segment-label reader-row-mid-label">7</span>' in html
-        assert '<div class="source-he reader-text-he' in html and 'dir="rtl"><p>עברית</p>' in html
+        assert '<div class="source-he reader-text-he' in html
+        assert 'dir="rtl"><p>עברית</p>' in html
         assert 'dir="ltr"><p>English</p>' in html
         assert html.index("source-he") < html.index("source-en")
 
     def test_one_language_is_a_single_column_row(self):
         he_only = text_ssr.render_rows([{"he": "עברית", "en": "", "segment": "1"}])
         en_only = text_ssr.render_rows([{"he": "", "en": "English", "segment": "1"}])
-        assert "reader-single-row" in he_only and "source-en" not in he_only
-        assert "reader-single-row" in en_only and "source-he" not in en_only
-        assert 'dir="rtl"><p>עברית</p>' in he_only and 'dir="ltr"><p>English</p>' in en_only
+        assert "reader-single-row" in he_only
+        assert "source-en" not in he_only
+        assert "reader-single-row" in en_only
+        assert "source-he" not in en_only
+        assert 'dir="rtl"><p>עברית</p>' in he_only
+        assert 'dir="ltr"><p>English</p>' in en_only
 
     @pytest.mark.parametrize("segment, index, label", [
         ("12", 0, "12"), ("3.7", 0, "7"), ("", 4, "5"), (None, 0, "1"), ("a", 2, "3"), ("2a", 0, "2"),
@@ -165,7 +169,8 @@ class TestTextPage:
         for verse in (HE_1[2:], HE_2, EN_1, EN_2, "English only", "עברית בלבד"):
             assert verse in html
         rows = html.split('id="readerSources"', 1)[1].split('id="ssrTextPayload"', 1)[0]
-        assert "a note" not in rows and "footnote" not in rows
+        assert "a note" not in rows
+        assert "footnote" not in rows
         assert re.search(r'<h1 id="readerTitle"[^>]*>Genesis 1 · Parashat Bereshit</h1>', html)
 
     def test_the_text_is_in_the_reader_not_behind_the_home_grid(self, test_client, serve_text):
@@ -217,7 +222,8 @@ class TestTextPage:
         assert embedded["payload"]["ref"] == "Genesis 1"
         assert [line["segment"] for line in embedded["payload"]["lines"]] == ["1", "2", "3", "4"]
         assert embedded["payload"]["next"] == "Genesis 2"
-        assert "he" not in embedded["payload"] and "en" not in embedded["payload"]
+        assert "he" not in embedded["payload"]
+        assert "en" not in embedded["payload"]
 
     def test_an_alternate_spelling_asks_for_the_same_ref_as_the_api(self, test_client, serve_text):
         asked = serve_text(_payload())
@@ -230,7 +236,8 @@ class TestTextPage:
         serve_text(_payload(lines=[{"he": f"עברית{hostile}", "en": f"English{hostile}", "segment": "1"}]))
         html = test_client.get("/text/Genesis.1").get_data(as_text=True)
         body = html.split("</head>", 1)[1]
-        assert "<script>alert" not in body and "<img src=x" not in body
+        assert "<script>alert" not in body
+        assert "<img src=x" not in body
         raw = re.search(r'id="ssrTextPayload">(.*?)</script>', body, re.S).group(1)
         assert json.loads(raw)["payload"]["lines"][0]["en"].endswith(hostile)
 
@@ -286,7 +293,8 @@ class TestFallbacks:
         asked = serve_text(_payload())
         html = test_client.get("/text/Genesis").get_data(as_text=True)
         assert asked == []
-        assert 'id="ssrTextPayload"' not in html and '<div id="homeGrid" style' not in html
+        assert 'id="ssrTextPayload"' not in html
+        assert '<div id="homeGrid" style' not in html
 
     def test_a_disabled_render_asks_nobody(self, test_client, monkeypatch, serve_text):
         asked = serve_text(_payload())
@@ -307,7 +315,8 @@ class TestFallbacks:
         assert time.monotonic() - started < 0.3
         html = response.get_data(as_text=True)
         assert response.status_code == 200
-        assert 'id="ssrTextPayload"' not in html and HE_2 not in html
+        assert 'id="ssrTextPayload"' not in html
+        assert HE_2 not in html
         assert response.headers["Cache-Control"] == text_ssr.FALLBACK_CACHE_CONTROL
         assert "X-Robots-Tag" not in response.headers
 

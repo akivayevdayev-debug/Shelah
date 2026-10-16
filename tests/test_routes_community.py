@@ -132,9 +132,11 @@ class TestCommunityDetailForTheResearchedData:
     def test_every_entry_and_distinctive_custom_carries_its_hebrew(self, bodies):
         for name, body in bodies.items():
             for entry in body["customs"].values():
-                assert entry["topic_he"] and entry["ruling_he"], (name, entry["topic"])
+                assert entry["topic_he"], (name, entry["topic"])
+                assert entry["ruling_he"], (name, entry["topic"])
             for custom in body["distinctive_customs"]:
-                assert custom["name_he"] and custom["description_he"], (name, custom["name"])
+                assert custom["name_he"], (name, custom["name"])
+                assert custom["description_he"], (name, custom["name"])
 
     def test_hebrew_helper_returns_blank_for_a_missing_or_non_dict_entry(self):
         assert routes_community._hebrew({"topic": "x"}, "topic") == ""

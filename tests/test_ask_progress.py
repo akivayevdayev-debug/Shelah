@@ -97,12 +97,15 @@ class TestProgressReporter:
         assert result == "still ran"
 
     def test_a_step_that_raises_still_reports_done(self):
+        def failing_step():
+            with ask_progress.stage("customs"):
+                raise ValueError("boom")
+
         events = []
         token = ask_progress.bind(events.append)
         try:
             with pytest.raises(ValueError):
-                with ask_progress.stage("customs"):
-                    raise ValueError("boom")
+                failing_step()
         finally:
             ask_progress.unbind(token)
         assert [e["state"] for e in events] == ["start", "done"]

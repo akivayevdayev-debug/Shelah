@@ -14,7 +14,8 @@ class TestToc:
         toc = response.get_json()
         assert [o["slug"] for o in toc["occasions"]] == ["weekday", "shabbat", "festivals", "berachot"]
         shacharit = toc["occasions"][0]["services"][1]
-        assert shacharit["slug"] == "shacharit" and len(shacharit["sections"]) == 18
+        assert shacharit["slug"] == "shacharit"
+        assert len(shacharit["sections"]) == 18
         assert toc["source"]["he"]["license"] == "CC0"
         # Hour-long tier: the toc carries the data version (see cache_policy).
         assert response.headers["Cache-Control"] == cache_policy.CACHE_TIER_CORPUS
@@ -35,7 +36,8 @@ class TestService:
         amidah = payload["sections"][2]
         assert amidah["ref"] == "Siddur Edot HaMizrach, Weekday Arvit, Amidah"
         barech = [line for line in amidah["lines"] if line.get("when") == ["barech-alenu"]]
-        assert len(barech) == 1 and barech[0]["t"] == "instruction"
+        assert len(barech) == 1
+        assert barech[0]["t"] == "instruction"
         assert response.headers["Cache-Control"] == cache_policy.CACHE_TIER_IMMUTABLE
 
     @pytest.mark.parametrize("path", [
@@ -54,8 +56,10 @@ class TestDay:
         response = test_client.get("/api/siddur/v2/day?date=2026-12-06&il=0")
         assert response.status_code == 200
         day = response.get_json()
-        assert day["date"] == "2026-12-06" and day["il"] is False
-        assert "chanukah" in day["occasions"] and day["alHanissim"] is True
+        assert day["date"] == "2026-12-06"
+        assert day["il"] is False
+        assert "chanukah" in day["occasions"]
+        assert day["alHanissim"] is True
         assert day["hallel"] == {"kind": "full", "beracha": True}
         assert day["birkatHashanim"] == "barech-alenu"
         assert response.headers["Cache-Control"] == cache_policy.CACHE_TIER_IMMUTABLE
@@ -92,7 +96,8 @@ class TestClassification:
 class TestSiddurData:
     def test_find_multi_and_single_section_services(self):
         service, section = siddur_data.find("edot-hamizrach", "shacharit")
-        assert service["slug"] == "shacharit" and section is None
+        assert service["slug"] == "shacharit"
+        assert section is None
         service, section = siddur_data.find("edot-hamizrach", "shacharit", "amida")
         assert section["ref"] == "Siddur Edot HaMizrach, Weekday Shacharit, Amida"
         service, section = siddur_data.find("edot-hamizrach", "birkat-hamazon")
