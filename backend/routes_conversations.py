@@ -51,6 +51,7 @@ from backend.cost_gates import (
     evaluate_cost_gates_sync,
 )
 from backend.helpers import (
+    _coerce_int,
     _sanitize_answer_mode,
     _canonicalize_community_name,
     _compact_ai_sources,
@@ -87,6 +88,7 @@ _ERR_NOT_FOUND = "Not found"
 _VALID_ROLES = ("user", "assistant")
 _VALID_STATUSES = ("streaming", "complete", "stopped", "error")
 _MAX_HISTORY_MESSAGES = 20
+_MAX_CITATION_ORDINAL = 10_000
 _AUTO_TITLE_MAX_LEN = 80
 _CONVERSATION_HEADER_COLUMNS = "id,title,title_is_custom,minhag,pinned_at,created_at,updated_at"
 _HISTORY_ID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
@@ -323,7 +325,7 @@ def list_conversations():
         return error_response
 
     try:
-        limit = max(1, min(int(request.args.get("limit", 20)), 50))
+        limit = _coerce_int(request.args.get("limit"), 20, min_value=1, max_value=50)
         result = (
             supabase
             .table(SUPABASE_CONVERSATIONS_TABLE)
@@ -381,10 +383,22 @@ def get_conversation(conversation_id):
         return jsonify({"error": "Failed to load conversation"}), 500
 
 
+def _citation_ordinal(raw, position):
+    """The caller's ordinal when it is a usable small integer, else the
+    citation's position in the list. It is only a sort key: a bad value must
+    not fail the request after the message row is already stored."""
+    try:
+        ordinal = int(raw or position)
+    except (TypeError, ValueError, OverflowError):
+        return position
+    return ordinal if 0 <= ordinal <= _MAX_CITATION_ORDINAL else position
+
+
 def _insert_message_citations(supabase, message_id, citations):
     """Bulk-insert citation rows for a just-created message. `citations` is
     the caller-supplied list, trusted only for its content fields -- the
-    message_id/ordinal are always assigned here, never taken from input."""
+    message_id is always assigned here and the ordinal only kept when it is
+    a usable integer (see _citation_ordinal)."""
     if not citations:
         return []
     rows = []
@@ -393,7 +407,7 @@ def _insert_message_citations(supabase, message_id, citations):
             continue
         rows.append({
             "message_id": message_id,
-            "ordinal": int(c.get("ordinal") or i),
+            "ordinal": _citation_ordinal(c.get("ordinal"), i),
             "source_ref": str(c.get("source_ref") or "").strip()[:500] or None,
             "excerpt_he": str(c.get("excerpt_he") or "").strip()[:2000] or None,
             "excerpt_en": str(c.get("excerpt_en") or "").strip()[:2000] or None,

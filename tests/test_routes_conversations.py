@@ -253,6 +253,23 @@ class TestListConversations:
         assert ("user_id", FAKE_USER_ID) in query.eq_calls
         assert ("user_id", OTHER_USER_ID) not in query.eq_calls
 
+    @pytest.mark.parametrize("raw_limit", ["abc", "", "1.5", "NaN"])
+    def test_non_numeric_limit_uses_the_default_and_raises_no_alert(
+        self, test_client, authed, monkeypatch, raw_limit
+    ):
+        """A bad ?limit= is the caller's mistake: it must not surface as a 500
+        and an error-bot alert (the route's catch-all reports every exception)."""
+        rows = [{"id": "conv-1", "title": "Kashrut question"}]
+        client = _FakeSupabaseClient({CONV_TABLE: _FakeQuery(data=rows)})
+        monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
+        alerts = []
+        monkeypatch.setattr(
+            routes_conversations_module, "_capture_backend_error", lambda *a, **k: alerts.append(a))
+        response = test_client.get(f"/api/conversations?limit={raw_limit}", headers=AUTH_HEADERS)
+        assert response.status_code == 200
+        assert response.get_json() == {"items": rows}
+        assert alerts == []
+
 
 class TestGetConversation:
     def test_without_auth_is_401(self, test_client):
@@ -353,6 +370,51 @@ class TestCreateMessage:
         assert cit_insert[0]["message_id"] == "m1"
 
         assert client.table(CONV_TABLE).update_calls, "conversation.updated_at must be bumped"
+
+    @pytest.mark.parametrize("bad_ordinal", ["abc", [1], {"n": 1}, 10**12, -3, float("inf"), float("nan")])
+    def test_unusable_citation_ordinal_falls_back_to_its_position(
+        self, test_client, authed, monkeypatch, bad_ordinal
+    ):
+        """The ordinal is a smallint-ish sort key the client may omit. Garbage
+        in it must not 500 the request after the message row is already
+        stored (a retry would then store the turn twice)."""
+        client = _FakeSupabaseClient({
+            CONV_TABLE: _FakeQuery(data=[{"id": "conv-1"}]),
+            MSG_TABLE: _FakeQuery(data=[{"id": "m1", "role": "assistant", "content": "Yes."}]),
+            CIT_TABLE: _FakeQuery(data=[{"id": "c1"}]),
+        })
+        monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
+        response = test_client.post(
+            "/api/conversations/conv-1/messages",
+            json={
+                "role": "assistant",
+                "content": "Yes.",
+                "citations": [{"source_ref": "first"}, {"source_ref": "second", "ordinal": bad_ordinal}],
+            },
+            headers=AUTH_HEADERS,
+        )
+        assert response.status_code == 201
+        rows = client.table(CIT_TABLE).insert_calls[0][0][0]
+        assert [row["ordinal"] for row in rows] == [0, 1]
+
+    def test_usable_citation_ordinal_is_kept(self, test_client, authed, monkeypatch):
+        client = _FakeSupabaseClient({
+            CONV_TABLE: _FakeQuery(data=[{"id": "conv-1"}]),
+            MSG_TABLE: _FakeQuery(data=[{"id": "m1", "role": "assistant", "content": "Yes."}]),
+            CIT_TABLE: _FakeQuery(data=[{"id": "c1"}]),
+        })
+        monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
+        test_client.post(
+            "/api/conversations/conv-1/messages",
+            json={
+                "role": "assistant",
+                "content": "Yes.",
+                "citations": [{"source_ref": "a", "ordinal": 5}, {"source_ref": "b", "ordinal": "7"}],
+            },
+            headers=AUTH_HEADERS,
+        )
+        rows = client.table(CIT_TABLE).insert_calls[0][0][0]
+        assert [row["ordinal"] for row in rows] == [5, 7]
 
     def test_cannot_post_message_to_another_users_conversation(self, test_client, authed, monkeypatch):
         client = _FakeSupabaseClient({CONV_TABLE: _FakeQuery(data=[])})
