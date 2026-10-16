@@ -979,12 +979,12 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     } else if (item.useRefGrid) {
                         btn.onclick = () => {
                             closeLibraryCategory();
-                            readText(item.ref);
+                            void readText(item.ref);
                         };
                     } else if (item.customsFile) {
                         btn.onclick = () => {
                             closeLibraryCategory();
-                            displayCommunity(item.customsFile);
+                            void displayCommunity(item.customsFile);
                         };
                     } else if (item.query) {
                         btn.onclick = () => {
@@ -1520,7 +1520,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             'Mishnah Berurah': 'משנה ברורה',
             'Torah Commentaries': 'מפרשי התורה',
             'Writings (Ketuvim)': 'כתובים',
-            'Trei Asar (The Twelve)': 'תרי עשר',
             'Rashi on Torah': 'רש"י על התורה',
             'Ibn Ezra on Torah': 'אבן עזרא על התורה',
             'Ramban on Torah': 'רמב"ן על התורה',
@@ -4287,7 +4286,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (!devtoolsInspectorModal) return;
             devtoolsInspectorModal.classList.remove('hidden');
             devtoolsInspectorModal.classList.add('flex');
-            fetchDevtoolsHeartbeat();
+            void fetchDevtoolsHeartbeat();
             if (inspectorPollInterval) clearInterval(inspectorPollInterval);
             inspectorPollInterval = setInterval(fetchDevtoolsHeartbeat, 15000);
         }
@@ -6197,7 +6196,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
 
             if (wordStillPending && groupedCommentaries.length) {
-                wordPromise.then((lateWordInfo) => {
+                void wordPromise.then((lateWordInfo) => {
                     if (!isCurrent() || !lateWordInfo?.meaning) return;
                     selectionCommentaryState.wordInfo = {
                         word: lateWordInfo.word || cleanWord,
@@ -7763,7 +7762,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (typeof ResizeObserver === 'function') {
                 new ResizeObserver(() => syncMobileTabIndicator({ animate: false })).observe(mobileBottomTabs);
             }
-            document.fonts?.ready?.then(() => syncMobileTabIndicator({ animate: false }));
+            void document.fonts?.ready?.then(() => syncMobileTabIndicator({ animate: false }));
         }
 
         if (mainContainer) {
@@ -7828,7 +7827,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             readerLibraryTopBarBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (appState.prefs.shulMode) {
-                    toggleShulLibrarySidebar();
+                    void toggleShulLibrarySidebar();
                 } else {
                     toggleLeftSidebar();
                 }
@@ -7874,7 +7873,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const targetRef = String(button.dataset.ref || '').trim();
                 if (!targetRef) return;
                 closeChapterGrid();
-                readText(targetRef, { skipNavigationGrid: true });
+                void readText(targetRef, { skipNavigationGrid: true });
             });
         }
 
@@ -7885,7 +7884,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const targetRef = String(button.dataset.ref || '').trim();
                 if (!targetRef) return;
                 closeChapterGrid();
-                readText(targetRef, { skipNavigationGrid: true });
+                void readText(targetRef, { skipNavigationGrid: true });
             });
         }
 
@@ -8296,7 +8295,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             modal.classList.add('flex');
             presentEl(modal, modalMotion(modal));
             renderSiddurMenus();
-            loadCommunitiesMenu();
+            void loadCommunitiesMenu();
             void loadLibraryIndexViews(0, { modal: true });
         }
 
@@ -10070,7 +10069,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             };
             const heMap = byPath(heLeafs);
             const enMap = byPath(enLeafs);
-            const allPaths = [...new Set([...Object.keys(heMap), ...Object.keys(enMap)])].sort();
+            const allPaths = [...new Set([...Object.keys(heMap), ...Object.keys(enMap)])]
+                .sort((x, y) => Number(x > y) - Number(x < y));
             const lines = allPaths.map((p, idx) => ({
                 he: heMap[p] || '',
                 en: enMap[p] || '',
@@ -10877,7 +10877,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 populateCommunitiesListHTML(textsCache.communitiesList);
             }
             renderLibraryIndexViews({ modal: textsMenuIsOpen() });
-            populatePopularTexts();
+            void populatePopularTexts();
 
             if (selectionCommentaryState.groupedCommentaries.length) {
                 if (selectionCommentaryState.wordInfo?.word) {
@@ -10932,14 +10932,14 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         if (signInBtn) {
             signInBtn.addEventListener('click', () => {
-                handleSignIn();
+                void handleSignIn();
             });
         }
 
         if (userProfileSignOutAction) {
             userProfileSignOutAction.addEventListener('click', () => {
                 closeUserProfileMenu();
-                handleSignOut();
+                void handleSignOut();
             });
         }
 
@@ -11188,7 +11188,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // too) and open the text.
         async function openCalendarText(ref) {
             await window.closeCalendarModal();
-            readText(ref);
+            void readText(ref);
         }
 
         function renderCalendarAgenda() {
@@ -11527,7 +11527,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 ...modalMotion(modal),
                 onHidden: () => { if (modal.open) modal.close(); },
             });
-            const closing = (steppedBack ? Promise.all([dismissed, steppedBack]) : Promise.resolve(dismissed))
+            const closing = (steppedBack === null ? Promise.resolve(dismissed) : Promise.all([dismissed, steppedBack]))
                 .finally(() => { if (calendarClosing === closing) calendarClosing = null; });
             calendarClosing = closing;
             return closing;
@@ -11706,7 +11706,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 setMobileSearchExpanded(true);
             }
             if ((searchInput.value || '').trim().length >= 2) {
-                fetchOmniboxSuggestions(searchInput.value);
+                void fetchOmniboxSuggestions(searchInput.value);
             }
         });
 
@@ -11910,7 +11910,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     // fills in the optional comment (the common case) is still
                     // counted — waiting on the comment box risked losing the
                     // verdict entirely to abandonment.
-                    submitFeedback(verdict, '');
+                    void submitFeedback(verdict, '');
 
                     if (verdict === 'not_helpful') {
                         root.dataset.feedbackState = 'commenting';
@@ -12306,13 +12306,13 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 // A link names the exact section to show: /text/Genesis.1 is
                 // chapter 1, not a request to pick a chapter from the grid a
                 // library click on "Genesis" opens.
-                readText(route.text, { fromRoute: true, skipNavigationGrid: true, restoreScroll });
+                void readText(route.text, { fromRoute: true, skipNavigationGrid: true, restoreScroll });
             } else if (route.prayer) {
-                displayPrayer(route.prayer, { fromRoute: true, restoreScroll });
+                void displayPrayer(route.prayer, { fromRoute: true, restoreScroll });
             } else if (route.siddur) {
-                displaySiddur(route.siddur, { fromRoute: true, restoreScroll });
+                void displaySiddur(route.siddur, { fromRoute: true, restoreScroll });
             } else if (route.community) {
-                displayCommunity(route.community, { fromRoute: true, restoreScroll });
+                void displayCommunity(route.community, { fromRoute: true, restoreScroll });
             } else if (route.chat) {
                 void hydrateChatId(route.chat);
             } else if (route.a) {

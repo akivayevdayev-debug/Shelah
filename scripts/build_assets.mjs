@@ -173,7 +173,9 @@ export async function compute(previousManifest = null) {
     }
     manifest.js.modules.unreached = modules.map(([name]) => name).filter((name) => !reached.has(name));
 
-    manifest.js.modules.outputs = Object.fromEntries(Object.entries(manifest.js.modules.outputs).sort());
+    manifest.js.modules.outputs = Object.fromEntries(
+        Object.entries(manifest.js.modules.outputs).sort(([a], [b]) => Number(a > b) - Number(a < b)),
+    );
     return { files, manifest };
 }
 
