@@ -149,7 +149,13 @@ def admin_feedback_page():
     """The feedback digest as a page. It holds no data itself: its script signs
     in with Clerk and calls the API with a Bearer header (a browser address-bar
     visit to the API cannot send one). Access is decided by the API, not here."""
-    response = make_response(render_template("admin_feedback.html", clerk_publishable_key=CLERK_PUBLISHABLE_KEY))
+    response = make_response(
+        render_template(
+            "admin_feedback.html",
+            clerk_publishable_key=CLERK_PUBLISHABLE_KEY,
+            clerk_enforce_auth=CLERK_ENFORCE_AUTH,
+        )
+    )
     response.headers["X-Robots-Tag"] = "noindex, nofollow"
     response.headers["Cache-Control"] = "no-store"
     return response

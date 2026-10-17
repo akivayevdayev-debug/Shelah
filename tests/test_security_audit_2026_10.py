@@ -254,7 +254,11 @@ def test_admin_feedback_page_carries_no_data_and_is_not_cached(test_client):
     assert response.status_code == 200
     assert "noindex" in response.headers["X-Robots-Tag"]
     assert "no-store" in response.headers["Cache-Control"]
-    assert "Authorization: 'Bearer '" in response.get_data(as_text=True)
+    html = response.get_data(as_text=True)
+    # The page ships no rows; its script is what sends the Clerk token, as a
+    # Bearer header (an address-bar visit to the API cannot send one).
+    assert "admin-feedback.js" in html
+    assert "Authorization: 'Bearer '" in (ROOT / "static/js/admin-feedback.js").read_text()
 
 
 def test_sign_in_finishes_in_page_on_the_page_under_the_overlay():

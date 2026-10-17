@@ -1,83 +1,269 @@
+{% from "components/icons.html" import phosphor %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Feedback digest | Sh'elah</title>
-    <style>
-        :root { --bg: #fbf8f1; --fg: #1d2433; --muted: #566175; --line: #ddd5c4; --accent: #1f3f63; }
-        @media (prefers-color-scheme: dark) {
-            :root { --bg: #14171f; --fg: #e8e4da; --muted: #a3acbd; --line: #2c3342; --accent: #8fb4e6; }
-        }
-        body { margin: 0; padding: clamp(16px, 4vw, 40px); background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
-        h1 { font-size: clamp(1.25rem, 3vw, 1.75rem); margin: 0 0 8px; }
-        p { color: var(--muted); margin: 0 0 16px; }
-        a { color: var(--accent); }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { text-align: start; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
-        th { color: var(--muted); font-weight: 600; }
-        .wrap { overflow-x: auto; }
-    </style>
+    <meta name="theme-color" content="#f3ede0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0c0c0b" media="(prefers-color-scheme: dark)">
+    {% include 'components/theme_bootstrap.html' %}
+    <title>Feedback digest – Sh'elah</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cardo:wght@400;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset_url('css/tokens.css') }}">
+    <link rel="stylesheet" href="{{ asset_url('style.css') }}">
+    <link rel="stylesheet" href="{{ asset_url('css/tailwind.css') }}">
+    <link rel="stylesheet" href="{{ asset_url('css/legal.css') }}">
+    <link rel="stylesheet" href="{{ asset_url('css/admin.css') }}">
+    <noscript>
+        <style>#adminContent { display: none; }</style>
+    </noscript>
 </head>
-<body>
-    <h1>Feedback digest</h1>
-    <p id="status" role="status">Checking your session…</p>
-    <div class="wrap"><table id="rows" hidden><thead><tr><th scope="col">Feedback</th></tr></thead></table></div>
-    {# Same pinned Clerk build as index.html's loader (SRI hash included). The page
-       sends the session token as a Bearer header: a plain address-bar visit to
-       /api/devtools/feedback-digest cannot, which is why that URL alone says
-       "Authentication required". No identity is ever put in the URL. #}
-    <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5.127.0/dist/clerk.browser.js"
-            integrity="sha384-9BfgqxUZJLeppMqmDGDPFU1zC63bMyEwEXG8xMcQwhDz5qU3WUR4PwpVcZ4fKU8D"
-            crossorigin="anonymous" data-clerk-publishable-key="{{ clerk_publishable_key }}"></script>
-    <script>
-        (async function () {
-            const status = document.getElementById('status');
-            const table = document.getElementById('rows');
-            const say = (text) => { status.textContent = text; };
-            try {
-                if (!window.Clerk) { say('Sign-in is unavailable right now.'); return; }
-                await window.Clerk.load();
-                if (!window.Clerk.session) {
-                    status.textContent = '';
-                    const link = document.createElement('a');
-                    link.href = '/signin';
-                    link.textContent = 'Sign in';
-                    status.append(link, ' with the operator account, then reload this page.');
-                    return;
-                }
-                const token = await window.Clerk.session.getToken();
-                const response = await fetch('/api/devtools/feedback-digest?limit=200', {
-                    headers: { Authorization: 'Bearer ' + token },
-                    cache: 'no-store',
-                });
-                if (response.status === 403) { say('This account is not on the operator list (ADMIN_USER_IDS).'); return; }
-                if (!response.ok) { say('The digest could not be loaded (HTTP ' + response.status + ').'); return; }
-                const data = await response.json();
-                const columns = [];
-                data.rows.forEach((row) => Object.keys(row).forEach((key) => { if (!columns.includes(key)) columns.push(key); }));
-                // The header row ships in the markup (a table needs one); its columns are the
-                // digest's own, which are whatever the feedback table has.
-                const head = table.tHead.rows[0];
-                head.replaceChildren();
-                columns.forEach((key) => {
-                    const th = document.createElement('th');
-                    th.scope = 'col';
-                    th.textContent = key;
-                    head.append(th);
-                });
-                const body = table.createTBody();
-                data.rows.forEach((row) => {
-                    const tr = body.insertRow();
-                    columns.forEach((key) => { tr.insertCell().textContent = row[key] == null ? '' : String(row[key]); });
-                });
-                table.hidden = false;
-                say(data.count + ' rows: ' + data.helpful + ' helpful, ' + data.not_helpful + ' not helpful.');
-            } catch (error) {
-                say('The digest could not be loaded.');
-            }
-        })();
-    </script>
+
+<body class="font-sans min-h-screen overflow-x-hidden flex flex-col">
+    <a href="#mainContent" class="skip-to-content">Skip to main content</a>
+
+    {% include 'components/legal_topbar.html' %}
+
+    <main id="mainContent" class="flex-1">
+        <div class="legal-hero" lang="en" dir="ltr">
+            <h1>Feedback digest</h1>
+            <p class="subtitle">What readers said under AI answers. Operator access only.</p>
+        </div>
+
+        <div id="adminShell" class="admin-shell" lang="en" dir="ltr" data-view="loading">
+
+            <div class="legal-toolbar">
+                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span>Back to Sh'elah</span></a>
+                <div class="admin-toolbar-actions">
+                    <span id="adminLoadedAt" class="admin-loaded"></span>
+                    <button type="button" id="adminRefresh" class="admin-btn" disabled>Refresh</button>
+                    <button type="button" id="adminDownload" class="admin-btn" disabled>
+                        {{ phosphor('download-simple', size=16) }}<span>Download CSV</span>
+                    </button>
+                </div>
+            </div>
+
+            <p id="adminStatus" class="visually-hidden" role="status" aria-live="polite"></p>
+
+            <noscript>
+                <div class="admin-noscript">
+                    <p>This page needs JavaScript to sign in and load the digest.</p>
+                </div>
+            </noscript>
+
+            <section id="adminState" class="admin-state" aria-labelledby="adminStateTitle" hidden>
+                <div id="adminStateIcon" class="admin-state-icon" aria-hidden="true"></div>
+                <h2 id="adminStateTitle" class="admin-state-title">Status</h2>
+                <p id="adminStateBody" class="admin-state-body"></p>
+                <div id="adminStateActions" class="admin-state-actions"></div>
+            </section>
+
+            <div id="adminContent" tabindex="-1" aria-busy="true">
+
+                <section aria-labelledby="summaryTitle">
+                    <h2 id="summaryTitle" class="visually-hidden">Summary</h2>
+                    <dl class="admin-tiles">
+                        <div class="admin-tile">
+                            <dt>Ratings</dt>
+                            <dd id="tileTotal" class="admin-tile-value"></dd>
+                            <dd id="tileTotalNote" class="admin-tile-note"></dd>
+                        </div>
+                        <div class="admin-tile">
+                            <dt><span class="admin-ico admin-ico--up" aria-hidden="true"></span>Helpful</dt>
+                            <dd id="tileHelpful" class="admin-tile-value"></dd>
+                            <dd id="tileHelpfulNote" class="admin-tile-note"></dd>
+                        </div>
+                        <div class="admin-tile">
+                            <dt><span class="admin-ico admin-ico--down" aria-hidden="true"></span>Not helpful</dt>
+                            <dd id="tileNotHelpful" class="admin-tile-value"></dd>
+                            <dd id="tileNotHelpfulNote" class="admin-tile-note"></dd>
+                        </div>
+                        <div class="admin-tile">
+                            <dt>Helpful rate</dt>
+                            <dd id="tileRate" class="admin-tile-value"></dd>
+                            <dd id="tileRateNote" class="admin-tile-note"></dd>
+                        </div>
+                    </dl>
+                </section>
+
+                <div class="admin-charts">
+
+                    <section class="admin-card" aria-labelledby="splitTitle">
+                        <div class="admin-card-head">
+                            <div>
+                                <h2 id="splitTitle" class="admin-card-title">Helpful or not</h2>
+                                <p class="admin-card-sub">Every rating loaded</p>
+                            </div>
+                        </div>
+                        <div id="splitBar" class="admin-split" role="img" aria-label="Verdict split: loading">
+                            <span id="splitHelpful" class="admin-split-seg admin-split-seg--helpful"></span>
+                            <span id="splitNotHelpful" class="admin-split-seg admin-split-seg--not-helpful"></span>
+                        </div>
+                        <ul id="splitLegend" class="admin-legend"></ul>
+                        <details class="admin-details">
+                            <summary>View as table</summary>
+                            <div class="admin-mini-wrap" role="region" aria-label="Helpful and not helpful ratings as a table" tabindex="0">
+                                <table class="admin-mini">
+                                    <caption class="visually-hidden">Helpful and not helpful ratings</caption>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Verdict</th>
+                                            <th scope="col">Ratings</th>
+                                            <th scope="col">Share</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="splitTableBody"></tbody>
+                                </table>
+                            </div>
+                        </details>
+                    </section>
+
+                    <section class="admin-card" aria-labelledby="trendTitle">
+                        <div class="admin-card-head">
+                            <div>
+                                <h2 id="trendTitle" class="admin-card-title">Ratings per day</h2>
+                                <p class="admin-card-sub">Helpful and not helpful, stacked</p>
+                            </div>
+                            <fieldset class="admin-seg">
+                                <legend class="visually-hidden">Days shown</legend>
+                                <label class="admin-seg-opt">
+                                    <input type="radio" name="adminTrendDays" value="14" checked>
+                                    <span>14 days</span>
+                                </label>
+                                <label class="admin-seg-opt">
+                                    <input type="radio" name="adminTrendDays" value="30">
+                                    <span>30 days</span>
+                                </label>
+                            </fieldset>
+                        </div>
+                        <ul class="admin-legend admin-legend--inline">
+                            <li class="admin-legend-item"><span class="admin-key admin-key--helpful" aria-hidden="true"></span><span>Helpful</span></li>
+                            <li class="admin-legend-item"><span class="admin-key admin-key--not-helpful" aria-hidden="true"></span><span>Not helpful</span></li>
+                        </ul>
+                        <div class="admin-trend">
+                            <div id="trendYAxis" class="admin-yaxis" aria-hidden="true"></div>
+                            <div id="trendPlot" class="admin-plot" role="img" tabindex="0" aria-label="Ratings per day">
+                                <div id="trendGrid" class="admin-grid" aria-hidden="true"></div>
+                                <div id="trendCols" class="admin-cols"></div>
+                                <div id="trendTip" class="admin-tip" hidden></div>
+                            </div>
+                            <div id="trendXAxis" class="admin-xaxis" aria-hidden="true"></div>
+                        </div>
+                        <p id="trendLive" class="visually-hidden" aria-live="polite"></p>
+                        <p id="trendNote" class="admin-note" hidden></p>
+                        <details class="admin-details">
+                            <summary>View as table</summary>
+                            <div class="admin-mini-wrap" role="region" aria-label="Ratings per day as a table" tabindex="0">
+                                <table class="admin-mini">
+                                    <caption class="visually-hidden">Ratings per day, newest first</caption>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Day</th>
+                                            <th scope="col">Helpful</th>
+                                            <th scope="col">Not helpful</th>
+                                            <th scope="col">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="trendTableBody"></tbody>
+                                </table>
+                            </div>
+                        </details>
+                    </section>
+
+                </div>
+
+                <section class="admin-card admin-section" aria-labelledby="tableTitle">
+                    <div class="admin-card-head">
+                        <div>
+                            <h2 id="tableTitle" class="admin-card-title">All ratings</h2>
+                            <p class="admin-card-sub">The filters change this table and the CSV. The numbers and charts above always cover everything loaded.</p>
+                        </div>
+                    </div>
+
+                    <fieldset id="adminControls" class="admin-controls" disabled>
+                        <legend class="visually-hidden">Filter the ratings table</legend>
+                        <fieldset class="admin-seg">
+                            <legend class="visually-hidden">Verdict</legend>
+                            <label class="admin-seg-opt">
+                                <input type="radio" name="adminVerdict" value="all" checked>
+                                <span>All</span><span class="admin-seg-count"></span>
+                            </label>
+                            <label class="admin-seg-opt">
+                                <input type="radio" name="adminVerdict" value="helpful">
+                                <span>Helpful</span><span class="admin-seg-count"></span>
+                            </label>
+                            <label class="admin-seg-opt">
+                                <input type="radio" name="adminVerdict" value="not_helpful">
+                                <span>Not helpful</span><span class="admin-seg-count"></span>
+                            </label>
+                        </fieldset>
+                        <div class="admin-search">
+                            {{ phosphor('magnifying-glass', size=16) }}
+                            <input type="search" id="adminSearch" class="admin-field" placeholder="Search comments"
+                                aria-label="Search comments" autocomplete="off" spellcheck="false">
+                        </div>
+                        <label class="admin-select">
+                            <span>Rows</span>
+                            <span class="admin-select-box">
+                                <select id="adminPageSize" class="admin-field">
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </span>
+                        </label>
+                    </fieldset>
+
+                    <div id="adminTableWrap" class="admin-table-wrap" role="region" aria-label="Ratings table" tabindex="0">
+                        <table class="admin-table" role="table" aria-describedby="adminCount">
+                            <caption class="visually-hidden">Answer ratings and comments</caption>
+                            <thead role="rowgroup">
+                                <tr role="row">
+                                    <th id="adminDateHead" role="columnheader" scope="col" aria-sort="descending">
+                                        <button type="button" id="adminSortDate" class="admin-sort" data-order="newest"
+                                            aria-label="Date, newest first. Sort oldest first.">
+                                            <span>Date</span>{{ phosphor('caret-down', size=14) }}
+                                        </button>
+                                    </th>
+                                    <th role="columnheader" scope="col">Verdict</th>
+                                    <th role="columnheader" scope="col">Comment</th>
+                                    <th role="columnheader" scope="col">Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminRows" role="rowgroup">
+                                {% for _ in range(6) %}
+                                <tr class="admin-skel-row" role="row" aria-hidden="true">
+                                    <td class="admin-cell-date" role="cell"><span class="admin-skel-bar admin-skel-bar--short"></span></td>
+                                    <td class="admin-cell-verdict" role="cell"><span class="admin-skel-bar admin-skel-bar--short"></span></td>
+                                    <td class="admin-cell-comment" role="cell"><span class="admin-skel-bar admin-skel-bar--long"></span></td>
+                                    <td class="admin-cell-details" role="cell"><span class="admin-skel-bar"></span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <p id="adminTableEmpty" class="admin-table-empty" hidden>No ratings match. Try another word or choose All.</p>
+                    </div>
+
+                    <div class="admin-table-foot">
+                        <p id="adminCount" class="admin-count" aria-live="polite"></p>
+                        <button type="button" id="adminMore" class="admin-btn" hidden>Show more</button>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </main>
+
+    {% with current='' %}{% include 'components/legal_footer.html' %}{% endwith %}
+
+    {% include 'components/legal_scripts.html' %}
+    <script src="{{ asset_url('js/admin-feedback.js') }}"></script>
 </body>
+
 </html>
