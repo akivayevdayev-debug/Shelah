@@ -3226,7 +3226,9 @@ async def _call_gemini_httpx_model(
             ),
         )
     except Exception as exc:
-        _record_gemini_error(exc)
+        # Off-loop: the error that opens the cooldown also publishes it to the
+        # shared Redis tier, a blocking write.
+        await asyncio.to_thread(_record_gemini_error, exc)
         return {
             "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
             "confidence": 0,

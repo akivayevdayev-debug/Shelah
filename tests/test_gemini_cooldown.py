@@ -453,6 +453,26 @@ class TestAsyncPathSharesTheCooldown:
         assert third["error"] == "gemini_circuit_open"
         assert models.calls == 2
 
+    async def test_publishing_the_cooldown_stays_off_the_event_loop(self, monkeypatch):
+        import threading
+
+        import backend.cache as cache
+
+        published_on: list[int] = []
+        monkeypatch.setattr(
+            cache, "redis_cache_set",
+            lambda key, value, ttl_seconds: published_on.append(threading.get_ident()))
+        claude._ensure_genai_loaded()
+        models = _AioModels([RuntimeError("503"), RuntimeError("503")])
+        monkeypatch.setattr(claude, "_configure_gemini_client", lambda: None)
+        monkeypatch.setattr(claude, "_cached_gemini_client", _AsyncClient(models))
+
+        await claude._call_gemini_httpx_model("q")
+        await claude._call_gemini_httpx_model("q")
+
+        assert len(published_on) == 1
+        assert published_on[0] != threading.get_ident()
+
     async def test_request_specific_rejection_is_not_counted(self, monkeypatch):
         claude._ensure_genai_loaded()
         models = _AioModels([_ApiError(400, "invalid argument")] * 3)
