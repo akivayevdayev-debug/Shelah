@@ -197,8 +197,8 @@ body.theme-dark {
     transform: translateY(-1px);
 }
 
-/* style.css paints the dark day frame with --surface-base and forces the
-   day number cream with !important; the tint and colour have to win there. */
+/* style.css paints the dark day frame with --surface-base and the day
+   number cream; the tint and colour have to win there. */
 :is([data-theme="dark"], body.theme-dark) .fc .cal-day-shabbat .fc-daygrid-day-frame {
     background: color-mix(in srgb, var(--cal-day-shabbat-fg) 8%, var(--surface-base));
 }

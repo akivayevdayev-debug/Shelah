@@ -632,11 +632,11 @@ html.rtl #hebrewDateDisplay {
     line-height: 1.6;
 }
 
-/* #settingsPanel button's !important display:inline-block above outranks
-   the .hidden utility on any button inside the panel (higher specificity,
-   also !important); these rules out-specify both so the export-only
-   controls (updateExportControlsVisibility() / syncSettingsExportControls())
-   can still be toggled off outside text pages. */
+/* #settingsPanel button's display:inline-block above outranks the .hidden
+   utility on any button inside the panel (an id in its selector); these
+   rules out-specify both so the export-only controls
+   (updateExportControlsVisibility() / syncSettingsExportControls()) can
+   still be toggled off outside text pages. */
 #settingsPanel button.hidden,
 #settingsPanel .export-text-only.hidden {
     display: none;
@@ -750,11 +750,6 @@ html[dir="rtl"] #searchInput {
 .ai-hint-icon {
     display: inline-flex;
     flex-shrink: 0;
-    /* !important needed to beat the dark-theme block's blanket
-       `:is([data-theme="dark"], body.theme-dark) svg { color: currentcolor }`
-       reset, which otherwise outranks this plain class selector on
-       specificity and leaves the icon inheriting its container's color
-       instead of showing gold. */
     color: var(--accent-gold);
     opacity: 0.85;
 }
@@ -2940,7 +2935,7 @@ html.rtl .home-main-layout #popularTextsGrid {
        the containing block and the panel positions against #readerTopBar
        (full width); it fills the bar minus a gutter, capped at 24rem and
        centred by auto margins. The doubled selector out-ranks the centring
-       rule above, whose `left` is !important. */
+       rule above (#readerSettingsPanel.reader-settings-dropdown). */
     #readerTopBar .reader-topbar-settings-anchor {
         position: static;
     }
@@ -4974,7 +4969,7 @@ body.theme-dark #analyticsConsentAccept {
     background: var(--ctrl-bg-hover);
 }
 
-/* The consent banner's Accept fill is !important, so the shared
+/* The consent banner's Accept fill is set by an #id rule, so the shared
    .analytics-consent-actions hover never showed on it. Light: the
    accent's hover shade. Dark: deepen the AA-tuned fill (its text is
    light, so darker only widens the 5.0:1 margin). */
