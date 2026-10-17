@@ -60,10 +60,7 @@ _FOOTNOTE_RES = (
 )
 _BR_RE = re.compile(r"<br\s*/?>", re.IGNORECASE)
 _INLINE_SPACE_RE = re.compile(r"[ \t]+")
-# A whitespace run that holds a newline collapses to that newline. Anchoring at
-# the run's start ((?<!\s)) keeps the scan linear: starting at every space of a
-# long run was quadratic (python:S8786).
-_NEWLINE_SPACE_RE = re.compile(r"(?<!\s)[^\S\n]*\n\s*")
+_BLANK_RUN_RE = re.compile(r"\s+")
 _DIVINE_NAME_RES = ((re.compile(r"\bG\s+OD\b"), "GOD"), (re.compile(r"\bL\s+ORD\b"), "LORD"))
 
 def enabled():
@@ -110,6 +107,12 @@ class _DisplayTextParser(HTMLParser):
         return "".join(self._parts)
 
 
+def _newline_if_any(run):
+    """A whitespace run that holds a newline collapses to that newline; any other run stays."""
+    blanks = run.group()
+    return "\n" if "\n" in blanks else blanks
+
+
 def _display_text(raw, keep_emphasis):
     text = str(raw or "")
     for footnote_re in _FOOTNOTE_RES:
@@ -119,7 +122,7 @@ def _display_text(raw, keep_emphasis):
     parser.feed(text)
     cleaned = parser.result().replace(" ", " ")
     cleaned = _INLINE_SPACE_RE.sub(" ", cleaned)
-    return _NEWLINE_SPACE_RE.sub("\n", cleaned).strip()
+    return _BLANK_RUN_RE.sub(_newline_if_any, cleaned).strip()
 
 
 def _plain_text(raw):

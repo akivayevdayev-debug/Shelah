@@ -24,7 +24,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from dotenv import load_dotenv
 from tenacity import retry, wait_random_exponential, stop_after_attempt, retry_if_exception
 
-from backend.citation_markers import finalize_sources, place_markers, remap_markers, strip_markers
+from backend.citation_markers import finalize_sources, note_head, place_markers, remap_markers, strip_markers
 from backend.cost_meter import record_llm_call
 from backend.customs import runtime_config as _customs_runtime_config
 from backend.health_check import health
@@ -1472,11 +1472,35 @@ _OFF_TOPIC_SUBJECT_MAX_CHARS = 60
 _OFF_TOPIC_OWN_LABELS = frozenset(OUT_OF_SCOPE_RULES) | frozenset(_OFF_TOPIC_TERMS)
 
 
+def _drop_parentheticals(text: str) -> str:
+    """``text`` with each "(...)" that closes on its own line replaced by a space.
+    An unclosed "(" stays. (Walks with find(): a pattern for this rescans a long run
+    of "(" from each one.)"""
+    pieces: List[str] = []
+    position = 0
+    while True:
+        opening = text.find("(", position)
+        closing = text.find(")", opening + 1) if opening >= 0 else -1
+        if closing < 0:
+            break
+        line_break = text.find("\n", opening + 1, closing)
+        if line_break >= 0:
+            # The "(" runs into a line break before any ")": it, and every "(" up to the break, closes nothing.
+            pieces.append(text[position:line_break + 1])
+            position = line_break + 1
+            continue
+        pieces.append(text[position:opening])
+        pieces.append(" ")
+        position = closing + 1
+    pieces.append(text[position:])
+    return "".join(pieces)
+
+
 def _off_topic_subject_label(subject: str) -> str:
     """Turn a detector label such as "Pure Math (no halachic context)" or a
     model-supplied subject into a short phrase for the refusal sentence."""
     own_label = subject in _OFF_TOPIC_OWN_LABELS
-    label = re.sub(r"\s*\(.*?\)\s*", " ", str(subject or ""))
+    label = _drop_parentheticals(str(subject or ""))
     label = re.sub(r"[^\w\s,&'’/-]", "", label)
     label = re.sub(r"\s+", " ", label).strip()[:_OFF_TOPIC_SUBJECT_MAX_CHARS].strip()
     if not label:
@@ -2046,7 +2070,7 @@ def _condense_assistant_answer(raw: Any) -> Tuple[str, List[str]]:
             if not stripped:
                 continue
             if stripped[0] in "-*•":
-                ref = re.split(r"(?<!\s)\s+[—–]\s+", re.sub(r"^[-*•]\s*", "", stripped), maxsplit=1)[0].strip()
+                ref = note_head(re.sub(r"^[-*•]\s*", "", stripped)).strip()
                 if ref and len(cited) < _CITED_SOURCES_MAX:
                     cited.append(ref[:_CITED_SOURCE_CHARS])
                 continue
@@ -2614,9 +2638,9 @@ def _call_primary_model_sync(prompt: str, dynamic_system_context: str = "", max_
         asyncio.get_running_loop()
     except RuntimeError:
         # No running loop in this thread — fast path, unchanged.
+        history_kwargs = {"history_turns": history_turns} if history_turns else {}
         return asyncio.run(_call_primary_model(
-            prompt, dynamic_system_context, max_tokens,
-            **({"history_turns": history_turns} if history_turns else {})))
+            prompt, dynamic_system_context, max_tokens, **history_kwargs))
 
     logger.warning(
         "_call_primary_model_sync invoked from a thread with a running "

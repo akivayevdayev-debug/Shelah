@@ -135,7 +135,7 @@ def _collect_trusted_authority_candidates(data):
 # reviewed"). The full text stays in the file; a source label is the name only.
 _NEGATIVE_STATEMENT_RE = re.compile(r"^(?:not|no|none|n/a)\b", re.IGNORECASE)
 _FOR_PREFIX_RE = re.compile(r"^for [^:]{1,60}:\s*(?=\S)", re.IGNORECASE)
-_AUTHORITY_NAME_END_RE = re.compile(r"(?<!\s)\s+\(|(?<!\s)\s+[\u2014\u2013]\s+|[;:,]\s")
+_AUTHORITY_NAME_END_RE = re.compile(r"\s\(|\s[\u2014\u2013]\s|[;:,]\s")
 
 
 def _authority_name(text):

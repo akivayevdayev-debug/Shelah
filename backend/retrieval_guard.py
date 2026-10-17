@@ -141,6 +141,10 @@ _PAGE_LEVEL_AUTHORITY = (
     r"|the\s+company\s+(?:that\s+(?:runs|owns|operates)|behind)\s+(?:this|the)\s+(?:site|website|page)"
 )
 
+# The persona a "you are now ..." / "act as ..." line has to name to count (the
+# unmistakable jailbreak forms only -- see the module docstring).
+_JAILBREAK_PERSONA = r"(?:an?\s+)?(?:dan\b|unrestricted|unfiltered|jailbroken|in\s+developer\s+mode)"
+
 # One small compiled pattern per phrase (the PROMPT_INJECTION_PATTERNS idiom;
 # keeps each regex structurally trivial and linear-time -- SonarCloud
 # python:S5843 / S8786). Matched against the normalized text (see _match_subjects).
@@ -169,12 +173,12 @@ RETRIEVED_INJECTION_PATTERNS = [
     re.compile(r"bypass\s+(?:the\s+)?(?:hierarchy|guardrails|safety)", re.IGNORECASE),
     re.compile(r"jailbreak", re.IGNORECASE),
     # The unmistakable forms of "you are now ..." only -- see the module docstring.
-    re.compile(r"you\s+are\s+now\s+(?:an?\s+)?(?:dan\b|unrestricted|unfiltered|jailbroken|in\s+developer\s+mode)", re.IGNORECASE),
+    re.compile(rf"you\s+are\s+now\s+{_JAILBREAK_PERSONA}", re.IGNORECASE),
     # Same restraint for "act as .../pretend you are ..." (AI_SECURITY_REVIEW
     # follow-up A.2): bare "act as a witness"/"pretend you are unaware" is
     # ordinary prose (a halachic role-play hypothetical, or second-person
     # address), so only the same unmistakable jailbreak-persona forms count.
-    re.compile(r"(?:act\s+as|pretend\s+(?:that\s+)?you(?:'re|\s+are))\s+(?:an?\s+)?(?:dan\b|unrestricted|unfiltered|jailbroken|in\s+developer\s+mode)", re.IGNORECASE),
+    re.compile(rf"(?:act\s+as|pretend\s+(?:that\s+)?you(?:'re|\s+are))\s+{_JAILBREAK_PERSONA}", re.IGNORECASE),
     # Chat-template control tokens and the app's own untrusted-data delimiter.
     re.compile(r"<\|(?:im_start|im_end|system|assistant|endoftext)\|>", re.IGNORECASE),
     re.compile(r"\[/?INST\]|<<\s*/?SYS\s*>>", re.IGNORECASE),
@@ -213,7 +217,7 @@ RETRIEVED_INJECTION_PATTERNS = [
     # Yiddish), then "אלע" ("all", unambiguous and standard), then up to
     # ~20 characters of qualifier, then the "אינסטרוקציעס" loanword
     # ("instructions").
-    re.compile(r"יגנאָר\w*\s+אלע\s+\w{0,20}\s*אינסטרוקציעס"),
+    re.compile(r"יגנאָר\w{0,30}\s+אלע\s+\w{0,20}\s*אינסטרוקציעס"),
 ]
 
 # Cyrillic / Greek letters that render like a Latin one. Used ONLY to build a

@@ -41,13 +41,22 @@ _RUN_RE = re.compile(rf"([ \t]*)((?:{_ONE})+)")
 # place_markers() reads them as one run (and writes them back flush: "[1][2]").
 _SPACED_RUN_RE = re.compile(rf"([ \t]*)((?:{_ONE})(?:[ \t]*(?:{_ONE}))*)")
 _NUMBER_OR_RANGE_RE = re.compile(r"(\d{1,2})(?:\s*[-\u2013]\s*(\d{1,2}))?")
-_NOTE_SPLIT_RE = re.compile(r"(?<!\s)\s+[—–]\s+")
+# " — note" / " – note": one blank, a dash, one blank. (No quantifiers: a run of blanks is
+# stepped over by note_head(), not rescanned by the pattern.)
+_NOTE_SEP_RE = re.compile(r"\s[—–]\s")
+
+
+def note_head(text: str) -> str:
+    """``text`` up to its first " — note" separator, without the blanks before it
+    ("Genesis 1:1 — creation" -> "Genesis 1:1"); all of it when there is none."""
+    separator = _NOTE_SEP_RE.search(text)
+    return text[: separator.start()].rstrip() if separator else text
 
 
 def source_key(source: str) -> str:
     """A source reduced to the part before its relevance note, lower-cased:
     "Genesis 1:1 — creation" and "genesis 1:1" are the same source."""
-    return _NOTE_SPLIT_RE.split(str(source or ""), maxsplit=1)[0].strip().lower()
+    return note_head(str(source or "")).strip().lower()
 
 
 def finalize_sources(
@@ -116,7 +125,10 @@ def strip_markers(text: str) -> str:
 # A sentence boundary inside a span: terminal punctuation (plus closing quotes or
 # brackets), whitespace, then more text. Initials and common abbreviations
 # ("R. Yochanan", "Dr. Smith", "e.g. the") end in a period but not a sentence.
-_BOUNDARY_RE = re.compile(r"[.!?\u2026\u05c3]+[\"'\u201d\u2019)\]]*\s+(?=\S)")
+# The match is the last mark of a run ("..." -> the third dot); _sentence_count walks
+# back to the run's start. (A "+" here would be retried from every mark of a long run.)
+_TERMINALS = ".!?\u2026\u05c3"
+_BOUNDARY_RE = re.compile(r"[.!?\u2026\u05c3][\"'\u201d\u2019)\]]*\s+(?=\S)")
 _LAST_WORD_RE = re.compile(r"(?<!\S)(\S+)$")
 _ABBREVIATIONS = frozenset({
     "r", "rabbi", "rav", "dr", "mr", "mrs", "st", "vs", "cf", "etc", "ibid", "e.g", "i.e",
@@ -131,7 +143,10 @@ def _sentence_count(span: str) -> int:
         return 0
     count = 1
     for match in _BOUNDARY_RE.finditer(text):
-        word = _LAST_WORD_RE.search(text[: match.start()])
+        run_start = match.start()
+        while run_start > 0 and text[run_start - 1] in _TERMINALS:
+            run_start -= 1
+        word = _LAST_WORD_RE.search(text[:run_start])
         previous = word.group(1).strip("([\"'\u201c").lower() if word else ""
         if previous in _ABBREVIATIONS or re.fullmatch(r"[a-z]", previous):
             continue

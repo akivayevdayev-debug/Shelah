@@ -125,19 +125,23 @@ for _title, _spellings in _SECTIONS.items():
     for _spelling in _spellings:
         _SLUGS.setdefault(_slug(_spelling), _title)
 
+# The ways a Mishneh Torah reference names the work, and its "Laws of ..." prefix.
+_TORAH_WORDS = r"Mishneh?\s+Torah|Rambam|Maimonides"
+_HILCHOT_WORDS = r"Hilchot|Hilchos|Hilkhot|Hilkhoth|Hilcot|Hilchoth|Hil\.?|Laws?\s+of|Halachot|Halakhot"
+
 # "[Mishneh Torah|Rambam|Maimonides][,] [Hilchot|Hilkhot|Laws of|Hil.] <section> [<chapter...>]"
+# The section is words joined by spaces, so it cannot share a run of blanks with
+# the chapter part that follows it (a name that may itself hold and end in blanks
+# let both claim the same run, which a long run of blanks made quadratic).
 _REF_RE = re.compile(
-    r"""^\s*
-    (?:(?:Mishneh\s+Torah|Mishne\s+Torah|Rambam|Maimonides)\b[\s,.:-]*)?
-    (?:(?:Hilchot|Hilchos|Hilkhot|Hilkhoth|Hilcot|Hilchoth|Hil\.?|Laws?\s+of|Halachot|Halakhot)\s+)?
-    (?P<name>[A-Za-z'’\- ]+?)
-    (?P<rest>[\s,]+\d[\d\s:.,\-–]*)?\s*$""",
+    rf"""^\s*
+    (?:(?:{_TORAH_WORDS})\b[\s,.:-]*)?
+    (?:(?:{_HILCHOT_WORDS})\s+)?
+    (?P<name>[A-Z'’\-]+(?:[ ]+[A-Z'’\-]+)*)
+    (?:(?P<rest>[\s,]+\d[\d\s:.,\-–]*)|\s*)$""",
     re.IGNORECASE | re.VERBOSE,
 )
-_PREFIX_RE = re.compile(
-    r"^\s*(?:(?:Mishneh?\s+Torah|Rambam|Maimonides)\b|(?:Hilchot|Hilchos|Hilkhot|Hilkhoth|Hilcot|Hilchoth|Hil\.?|Laws?\s+of|Halachot|Halakhot)\s)",
-    re.IGNORECASE,
-)
+_PREFIX_RE = re.compile(rf"^\s*(?:(?:{_TORAH_WORDS})\b|(?:{_HILCHOT_WORDS})\s)", re.IGNORECASE)
 
 
 def canonical_mishneh_torah_ref(ref: str) -> Optional[str]:
