@@ -1391,7 +1391,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             'Chanukah': 'חנוכה',
             'Hanukkah': 'חנוכה',
             'Tu BiShvat': 'ט״ו בשבט',
-            'Lag BaOmer': 'ל"ג בעומר',
+            'Lag BaOmer': 'ל״ג בעומר',
             'Tisha BAv': 'תשעה באב',
             'Yom HaAtzmaut': 'יום העצמאות',
             'Yom HaShoah': 'יום השואה',
