@@ -7,7 +7,7 @@
       "style.css": "sha256:3984fc366925c19ac46eb2bbaca4de5b64ce5248b6e59962674f27fefe9e493e",
       "css/typography.css": "sha256:a67539e5abf8bfd0ea1cc1395793b6836281221c410607cbc3e463b893f039fa",
       "css/reader.css": "sha256:50601fd11b14c8ace1f752b3d28ebc9fe0bfe6b90b0beda8e352a896a752724c",
-      "css/sidebar.css": "sha256:46075f333d39a3f136fc2a912dcdbe56f008e71143c86a51ff14d5e21b7ec222",
+      "css/sidebar.css": "sha256:4a221af9cc7801d16838a30fbeb92857e5a268a958228a4bfd00a9db1579b314",
       "css/halacha.css": "sha256:d56991aac19afaa3175434312588862a5a63b32c46d7d07d2f70e23fd9e049bf",
       "css/prayer.css": "sha256:70cf28909030c0816176889df96729aca7618f9088de74d324f9c9a38812c78d",
       "css/siddur.css": "sha256:a0f9ff9421234014d4b6db03e9728e67a1ff2a4a26d1b523143f2e10d6852804",
@@ -19,19 +19,19 @@
       "css/loading.css": "sha256:10eaad855917d62df7a5d396c0bbb8a487d529d846bc3233637e7eb42e5a3211",
       "css/tailwind.css": "sha256:f72a1c23017da8c8925e8004c0d6b85d73ee8ee7b23f76f812a891f14ea63613"
     },
-    "sourcesHash": "6fbf02b4bac719b7f5d93017bdf679f1435eab38de4b79ff4e062df0be5d8bc6",
+    "sourcesHash": "d289a22c214b1774d9f19bda3b989db0e434f1a3398fe07985f6e7d423126b55",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "6fbf02b4bac719b7f5d93017bdf679f1435eab38de4b79ff4e062df0be5d8bc6",
+        "sourcesHash": "d289a22c214b1774d9f19bda3b989db0e434f1a3398fe07985f6e7d423126b55",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "6fbf02b4bac719b7f5d93017bdf679f1435eab38de4b79ff4e062df0be5d8bc6",
+        "sourcesHash": "d289a22c214b1774d9f19bda3b989db0e434f1a3398fe07985f6e7d423126b55",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "6fbf02b4bac719b7f5d93017bdf679f1435eab38de4b79ff4e062df0be5d8bc6",
+        "sourcesHash": "d289a22c214b1774d9f19bda3b989db0e434f1a3398fe07985f6e7d423126b55",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",

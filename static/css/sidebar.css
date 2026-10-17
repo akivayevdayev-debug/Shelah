@@ -101,12 +101,12 @@ body.theme-dark html.rtl .library-tree-children {
 
 body.theme-dark #leftSidebar .border-b,
 body.theme-dark #rightSidebar .border-b {
-    border-bottom-color: var(--surface-border) !important;
+    border-bottom-color: var(--surface-border);
 }
 
 body.theme-dark #leftSidebar .border-r,
 body.theme-dark #rightSidebar .border-l {
-    border-color: var(--surface-border) !important;
+    border-color: var(--surface-border);
 }
 
 body.theme-dark #leftSidebar h3.text-slate-400 {
@@ -133,7 +133,7 @@ body.theme-dark #leftSidebar h3.text-slate-400 {
     #rightSidebar,
     #leftSidebar *,
     #rightSidebar * {
-        pointer-events: auto !important;
+        pointer-events: auto;
     }
 }
 
