@@ -14,24 +14,24 @@
       "css/ai.css": "sha256:87bb5dd5049839d21169c8f644ba2783201acb8f718462448fe623a7ea326f3a",
       "css/conversation.css": "sha256:861c935a40f7401b020eedd21ee4ef5513e88deaa00c9c49401e0f9c1f24f944",
       "css/history.css": "sha256:ff1556ed62eceadb953ed9a9b4325d70410a97e1bceff2271a07b5ebe213218c",
-      "css/calendar.css": "sha256:c26b9e56ce59a5c0e3d684b1e65877d0a2b95e5be0837b65ad21dcc9864bc3dc",
+      "css/calendar.css": "sha256:83eecdccb984ac49241fac616774e0222314b6ef694da92e69ddf516a4c97b46",
       "css/calendar-detail.css": "sha256:e7d8064e774a2a4a52daa86599522a424e2d21263e95b896514b34dc5fe46dc4",
       "css/loading.css": "sha256:10eaad855917d62df7a5d396c0bbb8a487d529d846bc3233637e7eb42e5a3211",
       "css/tailwind.css": "sha256:f72a1c23017da8c8925e8004c0d6b85d73ee8ee7b23f76f812a891f14ea63613"
     },
-    "sourcesHash": "16623dfefda11ce52f096b2d707b8c2040202055d8ac30e496c75628c9a2b4be",
+    "sourcesHash": "1ab29e1e5f10eca60f0f23a98a7a5ecf0c4440153323d146df525c3dce1bb151",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "16623dfefda11ce52f096b2d707b8c2040202055d8ac30e496c75628c9a2b4be",
+        "sourcesHash": "1ab29e1e5f10eca60f0f23a98a7a5ecf0c4440153323d146df525c3dce1bb151",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "16623dfefda11ce52f096b2d707b8c2040202055d8ac30e496c75628c9a2b4be",
+        "sourcesHash": "1ab29e1e5f10eca60f0f23a98a7a5ecf0c4440153323d146df525c3dce1bb151",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "16623dfefda11ce52f096b2d707b8c2040202055d8ac30e496c75628c9a2b4be",
+        "sourcesHash": "1ab29e1e5f10eca60f0f23a98a7a5ecf0c4440153323d146df525c3dce1bb151",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
