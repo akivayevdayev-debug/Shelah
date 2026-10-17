@@ -79,7 +79,7 @@ fails on the old code. Eleven fix commits came out of this pass: nine are alread
    `_build_last_resort_web_sources`, `text_engine._format_ui_answer`, `app._gather_ask_question_context_futures`.
    Deleting each means deleting its tests, so I left them.
 7. **Sonar leftovers:** the first pass left about 390 JavaScript smells, 22 Python `S3776`, `S8786`/`S5843`, `Web:S6819` x17,
-   `Web:S7927` x22 and `css:S9423` x701. Section 6 says which of these were fixed afterwards and which are still open.
+   `Web:S7927` x22 and `css:S9423` x701. Sections 6 and 7 say which of these were fixed afterwards and which are still open.
 8. **Build hygiene:** `npm run build:css` changes `:where(.space-y-*)` specificity (a stale `.capitalize` rule in
    `tailwind.css` goes with it), and the critical CSS drifts from source at a pristine HEAD. Both need the frontend
    owner; I reverted my rebuild attempts.
@@ -132,7 +132,7 @@ normal text):
 
 | Item | Reason |
 |---|---|
-| `css:S9423` x701 (`!important`) | Mostly in `static/style.css` (573). Removing them is visual work that has to be measured per component in light and dark, Hebrew and English; a separate session was proposed for it. |
+| `css:S9423` x701 (`!important`) | Done in part, see section 7: 449 of 709 declarations removed (63 %), each commit measured; the 260 that stay are listed with the reason. |
 | `Web:S6819` x18 | Sonar wants `role="status"` replaced by `<output>`, `role="dialog"` by `<dialog>`, `role="radio"` by `<input>` and `role="group"` by `<fieldset>` and friends. Those swaps change focus, styling and (for `<dialog>`) top-layer behaviour, so they belong with the frontend owner; an earlier pass (`756e3fb`) already converted the status regions where `<output>` was safe. |
 | `javascript:S9382` x14 (await in a loop) | Sequential on purpose: the service worker's precache walk goes "one at a time: the reader's own requests go first" (its own comment), `commentary-preload.js` re-checks staleness between neighbour fetches, and the build scripts run their steps in order. `Promise.all` would change load and ordering for a style hint. |
 | `text_ssr` footnote regexes (lines 57-58) | They are written to mirror `normalizeDisplayText` in the browser (the module's own comment says "in the same order"); making only the server side linear would risk server- and client-rendered text differing. |
@@ -142,3 +142,82 @@ normal text):
 `SONAR_TOKEN` is still not set in this shell, so I have not seen the quality gate after these commits; the Python
 cognitive-complexity counts were checked with a local approximation of the rule, which cannot confirm them. The first CI scan
 after a push is the check.
+
+## 7. `css:S9423` (`!important`): 709 declarations to 260 (2026-10-17)
+
+Twelve CSS commits and one comment commit on top of `20c8d3f`, nothing pushed. I counted declarations with a
+parser over the ten app sheets (not the minified bundle; Tailwind's own sheet is not touched): 709 before, 260
+after, so 449 removed (63 %). Sonar's own count was 701.
+
+| File | Before | After |
+|---|---|---|
+| `static/style.css` | 559 | 184 |
+| `static/css/calendar.css` | 77 | 35 |
+| `static/css/ai.css` | 30 | 13 |
+| `static/css/legal.css` | 8 | 4 |
+| `static/css/reader.css` | 8 | 1 |
+| `static/css/sidebar.css` | 6 | 3 |
+| `static/css/conversation.css` | 5 | 4 |
+| `static/css/typography.css`, `tokens.css`, `calendar-detail.css` | 16 | 16 (all kept, see below) |
+
+| Commit | What |
+|---|---|
+| `d3b70f0`, `ec704f4` | `style.css` lines 1-3037: top bar, user menu, settings buttons, scrollbar tracks, reader top bar, RTL sidebar, source grid (34 + 42) |
+| `f232427` | `conversation.css`: the panel's `transition: none` while dragging (1) |
+| `a5b29ff`, `ae33978`, `c4c22e8` | `style.css`: the library-shell Tailwind-utility overrides, the dark city search / selection insights / right sidebar, the dark Tailwind-utility, badge and library-node overrides (35 + 81 + 179) |
+| `36557a3` | `calendar.css` and one `style.css` calendar rule: FullCalendar and calendar-modal overrides (42) |
+| `7951776`, `bca8a0c`, `15ebe37`, `8eca478` | `legal.css` (4), `reader.css` (7), `sidebar.css` (3), `ai.css` (17) |
+| `33c0f4b` | four more that a second pass over the kept ones showed were redundant (`#reader` padding, dark navigator pane, two dark colours) |
+| `ad05dd2` | five comments that still said a rule was `!important` after the commits above removed it; the minified bundle is unchanged |
+
+**How it was done.** A throw-away harness (puppeteer against the real app, not checked in; a copy is in the shared
+notes folder of this pass) loads each page twice, once with the original CSS and once with a candidate set stripped, and
+compares the computed style of every element in the default, hover, focus, focus-visible and active states, its
+`::before`, `::after`, `::placeholder` and scrollbar pseudo-elements, with animations frozen. Hover and focus are forced
+by rewriting the pseudo-classes to marker classes, so the CSS under test is the CSS as written. When a stripped
+declaration changes something, the harness names the declaration that used to win and what beat it afterwards, and
+that declaration is kept. Repeating that until nothing changed left 445 removable declarations. Because stripping a
+declaration whose `!important` loser is also stripped leaves half a ladder behind, the removals were ordered so that no
+commit leaves a partial state (a rule is removed only together with, or after, the rules it used to beat), and every
+commit was re-measured against the original CSS rather than against its predecessor. Cells: light and dark, English and
+Hebrew, 320 to 3840 px; the home page, a text page, prayer, siddur, history, the Ask page and the static pages (22
+routes in the full matrix); the settings panel, the calendar modal, the library, the profile menu and the Ask panel
+opened; print; reduced motion.
+
+**Evidence.** Each of the twelve commits was compared on 70 cells with no difference. The final tree was compared with
+the original CSS on 314 cells (a 224-cell matrix, 78 more cells, and 12 cells of synthetic elements built from the
+selectors of the 83 removed declarations that match nothing on any real page) and about 965,000 element / state /
+pseudo-element snapshots, each a full computed style: 0 differences. `npm run build:assets`, `check:assets` and
+`build:critical` pass (critical CSS identical to the full CSS in all 32 cells); `npm test` 1,470 / 1,470;
+`pytest` 5,546 passed at 99.59 % (gate 85 %) on a clean checkout of `ad05dd2`.
+
+Two things to know about the checks. A few elements move between runs for reasons unrelated to CSS (the timer-driven
+`#aiDiscoveryTip` and its arrow, and a few scenario cells whose layout settles a little differently between loads); I
+re-ran every cell that differed on its own and kept only differences that reproduced, and none did. And in this worktree `pytest` shows one failure,
+`tests/test_shell_dom_fixture.py::test_fixture_is_the_page_the_server_renders`: `app.py` runs `load_dotenv(override=True)`,
+which finds the main checkout's `.env` (with a Clerk key) in a parent directory and renders `#authControls` as visible.
+It does not touch CSS and passes in a checkout without that `.env`.
+
+**What stays, and why** (260; the counts are by the kind of fight, from the harness's report of what each kept
+declaration beats):
+
+| Group | Count | Why it cannot go |
+|---|---|---|
+| `prefers-reduced-motion` | 14 | The standard accessibility override: it has to beat `transition` / `animation` set by utilities, components and JavaScript. |
+| `@media print` | 11 | Has to beat screen layout rules and Tailwind utilities (`flex`, `lg:block`, ...) on elements the print view hides or resets. |
+| JavaScript sets an inline style | 12 | `#mobileDrawerBackdrop` (`transition`, and `.hidden` opacity), `.mobile-drawer` on desktop (`transform`, `transition`), shul-mode reader size (`font-size`, `line-height`), `.prayer-clean-lines small` (`renderPrayerDisplayByLayout` writes `font-size: inherit` on every descendant), and the dark calendar modal (`box-shadow`, `background` against `style=`). An inline style only loses to `!important`. |
+| `transition` set on controls that also carry Tailwind's `.transition*` | 7 | `ai.css` timing for the top-bar button, user menu, search field, show-sidebar tab, theme and language buttons; it has to beat the `.transition*` utilities, including `.library-shell :is(button, ...).transition` (0,3,0). |
+| FullCalendar | 38 | FullCalendar injects its own stylesheet at runtime, after ours, with selectors up to (0,4,0) (`.fc-direction-ltr .fc-button-group > .fc-button:not(:last-child)`), and it writes event colours into `style=` on every event. Needed for the toolbar buttons, day cells, event categories and the dark theme. |
+| Tailwind utility overrides | 39 | The AA colour remaps of `.text-slate-*`, `.bg-white`, `.bg-slate-50`, `.border-slate-*` and the sidebar's `[class*="text-[#...]"]` arbitrary values must beat the utility on the same element, and the dark versions must in turn beat the light remaps (which are `!important` as well). Tailwind is deliberately unlayered and linked last (`tailwind.input.css` says why), so a class selector ties with it and loses on order. |
+| App-level ladders | 139 | Button states (`.topbar-flat-btn`, `.lang-btn`, `#settingsMenuBtn`, `#settingsPanel button`, ...) in light, dark and `.library-shell`, the search field, the sidebars' width rules, the reader top bar. Each rule beats a Tailwind utility on the same element (`.flex`, `.block`, `.hidden`, `.text-[#1f3f63]`, `.hover:bg-slate-100`), an `#id` rule elsewhere, or another `!important` in the same ladder, so removing one alone moves the result. |
+
+27 of the 260 were never exercised by any of the cells (for example the dark scrollbar thumb `:hover`, three
+FullCalendar event-category border colours, two dark calendar-modal rules and the shul-mode size). They stay because I
+could not measure them, not because they are known to be needed.
+
+**What it would take to remove the rest.** The 139 ladders are a restructure, not a deletion: the button families would
+need one shared parent class (or a token-driven state attribute) so the light, dark and `.library-shell` variants stop
+depending on importance, and the Tailwind overrides need the cascade decision in `tailwind.input.css` revisited (layering
+the utilities would let un-layered app rules win without importance, but it flips the winner wherever a utility
+currently beats an app rule). Both change the cascade for the whole app, so they want the frontend owner and the same
+harness; I did not start them.
