@@ -68,6 +68,23 @@ _MINHAG_RE = re.compile(r"^[A-Za-z][A-Za-z-]{0,39}$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
+def _tail_segment(parts, i):
+    """``(key, value, segments used)`` for the tail segment at ``i``, or None
+    when it fits nowhere."""
+    word = parts[i]
+    if word in _TAIL_PAIRS:
+        key = _TAIL_PAIRS[word]
+        value = parts[i + 1] if i + 1 < len(parts) else ""
+        if not value or (key == "date" and not _DATE_RE.match(value)):
+            return None
+        return key, value, 2
+    if word.lower() in _TAIL_WORDS:
+        return _TAIL_WORDS[word.lower()], word.lower(), 1
+    if _MINHAG_RE.match(word):
+        return "minhag", word, 1
+    return None
+
+
 def _parse_tail(parts, beside_answer=False):
     """The keys a path's tail sets, or None when a segment fits nowhere.
 
@@ -77,24 +94,14 @@ def _parse_tail(parts, beside_answer=False):
     keys = {}
     i = 0
     while i < len(parts):
-        word = parts[i]
-        if word in _TAIL_PAIRS:
-            key = _TAIL_PAIRS[word]
-            value = parts[i + 1] if i + 1 < len(parts) else ""
-            if not value or (key == "date" and not _DATE_RE.match(value)):
-                return None
-            i += 2
-        elif word.lower() in _TAIL_WORDS:
-            key, value = _TAIL_WORDS[word.lower()], word.lower()
-            i += 1
-        elif _MINHAG_RE.match(word):
-            key, value = "minhag", word
-            i += 1
-        else:
+        segment = _tail_segment(parts, i)
+        if segment is None:
             return None
+        key, value, used = segment
         if key in keys:
             return None
         keys[key] = value
+        i += used
     if "cv" in keys and "conversation" not in keys:
         return None
     if ("minhag" in keys or "mode" in keys) and "conversation" not in keys and not beside_answer:

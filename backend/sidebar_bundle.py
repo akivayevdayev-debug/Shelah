@@ -121,38 +121,48 @@ def _slim_link(item):
     return entry
 
 
-def slim_links(grouped):
-    """Reduce Sefaria's grouped links to the commentary/targum/midrash refs
-    the sidebar lists, in the order and with the de-duplication the client's
-    extractCommentaryRefs applies, in the same ``{category: [item]}`` shape."""
-    if not isinstance(grouped, dict):
-        return {}
+def _ranked_categories(grouped):
+    """The commentary/targum/midrash categories of ``grouped``, in list order."""
     ranked = []
     for category, items in grouped.items():
         rank = _category_rank(category)
         if rank is not None and isinstance(items, list):
             ranked.append((rank, category, items))
     ranked.sort(key=lambda entry: entry[0])
+    return ranked
 
+
+def _keep_links(items, seen, room):
+    """Up to ``room`` links from ``items`` whose ref is not in ``seen`` yet
+    (which is updated), slimmed."""
+    kept = []
+    for item in items:
+        if len(kept) >= room:
+            break
+        entry = _slim_link(item) if isinstance(item, dict) else None
+        if entry is None:
+            continue
+        key = entry["ref"].lower()
+        if key not in seen:
+            seen.add(key)
+            kept.append(entry)
+    return kept
+
+
+def slim_links(grouped):
+    """Reduce Sefaria's grouped links to the commentary/targum/midrash refs
+    the sidebar lists, in the order and with the de-duplication the client's
+    extractCommentaryRefs applies, in the same ``{category: [item]}`` shape."""
+    if not isinstance(grouped, dict):
+        return {}
     slim = {}
     seen = set()
     total = 0
-    for _, category, items in ranked:
-        kept = []
-        for item in items:
-            if total >= LINK_REF_LIMIT:
-                break
-            entry = _slim_link(item) if isinstance(item, dict) else None
-            if entry is None:
-                continue
-            key = entry["ref"].lower()
-            if key in seen:
-                continue
-            seen.add(key)
-            kept.append(entry)
-            total += 1
+    for _, category, items in _ranked_categories(grouped):
+        kept = _keep_links(items, seen, LINK_REF_LIMIT - total)
         if kept:
             slim[category] = kept
+            total += len(kept)
     return slim
 
 

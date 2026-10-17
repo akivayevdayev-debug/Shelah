@@ -1173,6 +1173,46 @@ def log_request_completion(response):
     return response
 
 
+def _cache_tier_for(path, response):
+    """The explicit per-route cache tier (Immutable / Deterministic-by-date /
+    Corpus-derived / Private) for this response, or None for a route outside
+    the table. It replaced the old blanket /api/* -> no-store branch.
+
+    classify_cache_tier() is the single source of truth shared with asgi.py's
+    native /ask + /api/async/health routes (backend/cache_policy.py's module
+    docstring has the full rationale). A handler that took a session/user-
+    dependent branch inside an otherwise-public route (e.g. /api/zmanim
+    falling back to the caller's remembered location, /api/holidays'
+    last-resort fallback -- see backend/routes_calendar.py) sets
+    g.cache_tier_force_private=True itself; that per-request fact always wins
+    over the static table, since only the handler that ran knows which branch
+    it actually took.
+    """
+    if getattr(g, "cache_tier_force_private", False):
+        return CACHE_TIER_PRIVATE
+    return classify_cache_tier(request.method, path, response.status_code)
+
+
+def _static_cache_control(path, response):
+    """Cache-Control for a /static/ response."""
+    if (
+        module_versions.is_content_hash(request.args.get("v"))
+        or path.startswith("/static/min/js/chunks/")
+    ) and response.status_code == 200:
+        # /static/<file>?v=<hash of its bytes> (module_versions.asset_url,
+        # the import map), or a bundler chunk, whose file name is a hash of
+        # its bytes: this URL can never name different bytes, so the
+        # browser keeps it for a year without asking again. A hand-written
+        # or missing version keeps the short TTL below.
+        return STATIC_IMMUTABLE_CACHE_CONTROL
+    if path.startswith("/static/fonts/") and response.status_code == 200:
+        return STATIC_FONT_CACHE_CONTROL
+    return (
+        f"public, max-age={RESOURCE_RELOAD_SECONDS}, "
+        f"stale-while-revalidate={STATIC_STALE_WHILE_REVALIDATE_SECONDS}"
+    )
+
+
 @app.after_request
 def apply_response_cache_policy(response):
     path = request.path or ""
@@ -1190,21 +1230,7 @@ def apply_response_cache_policy(response):
     for header_name, header_value in SECURITY_RESPONSE_HEADERS.items():
         response.headers.setdefault(header_name, header_value)
 
-    # Explicit per-route cache tier (Immutable /
-    # Deterministic-by-date / Corpus-derived / Private), replacing the old
-    # blanket /api/* -> no-store branch. classify_cache_tier() is the single
-    # source of truth shared with asgi.py's native /ask + /api/async/health
-    # routes (backend/cache_policy.py's module docstring has the full
-    # rationale). A handler that took a session/user-dependent branch inside
-    # an otherwise-public route (e.g. /api/zmanim falling back to the
-    # caller's remembered location, /api/holidays' last-resort fallback —
-    # see backend/routes_calendar.py) sets g.cache_tier_force_private=True
-    # itself; that per-request fact always wins over the static table, since
-    # only the handler that ran knows which branch it actually took.
-    if getattr(g, "cache_tier_force_private", False):
-        cache_control = CACHE_TIER_PRIVATE
-    else:
-        cache_control = classify_cache_tier(request.method, path, response.status_code)
+    cache_control = _cache_tier_for(path, response)
     if cache_control is not None:
         response.headers["Cache-Control"] = cache_control
         # Informational only (cache-debugging: confirms which deploy served
@@ -1225,37 +1251,13 @@ def apply_response_cache_policy(response):
         return response
 
     if path.startswith("/static/"):
-        if (
-            module_versions.is_content_hash(request.args.get("v"))
-            or path.startswith("/static/min/js/chunks/")
-        ) and response.status_code == 200:
-            # /static/<file>?v=<hash of its bytes> (module_versions.asset_url,
-            # the import map), or a bundler chunk, whose file name is a hash of
-            # its bytes: this URL can never name different bytes, so the
-            # browser keeps it for a year without asking again. A hand-written
-            # or missing version keeps the short TTL below.
-            response.headers["Cache-Control"] = STATIC_IMMUTABLE_CACHE_CONTROL
-            return response
-        if path.startswith("/static/fonts/") and response.status_code == 200:
-            response.headers["Cache-Control"] = STATIC_FONT_CACHE_CONTROL
-            return response
-        response.headers["Cache-Control"] = (
-            f"public, max-age={RESOURCE_RELOAD_SECONDS}, "
-            f"stale-while-revalidate={STATIC_STALE_WHILE_REVALIDATE_SECONDS}"
-        )
+        response.headers["Cache-Control"] = _static_cache_control(path, response)
         return response
 
-    if path == "/manifest.webmanifest":
-        response.headers["Cache-Control"] = (
-            f"public, max-age={RESOURCE_RELOAD_SECONDS}, must-revalidate"
-        )
-        return response
-
-    if path in {"/robots.txt", "/sitemap.xml"}:
-        # Identical for every visitor and slow-changing —
-        # same treatment as manifest.webmanifest rather than falling through
-        # to no explicit Cache-Control (neither is text/html so the generic
-        # branch below never catches them).
+    if path in {"/manifest.webmanifest", "/robots.txt", "/sitemap.xml"}:
+        # Identical for every visitor and slow-changing. robots.txt and
+        # sitemap.xml are not text/html, so the generic branch below would
+        # never catch them and they would carry no explicit Cache-Control.
         response.headers["Cache-Control"] = (
             f"public, max-age={RESOURCE_RELOAD_SECONDS}, must-revalidate"
         )
@@ -1534,6 +1536,24 @@ def _ask_question_prayer_payload(question, mode, answer_language, canonical_lens
     }
 
 
+def _primary_ref_candidates(question, context):
+    """The refs worth fetching for a question: the non-blank ones from
+    sefaria.find_refs_for_question, capped at ASK_PRIMARY_SOURCE_LIMIT
+    (4 by default, for speed; never below 1 or above 8)."""
+    primary_refs = (sefaria.find_refs_for_question(question, context) if context
+                    else sefaria.find_refs_for_question(question))
+    max_primary_refs = max(1, min(_env_int("ASK_PRIMARY_SOURCE_LIMIT", 4), 8))
+    candidates = []
+    for ref in primary_refs:
+        normalized_ref = str(ref or "").strip()
+        if not normalized_ref:
+            continue
+        candidates.append(normalized_ref)
+        if len(candidates) >= max_primary_refs:
+            break
+    return candidates
+
+
 def _collect_primary_sources_sync(question, engine, context=()):
     """Fetch + fully resolve the primary Sefaria source texts for a
     question (thread-pool parallel). Split out of ask_question()
@@ -1541,33 +1561,18 @@ def _collect_primary_sources_sync(question, engine, context=()):
     `context`: a conversation's earlier questions, newest first (see
     sefaria.find_refs_for_question).
     """
-    primary_refs = (sefaria.find_refs_for_question(question, context) if context
-                    else sefaria.find_refs_for_question(question))
-    max_primary_refs = _env_int(
-        "ASK_PRIMARY_SOURCE_LIMIT", 4)  # Capped at 4 for speed
-    max_primary_refs = max(1, min(max_primary_refs, 8))
-    primary_ref_candidates = []
-    for ref in primary_refs:
-        normalized_ref = str(ref or "").strip()
-        if not normalized_ref:
-            continue
-        primary_ref_candidates.append(normalized_ref)
-        if len(primary_ref_candidates) >= max_primary_refs:
-            break
-
+    source_futures = [
+        submit_with_context(_THREAD_POOL, engine.get_library_text, ref)
+        for ref in _primary_ref_candidates(question, context)
+    ]
     primary_sources = []
-    if primary_ref_candidates:
-        source_futures = [
-            submit_with_context(_THREAD_POOL, engine.get_library_text, ref)
-            for ref in primary_ref_candidates
-        ]
-        for future in source_futures:
-            try:
-                source_data = future.result(timeout=3)
-            except Exception:
-                continue
-            if is_usable_primary_source(source_data):
-                primary_sources.append(source_data)
+    for future in source_futures:
+        try:
+            source_data = future.result(timeout=3)
+        except Exception:
+            continue
+        if is_usable_primary_source(source_data):
+            primary_sources.append(source_data)
     return primary_sources
 
 
