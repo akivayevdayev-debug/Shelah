@@ -359,6 +359,43 @@ test('a question creates the conversation and shows both turns, locked to its co
     }
 });
 
+test('a reply in the signed-in thread can be rated, with the question it answers', async () => {
+    const page = await openAsk();
+    try {
+        const widgets = [];
+        page.window.renderFeedbackWidget = (host, data, question) => { widgets.push([host.className, data.meta.language, question, data.history_id]); };
+        await page.ask('When do we light candles?');
+        assert.deepEqual(widgets, [['conv-turn__feedback', 'en', 'When do we light candles?', undefined]]);
+        assert.ok(turns(page)[1].querySelector('[data-answer-actions] .conv-turn__feedback'), 'the reply has its rating row');
+        assert.equal(turns(page)[0].querySelector('[data-answer-actions]'), null, 'the question has none');
+    } finally {
+        page.close();
+    }
+});
+
+test('a reply that is still pending, failed or came back empty has no rating row', async () => {
+    const reply = (content, status) => async (id, { question }) => ({
+        user_message: { id: 'u1', role: 'user', content: question, status: 'complete' },
+        assistant_message: { id: 'a1', role: 'assistant', content, status, citations: [] },
+        conversation: { id, title: question, minhag: 'All' },
+    });
+    const rated = [];
+    const run = async (api) => {
+        const page = await openAsk({ api });
+        try {
+            page.window.renderFeedbackWidget = (host, data, question) => { rated.push(question); };
+            await page.ask('A question?');
+            return page.$$('#convMessages [data-answer-actions]').length;
+        } finally {
+            page.close();
+        }
+    };
+    assert.equal(await run({ askInConversation: () => new Promise(() => {}) }), 0, 'pending');
+    assert.equal(await run({ askInConversation: reply('', 'error') }), 0, 'failed');
+    assert.equal(await run({ askInConversation: reply('  ', 'complete') }), 0, 'empty');
+    assert.deepEqual(rated, []);
+});
+
 test('Shift+Enter keeps typing; Enter on an empty box and an open request send nothing', async () => {
     const page = await openAsk();
     try {

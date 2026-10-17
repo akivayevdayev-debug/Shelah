@@ -379,6 +379,7 @@ test('a shared conversation shows its turns without a way to continue them as th
         assert.equal(turns(page).length, 2);
         assert.match(page.text('#convMessages'), /Not on Shabbat\./);
         assert.equal(page.store.getState().answerView.isPublic, true);
+        assert.equal(page.$('[data-answer-actions]'), null, 'a read-only shared thread has no rating row');
     } finally {
         page.close();
     }

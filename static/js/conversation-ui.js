@@ -791,7 +791,7 @@ function turnInnerHtml(message, index, messages, l) {
             // carries its safety banner, community customs, feedback and
             // Copy link; decorateAnswerTurn fills the hosts.
             const data = message.answer;
-            if (!data) return `${answerBox(message, body)}${cites}`;
+            if (!data) return `${answerBox(message, body)}${cites}${threadReplyActionsHtml(message)}`;
             // Paused answers: the banner says it, in the reader's language;
             // the server's English sentence under it would only repeat it.
             const paused = data.meta?.breaker_tripped && typeof window.renderDisclaimerBanner === "function";
@@ -803,6 +803,15 @@ function turnInnerHtml(message, index, messages, l) {
                 + '<div class="conv-turn__actions" data-answer-actions><div class="conv-turn__feedback"></div></div>';
         }
     }
+}
+
+// A reply in the viewer's own thread (a follow-up, or a thread reopened from
+// history) arrives as a stored message, not an /ask payload, so it has no
+// banner, customs or Copy link -- but it can still be rated. A shared thread
+// is read-only (no conversation row), and an empty reply has nothing to rate.
+function threadReplyActionsHtml(message) {
+    if (!store?.getState().conversation || !message.content.trim()) return "";
+    return '<div class="conv-turn__actions" data-answer-actions><div class="conv-turn__feedback"></div></div>';
 }
 
 // The answer's per-community customs, as a compact list under it.
@@ -844,6 +853,14 @@ function decorateAnswerTurn(li, message, question) {
         actions.appendChild(els.answerLink);
         window.ShelahAnswerLink?.panel?.show(data);
     }
+}
+
+// The rating row of a thread reply. There is no payload to read the mode or the
+// safety class from (and no ask_history row to link), so the rating carries the
+// question and the language the reader is using.
+function decorateThreadReply(li, question, l) {
+    const host = li.querySelector("[data-answer-actions] .conv-turn__feedback");
+    if (host) window.renderFeedbackWidget?.(host, { meta: { language: l } }, question || "");
 }
 
 // Back to its hidden home before the turn holding it is re-rendered or removed.
@@ -925,8 +942,10 @@ function redrawTurn(entry, message, index, messages, l) {
     li.setAttribute("aria-busy", message.status === MESSAGE_STATUS.PENDING ? "true" : "false");
     if (els.answerLink && li.contains(els.answerLink)) parkAnswerLink();
     li.innerHTML = turnInnerHtml(message, index, messages, l);
-    if (message.answer && message.status === MESSAGE_STATUS.COMPLETE) {
-        decorateAnswerTurn(li, message, messages[index - 1]?.content);
+    if (message.status === MESSAGE_STATUS.COMPLETE) {
+        const question = messages[index - 1]?.content;
+        if (message.answer) decorateAnswerTurn(li, message, question);
+        else decorateThreadReply(li, question, l);
     }
     if (message.citations?.length) hydrateCitations(li);
     if (citePop?.anchor() && !citePop.anchor().isConnected) citePop.close();

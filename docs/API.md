@@ -667,9 +667,13 @@ Submit a thumbs up or down (and an optional short comment) on an AI answer. Writ
   "mode": "string, optional (default 'balanced')",
   "language": "string, optional (default 'en')",
   "fallback": "boolean, optional, whether the answer came from the fallback model (default false)",
-  "safety_class": "string, optional (default 'ok')"
+  "safety_class": "string, optional (default 'ok')",
+  "history_id": "string, optional, the caller's own ask_history row; links the feedback to the stored answer, and is dropped unless that row is the caller's",
+  "share_token": "string, optional, a visitor on a shared link (/a/<token>); resolved to the row while the link is live and never stored"
 }
 ```
+
+A search-bar answer sends `history_id` (or `share_token` on a shared link). A reply in a conversation thread (a follow-up, or a thread reopened from history) is a stored conversation message, not an `ask_history` row, so its rating is sent with neither link: the verdict, the comment and the hashed question still arrive, just not tied to a stored answer.
 
 **Response (200):** `{"success": true}`
 
