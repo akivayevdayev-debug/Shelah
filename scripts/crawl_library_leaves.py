@@ -356,6 +356,36 @@ def _probe_candidates(session, candidates, phase, timeout_seconds, probe_cache, 
     return ""
 
 
+def _find_working_ref(session, leaf, name_ref, timeout_seconds, probe_cache, attempts):
+    """Probe the primary, then the schema, then the heuristic candidates for
+    ``leaf``, stopping at the first ref that resolves. Returns ``(ref, phase)``,
+    or ``("", "")`` when none does. Split out of analyze_leaf() to keep the
+    phases out of that function's own complexity count (SonarCloud python:S3776).
+    """
+    title = str(leaf.get("title") or "").strip()
+    primary = build_primary_candidates(leaf, name_ref)
+    ref = _probe_candidates(session, primary, "primary", timeout_seconds, probe_cache, attempts)
+    if ref:
+        return ref, "primary"
+
+    schema = build_schema_candidates(fetch_index_entry(session, title, timeout_seconds), title, primary)
+    ref = _probe_candidates(session, schema, "schema", timeout_seconds, probe_cache, attempts)
+    if ref:
+        return ref, "schema"
+
+    heuristic = build_heuristic_candidates(leaf, [*primary, *schema])
+    ref = _probe_candidates(session, heuristic, "heuristic", timeout_seconds, probe_cache, attempts)
+    return ref, ("heuristic" if ref else "")
+
+
+def _leaf_action(success_ref, initial_ref):
+    """What the report says to do with a leaf: drop it when no ref resolved,
+    keep it when the resolved ref is the one it already had, else fix it."""
+    if not success_ref:
+        return "remove"
+    return "keep" if normalize_key(success_ref) == normalize_key(initial_ref) else "fix"
+
+
 def analyze_leaf(
     session: requests.Session,
     leaf: Dict[str, Any],
@@ -367,26 +397,8 @@ def analyze_leaf(
     name_ref = resolve_name_ref(session, title, timeout_seconds, name_cache)
 
     attempts: List[Dict[str, Any]] = []
-
-    primary_candidates = build_primary_candidates(leaf, name_ref)
-    success_ref = _probe_candidates(
-        session, primary_candidates, "primary", timeout_seconds, probe_cache, attempts)
-    success_phase = "primary" if success_ref else ""
-
-    tried = list(primary_candidates)
-    if not success_ref:
-        schema_candidates = build_schema_candidates(
-            fetch_index_entry(session, title, timeout_seconds), title, tried)
-        tried += schema_candidates
-        success_ref = _probe_candidates(
-            session, schema_candidates, "schema", timeout_seconds, probe_cache, attempts)
-        success_phase = "schema" if success_ref else ""
-
-    if not success_ref:
-        heuristic_candidates = build_heuristic_candidates(leaf, tried)
-        success_ref = _probe_candidates(
-            session, heuristic_candidates, "heuristic", timeout_seconds, probe_cache, attempts)
-        success_phase = "heuristic" if success_ref else ""
+    success_ref, success_phase = _find_working_ref(
+        session, leaf, name_ref, timeout_seconds, probe_cache, attempts)
 
     initial_ref = first_nonempty([
         str(leaf.get("first_section_ref") or ""),
@@ -394,12 +406,7 @@ def analyze_leaf(
         title,
     ])
 
-    action = "remove"
-    if success_ref:
-        if normalize_key(success_ref) == normalize_key(initial_ref):
-            action = "keep"
-        else:
-            action = "fix"
+    action = _leaf_action(success_ref, initial_ref)
 
     return {
         "title": title,

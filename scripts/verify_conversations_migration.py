@@ -134,6 +134,75 @@ def _check_structure(service) -> int:
     return failures
 
 
+def _insert_probe(service, table, row):
+    """Insert one probe row and return it, or None (after reporting it) when
+    the insert came back empty."""
+    rows = service.table(table).insert(row).execute().data or []
+    if not rows:
+        fail(f"insert into {table} returned no rows")
+        return None
+    return rows[0]
+
+
+def _check_nested_select(service, conversation_id) -> int:
+    """The nested select get_conversation() runs: conversations -> messages ->
+    citations in one query. Returns the number of failed checks."""
+    hydrate_rows = (
+        service.table(CONV_TABLE)
+        .select(
+            "id,title,minhag,"
+            f"{MSG_TABLE}(id,role,content,status,"
+            f"{CIT_TABLE}(id,ordinal,source_ref,excerpt_en,excerpt_he,url))"
+        )
+        .eq("id", conversation_id)
+        .limit(1)
+        .execute()
+        .data
+    ) or []
+    if not hydrate_rows:
+        fail(f"nested select on {CONV_TABLE} (mirroring get_conversation()'s query) returned no rows")
+        return 1
+    nested_messages = hydrate_rows[0].get(MSG_TABLE) or []
+    nested_citations = (nested_messages[0].get(CIT_TABLE) if nested_messages else None) or []
+    if nested_messages and nested_citations:
+        ok(
+            "nested select resolved conversations -> messages -> citations "
+            "in one query (matches get_conversation()'s own query shape)"
+        )
+        return 0
+    fail(f"nested select did not resolve the embed as expected: messages={nested_messages!r}")
+    return 1
+
+
+def _check_message_and_citation(service, conversation_id) -> int:
+    """Insert a probe message and citation under the probe conversation, then
+    read the whole thread back. Returns the number of failed checks."""
+    message = _insert_probe(service, MSG_TABLE, {
+        "conversation_id": conversation_id,
+        "role": "assistant",
+        "content": "Acceptance test answer.",
+        "status": "complete",
+    })
+    if message is None:
+        return 1
+    ok(f"created a probe message ({message['id']})")
+
+    failures = 0
+    citation = _insert_probe(service, CIT_TABLE, {
+        "message_id": message["id"],
+        "ordinal": 0,
+        "source_ref": "Acceptance Test 1:1",
+        "excerpt_en": "Sample excerpt.",
+        "excerpt_he": "קטע לדוגמה",
+        "url": None,
+    })
+    if citation is None:
+        failures += 1
+    else:
+        ok("created a probe citation")
+    return failures + _check_nested_select(service, conversation_id)
+
+
 def _check_end_to_end(service) -> int:
     """End-to-end sanity check: the exact insert/select shapes
     backend/routes_conversations.py's routes use, run against the live
@@ -145,76 +214,17 @@ def _check_end_to_end(service) -> int:
     conversation_id = None
 
     try:
-        conv_result = service.table(CONV_TABLE).insert({
+        conversation = _insert_probe(service, CONV_TABLE, {
             "user_id": probe_user_id,
             "title": "",
             "title_is_custom": False,
             "minhag": "Ashkenaz",
-        }).execute()
-        conv_rows = conv_result.data or []
-        if not conv_rows:
-            fail(f"insert into {CONV_TABLE} returned no rows")
+        })
+        if conversation is None:
             return 1
-        conversation_id = conv_rows[0]["id"]
+        conversation_id = conversation["id"]
         ok(f"created a probe conversation ({conversation_id})")
-
-        msg_result = service.table(MSG_TABLE).insert({
-            "conversation_id": conversation_id,
-            "role": "assistant",
-            "content": "Acceptance test answer.",
-            "status": "complete",
-        }).execute()
-        msg_rows = msg_result.data or []
-        if not msg_rows:
-            fail(f"insert into {MSG_TABLE} returned no rows")
-            failures += 1
-        else:
-            message_id = msg_rows[0]["id"]
-            ok(f"created a probe message ({message_id})")
-
-            cit_result = service.table(CIT_TABLE).insert({
-                "message_id": message_id,
-                "ordinal": 0,
-                "source_ref": "Acceptance Test 1:1",
-                "excerpt_en": "Sample excerpt.",
-                "excerpt_he": "קטע לדוגמה",
-                "url": None,
-            }).execute()
-            if not (cit_result.data or []):
-                fail(f"insert into {CIT_TABLE} returned no rows")
-                failures += 1
-            else:
-                ok("created a probe citation")
-
-            hydrate_result = (
-                service.table(CONV_TABLE)
-                .select(
-                    "id,title,minhag,"
-                    f"{MSG_TABLE}(id,role,content,status,"
-                    f"{CIT_TABLE}(id,ordinal,source_ref,excerpt_en,excerpt_he,url))"
-                )
-                .eq("id", conversation_id)
-                .limit(1)
-                .execute()
-            )
-            hydrate_rows = hydrate_result.data or []
-            if not hydrate_rows:
-                fail(f"nested select on {CONV_TABLE} (mirroring get_conversation()'s query) returned no rows")
-                failures += 1
-            else:
-                nested_messages = hydrate_rows[0].get(MSG_TABLE) or []
-                nested_citations = (nested_messages[0].get(CIT_TABLE) if nested_messages else None) or []
-                if nested_messages and nested_citations:
-                    ok(
-                        "nested select resolved conversations -> messages -> citations "
-                        "in one query (matches get_conversation()'s own query shape)"
-                    )
-                else:
-                    fail(
-                        f"nested select did not resolve the embed as expected: "
-                        f"messages={nested_messages!r}"
-                    )
-                    failures += 1
+        failures += _check_message_and_citation(service, conversation_id)
     except Exception as e:
         fail(f"unexpected error during end-to-end check: {e}")
         failures += 1
