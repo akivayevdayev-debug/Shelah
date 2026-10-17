@@ -1399,6 +1399,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             'Yom HaAtzmaut': 'יום העצמאות',
             'Yom HaShoah': 'יום השואה',
             'Yom Yerushalayim': 'יום ירושלים',
+            'Parashat HaShavua': 'פרשת השבוע',
         };
 
         const PARASHA_HE_MAP = {
