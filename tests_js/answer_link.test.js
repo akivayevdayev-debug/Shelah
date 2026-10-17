@@ -189,8 +189,10 @@ test('copyText resolves false when every path fails', async () => {
 test('installAnswerLink with no root is a harmless no-op', async () => {
     const m = await load();
     const ctl = m.installAnswerLink(null);
-    ctl.show({ history_id: ID });
-    ctl.hide();
+    assert.doesNotThrow(() => {
+        ctl.show({ history_id: ID });
+        ctl.hide();
+    });
 });
 
 test('show() reveals the control only for answers with an id; hide() hides it', async () => {

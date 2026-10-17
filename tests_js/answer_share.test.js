@@ -232,10 +232,12 @@ test('installShareState without its markup is a harmless no-op', async () => {
     const m = await load();
     const share = m.createAnswerShare({ api: fakeApi() });
     const ctl = m.installShareState(null, share);
-    ctl.show(ID);
-    ctl.hide();
     const empty = { querySelector: () => null };
-    m.installShareState(empty, share).show(ID);
+    assert.doesNotThrow(() => {
+        ctl.show(ID);
+        ctl.hide();
+        m.installShareState(empty, share).show(ID);
+    });
 });
 
 test('show() loads the state and reveals the Shared line only for a shared answer', async () => {
