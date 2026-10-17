@@ -23,7 +23,7 @@
 const PHOSPHOR_PATHS = (() => {
     try {
         return JSON.parse(document.getElementById('phosphorPaths')?.textContent || '{}');
-    } catch (_) {
+    } catch {
         return {};
     }
 })();
@@ -34,6 +34,14 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // later top-level statement in this script throws.
         let preferencesHydrated = false;
         let pendingInitialRoute = null;
+        // The language on screen, which a link's ?lang= can make differ from
+        // the saved one. Declared up here because t() runs long before the
+        // language code below is reached. Until the first toggleLanguage, the
+        // head script's choice on <html lang>.
+        let displayedLanguage = '';
+        // Whether the language on screen came from the URL (a one-load
+        // override); an entry without ?lang= then restores the saved one.
+        let languageFromRoute = false;
         const searchForm = document.getElementById('searchForm');
         const searchInput = document.getElementById('searchInput');
         const searchSuggestions = document.getElementById('searchSuggestions');
@@ -118,7 +126,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // view-swap flag and the cold-load flag both clear together.
         function finishViewSwap() {
             mainContainer?.classList.remove('is-swapping-view');
-            document.documentElement.removeAttribute('data-cold-view');
+            delete document.documentElement.dataset.coldView;
         }
 
         // ─── Reader loads (audit L-1, L-2) ───────────────────────────────
@@ -195,7 +203,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (loaded && wasShown) {
                 readerBodies().forEach((el) => {
                     el.classList.remove('reader-content-enter');
-                    void el.offsetWidth; // restart it if a load a moment ago started it
+                    el.getBoundingClientRect(); // restart it if a load a moment ago started it
                     el.classList.add('reader-content-enter');
                 });
             }
@@ -226,11 +234,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 ? _lastClickedControl : null;
             const focused = document.activeElement && document.activeElement !== document.body ? document.activeElement : null;
             const control = clicked || focused;
-            if (!control || control.hasAttribute('data-pending')) return () => {};
-            control.setAttribute('data-pending', 'true');
+            if (!control || control.dataset.pending !== undefined) return () => {};
+            control.dataset.pending = 'true';
             control.setAttribute('aria-busy', 'true');
             return () => {
-                control.removeAttribute('data-pending');
+                delete control.dataset.pending;
                 control.removeAttribute('aria-busy');
             };
         }
@@ -288,10 +296,10 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             new MutationObserver((records) => {
                 const now = isShown();
                 // A view transition (swapView) animates this change itself.
-                const inTransition = document.documentElement.hasAttribute('data-vt-active');
+                const inTransition = document.documentElement.dataset.vtActive !== undefined;
                 if (now && !inTransition && (!shown || records.some(wasHidden))) {
                     el.classList.remove(enterClass);
-                    void el.offsetWidth; // restart the animation if it was mid-play
+                    el.getBoundingClientRect(); // restart the animation if it was mid-play
                     el.classList.add(enterClass);
                 }
                 shown = now;
@@ -408,7 +416,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             // Split inline headers/rules onto their own line before structural spacing enforcement.
             normalized = normalized
                 .replace(/([^\n])\s*(#{2,6}\s*)/g, '$1\n$2')
-                .replace(/(^|\n)(#{2,6})([^\s#\n])/g, '$1$2 $3')
+                .replace(/(^|\n)(#{2,6})([^\s#])/g, '$1$2 $3')
                 .replace(/([^\n])\s*---\s*([^\n])/g, '$1\n---\n$2')
                 .replace(/([^\n])\s*---(\n|$)/g, '$1\n---$2')
                 .replace(/(^|\n)---\s*([^\n])/g, '$1---\n$2');
@@ -417,7 +425,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const out = [];
 
             const trimTrailingBlankLines = () => {
-                while (out.length > 0 && out[out.length - 1] === '') {
+                while (out.length > 0 && out.at(-1) === '') {
                     out.pop();
                 }
             };
@@ -472,12 +480,12 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
 
             return raw
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;')
-                .replace(/\n/g, '<br>');
+                .replaceAll(/&/g, '&amp;')
+                .replaceAll(/</g, '&lt;')
+                .replaceAll(/>/g, '&gt;')
+                .replaceAll(/"/g, '&quot;')
+                .replaceAll(/'/g, '&#39;')
+                .replaceAll(/\n/g, '<br>');
         }
 
         // safety_class values that short-circuit synthesis into a referral
@@ -498,6 +506,26 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             referral: phosphorPathMarkup('warning'),
             standard: phosphorPathMarkup('book-open'),
         };
+        const _DISCLAIMER_BANNER_ROLES = { breaker: 'status', referral: 'alert', standard: 'note' };
+
+        function disclaimerBannerText(kind) {
+            if (kind === 'breaker') {
+                return t(
+                    'AI answers are paused for today to stay within our usage budget — you can still browse and search the full Torah library below. Please try again after midnight UTC.',
+                    'תשובות בינה מלאכותית מושהות להיום כדי להישאר בתקציב השימוש שלנו — ניתן עדיין לעיין ולחפש בספריית התורה המלאה למטה. אנא נסה/י שוב לאחר חצות בשעון UTC.'
+                );
+            }
+            if (kind === 'referral') {
+                return t(
+                    'This touches on safety or wellbeing. Please see the guidance above and reach out to a qualified professional, your rabbi, or a trusted adult for next steps — this is AI-generated educational information, not a halachic ruling.',
+                    'נושא זה נוגע לבטיחות או לרווחה. אנא עיין/י בהנחיה שלמעלה ופנה/י לאיש/אשת מקצוע מוסמך/ת, לרב שלך, או למבוגר/ת אמון לצעדים הבאים — זהו מידע חינוכי שנוצר על ידי בינה מלאכותית ולא פסיקה הלכתית.'
+                );
+            }
+            return t(
+                'AI-generated educational information, not a binding halachic ruling — always consult your rabbi for practical guidance.',
+                'מידע חינוכי שנוצר על ידי בינה מלאכותית, לא פסיקה הלכתית מחייבת — יש להתייעץ תמיד עם הרב שלך לקבלת הנחיה מעשית.'
+            );
+        }
 
         // Persistent, non-dismissible disclaimer banner --
         // rendered fresh on every answer so it can never be scrolled-past-once
@@ -515,24 +543,12 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             // breakerTripped first keeps that true even if that changes later.
             bannerEl.classList.toggle('ai-disclaimer-banner--breaker-paused', !!breakerTripped);
             bannerEl.classList.toggle('ai-disclaimer-banner--referral', isReferral && !breakerTripped);
-            bannerEl.setAttribute('role', breakerTripped ? 'status' : (isReferral ? 'alert' : 'note'));
-            const iconPath = breakerTripped ? _DISCLAIMER_BANNER_ICONS.breaker
-                : isReferral ? _DISCLAIMER_BANNER_ICONS.referral
-                : _DISCLAIMER_BANNER_ICONS.standard;
-            const text = breakerTripped
-                ? t(
-                    'AI answers are paused for today to stay within our usage budget — you can still browse and search the full Torah library below. Please try again after midnight UTC.',
-                    'תשובות בינה מלאכותית מושהות להיום כדי להישאר בתקציב השימוש שלנו — ניתן עדיין לעיין ולחפש בספריית התורה המלאה למטה. אנא נסה/י שוב לאחר חצות בשעון UTC.'
-                )
-                : isReferral
-                ? t(
-                    'This touches on safety or wellbeing. Please see the guidance above and reach out to a qualified professional, your rabbi, or a trusted adult for next steps — this is AI-generated educational information, not a halachic ruling.',
-                    'נושא זה נוגע לבטיחות או לרווחה. אנא עיין/י בהנחיה שלמעלה ופנה/י לאיש/אשת מקצוע מוסמך/ת, לרב שלך, או למבוגר/ת אמון לצעדים הבאים — זהו מידע חינוכי שנוצר על ידי בינה מלאכותית ולא פסיקה הלכתית.'
-                )
-                : t(
-                    'AI-generated educational information, not a binding halachic ruling — always consult your rabbi for practical guidance.',
-                    'מידע חינוכי שנוצר על ידי בינה מלאכותית, לא פסיקה הלכתית מחייבת — יש להתייעץ תמיד עם הרב שלך לקבלת הנחיה מעשית.'
-                );
+            let kind = 'standard';
+            if (breakerTripped) kind = 'breaker';
+            else if (isReferral) kind = 'referral';
+            bannerEl.setAttribute('role', _DISCLAIMER_BANNER_ROLES[kind]);
+            const iconPath = _DISCLAIMER_BANNER_ICONS[kind];
+            const text = disclaimerBannerText(kind);
             bannerEl.innerHTML = `<span class="ai-disclaimer-banner-icon" aria-hidden="true"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${iconPath}</svg></span>`
                 + `<span class="ai-disclaimer-banner-text">${escapeHtml(text)}</span>`;
         }
@@ -1071,7 +1087,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
                 bodyEl.innerHTML = html;
                 bodyEl.setAttribute('aria-busy', 'false');
-            } catch (err) {
+            } catch {
                 bodyEl.innerHTML = `<p class="text-red-400 text-sm">${isHebrewMode() ? 'שגיאה בטעינת המנהגים' : 'Error loading customs data'}</p>`;
                 bodyEl.setAttribute('aria-busy', 'false');
             }
@@ -1102,7 +1118,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 return { book: normalizedBookOnly, chapter: 1 };
             }
 
-            const withChapterMatch = raw.match(/^(.+?)\s+(\d+)(?::\d+)?$/);
+            const withChapterMatch = /^(.+?)\s+(\d+)(?::\d+)?$/.exec(raw);
             if (!withChapterMatch) return null;
 
             return {
@@ -1113,7 +1129,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         function shouldOpenChapterGrid(ref) {
             const parsed = parseBookAndChapter(ref);
-            if (!parsed || parsed.chapter !== 1) return null;
+            if (parsed?.chapter !== 1) return null;
             const count = CHAPTER_GRID_BOOKS[parsed.book];
             if (!count || count <= 1) return null;
             return { book: parsed.book, chapters: count };
@@ -1124,7 +1140,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (!raw) return null;
 
             const chapterCandidate = raw.split(':')[0].trim();
-            const match = chapterCandidate.match(/^(.+?)\s+(\d+[ab]?)$/i);
+            const match = /^(.+?)\s+(\d+[ab]?)$/i.exec(chapterCandidate);
             if (!match) return null;
 
             const indexTitle = String(match[1] || '').replace(/\s+,/g, ',').trim();
@@ -1199,8 +1215,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             // (re-)enabled; see applyShulMode()/toggleShulLibrarySidebar().
             shulSidebarOpen: false,
             currentView: null,
-            lastAiQuestion: '',
-            lastAiResponse: null,
             readingState: {},
             reliability: {
                 lastHeartbeat: null,
@@ -1232,14 +1246,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // resize while Shul mode stays on, which must NOT re-collapse a sidebar
         // the user just peeked open).
         let shulModeWasEnabled = false;
-
-        // The language on screen, which a link's ?lang= can make differ from
-        // the saved one. `var`: t() runs before this line is reached. Until the
-        // first toggleLanguage, the head script's choice on <html lang>.
-        var displayedLanguage = '';
-        // Whether the language on screen came from the URL (a one-load
-        // override); an entry without ?lang= then restores the saved one.
-        var languageFromRoute = false;
 
         function getCurrentLanguage() {
             const raw = displayedLanguage || document.documentElement.getAttribute('lang') || 'en';
@@ -1273,7 +1279,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         }
 
         function getSystemThemePreference() {
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
                 return 'dark';
             }
             return 'light';
@@ -1292,7 +1298,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const darkMode = resolvedTheme === 'dark';
 
             // data-theme drives tokens.css [data-theme="dark"] token overrides (FOUC-safe)
-            document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+            document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
             document.documentElement.classList.toggle('theme-dark', darkMode);
             document.body.classList.toggle('theme-dark', darkMode);
             document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light';
@@ -1311,7 +1317,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
             const locale = lang === 'he' ? 'he' : 'en';
             const prefix = locale === 'he' ? 'מראה' : 'Appearance';
-            const modeLabel = (modeLabels[locale] && modeLabels[locale][pref]) || modeLabels.en[pref] || 'Light';
+            const modeLabel = modeLabels[locale]?.[pref] || modeLabels.en[pref] || 'Light';
 
             themeToggleLabel.textContent = `${prefix}: ${modeLabel}`;
 
@@ -1347,11 +1353,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 }
             };
 
-            if (typeof systemThemeMediaQuery.addEventListener === 'function') {
-                systemThemeMediaQuery.addEventListener('change', handleSystemThemeChange);
-            } else if (typeof systemThemeMediaQuery.addListener === 'function') {
-                systemThemeMediaQuery.addListener(handleSystemThemeChange);
-            }
+            systemThemeMediaQuery.addEventListener?.('change', handleSystemThemeChange);
         }
 
         const UI_TYPE_LABELS = {
@@ -1721,14 +1723,15 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const direct = getHebrewStaticLabel(raw);
             if (direct) return direct;
 
-            const talmudMatch = raw.match(/^(.+?)\s+(\d+)([ab])(?::(\d+))?$/i);
+            const talmudMatch = /^(.+?)\s+(\d+)([ab])(?::(\d+))?$/i.exec(raw);
             if (talmudMatch) {
                 const book = getHebrewBookDisplayName(talmudMatch[1]);
-                const dafToken = localizeDafToken(`${talmudMatch[2]}${talmudMatch[3]}${talmudMatch[4] ? `:${talmudMatch[4]}` : ''}`);
+                const dafLine = talmudMatch[4] ? `:${talmudMatch[4]}` : '';
+                const dafToken = localizeDafToken(`${talmudMatch[2]}${talmudMatch[3]}${dafLine}`);
                 return `${book} ${dafToken}`;
             }
 
-            const chapterRangeMatch = raw.match(/^(.+?)\s+(\d+):(\d+)-(\d+):(\d+)$/);
+            const chapterRangeMatch = /^(.+?)\s+(\d+):(\d+)-(\d+):(\d+)$/.exec(raw);
             if (chapterRangeMatch) {
                 const book = getHebrewBookDisplayName(chapterRangeMatch[1]);
                 const startChapter = hebrewNumber(chapterRangeMatch[2]);
@@ -1738,7 +1741,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 return `${book} ${startChapter}:${startVerse}-${endChapter}:${endVerse}`;
             }
 
-            const chapterMatch = raw.match(/^(.+?)\s+(\d+)(?::(\d+))?$/);
+            const chapterMatch = /^(.+?)\s+(\d+)(?::(\d+))?$/.exec(raw);
             if (chapterMatch) {
                 const book = getHebrewBookDisplayName(chapterMatch[1]);
                 const chapter = hebrewNumber(chapterMatch[2]);
@@ -1802,7 +1805,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (!raw || !isHebrewMode()) return raw;
 
             const normalized = raw
-                .replace(/[’']/g, "'")
+                .replaceAll(/[’']/g, "'")
                 .replace(/\s+/g, ' ')
                 .trim();
 
@@ -1816,7 +1819,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         function localizeDafToken(token) {
             const raw = String(token || '').trim();
-            const match = raw.match(/^(\d+)([ab])(?::(\d+))?$/i);
+            const match = /^(\d+)([ab])(?::(\d+))?$/i.exec(raw);
             if (!match) return raw;
             const side = match[2].toLowerCase() === 'a' ? 'ע״א' : 'ע״ב';
             const line = match[3] ? `:${hebrewNumber(match[3])}` : '';
@@ -1842,7 +1845,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const sefariaHeRef = commentaryRefMeta.get(raw)?.heRef;
             if (sefariaHeRef) return sefariaHeRef;
 
-            const onMatch = raw.match(/^(.+?)\s+on\s+(.+)$/i);
+            const onMatch = /^(.+?)\s+on\s+(.+)$/i.exec(raw);
             if (onMatch) {
                 const author = getCommentaryAuthorDisplayName(onMatch[1]);
                 const target = localizeReferenceLabel(onMatch[2]);
@@ -1870,13 +1873,13 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             Object.entries(monthMap)
                 .sort(([a], [b]) => b.length - a.length)
                 .forEach(([monthEn, monthHe]) => {
-                    localized = localized.replace(new RegExp(`\\b${monthEn}\\b`, 'gi'), monthHe);
+                    localized = localized.replace(new RegExp(String.raw`\b${monthEn}\b`, 'gi'), monthHe);
                 });
 
             // "15 Tishrei 5787" (or "Tishrei 5787 15") -> "ט״ו בתשרי תשפ״ז".
             const numeral = window.ShelahHebrewRef?.hebrewNumeral || String;
-            const dmy = localized.match(/^(\d{1,2})\s+([^\d]+?)\s+(\d{4})$/);
-            const mdy = localized.match(/^([^\d]+?)\s+(\d{4})\s+(\d{1,2})$/);
+            const dmy = /^(\d{1,2})\s+([^\d]+?)\s+(\d{4})$/.exec(localized);
+            const mdy = /^([^\d]+?)\s+(\d{4})\s+(\d{1,2})$/.exec(localized);
             if (dmy || mdy) {
                 const [day, month, year] = dmy ? [dmy[1], dmy[2], dmy[3]] : [mdy[3], mdy[1], mdy[2]];
                 return `${numeral(Number(day))} ב${month.trim()} ${numeral(Number(year))}`;
@@ -2040,8 +2043,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             });
 
             result = result
-                .replace(/Parashat\s+([A-Za-z’'\s-]+?)(?=\s*$)/i, (_m, names) => {
-                    const clean = (s) => s.trim().replace(/[’']/g, '');
+                .replace(/Parashat\s+([a-z’'\s-]+?)(?=\s*$)/i, (_m, names) => {
+                    const clean = (s) => s.trim().replaceAll(/[’']/g, '');
                     const whole = PARASHA_HE_MAP[clean(names)];
                     if (whole) return `פרשת ${whole}`;
                     const he = names.split('-')
@@ -2087,7 +2090,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 .replace(/Shabbat/gi, 'שבת');
 
             Object.entries(HOLIDAY_MONTH_HE_MAP).forEach(([en, he]) => {
-                result = result.replace(new RegExp(`\\b${en}\\b`, 'g'), he);
+                result = result.replace(new RegExp(String.raw`\b${en}\b`, 'g'), he);
             });
 
             // Hebcal's day numbering and counts ("Sukkot III (CH''M)",
@@ -2111,7 +2114,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         }
 
         function formatOmerLabel(meta) {
-            if (!meta || !meta.omer_day) return '--';
+            if (!meta?.omer_day) return '--';
             if (!isHebrewMode()) return meta.omer_label || `Day ${meta.omer_day} of 49`;
             return `יום ${meta.omer_day} לעומר`;
         }
@@ -2138,11 +2141,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         function escapeHtml(text) {
             return (text || '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
+                .replaceAll(/&/g, '&amp;')
+                .replaceAll(/</g, '&lt;')
+                .replaceAll(/>/g, '&gt;')
+                .replaceAll(/"/g, '&quot;')
+                .replaceAll(/'/g, '&#039;');
         }
 
         // static/js/zmanim.js's installZmanim()/refreshZmanimDisplay()/
@@ -2191,7 +2194,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 .replace(/<[^>]*>/g, ' ');
 
             return decodeHtmlEntities(withoutTags)
-                .replace(/\u00a0/g, ' ')
+                .replaceAll(/\u00a0/g, ' ')
                 .replace(/&nbsp;/gi, ' ')
                 .replace(/&thinsp;/gi, ' ')
                 .replace(/[ \t]+/g, ' ')
@@ -2224,7 +2227,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 .replace(/<(?!\/?(?:b|strong|i|em|small)(?:[\s>]|$))[^>]*>/gi, ' ');
 
             return decodeHtmlEntities(withoutTags)
-                .replace(/\u00A0/g, ' ')
+                .replaceAll(/\u00A0/g, ' ')
                 .replace(/&nbsp;/gi, ' ')
                 .replace(/&thinsp;/gi, ' ')
                 .replace(/[ \t]+/g, ' ')
@@ -2262,7 +2265,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 : escapeHtml(withBreaksAsNewlines.replace(/<[^>]*>/g, ' '));
 
             return sanitized
-                .replace(/\u00A0/g, ' ')
+                .replaceAll(/\u00A0/g, ' ')
                 .replace(/&nbsp;/gi, ' ')
                 .replace(/&thinsp;/gi, ' ')
                 .replace(/[ \t]+/g, ' ')
@@ -2306,7 +2309,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const run = () => {
                 try {
                     void afterStyles(task);
-                } catch (_) {
+                } catch {
                     // Keep background scheduling resilient.
                 }
             };
@@ -2421,8 +2424,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             });
 
             return transliterated
-                .replace(/[׳]/g, "'")
-                .replace(/[״]/g, '"')
+                .replaceAll(/׳/g, "'")
+                .replaceAll(/״/g, '"')
                 .replace(/\s+/g, ' ')
                 .trim();
         }
@@ -2467,7 +2470,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                                     .map((key) => caches.delete(key))
                             );
                         }
-                    } catch (_) {
+                    } catch {
                         // Continue with registration even if migration cleanup fails.
                     }
 
@@ -2482,7 +2485,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         }
 
         function isClerkConfigured() {
-            return Boolean(window.APP_CLERK && window.APP_CLERK.publishableKey);
+            return Boolean(window.APP_CLERK?.publishableKey);
         }
 
         // Clerk's SDK (~85 KB, plus two requests of its own) comes from
@@ -2675,7 +2678,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     ...baseHeaders,
                     Authorization: `Bearer ${token}`,
                 };
-            } catch (_) {
+            } catch {
                 return baseHeaders;
             }
         }
@@ -2708,7 +2711,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const saved = JSON.parse(raw);
                 const fresh = Date.now() - Number(saved?.at) < AUTH_RETURN_MAX_AGE_MS;
                 return fresh && /^\/[a-z][a-z-]*$/.test(saved?.path || '') ? saved.path : null;
-            } catch (_) {
+            } catch {
                 return null;
             }
         })();
@@ -2794,7 +2797,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (authReturnPath) {
                 const path = authReturnPath;
                 authReturnPath = null;
-                try { sessionStorage.removeItem(AUTH_RETURN_KEY); } catch (_) { /* storage blocked */ }
+                try { sessionStorage.removeItem(AUTH_RETURN_KEY); } catch { /* storage blocked */ }
                 authLeaving = true;
                 window.location.replace(path);
                 return;
@@ -2813,7 +2816,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 if (kind === 'signin') window.Clerk?.closeSignIn?.();
                 else if (kind === 'signup') window.Clerk?.closeSignUp?.();
                 else if (kind === 'profile') window.Clerk?.closeUserProfile?.();
-            } catch (_) {
+            } catch {
                 // Clerk already closed it.
             }
         }
@@ -2966,7 +2969,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const raw = localStorage.getItem(APP_SHELF_KEY);
                 const parsed = raw ? JSON.parse(raw) : null;
                 return normalizeShelfShape(parsed);
-            } catch (_) {
+            } catch {
                 return normalizeShelfShape(null);
             }
         }
@@ -2984,11 +2987,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // the matching reader control hands the pref back to the visitor
         // (releaseRouteDisplayPref) -- from then on it saves normally.
         const ROUTE_DISPLAY_PREFS = {
-            layout: { pref: 'readerLayout', read: (v) => v, write: (v) => String(v) },
+            layout: { pref: 'readerLayout', read: (v) => v, write: String },
             vowels: { pref: 'showVowels', read: (v) => v === '1', write: (v) => (v !== false ? '1' : '0') },
             taamim: { pref: 'showCantillation', read: (v) => v === '1', write: (v) => (v !== false ? '1' : '0') },
             translit: { pref: 'transliteration', read: (v) => v === '1', write: (v) => (v ? '1' : '0') },
-            size: { pref: 'fontSize', read: (v) => Number(v), write: (v) => String(v) },
+            size: { pref: 'fontSize', read: Number, write: String },
         };
         let routePrefOverrides = {};
 
@@ -3032,7 +3035,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const spec = ROUTE_DISPLAY_PREFS[routeKey];
             if (spec) delete routePrefOverrides[spec.pref];
             const router = window.ShelahRouter;
-            if (!router || router.readRoute()[routeKey] === undefined) return;
+            if (router?.readRoute()[routeKey] === undefined) return;
             router.pushRoute({ [routeKey]: null }, { replace: true });
         }
 
@@ -3107,7 +3110,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 }
 
                 const data = await response.json();
-                if (!data || !data.prefs || typeof data.prefs !== 'object') {
+                if (!data?.prefs || typeof data.prefs !== 'object') {
                     return;
                 }
 
@@ -3145,7 +3148,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 renderPersonalShelf();
                 updateBookmarkButton();
                 logReliability('prefs-synced-from-server');
-            } catch (_) {
+            } catch {
                 // Keep local preferences if remote sync is unavailable.
             }
         }
@@ -3168,7 +3171,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                         reading_state: appState.readingState || {},
                     }),
                 });
-            } catch (_) {
+            } catch {
                 // Ignore sync errors and continue using local preferences.
             }
         }
@@ -3192,7 +3195,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 if (!resp.ok) { section.classList.add('hidden'); return; }
                 const data = await resp.json();
                 renderAskHistory(data.items || []);
-            } catch (_) {
+            } catch {
                 section.classList.add('hidden');
             }
         }
@@ -3203,8 +3206,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // panel as its first turn (conversation-ui.js showAnswer).
         function openStoredAskAnswer(item, options = {}) {
             if (!item) return;
-            appState.lastAiQuestion = item.question;
-            appState.lastAiResponse = item;
             window.ShelahConversationUI?.showAnswer(item);
             // A visitor on a shared link didn't ask anything here.
             if (searchInput) searchInput.value = item.public ? '' : item.question;
@@ -3252,7 +3253,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
             list.querySelectorAll('.ask-history-q').forEach((btn) => {
                 btn.addEventListener('click', () => {
-                    const id = btn.getAttribute('data-id');
+                    const id = btn.dataset.id;
                     const item = items.find(i => i.id === id);
                     openStoredAskAnswer(item);
                 });
@@ -3260,7 +3261,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
             list.querySelectorAll('.ask-history-del').forEach((btn) => {
                 btn.addEventListener('click', async () => {
-                    const id = btn.getAttribute('data-id');
+                    const id = btn.dataset.id;
                     if (await deleteAskHistoryEntry(id)) {
                         dropShelfAsk(id);
                         askHistoryPage?.refresh();
@@ -3275,7 +3276,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const headers = await authHeaders();
                 const resp = await fetch(`/api/user/history/${encodeURIComponent(id)}`, { method: 'DELETE', headers });
                 return resp.ok;
-            } catch (_) {
+            } catch {
                 return false;
             }
         }
@@ -3470,7 +3471,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     openStoredAskAnswer(item, { fromRoute: true });
                     return;
                 }
-            } catch (_) {
+            } catch {
                 if (window.ShelahRouter?.readRoute().chat !== id) return;
             } finally {
                 chatHydrating = null;
@@ -3505,7 +3506,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             try {
                 resp = await fetch(`/api/public/answer/${encodeURIComponent(token)}`, { cache: 'no-store' });
                 if (resp.ok) item = await resp.json();
-            } catch (_) {
+            } catch {
                 item = null;
             }
             // The visitor may have navigated elsewhere while this loaded.
@@ -3550,7 +3551,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 if (!(refText === book || refText.startsWith(`${book} `))) continue;
 
                 const rest = refText.slice(book.length).trim();
-                const chapterMatch = rest.match(/^(\d+)/);
+                const chapterMatch = /^(\d+)/.exec(rest);
                 if (!chapterMatch) return null;
 
                 const chapter = Number(chapterMatch[1]);
@@ -3611,7 +3612,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         function transitionMs(el) {
             const style = getComputedStyle(el);
-            const toMs = (v) => (String(v).trim().endsWith('ms') ? parseFloat(v) : parseFloat(v) * 1000) || 0;
+            const toMs = (v) => (String(v).trim().endsWith('ms') ? Number.parseFloat(v) : Number.parseFloat(v) * 1000) || 0;
             const delays = style.transitionDelay.split(',');
             return Math.max(0, ...style.transitionDuration.split(',').map((d, i) => toMs(d) + toMs(delays[i % delays.length])));
         }
@@ -3626,7 +3627,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 // before the browser had styled the un-hidden drawer, which made
                 // it jump open with no slide.)
                 drawer.classList.remove('hidden');
-                void drawer.offsetWidth;
+                drawer.getBoundingClientRect();
                 drawer.classList.add('mobile-open');
                 return;
             }
@@ -3802,7 +3803,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (!indicator || !mobileBottomTabs) return;
             const active = mobileBottomTabs.querySelector('.mobile-tab-active');
             // Hidden nav (desktop) reports 0 sizes: nothing to place.
-            if (!active || !active.offsetWidth) {
+            if (!active?.offsetWidth) {
                 mobileBottomTabs.classList.remove('has-indicator');
                 return;
             }
@@ -4041,13 +4042,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 closeMobilePanels();
             } else {
                 if (leftSidebar) {
-                    leftSidebar.classList.remove('mobile-open');
-                    leftSidebar.classList.remove('hidden');
+                    leftSidebar.classList.remove('mobile-open', 'hidden');
                     leftSidebar.style.display = showLeftSidebar ? '' : 'none';
                 }
                 if (rightSidebar) {
-                    rightSidebar.classList.remove('mobile-open');
-                    rightSidebar.classList.remove('hidden');
+                    rightSidebar.classList.remove('mobile-open', 'hidden');
                     rightSidebar.style.display = (showRightSidebar && !shulMode) ? '' : 'none';
                 }
 
@@ -4333,11 +4332,18 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
         }
 
+        // A base64 string holding UTF-8 text; malformed input throws, as the
+        // decodeURIComponent(escape(...)) idiom this replaces did.
+        function decodeBase64Utf8(encoded) {
+            const bytes = Uint8Array.from(atob(encoded), (char) => char.codePointAt(0));
+            return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        }
+
         function decodeShelfSharePayload(encoded) {
             try {
-                const decoded = decodeURIComponent(escape(atob(encoded)));
+                const decoded = decodeBase64Utf8(encoded);
                 return normalizeShelfShape(JSON.parse(decoded));
-            } catch (_) {
+            } catch {
                 return null;
             }
         }
@@ -4350,7 +4356,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 try {
                     const parsed = JSON.parse(value);
                     return normalizeShelfShape(parsed);
-                } catch (_) {
+                } catch {
                     return null;
                 }
             };
@@ -4358,7 +4364,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const tryEncoded = (value) => {
                 try {
                     return decodeShelfSharePayload(decodeURIComponent(value));
-                } catch (_) {
+                } catch {
                     return decodeShelfSharePayload(value);
                 }
             };
@@ -4384,7 +4390,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     const parsed = tryEncoded(hash.slice('#shelf='.length));
                     if (parsed) return parsed;
                 }
-            } catch (_) {
+            } catch {
                 // Not a full URL; continue fallback decoding.
             }
 
@@ -4392,10 +4398,10 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (encodedParsed) return encodedParsed;
 
             try {
-                const decoded = decodeURIComponent(escape(atob(raw)));
+                const decoded = decodeBase64Utf8(raw);
                 const parsed = tryJson(decoded);
                 if (parsed) return parsed;
-            } catch (_) {
+            } catch {
                 // Ignore; invalid legacy base64 format.
             }
 
@@ -4450,7 +4456,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         function buildCurrentCitationExportPayload() {
             const current = appState.currentView;
-            if (!current || current.type !== 'text') return null;
+            if (current?.type !== 'text') return null;
 
             const title = String(current.label || current.value || '').trim();
             const ref = String(current.value || '').trim();
@@ -4528,7 +4534,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         function shouldShowCantillationControl() {
             const current = appState.currentView;
-            if (!current || current.type !== 'text') return false;
+            if (current?.type !== 'text') return false;
             const categories = window.currentTextPayload?.categories || [];
             return categories.some((category) => ['Tanakh', 'Torah', 'Prophets', 'Writings'].includes(category));
         }
@@ -4660,7 +4666,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 appState.activeSuggestionIndex = -1;
                 renderSearchSuggestions();
                 setSuggestStatus(suggestCountLabel(rawItems.length));
-            } catch (_) {
+            } catch {
                 hideSearchSuggestions();
                 logReliability('suggestions-error');
             } finally {
@@ -4669,7 +4675,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         }
 
         function addRecentItem(item) {
-            if (!item || !item.type || !item.value) return;
+            if (!item?.type || !item.value) return;
             const shelf = getShelfData();
             const key = `${item.type}:${item.value}`;
             shelf.recent = shelf.recent.filter(i => `${i.type}:${i.value}` !== key);
@@ -4804,7 +4810,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         function getSemanticBookmarkPayload() {
             const current = appState.currentView;
-            if (!current || current.type !== 'text' || !String(current.value || '').trim()) {
+            if (current?.type !== 'text' || !String(current.value || '').trim()) {
                 return null;
             }
 
@@ -5063,8 +5069,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (!raw) return fallback;
 
             const parts = raw.split('.').filter(Boolean);
-            const lastPart = parts[parts.length - 1] || raw;
-            const digitMatch = lastPart.match(/\d+/);
+            const lastPart = parts.at(-1) || raw;
+            const digitMatch = /\d+/.exec(lastPart);
 
             if (digitMatch && Number.isFinite(Number(digitMatch[0]))) {
                 return String(Number(digitMatch[0]));
@@ -5080,7 +5086,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (!segment) return ref;
 
             const parts = segment.split('.').filter(Boolean);
-            const leaf = parts[parts.length - 1] || '';
+            const leaf = parts.at(-1) || '';
             if (!leaf) return ref;
 
             if (ref.includes(':')) {
@@ -5114,7 +5120,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
             try {
                 localStorage.setItem(READER_COMMENTARY_HINT_KEY, '1');
-            } catch (_) {
+            } catch {
                 // Private browsing / storage disabled -- pulse just won't persist across reloads.
             }
         }
@@ -5124,7 +5130,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             let seen = false;
             try {
                 seen = Boolean(localStorage.getItem(READER_COMMENTARY_HINT_KEY));
-            } catch (_) {
+            } catch {
                 seen = false;
             }
             readerCommentaryTopBarBtn.classList.toggle('has-hint', !seen);
@@ -5244,7 +5250,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             // Sefaria titles the Targum per book ("Onkelos Genesis"); one
             // "Onkelos" key ranks and groups it across the Chumash.
             if (sefariaTitle) return sefariaTitle.replace(/^Onkelos\s+(?:Genesis|Exodus|Leviticus|Numbers|Deuteronomy)$/i, 'Onkelos');
-            const onMatch = raw.match(/^([^,]+?)\s+on\s+/i);
+            const onMatch = /^([^,]+?)\s+on\s+/i.exec(raw);
             if (onMatch?.[1]) return onMatch[1].trim();
             // "Bereshit Rabbah 1:5", "Targum Neofiti 1:1": drop the section
             // numbers so every passage of one work lands in one group.
@@ -5731,7 +5737,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const word = String(selectionCommentaryState.wordInfo?.word || '').trim();
             if (!word) return;
 
-            const lang = containsHebrewLetters(word) ? 'en' : (isHebrewMode() ? 'he' : 'en');
+            const lang = !containsHebrewLetters(word) && isHebrewMode() ? 'he' : 'en';
             try {
                 const resp = await fetch(`/api/word/meaning?word=${encodeURIComponent(word)}&lang=${encodeURIComponent(lang)}`);
                 if (!resp.ok) return;
@@ -5751,7 +5757,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 }
 
                 renderSelectionInsightsChooser();
-            } catch (_) {
+            } catch {
                 // Keep existing meaning when lookup refresh fails.
             }
         }
@@ -5769,10 +5775,10 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
                 const segmentLabel = formatSegmentLabel(line?.segment, idx);
                 const hebrewMarkup = he
-                    ? `<p dir="rtl" class="font-hebrew text-start text-[1.05rem] leading-[1.9] text-slate-800">${he.replace(/\n/g, '<br>')}</p>`
+                    ? `<p dir="rtl" class="font-hebrew text-start text-[1.05rem] leading-[1.9] text-slate-800">${he.replaceAll(/\n/g, '<br>')}</p>`
                     : '';
                 const englishMarkup = en
-                    ? `<p dir="ltr" class="font-serif text-start text-sm leading-relaxed text-slate-700 mt-2">${en.replace(/\n/g, '<br>')}</p>`
+                    ? `<p dir="ltr" class="font-serif text-start text-sm leading-relaxed text-slate-700 mt-2">${en.replaceAll(/\n/g, '<br>')}</p>`
                     : '';
 
                 return `
@@ -5805,10 +5811,10 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const en = enRaw ? escapeDisplayTextPreservingEmphasis(enFallbackLines[idx] || '') : '';
 
                 const hebrewMarkup = he
-                    ? `<p dir="rtl" class="font-hebrew text-start text-[1.05rem] leading-[1.9] text-slate-800">${he.replace(/\n/g, '<br>')}</p>`
+                    ? `<p dir="rtl" class="font-hebrew text-start text-[1.05rem] leading-[1.9] text-slate-800">${he.replaceAll(/\n/g, '<br>')}</p>`
                     : '';
                 const englishMarkup = en
-                    ? `<p dir="ltr" class="font-serif text-start text-sm leading-relaxed text-slate-700 mt-2">${en.replace(/\n/g, '<br>')}</p>`
+                    ? `<p dir="ltr" class="font-serif text-start text-sm leading-relaxed text-slate-700 mt-2">${en.replaceAll(/\n/g, '<br>')}</p>`
                     : '';
 
                 return `
@@ -5839,9 +5845,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         function renderCommentaryView(commentaryRef, data) {
             const enTitle = String(data?.title || commentaryRef).trim();
             const heTitle = String(data?.heTitle || '').trim();
-            const displayTitle = isHebrewMode()
-                ? (heTitle || enTitle)
-                : (heTitle ? `${enTitle} · ${heTitle}` : enTitle);
+            const bilingualTitle = heTitle ? `${enTitle} · ${heTitle}` : enTitle;
+            const displayTitle = isHebrewMode() ? (heTitle || enTitle) : bilingualTitle;
 
             // Keep the reader's place when the translated payload replaces
             // the plain one in place.
@@ -5915,11 +5920,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     try {
                         const translated = await (translatedRequest || fetchCommentaryText(commentaryRef, { translate: true }));
                         if (isCurrent()) renderCommentaryView(commentaryRef, translated);
-                    } catch (_) {
+                    } catch {
                         // The untranslated text is already on screen.
                     }
                 }
-            } catch (_) {
+            } catch {
                 if (!isCurrent()) return;
                 selectionCommentaryState.activeCommentaryRef = '';
                 selectionInsightsBody.innerHTML = `
@@ -5995,11 +6000,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
 
             const range = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-            const anchor = range
-                ? (range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
-                    ? range.commonAncestorContainer
-                    : range.commonAncestorContainer.parentElement)
-                : null;
+            const container = range?.commonAncestorContainer;
+            const anchor = container?.nodeType === Node.ELEMENT_NODE ? container : (container?.parentElement ?? null);
             const segmentRow = anchor?.closest?.('.segment-row') || null;
 
             // The chunk the highlighted verse sits in, not just the first one
@@ -6021,14 +6023,14 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 commentaryRefCandidates.push(currentRef.split(':')[0]);
             }
 
-            const talmudDafBaseMatch = currentRef.match(/^(.+?\s+\d+[ab])(?::\d+)?$/i);
+            const talmudDafBaseMatch = /^(.+?\s+\d+[ab])(?::\d+)?$/i.exec(currentRef);
             if (talmudDafBaseMatch?.[1]) {
                 commentaryRefCandidates.push(String(talmudDafBaseMatch[1]).trim());
             }
 
             const singleWord = selectedText.split(/\s+/).length === 1;
             const cleanWord = singleWord
-                ? selectedText.replace(/[^A-Za-z\u0590-\u05FF'\-]/g, '').trim()
+                ? selectedText.replace(/[^A-Za-z\u0590-\u05FF'-]/g, '').trim()
                 : '';
 
             selectionInsightsHint.textContent = t('Loading selected passage tools...', 'טוען כלים לקטע שנבחר...');
@@ -6060,7 +6062,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
 
             const commentaryPromise = fetchCommentaryLinksWithFallback(commentaryRefCandidates);
-            const wordMeaningLang = containsHebrewLetters(cleanWord) ? 'en' : (isHebrewMode() ? 'he' : 'en');
+            const wordMeaningLang = !containsHebrewLetters(cleanWord) && isHebrewMode() ? 'he' : 'en';
 
             const wordPromise = cleanWord
                 ? fetch(`/api/word/meaning?word=${encodeURIComponent(cleanWord)}&lang=${encodeURIComponent(wordMeaningLang)}`)
@@ -6250,9 +6252,9 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 infiniteReaderState.sectionObserver = null;
             }
 
-            const seedChain = Array.isArray(window.currentTextPayloadChain)
-                ? window.currentTextPayloadChain
-                : (seedPayload ? [seedPayload] : []);
+            let seedChain = [];
+            if (Array.isArray(window.currentTextPayloadChain)) seedChain = window.currentTextPayloadChain;
+            else if (seedPayload) seedChain = [seedPayload];
 
             seedChain.forEach((chunk) => {
                 const refKey = getRefTrackingKey(chunk?.ref || chunk?.title || '');
@@ -6442,8 +6444,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // callback batch happened to include.
         function pickVisibleReaderChunk() {
             const chunks = Array.from(document.querySelectorAll('.reader-source-clean[data-text-chunk-index]'))
-                .map((el) => ({ idx: parseInt(el.dataset.textChunkIndex, 10), rect: el.getBoundingClientRect() }))
-                .filter((c) => !isNaN(c.idx))
+                .map((el) => ({ idx: Number.parseInt(el.dataset.textChunkIndex, 10), rect: el.getBoundingClientRect() }))
+                .filter((c) => !Number.isNaN(c.idx))
                 .sort((a, b) => a.idx - b.idx);
             if (!chunks.length) return;
 
@@ -6453,7 +6455,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const viewportHeight = isPageTarget ? window.innerHeight : scrollEl.clientHeight;
             const readingLine = viewportTop + viewportHeight * 0.08;
 
-            const current = chunks.find((c) => c.rect.bottom > readingLine) || chunks[chunks.length - 1];
+            const current = chunks.find((c) => c.rect.bottom > readingLine) || chunks.at(-1);
             const resolvedIndex = current.idx;
 
             if (resolvedIndex !== infiniteReaderState.currentVisibleChunkIndex) {
@@ -6571,7 +6573,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const normalized = escapeDisplayTextPreservingEmphasis(text);
                 return normalized
                     .replace(/\n{2,}/g, '<br><br>')
-                    .replace(/\n/g, ' ')
+                    .replaceAll(/\n/g, ' ')
                     .replace(/\bG\s+OD\b/g, 'GOD')
                     .replace(/\bL\s+ORD\b/g, 'LORD');
             };
@@ -6655,7 +6657,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 }
 
                 // Only one side has content — render full-width single column
-                const singleContent = hebrewBlock || englishBlock;
                 const singleDir = he ? 'rtl' : 'ltr';
                 const singleClass = he
                     ? 'source-he reader-text-he text-start font-hebrew text-2xl lg:text-3xl leading-[1.8] lg:leading-9 py-2'
@@ -6683,11 +6684,13 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     if (located && !/[A-Za-z]/.test(located)) return located;
                     // Book name unknown to the local maps ("Shulchan Arukh,
                     // Orach Chayim 345"): Sefaria's heTitle + the section.
-                    const tail = chunkRef.match(/\s(\d+[ab]?(?:[:.]\d+)*(?:-\d+[ab]?(?:[:.]\d+)*)?)$/i)?.[1];
+                    const tail = /\s(\d+[ab]?(?:[:.]\d+)*(?:-\d+[ab]?(?:[:.]\d+)*)?)$/i.exec(chunkRef)?.[1];
                     if (titleHe && tail) {
-                        const heTail = tail.replace(/(\d+)([ab])?/gi, (_, n, side) => (
-                            hebrewNumber(n) + (side ? ` ${side.toLowerCase() === 'a' ? 'ע״א' : 'ע״ב'}` : '')
-                        ));
+                        const heTail = tail.replace(/(\d+)([ab])?/gi, (_, n, side) => {
+                            let sideLabel = '';
+                            if (side) sideLabel = side.toLowerCase() === 'a' ? ' ע״א' : ' ע״ב';
+                            return hebrewNumber(n) + sideLabel;
+                        });
                         return `${titleHe} ${heTail}`;
                     }
                 }
@@ -6744,7 +6747,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // "Orach_Chayim.261.2" inside "Genesis 1" / "Orach Chayim 261"), so
         // a link to a specific verse/seif isn't widened to its chapter.
         function textRefWithin(routeRef, chunkRef) {
-            const norm = (v) => String(v || '').replace(/[._]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+            const norm = (v) => String(v || '').replaceAll(/[._]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
             const inner = norm(routeRef);
             const outer = norm(chunkRef);
             if (!outer || !inner.startsWith(outer)) return false;
@@ -6949,8 +6952,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             readerContent.innerHTML = '';
 
             if (readerTopBar) {
-                const hasPrev = Boolean(data.prev);
-                const hasNext = Boolean(data.next);
                 syncReaderTopBarOffset();
                 readerTopBar.classList.remove('hidden');
 
@@ -7017,10 +7018,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     ? `<span class="reader-parasha-chip">${escapeHtml(parashaLabel)}</span>`
                     : '';
 
+                const refMeta = showRefMeta ? `<span class="reader-source-title-ref">${escapeHtml(sectionRefLabel)}</span>` : '';
                 const sectionTitleMarkup = hideRedundantHeader ? '' : `
                     <div class="reader-source-title mb-2">
                         <span class="reader-source-title-main">${escapeHtml(sectionTitle)}</span>
-                        ${showRefMeta ? `<span class="reader-source-title-ref">${escapeHtml(sectionRefLabel)}</span>` : ''}
+                        ${refMeta}
                         ${parashaChip}
                     </div>
                 `;
@@ -7144,7 +7146,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     String(value || ''),
                     String(window.currentPrayerName || ''),
                 );
-                const normalized = normalizeDisplayText(deduped).replace(/\r/g, '').trim();
+                const normalized = normalizeDisplayText(deduped).replaceAll(/\r/g, '').trim();
                 if (!normalized) return [];
                 return normalized
                     .split(/\n{2,}/)
@@ -7182,11 +7184,13 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const enDisplay = String(enText || '').trim();
                 const rowPadding = isHeader ? 'pt-3 pb-2' : 'py-2';
 
+                const heHeading = heDisplay ? escapeDisplayTextPreservingEmphasis(heDisplay) : '&nbsp;';
+                const enHeading = enDisplay ? escapeDisplayTextPreservingEmphasis(enDisplay) : '&nbsp;';
                 const hebrewContent = isHeader
-                    ? `<h3 class="font-hebrew text-xl font-bold">${heDisplay ? escapeDisplayTextPreservingEmphasis(heDisplay) : '&nbsp;'}</h3>`
+                    ? `<h3 class="font-hebrew text-xl font-bold">${heHeading}</h3>`
                     : renderHebrewParagraph(heText, true);
                 const englishContent = isHeader
-                    ? `<h3 class="font-serif text-xl font-bold">${enDisplay ? escapeDisplayTextPreservingEmphasis(enDisplay) : '&nbsp;'}</h3>`
+                    ? `<h3 class="font-serif text-xl font-bold">${enHeading}</h3>`
                     : renderEnglishParagraph(enText);
 
                 if (layout === 'interleaved') {
@@ -7259,10 +7263,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     // explanation (audit C4). Matches the placeholder already used
                     // by renderHebrewParagraph/renderEnglishParagraph below.
                     const isEmpty = !String(contentDisplay || '').trim();
+                    const emptyNote = lang === 'he'
+                        ? t('No Hebrew text in source', 'אין טקסט עברי במקור')
+                        : t('No English translation in source', 'אין תרגום אנגלי במקור');
                     const bodyMarkup = isEmpty
-                        ? `<p class="text-slate-300 italic">${lang === 'he'
-                            ? t('No Hebrew text in source', 'אין טקסט עברי במקור')
-                            : t('No English translation in source', 'אין תרגום אנגלי במקור')}</p>`
+                        ? `<p class="text-slate-300 italic">${emptyNote}</p>`
                         : `<div class="${fontClass}">${contentDisplay}</div>${translit}`;
 
                     contentDiv.innerHTML = `
@@ -7345,7 +7350,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     ...appState.prefs,
                     ...saved,
                 };
-            } catch (_) {
+            } catch {
                 // Keep defaults when no saved prefs are available.
             }
 
@@ -8049,12 +8054,10 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     const response = await fetch('/api/library/index');
                     if (!response.ok) throw new Error('Failed to fetch library index');
                     const data = await response.json();
-                    libraryIndexData = Array.isArray(data)
-                        ? data
-                        : Array.isArray(data?.contents)
-                            ? data.contents
-                            : [];
-                } catch (_) {
+                    libraryIndexData = [];
+                    if (Array.isArray(data)) libraryIndexData = data;
+                    else if (Array.isArray(data?.contents)) libraryIndexData = data.contents;
+                } catch {
                     libraryIndexSidebarKey = null;
                     libraryIndexModalKey = null;
                     failListRegions(modal ? [libraryIndexSidebar, libraryIndexModal] : [libraryIndexSidebar],
@@ -8124,7 +8127,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                         if (target && await openSearchTarget(target, candidate)) {
                             return;
                         }
-                    } catch (_) {
+                    } catch {
                         // Fallback to direct read below.
                     }
                 }
@@ -8212,8 +8215,9 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     const nameHe = PARASHA_HE_MAP[nameEn] || nameEn;
                     const label = isHebrewMode() ? nameHe : nameEn;
                     // Where the portion actually starts ("4:21" / "ד׳:כ״א").
+                    const startLang = isHebrewMode() ? 'he' : 'en';
                     const startLabel = hebrewRef
-                        ? hebrewRef.parashaStartLabel(entry, isHebrewMode() ? 'he' : 'en')
+                        ? hebrewRef.parashaStartLabel(entry, startLang)
                         : String(chapterNum);
                     const chapterLabel = isHebrewMode() ? `מתחילה ב${startLabel}` : `Starts at ${startLabel}`;
                     const compactChapterLabel = startLabel;
@@ -8294,7 +8298,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const localizeDafInLabel = (label) => {
                 if (!isHebrewMode()) return label;
                 return String(label || '').replace(/\b(\d+)([ab])(?::(\d+))?\b/gi, (_, page, side, line) => {
-                    return localizeDafToken(`${page}${side}${line ? `:${line}` : ''}`);
+                    const lineSuffix = line ? `:${line}` : '';
+                    return localizeDafToken(`${page}${side}${lineSuffix}`);
                 });
             };
 
@@ -8328,14 +8333,14 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         function _dafToKey(daf) {
             const m = /^(\d+)([ab])$/i.exec(String(daf || '').trim());
             if (!m) return -1;
-            return parseInt(m[1], 10) * 2 + (m[2].toLowerCase() === 'a' ? 0 : 1);
+            return Number.parseInt(m[1], 10) * 2 + (m[2].toLowerCase() === 'a' ? 0 : 1);
         }
 
         /** Build a chapter-section lookup from API sections data. */
         function _buildSectionLookup(sections) {
             // sections: [{label, fromDaf, toDaf}, ...]
             return sections
-                .filter((s) => s && s.fromDaf && s.toDaf)
+                .filter((s) => s?.fromDaf && s.toDaf)
                 .map((s) => ({
                     label: String(s.label || '').trim(),
                     fromKey: _dafToKey(s.fromDaf),
@@ -8348,7 +8353,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         /** Return the section label for a given daf key, or '' if not found. */
         function _getSectionForDaf(dafKey, lookup, isHebrew) {
-            if (!lookup || !lookup.length) return '';
+            if (!lookup?.length) return '';
             const hit = lookup.find((s) => dafKey >= s.fromKey && dafKey <= s.toKey);
             if (!hit) return '';
             const fromToken = isHebrew ? localizeDafToken(hit.fromDaf) : hit.fromDaf;
@@ -8361,7 +8366,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         /** Extract the leading siman/section number from a ref remainder, or -1. */
         function _sectionKeyFromRef(remainder) {
             const m = /^(\d+)/.exec(String(remainder || '').trim());
-            return m ? parseInt(m[1], 10) : -1;
+            return m ? Number.parseInt(m[1], 10) : -1;
         }
 
         /** Build a section lookup for numeric-siman works (Shulchan Arukh, Mishneh
@@ -8380,7 +8385,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         /** Return the section label for a given siman number, or '' if not found. */
         function _getSectionForNumber(numKey, lookup, isHebrew) {
-            if (!lookup || !lookup.length || numKey < 0) return '';
+            if (!lookup?.length || numKey < 0) return '';
             const hit = lookup.find((s) => numKey >= s.fromKey && numKey <= s.toKey);
             if (!hit) return '';
             const label = isHebrew ? (hit.heLabel || hit.label) : hit.label;
@@ -8405,11 +8410,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             // ({fromSection,toSection}, from alts.Topic — Shulchan Arukh, Mishneh
             // Torah, etc). Grouping is enabled whenever either is present, not just
             // for Talmud — daf/numeric parsing stays separate below via talmudMode.
-            const sectionLookup = !hasSections
-                ? []
-                : talmudMode
-                    ? _buildSectionLookup(sections)
-                    : _buildNumericSectionLookup(sections);
+            let sectionLookup = [];
+            if (hasSections) sectionLookup = talmudMode ? _buildSectionLookup(sections) : _buildNumericSectionLookup(sections);
 
             if (!safeTitle || normalizedRefs.length < 2) {
                 return;
@@ -8421,9 +8423,10 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     : `${safeTitle} Sections`;
             }
             if (chapterGridSubtitle) {
-                chapterGridSubtitle.textContent = isHebrewMode()
-                    ? (talmudMode ? 'בחר דף או קטע לפתיחה מהירה' : 'בחר קטע לפתיחה מהירה')
-                    : (talmudMode ? 'Select a daf or section to open' : 'Select a section to open');
+                let subtitle;
+                if (isHebrewMode()) subtitle = talmudMode ? 'בחר דף או קטע לפתיחה מהירה' : 'בחר קטע לפתיחה מהירה';
+                else subtitle = talmudMode ? 'Select a daf or section to open' : 'Select a section to open';
+                chapterGridSubtitle.textContent = subtitle;
             }
 
             if (chapterGridParashaStrip) {
@@ -8448,12 +8451,14 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
                     let sectionLabel;
                     if (talmudMode) {
-                        const dafMatch = remainder.match(/^(\d+[ab])/i);
+                        const dafMatch = /^(\d+[ab])/i.exec(remainder);
                         const dafStr = dafMatch ? dafMatch[1].toLowerCase() : '';
                         const dafKey = _dafToKey(dafStr);
+                        let dafLabel = t('Unsorted', 'ללא מיון');
+                        if (dafStr) dafLabel = isHebrewMode() ? `דף ${localizeDafToken(dafStr)}` : `Daf ${dafStr}`;
                         sectionLabel = dafKey >= 0
                             ? _getSectionForDaf(dafKey, sectionLookup, isHebrewMode())
-                            : (dafStr ? (isHebrewMode() ? `דף ${localizeDafToken(dafStr)}` : `Daf ${dafStr}`) : t('Unsorted', 'ללא מיון'));
+                            : dafLabel;
                     } else {
                         const numKey = _sectionKeyFromRef(remainder);
                         sectionLabel = _getSectionForNumber(numKey, sectionLookup, isHebrewMode()) || t('Unsorted', 'ללא מיון');
@@ -8497,7 +8502,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     if (safeTitle && targetRef.toLowerCase().startsWith(safeTitle.toLowerCase())) {
                         remainder = targetRef.slice(safeTitle.length).replace(/^[,\s]+/, '').trim();
                     }
-                    const dafMatch = remainder.match(/^(\d+[ab])/i);
+                    const dafMatch = /^(\d+[ab])/i.exec(remainder);
                     const dafStr = dafMatch ? dafMatch[1].toLowerCase() : '';
                     const dafKey = _dafToKey(dafStr);
 
@@ -8559,7 +8564,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 indexLeafRefCache.set(cacheKey, refs);
                 indexSectionsCache.set(cacheKey, sections);
                 return refs;
-            } catch (_) {
+            } catch {
                 indexLeafRefCache.set(cacheKey, []);
                 indexSectionsCache.set(cacheKey, []);
                 return [];
@@ -8682,7 +8687,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const communities = await response.json();
                 textsCache.communitiesList = communities;
                 populateCommunitiesListHTML(communities);
-            } catch (err) {
+            } catch {
                 failListRegions([list],
                     t("Couldn't load the communities. Check your connection.", 'לא ניתן לטעון את הקהילות. בדקו את החיבור.'),
                     loadCommunitiesMenu, attempt);
@@ -8707,7 +8712,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             // Returns raw (unescaped) paragraphs -- callers escape at the point
             // text becomes HTML (see displayPrayer's heHtml/enHtml construction
             // and renderHebrewParagraph/renderEnglishParagraph).
-            const normalized = normalizeDisplayText(String(rawText || '')).replace(/\r/g, '').trim();
+            const normalized = normalizeDisplayText(String(rawText || '')).replaceAll(/\r/g, '').trim();
             if (!normalized) return [];
             return normalized
                 .split(/\n{2,}/)
@@ -9220,7 +9225,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 .filter((v) => v && typeof v === 'object' && String(v.practice || '').trim())
                 .map((v) => {
                     const subgroup = String(v.subgroup || '').trim();
-                    return `<li>${subgroup ? `<span class="font-semibold">${escapeHtml(subgroup)}:</span> ` : ''}${escapeHtml(String(v.practice).trim())}</li>`;
+                    const label = subgroup ? `<span class="font-semibold">${escapeHtml(subgroup)}:</span> ` : '';
+                    return `<li>${label}${escapeHtml(String(v.practice).trim())}</li>`;
                 });
             if (!rows.length) return '';
             return `<div class="community-variants">
@@ -9241,7 +9247,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const source = communitySourceText(item.source);
             const sourceUrl = String(item.source_url || '').trim();
             const refs = (Array.isArray(item.references) ? item.references : [])
-                .filter((r) => r && r.url && r.title && String(r.url).trim() !== sourceUrl)
+                .filter((r) => r?.url && r.title && String(r.url).trim() !== sourceUrl)
                 .slice(0, 3);
             if (!source && !refs.length) return '';
             const parts = [];
@@ -9257,13 +9263,16 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // "Disputes" and "gaps" from the research: what sources disagree on, and
         // what this page does not (yet) document. Collapsed; native <details>.
         function communityNotesHtml(communityData) {
-            const block = (title, items, intro = '') => items.length
-                ? `<details class="community-notes">
+            const block = (title, items, intro = '') => {
+                if (!items.length) return '';
+                const note = intro ? `<p class="community-rabbi-note" dir="auto">${escapeHtml(intro)}</p>` : '';
+                const listItems = items.map((x) => `<li>${escapeHtml(x)}</li>`).join('');
+                return `<details class="community-notes">
                         <summary>${escapeHtml(title)} <span class="community-notes-count">(${items.length})</span></summary>
-                        ${intro ? `<p class="community-rabbi-note" dir="auto">${escapeHtml(intro)}</p>` : ''}
-                        <ul class="list-disc ml-5 text-slate-600 text-sm space-y-1" dir="auto">${items.map((x) => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
-                   </details>`
-                : '';
+                        ${note}
+                        <ul class="list-disc ml-5 text-slate-600 text-sm space-y-1" dir="auto">${listItems}</ul>
+                   </details>`;
+            };
             const list = (value) => (Array.isArray(value) ? value : []).map((x) => String(x || '').trim()).filter(Boolean);
             const html = block(t('Where sources disagree', 'היכן המקורות חלוקים'), list(communityData?.disputes),
                     t('Rabbis differ on these points. Each rabbi gives their own answer, so ask your own rabbi.',
@@ -9274,7 +9283,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         function communityDistinctiveHtml(communityData) {
             const items = (Array.isArray(communityData?.distinctive_customs) ? communityData.distinctive_customs : [])
-                .filter((c) => c && c.name);
+                .filter((c) => c?.name);
             if (!items.length) return '';
             const rows = items.map((c) => `
                 <div class="prayer-clean-row border-b border-slate-200 last:border-b-0 py-2">
@@ -9337,6 +9346,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     const practices = Array.isArray(item.common_practices)
                         ? item.common_practices.map((entry) => String(entry || '').trim()).filter(Boolean)
                         : [];
+                    const practiceItems = practices.map((entry) => `<li>${escapeHtml(entry)}</li>`).join('');
 
                     rows += `
                         <div class="prayer-clean-row border-b border-slate-200 last:border-b-0 py-2">
@@ -9346,7 +9356,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                                 ${communityRabbiNote(item.confidence)}
                                 ${communitySourceHtml(item)}
                                 ${practices.length
-                            ? `<ul class="list-disc ml-5 text-slate-600 text-sm space-y-1 mt-2" dir="auto">${practices.map((entry) => `<li>${escapeHtml(entry)}</li>`).join('')}</ul>`
+                            ? `<ul class="list-disc ml-5 text-slate-600 text-sm space-y-1 mt-2" dir="auto">${practiceItems}</ul>`
                             : ''}
                                 ${communityVariantsHtml(item.variants)}
                             </div>
@@ -9362,7 +9372,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         }
 
         function goHome(options = {}) {
-            document.documentElement.removeAttribute('data-cold-view');
+            delete document.documentElement.dataset.coldView;
             // No overlay covers a reader load any more, so Home can be
             // clicked mid-load: that load must not paint (or retry) over home.
             cancelReaderLoad();
@@ -9444,7 +9454,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const raw = String(query || '').trim();
             if (!raw) return [];
 
-            const match = raw.match(/^([A-Za-z'"\- ]+?)\s+(\d+)([ab])$/i);
+            const match = /^([a-z'"\- ]+?)\s+(\d+)([ab])$/i.exec(raw);
             if (!match) return [];
 
             const tractateRaw = String(match[1] || '').trim();
@@ -9474,7 +9484,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             try {
                 const siddurPage = await window.ShelahSiddur?.find(query);
                 if (siddurPage) return { type: 'siddur', value: siddurPage };
-            } catch (_) {
+            } catch {
                 // The siddur's table of contents is unreachable: fall through to the text search.
             }
 
@@ -9547,7 +9557,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                         const resolvedRef = data.ref || normalizedCandidate;
                         return { type: 'text', value: resolvedRef };
                     }
-                } catch (_) {
+                } catch {
                     // Keep searching using fallback strategy below.
                 }
             }
@@ -9656,7 +9666,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 searchForm.classList.remove('search-liftoff');
                 // Force reflow so back-to-back searches restart the CSS
                 // animation instead of the re-add being a no-op.
-                void searchForm.offsetWidth;
+                searchForm.getBoundingClientRect();
                 searchForm.classList.add('search-liftoff');
                 setTimeout(() => searchForm.classList.remove('search-liftoff'), SEARCH_LIFTOFF_MS);
             }
@@ -9678,13 +9688,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 // Another question or answer replaced this one meanwhile.
                 if (!data) return;
 
-                // TODO: appState.lastAiQuestion/.lastAiResponse duplicate
-                // state.ai.* (written by askAi() itself via setState()). Kept
-                // alongside the module convention this phase only -- collapsing
-                // the two schemes is a separate change once every reader of the
-                // legacy keys is migrated.
-                appState.lastAiQuestion = question;
-                appState.lastAiResponse = data;
                 // Refresh history sidebar so the new entry appears immediately
                 void loadAskHistory();
                 if (data?.history_id) {
@@ -9702,10 +9705,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     });
                 }
             } catch (error) {
-                // TODO: see the success-path note above -- same duplication.
-                appState.lastAiQuestion = '';
-                appState.lastAiResponse = null;
-
                 // The panel already shows the failure on the question's turn
                 // (Retry) and in its notice; these are the side effects.
                 if (error?.code === 'turnstile_required') {
@@ -9719,7 +9718,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     // Cloudflare wants the visitor to interact.
                     const turnstileWidget = document.getElementById('turnstileWidget');
                     if (window.turnstile && turnstileWidget) {
-                        try { window.turnstile.reset(turnstileWidget); } catch (_err) { /* widget not ready yet */ }
+                        try { window.turnstile.reset(turnstileWidget); } catch { /* widget not ready yet */ }
                     }
                     logReliability('ai-turnstile-required');
                 } else if (error?.code === 'guest_cap_reached') {
@@ -9747,8 +9746,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
             const candidates = [];
             const normalizedRaw = raw
-                .replace(/[’‘]/g, "'")
-                .replace(/[“”]/g, '"')
+                .replaceAll(/[’‘]/g, "'")
+                .replaceAll(/[“”]/g, '"')
                 .replace(/\s+/g, ' ')
                 .replace(/\s+,/g, ',')
                 .trim();
@@ -9774,7 +9773,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
 
             if (/^Mishnah\s+Yom\s+Tov\b/i.test(normalizedRaw)) {
-                const suffix = (normalizedRaw.match(/\b\d+\b/) || [])[0] || '1';
+                const suffix = (/\b\d+\b/.exec(normalizedRaw) || [])[0] || '1';
                 candidates.push(`Mishnah Beitzah ${suffix}`);
             }
 
@@ -9782,9 +9781,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const hasSpecificSection = /:\d+/.test(raw) || /\b\d+[ab]?\b/.test(raw) || /,/.test(raw);
 
             if (!hasSpecificSection) {
-                candidates.push(`${raw} 1`);
-                candidates.push(`${raw}, Genesis 1`);
-                candidates.push(`${raw}, Genesis 1:1`);
+                candidates.push(`${raw} 1`, `${raw}, Genesis 1`, `${raw}, Genesis 1:1`);
             }
 
             if (looksLikeCommentary && !/on\s+torah/i.test(raw)) {
@@ -9856,7 +9853,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 cacheTextPayload(requestedRef, payload);
                 cacheTextPayload(payload.ref, payload);
                 return payload;
-            } catch (_) {
+            } catch {
                 return null;
             }
         }
@@ -10008,7 +10005,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                         return { payload, resolvedRef: candidate };
                     }
                     lastErrorPayload = payload || lastErrorPayload;
-                } catch (_) {
+                } catch {
                     // Keep trying remaining candidates.
                 }
             }
@@ -10044,7 +10041,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 return { payload: { error: 'Network error', error_type: 'network', he: [], en: [] }, resolvedRef: requestedRef };
             }
             // If the direct fetch returned a typed error (blocked/CORS), surface it.
-            if (directPayload && directPayload.error_type) {
+            if (directPayload?.error_type) {
                 return { payload: directPayload, resolvedRef: requestedRef };
             }
 
@@ -10239,12 +10236,14 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     ? localizeReferenceLabel(data.ref || normalizedRequestRef || ref)
                     : String(data.ref || normalizedRequestRef || ref || '');
 
+                const categoryPath = (isHebrewMode() ? categories.map(translateCategoryToken) : categories).join(' › ');
+
                 // Update left sidebar with metadata
                 sidebarContent.innerHTML = `
                     <div class="text-xs space-y-2">
                         <div><span class="font-bold text-slate-700">${t('Reference:', 'הפניה:')}</span> <span class="text-slate-500">${escapeHtml(sidebarReference)}</span></div>
                         ${data.heTitle ? `<div><span class="font-bold text-slate-700">${t('Hebrew:', 'עברית:')}</span> <span class="font-hebrew text-slate-600">${data.heTitle}</span></div>` : ''}
-                        ${categories.length ? `<div><span class="font-bold text-slate-700">${t('Category:', 'קטגוריה:')}</span> <span class="text-slate-500">${isHebrewMode() ? categories.map(translateCategoryToken).join(' › ') : categories.join(' › ')}</span></div>` : ''}
+                        ${categories.length ? `<div><span class="font-bold text-slate-700">${t('Category:', 'קטגוריה:')}</span> <span class="text-slate-500">${categoryPath}</span></div>` : ''}
                         ${data.era ? `<div><span class="font-bold text-slate-700">${t('Era:', 'תקופה:')}</span> <span class="text-slate-500">${data.era}</span></div>` : ''}
                     </div>`;
 
@@ -10299,9 +10298,9 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const heTitle = (payload.heTitle || '').trim();
                 const titleEn = payload.titleEn || (heTitle ? `${enTitle} · ${heTitle}` : enTitle);
                 const titleHe = payload.titleHe || heTitle || enTitle;
-                const openTip = isHebrewMode()
-                    ? (heTitle ? `פתח ${heTitle}` : `פתח ${enTitle}`)
-                    : (heTitle ? `Open ${enTitle} (${heTitle})` : `Open ${enTitle}`);
+                let openTip;
+                if (isHebrewMode()) openTip = `פתח ${heTitle || enTitle}`;
+                else openTip = heTitle ? `Open ${enTitle} (${heTitle})` : `Open ${enTitle}`;
 
                 const applyToElement = (linkEl) => {
                     if (!linkEl) return;
@@ -10309,7 +10308,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     linkEl.dataset.he = titleHe;
                     linkEl.textContent = isHebrewMode() ? titleHe : titleEn;
                     linkEl.title = openTip;
-                    linkEl.setAttribute('data-onclick-arg', ref);
+                    linkEl.dataset.onclickArg = ref;
                 };
 
                 applyToElement(quickLink);
@@ -10323,7 +10322,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 // like the two quick links above.
                 if (shabbatWeekLink) {
                     shabbatWeekLink.title = openTip;
-                    shabbatWeekLink.setAttribute('data-onclick-arg', ref);
+                    shabbatWeekLink.dataset.onclickArg = ref;
                 }
             };
 
@@ -10364,7 +10363,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 textsCache.parashaQuickLink = payload;
                 textsCache.parashaQuickLinkTs = Date.now();
                 applyParashaLink(payload);
-            } catch (_) {
+            } catch {
                 retryQuietly();
             }
         }
@@ -10419,7 +10418,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
                 const rowsHtml = ENTRIES.map(({ key, labelEn, labelHe }) => {
                     const item = daily?.[key];
-                    if (!item || !item.title) return '';
+                    if (!item?.title) return '';
                     const ref = escapeHtml(item.ref || '');
                     const titleEn = escapeHtml(item.title || '');
                     const titleHe = escapeHtml(item.title_he || item.title || '');
@@ -10439,7 +10438,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     list.innerHTML = rowsHtml;
                     bindDailyStudyLinks();
                 }
-            } catch (e) {
+            } catch {
                 failListRegions([list],
                     t("Couldn't load today's study. Check your connection.", 'לא ניתן לטעון את הלימוד היומי. בדקו את החיבור.'),
                     populateDailyStudy, attempt);
@@ -10498,7 +10497,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 grid.innerHTML = html;
                 grid.setAttribute('aria-busy', 'false');
                 applyStaticHebrewFallbackTranslations();
-            } catch (e) {
+            } catch {
                 failListRegions([grid],
                     t("Couldn't load popular texts. Check your connection.", 'לא ניתן לטעון טקסטים פופולריים. בדקו את החיבור.'),
                     populatePopularTexts, attempt);
@@ -10587,7 +10586,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             lang = applyLanguagePreference(lang, { ...options, persist: !options.fromRoute }, LANGUAGE_MANUAL_KEY);
             displayedLanguage = lang;
             languageFromRoute = Boolean(options.fromRoute);
-            document.documentElement.removeAttribute('data-lang-pending');
+            delete document.documentElement.dataset.langPending;
             if (!options.auto && !options.fromRoute) {
                 // A manual switch is saved, so a link's ?lang= has nothing
                 // left to override: it leaves the address bar (U-8).
@@ -10636,7 +10635,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
             if (signInBtn) signInBtn.textContent = lang === 'he' ? 'התחברות' : 'Sign In';
             if (userProfileSignOutAction) userProfileSignOutAction.textContent = lang === 'he' ? 'התנתקות' : 'Sign Out';
-            if (userProfileMenuLabel && userProfileMenuLabel.textContent === 'Signed in') {
+            if (userProfileMenuLabel?.textContent === 'Signed in') {
                 userProfileMenuLabel.textContent = lang === 'he' ? 'מחובר' : 'Signed in';
             }
             if (readerSettingsBtn) {
@@ -10761,7 +10760,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         try {
             const bootPrefs = JSON.parse(localStorage.getItem(APP_PREFS_KEY) || '{}');
             appState.prefs.theme = normalizeThemePreference(bootPrefs.theme || appState.prefs.theme);
-        } catch (_) {
+        } catch {
             appState.prefs.theme = normalizeThemePreference(appState.prefs.theme);
         }
         setThemePreference(appState.prefs.theme, { persist: false });
@@ -10865,7 +10864,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         };
         function splitCalendarEmoji(rawTitle) {
             const raw = String(rawTitle || '');
-            const prefix = (raw.match(/^[^\p{L}\p{N}]+/u) || [''])[0];
+            const prefix = (/^[^\p{L}\p{N}]+/u.exec(raw) || [''])[0];
             if (!prefix.trim()) return { title: raw.trim(), icon: null };
             const hit = CAL_EMOJI_ICONS.find(([emoji]) => prefix.includes(emoji));
             return { title: raw.slice(prefix.length).trim(), icon: hit ? hit[1] : 'star-of-david' };
@@ -10903,7 +10902,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                             return {
                                 ...item,
                                 title,
-                                extendedProps: { ...(item.extendedProps || {}), category: item.category, detail: item.detail || {}, icon },
+                                extendedProps: { ...item.extendedProps, category: item.category, detail: item.detail || {}, icon },
                             };
                         });
                     });
@@ -10947,8 +10946,9 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const kinds = new Map();
             (holidaysCalendar?.getEvents() || []).forEach((ev) => {
                 const cat = calendarVisualCategory(ev.extendedProps);
-                const kind = CAL_HOLIDAY_CATEGORIES.has(cat) ? 'holiday'
-                    : CAL_SHABBAT_CATEGORIES.has(cat) ? 'shabbat' : null;
+                let kind = null;
+                if (CAL_HOLIDAY_CATEGORIES.has(cat)) kind = 'holiday';
+                else if (CAL_SHABBAT_CATEGORIES.has(cat)) kind = 'shabbat';
                 if (!kind || !ev.start) return;
                 const day = new Date(ev.start);
                 do {
@@ -11061,7 +11061,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 }).formatToParts(date)
                     .map((part) => (part.type === 'day' || part.type === 'year' ? hebrewNumber(part.value) : part.value))
                     .join('');
-            } catch (_) {
+            } catch {
                 hebrew.textContent = '';
             }
             hebrew.hidden = !hebrew.textContent;
@@ -11178,7 +11178,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 calendarGotoDate = date;
                 return;
             }
-            try { holidaysCalendar.gotoDate(date); } catch (_) { /* pre-render guard */ }
+            try { holidaysCalendar.gotoDate(date); } catch { /* pre-render guard */ }
         }
 
         // FullCalendar comes from window.ShelahLibs (index.html's head) the first
@@ -11256,8 +11256,9 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     // Near a year boundary, warm the neighbouring year so paging
                     // across Dec/Jan is a cache hit too.
                     const shown = info.view.currentStart;
-                    const neighbour = shown.getMonth() === 0 ? shown.getFullYear() - 1
-                        : shown.getMonth() >= 10 ? shown.getFullYear() + 1 : null;
+                    let neighbour = null;
+                    if (shown.getMonth() === 0) neighbour = shown.getFullYear() - 1;
+                    else if (shown.getMonth() >= 10) neighbour = shown.getFullYear() + 1;
                     if (neighbour) fetchCalendarHolidays(neighbour).catch(() => {});
                     if (_calendarDidMount && window.ShelahMotion) {
                         const harness = calendarEl.querySelector('.fc-view-harness');
@@ -11267,13 +11268,12 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     // Keep the agenda on a day inside the visible month: keep the current
                     // pick if it is still in this month, else today, else the 1st.
                     const monthStart = info.view.currentStart;
-                    const inMonth = (key) => key && key.slice(0, 7) === calendarDateKey(monthStart).slice(0, 7);
+                    const inMonth = (key) => key?.slice(0, 7) === calendarDateKey(monthStart).slice(0, 7);
                     const todayKey = calendarDateKey(new Date());
-                    selectCalendarDay(
-                        inMonth(calendarSelectedKey) ? calendarSelectedKey
-                            : inMonth(todayKey) ? todayKey
-                                : calendarDateKey(monthStart)
-                    );
+                    let dayKey = calendarDateKey(monthStart);
+                    if (inMonth(calendarSelectedKey)) dayKey = calendarSelectedKey;
+                    else if (inMonth(todayKey)) dayKey = todayKey;
+                    selectCalendarDay(dayKey);
                 },
                 // Events arrive asynchronously; refresh the agenda when they land.
                 eventsSet: function () {
@@ -11490,7 +11490,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 }
 
                 const { lat, lon, display_name } = results[0];
-                const location = { lat: parseFloat(lat), lon: parseFloat(lon) };
+                const location = { lat: Number.parseFloat(lat), lon: Number.parseFloat(lon) };
                 if (!window.ShelahModules?.fetchZmanimAPI) {
                     throw new Error('Zmanim module unavailable');
                 }
@@ -11513,7 +11513,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 statusEl.textContent = `${t('Using:', 'משתמש ב:')} ${shortName}`;
                 setTimeout(closeCitySearchPopover, 1200);
 
-            } catch (err) {
+            } catch {
                 errorEl.textContent = t('Search failed. Check your connection.', 'החיפוש נכשל. בדוק את החיבור שלך.');
                 errorEl.classList.remove('hidden');
                 statusEl.classList.add('hidden');
@@ -11674,7 +11674,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     if (target && await openSearchTarget(target, question)) {
                         return;
                     }
-                } catch (_) {
+                } catch {
                     // Fall back to AI search below when text resolution fails.
                 }
             }
@@ -11739,7 +11739,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                             ...answerLink,
                         }),
                     });
-                } catch (_) {
+                } catch {
                     // Best-effort — feedback loss isn't worth surfacing an error to the reader.
                 }
             }
@@ -11752,7 +11752,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             buttons.forEach((btn) => {
                 btn.addEventListener('click', () => {
                     if (root.dataset.feedbackState !== 'idle') return;
-                    const verdict = btn.getAttribute('data-verdict');
+                    const verdict = btn.dataset.verdict;
                     buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
                     buttons.forEach((b) => { b.disabled = true; });
 
@@ -11834,7 +11834,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             success: phosphorPathMarkup('check-circle'),
             problem: phosphorPathMarkup('warning-circle'),
         };
-        const _PRIVACY_STATUS_KINDS = ['pending', 'success', 'warning', 'error'];
+        const _PRIVACY_STATUS_KINDS = new Set(['pending', 'success', 'warning', 'error']);
 
         // Renders the export/delete status regions as a proper alert box
         // (icon + message) instead of plain gray text, and is the single
@@ -11850,10 +11850,10 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
             // .privacy-status (the modal's <style>) tints by data-kind.
             el.className = 'privacy-status';
-            el.dataset.kind = _PRIVACY_STATUS_KINDS.includes(kind) ? kind : 'pending';
-            const iconPath = kind === 'success' ? _PRIVACY_STATUS_ICONS.success
-                : kind === 'pending' ? ''
-                : _PRIVACY_STATUS_ICONS.problem;
+            el.dataset.kind = _PRIVACY_STATUS_KINDS.has(kind) ? kind : 'pending';
+            let iconPath = _PRIVACY_STATUS_ICONS.problem;
+            if (kind === 'success') iconPath = _PRIVACY_STATUS_ICONS.success;
+            else if (kind === 'pending') iconPath = '';
             el.innerHTML = (iconPath
                 ? `<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${iconPath}</svg>`
                 : '') + '<span></span>';
@@ -11939,7 +11939,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 link.click();
                 link.remove();
                 URL.revokeObjectURL(blobUrl);
-                const failedCategories = payload && payload.partial_errors
+                const failedCategories = payload?.partial_errors
                     ? Object.keys(payload.partial_errors)
                     : [];
                 if (failedCategories.length) {
@@ -11963,7 +11963,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const confirmInput = document.getElementById('privacyDeleteConfirmInput');
             const statusEl = document.getElementById('privacyDeleteStatus');
             const deleteBtn = document.getElementById('privacyDeleteAccountBtn');
-            if (!confirmInput || confirmInput.value.trim() !== 'DELETE') return;
+            if (confirmInput?.value.trim() !== 'DELETE') return;
             if (privacyDeleteInFlight) return;
 
             privacyDeleteInFlight = true;
@@ -11986,17 +11986,17 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 // over (see backend/routes_privacy.py::delete_account). Do
                 // NOT sign the user out or redirect on anything less than
                 // that, and never close the modal before showing why.
-                if (!response.ok || !body || body.ok !== true) {
-                    const failedTables = body && body.table_errors ? Object.keys(body.table_errors) : [];
+                if (!response.ok || body?.ok !== true) {
+                    const failedTables = body?.table_errors ? Object.keys(body.table_errors) : [];
                     let detail = '';
                     if (failedTables.length) {
                         detail = isHebrewMode()
                             ? ` (קטגוריות שנכשלו: ${failedTables.join(', ')})`
                             : ` (failed categories: ${failedTables.join(', ')})`;
-                    } else if (body && body.clerk_error) {
+                    } else if (body?.clerk_error) {
                         detail = isHebrewMode() ? ' (מחיקת ההתחברות נכשלה)' : ' (sign-in deletion failed)';
                     }
-                    throw new Error((body && body.error) || `Delete incomplete (${response.status})${detail}`);
+                    throw new Error(body?.error || `Delete incomplete (${response.status})${detail}`);
                 }
 
                 // Deletion is fully confirmed at this point -- close the
@@ -12020,7 +12020,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     : `Deletion did not fully complete: ${err.message}. Some data may still remain -- please try again or contact us by email.`);
             } finally {
                 privacyDeleteInFlight = false;
-                if (deleteBtn) deleteBtn.disabled = !confirmInput || confirmInput.value.trim() !== 'DELETE';
+                if (deleteBtn) deleteBtn.disabled = confirmInput?.value.trim() !== 'DELETE';
                 if (confirmInput) confirmInput.disabled = false;
             }
         }
@@ -12123,7 +12123,9 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 return;
             }
             // The views opened below swap synchronously, inside this call.
-            _viewNavDirection = isInitial ? null : (direction === 'back' ? 'back' : 'forward');
+            _viewNavDirection = 'forward';
+            if (isInitial) _viewNavDirection = null;
+            else if (direction === 'back') _viewNavDirection = 'back';
             _viewScrollSaveOff = true;
             try {
                 hydrateRouteViews(route, { isInitial, restoreScroll: saved?.viewScroll || null, left });
