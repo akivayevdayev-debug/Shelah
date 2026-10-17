@@ -44,7 +44,7 @@ Every value below already has a working default in code. Set one only to overrid
 | `SENTRY_DSN` / `SENTRY_DSN_BROWSER` | — | Sentry error tracking (server / browser) — true no-op until set |
 | `ERROR_LOG_WEBHOOK_URL` | — | Also POST backend error payloads to this URL |
 | `CRON_SECRET` | — | Shared secret Vercel Cron sends as a Bearer token to `/api/devtools/budget-check` and `/api/devtools/retention-enforce` (see `vercel.json`); only needed on Vercel |
-| `ADMIN_USER_IDS` | — (nobody) | Comma-separated Clerk user ids allowed to read `/api/devtools/feedback-digest`. Fails closed: unset means 403 for every account |
+| `ADMIN_USER_IDS` | — (nobody) | Comma-separated Clerk user ids allowed to call the operator-only routes: `/api/devtools/feedback-digest` (the data behind the `/admin/feedback` page) and the other `/api/devtools/*` and `/api/stack/health` diagnostics. Fails closed: unset means 403 for every account |
 | `DEPLOY_HASH` | unset (`static/service-worker.js`'s own `CACHE_VERSION`) | Service-worker cache version base. Every Vercel deploy already gets fresh caches (the commit is appended); set this only to force a change between deploys of the same commit |
 | `VIEW_TRANSITIONS` | `false` | `true` animates moves between views (home, a text, a prayer, a community, history) with the View Transitions API, for every visitor; browsers without the API just swap. One browser can opt in or out alone with `localStorage.setItem("shelah.viewTransitions", "on" \| "off")` |
 | `TEXT_SSR_ENABLED` | `1` | `0`, `false`, `no` or `off` turns the server-side render of text pages (`backend/text_ssr.py`) off without a deploy; the page then loads its text in the browser as before |
