@@ -3,23 +3,23 @@
   "esbuild": "0.28.2",
   "css": {
     "sources": {
-      "css/tokens.css": "sha256:ba437b73808b53ccae87de525e70c9979fbad0baf6d631f811afd6e45566ecc5",
-      "style.css": "sha256:d64880b31974347738c8cc2f8a635b752b65da306eff5612b533f0f55bba6097",
-      "css/typography.css": "sha256:a67539e5abf8bfd0ea1cc1395793b6836281221c410607cbc3e463b893f039fa",
-      "css/reader.css": "sha256:13a80ac4e11032e5df6365bb9433bd6ee92f8547fff47caf051f6f7299b09277",
-      "css/sidebar.css": "sha256:46075f333d39a3f136fc2a912dcdbe56f008e71143c86a51ff14d5e21b7ec222",
+      "css/tokens.css": "sha256:b5e3c76aa76e9d4a52ee299b1939b81807579124d1a5a3d6db9698b52d66484e",
+      "style.css": "sha256:9fc500cb5c866ff54d6cc04dd703ad117a778bf69737296b99baa43081b80040",
+      "css/typography.css": "sha256:8cc5129450f6f17c2825dc900a5ab184de1b6900bcb9175d4c92ee2eadbdb772",
+      "css/reader.css": "sha256:1ee8a0bf2b655ba88bb70293b40fda0b35dfebdd35cf7c2bf40f1366a98037f3",
+      "css/sidebar.css": "sha256:02cf6c6092ebe6718c136d98e045b5a919d2987cf6a0baa99b15929d73251027",
       "css/halacha.css": "sha256:d56991aac19afaa3175434312588862a5a63b32c46d7d07d2f70e23fd9e049bf",
       "css/prayer.css": "sha256:70cf28909030c0816176889df96729aca7618f9088de74d324f9c9a38812c78d",
       "css/siddur.css": "sha256:a0f9ff9421234014d4b6db03e9728e67a1ff2a4a26d1b523143f2e10d6852804",
-      "css/ai.css": "sha256:87bb5dd5049839d21169c8f644ba2783201acb8f718462448fe623a7ea326f3a",
-      "css/conversation.css": "sha256:01b9acdd7b53238e4beb8ce4ed677643f2db77f55165fc1c25057bc44e653577",
+      "css/ai.css": "sha256:0b2c449f95a9873ec0ade7f0caaf49b0c8e89276ee8bdc6643a0e590a4387344",
+      "css/conversation.css": "sha256:2d0a50d41c97ed0068fd32302cba446bad4ae1e8621b2ce63bab176f2ec3bbdc",
       "css/history.css": "sha256:ff1556ed62eceadb953ed9a9b4325d70410a97e1bceff2271a07b5ebe213218c",
-      "css/calendar.css": "sha256:54b0b11cb9f83a6ee6c4f295183dec89f2f2865981008747aefdcb558901335c",
-      "css/calendar-detail.css": "sha256:e7d8064e774a2a4a52daa86599522a424e2d21263e95b896514b34dc5fe46dc4",
+      "css/calendar.css": "sha256:29838a41c0e43cfebe24d7ce5a98de90fdda6ae0d04d7644c6e44b307222aca3",
+      "css/calendar-detail.css": "sha256:fd01fbc7e34640a170a88b44074673e7a28dd2af6b3f28bc57d3c4ef98dbca64",
       "css/loading.css": "sha256:10eaad855917d62df7a5d396c0bbb8a487d529d846bc3233637e7eb42e5a3211",
       "css/tailwind.css": "sha256:f72a1c23017da8c8925e8004c0d6b85d73ee8ee7b23f76f812a891f14ea63613"
     },
-    "sourcesHash": "4e239e593bec706b29397f9c004f152360ba0861e7c1069cfc5dc9928d152903",
+    "sourcesHash": "7b87ab2840d428e78ccd0a50d08e8a65da10a932d77feba4845713cf2aca6f9b",
     "bundle": "css/app.css",
     "critical": {
       "home": {
@@ -56,6 +56,9 @@
       "actions.js": {
         "source": "sha256:6f350ca91dd53161bff6df3a9ddb5e92e3a2aac676064272dafc1104373d46de"
       },
+      "admin-feedback.js": {
+        "source": "sha256:b9ae9a426fe4dda0b0f9951c5e1b056b328571d48cdea365531cb8900aae5894"
+      },
       "clerk-appearance.js": {
         "source": "sha256:f1c54b0760a5e4d05486d65a5802453bbdfcd6e9026ac25c640e69d17179b25d"
       },
@@ -72,7 +75,7 @@
         "source": "sha256:eb2bad4c77b42cee50161aed9d4b0832ab6fb83a3ee2d65a353298f9751d60f7"
       },
       "shell.js": {
-        "source": "sha256:140e83ec49884db733a7e46b0647e5a1604dda56063953964a64e739c70aae87"
+        "source": "sha256:dee0e0a614830de11ada82993130a7a02bfaa0d1a8848a6e63fd824f5c45b1c5"
       },
       "topbar_shared.js": {
         "source": "sha256:65384daf7b59b10d4f48c0ac6fc81df153f099f6c6d9d716b8b544dd3c82fd8c"
@@ -97,9 +100,9 @@
         "conversation-api.js": "sha256:5952fd3e37a3004dbfdb4e5a15e81158fb32da3bd4985cf03b93f899d7844eed",
         "conversation-entry.js": "sha256:25f9b62da24bcf0965429fa8162bc3b9dfa348b17ce0fdfa0d898ef945d24677",
         "conversation-share.js": "sha256:558e3e593caba8f29042c936d285ff8eb1564712f1d44255b92d651f3b0faa08",
-        "conversation-store.js": "sha256:9a33c4fc84a467e6d98f9c8c5c1f6407f80693cd73ab85390f8ed8fdd299aa8f",
-        "conversation-ui-helpers.js": "sha256:7e59db517e0a405355bfbaaa3c78bcb2714ec80e11a4803c209448068722f676",
-        "conversation-ui.js": "sha256:860995c098578efbf0544da2f6a5990f670b9e7da1f53deb926e80006a824835",
+        "conversation-store.js": "sha256:99118f241c8d73bb3b0c61a22e65556c18753d46d3335e6c3c52fcf85fd70f42",
+        "conversation-ui-helpers.js": "sha256:23f6453d64475ad29900d2c50921de9550c4ec83414d9b7a487b2d1cbf0f490e",
+        "conversation-ui.js": "sha256:93f17448ec2d57ff8bfc4e092d4043ba31304eb4ce0f5830c6d6df9ca0bbb943",
         "conversation-voice.js": "sha256:080daab3f5738ff4e47ffeca6a792c37868594bc03b902885b881b5ba6e89b05",
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
         "main.js": "sha256:f2f8344c40e23c295f9b9211f253a6e8aae7b45356af70a8bfc6445a7b48ef91",
@@ -115,6 +118,7 @@
       },
       "outputs": {
         "js/actions.js": "74c685cdac5b",
+        "js/admin-feedback.js": "3102e57b29ef",
         "js/calendar-detail.js": "16d6bb96fd33",
         "js/chunks/chunk-GI7XZAIM.js": "7f7dabe88234",
         "js/chunks/chunk-YO7W2DAE.js": "e561d70f6820",
@@ -122,10 +126,10 @@
         "js/community-labels.js": "87dfbcba156b",
         "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/load-region.js": "2833ed602bea",
-        "js/main.js": "ffec558b64bb",
+        "js/main.js": "ccc91c55a5cf",
         "js/motion.js": "9714dc88530d",
         "js/sentry-init.js": "5f32eede1174",
-        "js/shell.js": "37117ec75670",
+        "js/shell.js": "067240611b99",
         "js/topbar_shared.js": "51f0e772633b"
       },
       "unreached": []
