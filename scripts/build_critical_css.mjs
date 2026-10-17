@@ -177,12 +177,24 @@ export function pageKeepRules() {
         all.filter((el) => el === document.documentElement || el.getClientRects().length > 0 || getComputedStyle(el).display === "contents"),
     );
     const rendered = all.filter((el) => drawn.has(el) || (el.parentElement && drawn.has(el.parentElement) && getComputedStyle(el).display === "none"));
-    const PSEUDO_EL =
-        /::?(before|after|first-line|first-letter|marker|placeholder|selection|backdrop|-webkit-[a-z-]+(\([^)]*\))?|-moz-[a-z-]+|-ms-[a-z-]+|file-selector-button|cue|part\([^)]*\)|slotted\([^)]*\)|view-transition[a-z-]*(\([^)]*\))?|scroll-marker[a-z-]*|details-content|target-text|picker[a-z-]*(\([^)]*\))?)/g;
+    // (Both patterns are joined from lists: one literal this long is more
+    // alternation than the complexity limit for a pattern allows. They stay in this
+    // function, which is serialised into the page.)
+    const ARGS = String.raw`(\([^)]*\))?`;
+    const PSEUDO_ELEMENTS = [
+        "before", "after", "first-line", "first-letter", "marker", "placeholder", "selection", "backdrop",
+        `-webkit-[a-z-]+${ARGS}`, "-moz-[a-z-]+", "-ms-[a-z-]+", "file-selector-button", "cue",
+        String.raw`part\([^)]*\)`, String.raw`slotted\([^)]*\)`, `view-transition[a-z-]*${ARGS}`,
+        "scroll-marker[a-z-]*", "details-content", "target-text", `picker[a-z-]*${ARGS}`,
+    ];
+    const PSEUDO_EL = new RegExp(`::?(${PSEUDO_ELEMENTS.join("|")})`, "g");
     // States a visitor cannot be in at first paint (a hover or a focus ring can
     // wait for the bundle): such a selector is not critical.
-    const STATE =
-        /:(hover|active|focus|focus-visible|focus-within|visited|target|checked|indeterminate|autofill|open|popover-open|modal|fullscreen|user-invalid|user-valid|-webkit-[a-z-]+)(?![\w-])/;
+    const STATES = [
+        "hover", "active", "focus", "focus-visible", "focus-within", "visited", "target", "checked", "indeterminate",
+        "autofill", "open", "popover-open", "modal", "fullscreen", "user-invalid", "user-valid", "-webkit-[a-z-]+",
+    ];
+    const STATE = new RegExp(String.raw`:(${STATES.join("|")})(?![\w-])`);
     const splitTop = (sel) => {
         const out = [];
         let depth = 0;
