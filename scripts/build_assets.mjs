@@ -32,7 +32,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// SHELAH_ASSETS_ROOT builds another tree (tests_js/build_assets.test.js builds a tiny one).
+const ROOT = process.env.SHELAH_ASSETS_ROOT
+    ? path.resolve(process.env.SHELAH_ASSETS_ROOT)
+    : path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const STATIC = path.join(ROOT, "static");
 const MIN = path.join(STATIC, "min");
 const JS_NAME = /^[\w.-]+\.js$/;
