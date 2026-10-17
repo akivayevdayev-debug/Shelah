@@ -36,22 +36,22 @@
 /* Standard body text */
 .type-body {
     font-family: var(--font-sans, 'Inter', sans-serif);
-    font-size: 0.9375rem;
+    font-size: var(--text-body-sm);
     /* 15px */
     line-height: 1.7;
 }
 
 /* Secondary / caption text */
 .type-small {
-    font-size: 0.8125rem;
+    font-size: var(--text-meta);
     /* 13px */
     line-height: 1.55;
 }
 
 /* Label / badge / tag text */
 .type-micro {
-    font-size: 0.6875rem;
-    /* 11px */
+    font-size: var(--text-xs);
+    /* 11-12px */
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -140,7 +140,7 @@
 /* Warm focus ring — replaces default blue across the app */
 .focus-warm:focus-visible,
 :focus-visible {
-    outline: 2px solid rgba(176, 154, 116, 0.65);
+    outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
 }
 

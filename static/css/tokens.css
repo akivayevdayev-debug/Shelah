@@ -173,6 +173,8 @@
 
     /* ── Fluid typography (clamp: min, preferred, max) ──────────────── */
     --text-xs:   clamp(0.7rem,  0.65rem + 0.25vw, 0.75rem);
+    --text-meta:      0.8125rem;   /* 13px: captions, secondary rows (fixed, not fluid) */
+    --text-body-sm:   0.9375rem;   /* 15px: dense body in panels and detail rows (fixed) */
     --text-sm:   clamp(0.8rem,  0.78rem + 0.25vw, 0.875rem);
     --text-base: clamp(0.9rem,  0.88rem + 0.3vw,  1rem);
     --text-md:   clamp(1rem,    0.96rem + 0.35vw, 1.125rem);

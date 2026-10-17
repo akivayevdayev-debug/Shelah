@@ -139,7 +139,7 @@
     gap: var(--sp-2);
     min-width: 0;
     margin-inline-end: auto;
-    font-size: 0.8125rem; /* 13px */
+    font-size: var(--text-meta); /* 13px */
     font-weight: 600;
     letter-spacing: 0.01em;
     color: var(--ink-secondary);
@@ -197,7 +197,7 @@
     gap: var(--sp-1);
     padding-inline: var(--sp-2);
     color: var(--accent-primary);
-    font-size: 0.9375rem;
+    font-size: var(--text-body-sm);
     font-weight: 500;
     transition: opacity 150ms ease-out;
 }
@@ -251,7 +251,7 @@
 /* The description: prose straight under the title, not a row in the times group. */
 .cal-detail__about {
     margin: var(--sp-3) 0 0;
-    font-size: 0.9375rem; /* 15px, as the rows */
+    font-size: var(--text-body-sm); /* 15px, as the rows */
     line-height: 1.55;
     color: var(--ink-primary);
     overflow-wrap: anywhere;
@@ -272,7 +272,7 @@
     grid-template-columns: 5.5rem minmax(0, 1fr);
     gap: var(--sp-3);
     padding: var(--sp-3);
-    font-size: 0.9375rem; /* 15px */
+    font-size: var(--text-body-sm); /* 15px */
     line-height: 1.5;
     /* A row whose words were just swapped for real clock times fades in (opacity only). */
     transition: opacity var(--motion-dur-fast) ease-out;
@@ -280,14 +280,14 @@
 .cal-detail__row + .cal-detail__row { border-top: 1px solid var(--glass-hairline); }
 .cal-detail__row dt {
     margin: 0;
-    font-size: 0.8125rem;
+    font-size: var(--text-meta);
     font-weight: 500;
     line-height: 1.85; /* optical alignment with the 15px value's first line */
     color: var(--ink-secondary);
 }
 .cal-detail__row dd { margin: 0; color: var(--ink-primary); overflow-wrap: anywhere; }
 .cal-detail__nowrap { white-space: nowrap; }
-.cal-detail__row dd small { display: block; font-size: 0.8125rem; color: var(--ink-secondary); }
+.cal-detail__row dd small { display: block; font-size: var(--text-meta); color: var(--ink-secondary); }
 /* "Times for <city>": a footnote row saying which location the clock times belong to. */
 .cal-detail__row--where { grid-template-columns: minmax(0, 1fr); padding-block: var(--sp-2); }
 .cal-detail__row.is-fresh { opacity: 0; }
@@ -338,7 +338,7 @@
     background: transparent;
     color: var(--ink-primary);
     font: inherit;
-    font-size: 0.9375rem;
+    font-size: var(--text-body-sm);
     line-height: 1.4;
     text-align: start;
     cursor: pointer;
@@ -352,7 +352,7 @@
 .cal-detail__item svg { flex: none; color: var(--ink-secondary); }
 [dir="rtl"] .cal-detail__item svg,
 [dir="rtl"] .cal-detail__ref svg { transform: scaleX(-1); }
-.cal-detail__empty { margin: 0; padding: var(--sp-3); font-size: 0.9375rem; color: var(--ink-secondary); }
+.cal-detail__empty { margin: 0; padding: var(--sp-3); font-size: var(--text-body-sm); color: var(--ink-secondary); }
 
 /* Footer: learn-more link + required Hebcal attribution (CC BY 4.0). */
 .cal-detail__foot {
@@ -369,7 +369,7 @@
     gap: var(--sp-1);
     min-height: var(--hit-min);
     color: var(--accent-primary);
-    font-size: 0.9375rem;
+    font-size: var(--text-body-sm);
     font-weight: 500;
     text-decoration: none;
     transition: opacity 150ms ease-out;

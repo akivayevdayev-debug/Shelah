@@ -34,7 +34,7 @@
 
 #reader a:focus-visible,
 #reader button:focus-visible {
-    outline: 2px solid rgba(176, 154, 116, 0.65);
+    outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
     border-radius: 3px;
 }
@@ -52,7 +52,7 @@
     background: var(--surface-pill);
     border: 1px solid var(--surface-border);
     border-radius: var(--radius-sm, 0.35rem);
-    font-size: 0.68rem;
+    font-size: var(--text-xs);
     font-weight: 600;
     font-family: var(--font-sans, sans-serif);
     color: var(--text-muted);
@@ -206,7 +206,7 @@ html.rtl #readerSubtitle {
 }
 
 .reader-source-title-ref {
-    font-size: 0.66rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     letter-spacing: 0.09em;
     text-transform: uppercase;
@@ -230,7 +230,7 @@ html.rtl .reader-source-title-ref {
     border-radius: 0.3rem;
     background: color-mix(in srgb, var(--accent-deep-blue) 12%, transparent);
     color: var(--accent-deep-blue);
-    font-size: 0.68rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     letter-spacing: 0.02em;
     text-transform: none;
@@ -243,7 +243,7 @@ html.rtl .reader-source-title-ref {
     border-radius: 0.3rem;
     background: color-mix(in srgb, var(--gold) 26%, var(--surface-pill));
     color: var(--text-main);
-    font-size: 0.66rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
