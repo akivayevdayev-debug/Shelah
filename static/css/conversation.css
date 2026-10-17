@@ -40,7 +40,7 @@
        across it (motion.js "drawer" travels them off the bottom edge). */
     --conv-z-bar: 95;
     /* Strong ease-out for entrances and presses. */
-    --conv-ease: cubic-bezier(0.23, 1, 0.32, 1);
+    --conv-ease: var(--motion-ease-decel);
     /* Text-safe danger: --accent-red clears WCAG AA 4.5:1 on the panel in
        both themes, so it is used as is. */
     --conv-label: var(--ink-secondary);
@@ -1190,14 +1190,28 @@ body.conv-modal-open {
 /* An answer replacing its skeleton reveals block by block. */
 .conv-turn--reveal .conv-answer > *,
 .conv-turn--reveal :is(.conv-customs, .conv-cites__title, .conv-cites, .conv-turn__actions) {
-    animation: conv-rise 360ms var(--conv-ease) both;
+    animation: conv-rise var(--motion-dur-base) var(--conv-ease) both;
 }
-.conv-turn--reveal .conv-answer > :nth-child(2) { animation-delay: 40ms; }
-.conv-turn--reveal .conv-answer > :nth-child(3) { animation-delay: 80ms; }
-.conv-turn--reveal .conv-answer > :nth-child(4) { animation-delay: 120ms; }
+.conv-turn--reveal .conv-answer > :nth-child(2) { animation-delay: var(--motion-stagger); }
+.conv-turn--reveal .conv-answer > :nth-child(3) { animation-delay: calc(var(--motion-stagger) * 2); }
+.conv-turn--reveal .conv-answer > :nth-child(4) { animation-delay: calc(var(--motion-stagger) * 3); }
 .conv-turn--reveal .conv-answer > :nth-child(n + 5),
-.conv-turn--reveal :is(.conv-customs, .conv-cites__title, .conv-cites) { animation-delay: 160ms; }
-.conv-turn--reveal .conv-turn__actions { animation-delay: 220ms; }
+.conv-turn--reveal :is(.conv-customs, .conv-cites__title, .conv-cites) { animation-delay: calc(var(--motion-stagger) * 4); }
+.conv-turn--reveal .conv-turn__actions { animation-delay: calc(var(--motion-stagger) * 5); }
+
+/* The skeleton the answer replaces fades out over the answer's first beat (a
+   copy laid over the top of the turn), so the thread never goes blank. */
+.conv-turn--ghosting { position: relative; }
+.conv-ghost {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    pointer-events: none;
+    animation: shelah-overlay-in var(--motion-dur-fast) linear reverse both;
+}
 
 /* Sources: a heading and one flat list under the answer, the one place the
    answer's sources are written out. Each row is a number, the source (type +
@@ -1429,7 +1443,7 @@ body.conv-modal-open {
     outline: none;
     transform-origin: var(--citepop-origin, 50% 0);
 }
-.conv-citepop--in { animation: conv-citepop-in 160ms var(--conv-ease) both; }
+.conv-citepop--in { animation: conv-citepop-in var(--motion-dur-fast) var(--conv-ease) both; }
 .conv-citepop__head {
     display: flex;
     align-items: center;
@@ -1802,7 +1816,7 @@ body.conv-modal-open {
     border: 1px solid var(--ctrl-border);
     border-radius: var(--radius-full);
     background: var(--surface-1);
-    animation: conv-rise 280ms var(--conv-ease) both;
+    animation: conv-rise var(--motion-dur-base) var(--conv-ease) both;
 }
 [dir="rtl"] .conv-signin-follow { padding: var(--sp-1) var(--sp-4) var(--sp-1) var(--sp-1); }
 .conv-signin-follow.hidden { display: none; }
@@ -1846,7 +1860,7 @@ body.conv-modal-open {
     box-shadow: var(--glass-shadow);
 }
 .conv-capdialog::backdrop { background: rgba(15, 23, 42, 0.5); }
-.conv-capdialog[open] { animation: conv-rise 220ms var(--conv-ease) both; }
+.conv-capdialog[open] { animation: conv-rise var(--motion-dur-base) var(--conv-ease) both; }
 .conv-capdialog__card {
     display: grid;
     gap: var(--sp-3);
@@ -1899,9 +1913,6 @@ body.conv-modal-open {
 @media (max-width: 480px) {
     .conv-capdialog__actions { flex-direction: column; }
     .conv-capdialog__btn { width: 100%; }
-}
-@media (prefers-reduced-motion: reduce) {
-    .conv-capdialog[open] { animation: none; }
 }
 
 /* A search-bar answer isn't a conversation yet: no minhag lock to show. */
@@ -2226,14 +2237,22 @@ body.theme-dark .topbar-ask-btn {
     }
     .ai-attention::after,
     .conv-notice,
-    .conv-citepop,
     .conv-cite::before,
     .conv-jump {
         animation: none !important;
     }
+    /* What arrives on screen still arrives, as a short fade with no travel and
+       no stagger: reduced motion means gentler, not none. */
+    .conv-turn--enter,
+    .conv-turn--reveal .conv-answer > *,
+    .conv-turn--reveal :is(.conv-customs, .conv-cites__title, .conv-cites, .conv-turn__actions),
+    .conv-citepop--in,
     .conv-signin-follow,
+    .conv-capdialog[open] {
+        animation: shelah-overlay-in 120ms linear both !important;
+        animation-delay: 0ms !important;
+    }
     .conv-mic::before,
-    .conv-turn--reveal *,
     .conv-live-dot,
     .conv-status__now,
     .conv-status__now::before,
@@ -2269,7 +2288,7 @@ body.theme-dark .topbar-ask-btn {
 
 /* ── Additions: turn entrance, draft chip, inline rename ─────────── */
 .conv-turn--enter {
-    animation: conv-rise 320ms var(--conv-ease) both;
+    animation: conv-rise var(--motion-dur-base) var(--conv-ease) both;
 }
 .conv-title-input {
     width: 100%;
@@ -2280,7 +2299,4 @@ body.theme-dark .topbar-ask-btn {
     background: var(--surface-1);
     color: var(--ink-heading);
     font: inherit;
-}
-@media (prefers-reduced-motion: reduce) {
-    .conv-turn--enter { animation: none; }
 }

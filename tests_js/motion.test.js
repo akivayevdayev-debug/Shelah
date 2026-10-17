@@ -593,6 +593,29 @@ test('dismiss() animates the mover to the exit offset and finishes hidden with o
     assert.equal(hiddenCalled, true);
 });
 
+test('present() under reduced motion is a short opacity fade with no travel', async () => {
+    const { mod, animate } = await loadMotion({ reduced: true });
+    const el = makeEl(['hidden']);
+    await mod.present(el, { preset: 'popover' });
+    assert.equal(el.classList.contains('hidden'), false);
+    assert.equal(animate.calls.length, 1, 'no mover: nothing translates or scales');
+    assert.deepEqual(animate.calls[0].keyframes, { opacity: [0, 1] });
+    assert.equal(animate.calls[0].transition.duration, 0.12);
+    assert.equal('opacity' in el.style, false, 'the entrance styles are cleared once it has faded in');
+});
+
+test('dismiss() under reduced motion fades out, then hides and runs onHidden', async () => {
+    const { mod, animate } = await loadMotion({ reduced: true });
+    const el = makeEl();
+    let hiddenCalled = false;
+    await mod.dismiss(el, { preset: 'sheet', onHidden: () => { hiddenCalled = true; } });
+    assert.equal(animate.calls.length, 1, 'the sheet does not slide');
+    assert.deepEqual(animate.calls[0].keyframes, { opacity: 0 });
+    assert.equal(animate.calls[0].transition.duration, 0.12);
+    assert.equal(el.classList.contains('hidden'), true);
+    assert.equal(hiddenCalled, true);
+});
+
 test('a present() started after dismiss() supersedes it: dismiss() must not finish hiding once present() has moved on', async () => {
     const { mod } = await loadMotion();
     const el = makeEl();
@@ -683,11 +706,61 @@ test('the module attaches every public helper to window.ShelahMotion for legacy 
     const expected = [
         'present', 'dismiss', 'slideTo', 'animateIn', 'animateOut', 'staggerIn',
         'springMove', 'fadeOpacity', 'crossFade', 'createPresence', 'slideIn',
-        'slideOut', 'isMotionReduced',
+        'slideOut', 'isMotionReduced', 'settleIn',
     ];
     for (const name of expected) {
         assert.equal(typeof window.ShelahMotion[name], 'function', `window.ShelahMotion.${name} must be a function`);
     }
+});
+
+// ── settleIn (the Ask panel's status line) ───────────────────────────────
+
+function makeAnimatable() {
+    const runs = [];
+    return {
+        runs,
+        animate(frames, options) {
+            const run = { frames, options, cancelled: false, cancel() { this.cancelled = true; } };
+            runs.push(run);
+            return run;
+        },
+    };
+}
+
+test('settleIn does nothing for a missing element or one that cannot animate', async () => {
+    const { mod } = await loadMotion();
+    assert.equal(mod.settleIn(null), null);
+    assert.equal(mod.settleIn({}), null);
+});
+
+test('settleIn fades in while rising a few pixels, with the decel curve', async () => {
+    const { mod } = await loadMotion();
+    const el = makeAnimatable();
+    const run = mod.settleIn(el);
+    assert.equal(run, el.runs[0]);
+    assert.deepEqual(run.frames, [
+        { opacity: 0, transform: 'translateY(3px)' },
+        { opacity: 1, transform: 'translateY(0)' },
+    ]);
+    assert.equal(run.options.duration, 150);
+    assert.equal(run.options.easing, 'cubic-bezier(0.22, 1, 0.36, 1)');
+});
+
+test('settleIn under reduced motion keeps a shorter opacity fade and drops the rise', async () => {
+    const { mod } = await loadMotion({ reduced: true });
+    const el = makeAnimatable();
+    const run = mod.settleIn(el, { y: 8, duration: 0.4 });
+    assert.deepEqual(run.frames, [{ opacity: 0 }, { opacity: 1 }]);
+    assert.equal(run.options.duration, 120);
+});
+
+test('settleIn restarts from the current state instead of stacking', async () => {
+    const { mod } = await loadMotion();
+    const el = makeAnimatable();
+    const first = mod.settleIn(el);
+    const second = mod.settleIn(el);
+    assert.equal(first.cancelled, true);
+    assert.equal(second.cancelled, false);
 });
 
 // ── transitionView (audit M-3, behind the VIEW_TRANSITIONS flag) ─────────

@@ -399,6 +399,29 @@ function _presenceState(el) {
 // macrotask before clearing so that write cannot overwrite the cleanup.
 const _settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+// Reduced motion keeps what helps the reader follow (something appeared,
+// something left) and drops the travel: an opacity-only fade, kept short.
+const _REDUCED_FADE_S = 0.12;
+const _EASE_DECEL = 'cubic-bezier(0.22, 1, 0.36, 1)'; // tokens.css --motion-ease-decel
+
+// present()/dismiss() under prefers-reduced-motion. `from` is null for a bare
+// target (an exit fades from wherever it is). Resolves true while this call is
+// still the latest one, so the caller knows it may finish the hand-over.
+async function _fadeReduced(el, from, to, state, token) {
+    if (from !== null) el.style.opacity = String(from);
+    const fade = _motionAnimate()(
+        el,
+        { opacity: from === null ? to : [from, to] },
+        { duration: _REDUCED_FADE_S, ease: [0.25, 0, 0.3, 1] },
+    );
+    state.controls = [fade];
+    await _withCeiling(fade, _REDUCED_FADE_S);
+    if (state.token !== token) return false;
+    fade.stop?.();
+    await _settle();
+    return state.token === token;
+}
+
 // An animation that never reports finished (a backgrounded tab can leave it
 // `running` indefinitely) must not leave an element stuck `is-hiding` and
 // never `hidden`, so every presence await is raced against a ceiling a little
@@ -453,8 +476,12 @@ export async function present(el, { preset = 'popover', card = null, replay = fa
 
     const animate = _motionAnimate();
     const p = _PRESENCE[preset] ?? _PRESENCE.popover;
-    if (!animate || isMotionReduced()) {
+    if (!animate) {
         _clearMotionStyles(el, card);
+        return;
+    }
+    if (isMotionReduced()) {
+        if (await _fadeReduced(el, startOpacity, 1, state, token)) _clearMotionStyles(el, card);
         return;
     }
 
@@ -503,8 +530,13 @@ export async function dismiss(el, { preset = 'popover', card = null, onHidden } 
 
     const animate = _motionAnimate();
     const p = _PRESENCE[preset] ?? _PRESENCE.popover;
-    if (!animate || isMotionReduced()) {
+    if (!animate) {
         finish();
+        return;
+    }
+    if (isMotionReduced()) {
+        el.classList.add('is-hiding');
+        if (await _fadeReduced(el, null, 0, state, token)) finish();
         return;
     }
 
@@ -637,6 +669,27 @@ export function transitionView(mutateSync, { direction = 'forward' } = {}) {
     return vt;
 }
 
+/**
+ * A short settle for text that has just changed under the reader's eyes (the
+ * Ask panel's status line): it fades in while rising `y` px. Native WAAPI, so
+ * it needs no motion library, and a repeat call restarts from the current
+ * state instead of stacking. Reduced motion keeps the fade and drops the rise.
+ */
+export function settleIn(el, { y = 3, duration = 0.15 } = {}) {
+    if (!el || typeof el.animate !== 'function') return null;
+    const reduced = isMotionReduced();
+    const frames = reduced
+        ? [{ opacity: 0 }, { opacity: 1 }]
+        : [{ opacity: 0, transform: `translateY(${y}px)` }, { opacity: 1, transform: 'translateY(0)' }];
+    el._settleIn?.cancel();
+    const run = el.animate(frames, {
+        duration: Math.round((reduced ? Math.min(duration, _REDUCED_FADE_S) : duration) * 1000),
+        easing: _EASE_DECEL,
+    });
+    el._settleIn = run;
+    return run;
+}
+
 // Expose on window so legacy inline-script code can call without an import
 window.ShelahMotion = {
     transitionView,
@@ -657,5 +710,6 @@ window.ShelahMotion = {
     createPresence,
     slideIn,
     slideOut,
+    settleIn,
     isMotionReduced,
 };

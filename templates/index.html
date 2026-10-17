@@ -369,7 +369,7 @@
     <!-- Mobile drawer backdrop — starts below the topbar -->
     <div id="mobileDrawerBackdrop" aria-hidden="true"
         class="hidden fixed left-0 right-0 bottom-0 bg-slate-900/45 backdrop-blur-[1px] z-85 lg:hidden"
-        style="top: var(--topbar-height, 3.4rem); transition: opacity 0.25s ease;">
+        style="top: var(--topbar-height, 3.4rem); transition: opacity var(--motion-dur-base) var(--motion-ease-out);">
     </div>
 
 
@@ -2493,7 +2493,7 @@
             height: var(--sp-8);
             border-radius: var(--radius-full);
             background: var(--surface-pill);
-            transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1), transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+            transition: background-color var(--motion-dur-fast) var(--motion-ease-decel), transform var(--motion-dur-fast) var(--motion-ease-decel);
         }
         .privacy-close svg { position: relative; z-index: 1; }
         .privacy-close:hover::before { background: var(--ctrl-bg-hover); }
@@ -2531,11 +2531,11 @@
             font-weight: 600;
             white-space: nowrap;
             cursor: pointer;
-            transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1),
-                border-color 150ms cubic-bezier(0.23, 1, 0.32, 1),
-                color 150ms cubic-bezier(0.23, 1, 0.32, 1),
-                opacity 150ms cubic-bezier(0.23, 1, 0.32, 1),
-                transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+            transition: background-color var(--motion-dur-fast) var(--motion-ease-decel),
+                border-color var(--motion-dur-fast) var(--motion-ease-decel),
+                color var(--motion-dur-fast) var(--motion-ease-decel),
+                opacity var(--motion-dur-fast) var(--motion-ease-decel),
+                transform var(--motion-dur-fast) var(--motion-ease-decel);
         }
         .privacy-btn:not(:disabled):active { transform: scale(0.97); }
         .privacy-btn:disabled { cursor: not-allowed; }
@@ -2587,7 +2587,7 @@
             font-size: 0.9375rem;
             letter-spacing: 0.04em;
             /* The focus ring (box-shadow) lands at once: no repaint per frame. */
-            transition: border-color 150ms cubic-bezier(0.23, 1, 0.32, 1);
+            transition: border-color var(--motion-dur-fast) var(--motion-ease-decel);
         }
         .privacy-input::placeholder { color: var(--ink-secondary); opacity: 0.7; }
         .privacy-input:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 22%, transparent); }
@@ -2617,7 +2617,7 @@
             font-size: 0.8125rem;
             color: var(--ink-secondary);
             text-decoration: none;
-            transition: color 150ms cubic-bezier(0.23, 1, 0.32, 1);
+            transition: color var(--motion-dur-fast) var(--motion-ease-decel);
         }
         .privacy-link:hover { color: var(--ink-heading); text-decoration: underline; text-underline-offset: 3px; }
 

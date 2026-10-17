@@ -332,15 +332,15 @@
 /* ═══════════════════════════════════════════════════════ */
 
 .animate-fade-up {
-    animation: shelah-fade-up 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) both;
 }
 
 .animate-fade-in {
-    animation: shelah-fade-in 0.28s ease both;
+    animation: shelah-fade-in var(--motion-dur-base) var(--motion-ease-out) both;
 }
 
 .animate-scale-in {
-    animation: shelah-scale-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: shelah-scale-in var(--motion-dur-base) var(--motion-ease-decel) both;
 }
 
 /* Modal entrance/exit (textsMenu, chapterGrid, calendar,
@@ -353,7 +353,7 @@
 }
 
 #readerTopBar:not(.hidden) {
-    animation: shelah-fade-up 0.2s ease both;
+    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) both;
 }
 
 /* Search suggestions: entrance/exit is ShelahMotion.present()/dismiss()
@@ -361,7 +361,7 @@
 
 /* Source dual template in article */
 #readerSources>div {
-    animation: shelah-fade-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) both;
 }
 
 #readerSources>div:nth-child(1) {
@@ -369,32 +369,31 @@
 }
 
 #readerSources>div:nth-child(2) {
-    animation-delay: 80ms;
+    animation-delay: var(--motion-stagger);
 }
 
 #readerSources>div:nth-child(3) {
-    animation-delay: 160ms;
+    animation-delay: calc(var(--motion-stagger) * 2);
 }
 
 #readerSources>div:nth-child(4) {
-    animation-delay: 240ms;
+    animation-delay: calc(var(--motion-stagger) * 3);
 }
 
-/* Library sidebar items fade in */
-#leftSidebar details>ul>li {
-    animation: shelah-fade-in 0.2s ease both;
-}
+/* Library sidebar items: no per-item fade. The list itself slides down as one
+   (sidebar.css details[open]>summary~*); a second animation on every row of
+   the same subtree only doubled it, on a control used tens of times a day. */
 
 /* Popular texts grid */
 #popularTextsGrid>* {
     /* backwards, not both: a fill kept after the end holds transform at
        translateY(0) and cancels the cards' hover lift below. */
-    animation: shelah-fade-up 0.25s ease backwards;
+    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) backwards;
 }
 
 /* Home grid sections */
 .home-today-section {
-    animation: shelah-fade-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) backwards;
 }
 
 /* Card hover lift effect for popular texts, customs cards */
@@ -405,10 +404,17 @@
 }
 
 #popularTextsGrid button:hover {
-    transform: translateY(-2px);
     /* The raised shadow is the ::after layer below; none here also keeps
        the cards' own hover:shadow-sm utility off. */
     box-shadow: none;
+}
+
+/* The lift and its shadow layer are a mouse gesture (a tap on a touch screen
+   would leave them stuck on the card). */
+@media (hover: hover) and (pointer: fine) {
+    #popularTextsGrid button:hover {
+        transform: translateY(-2px);
+    }
 }
 
 /* Hover elevation (audit M-9): the raised shadow is drawn once on a layer
@@ -438,10 +444,12 @@
     transition: opacity var(--motion-dur-fast) var(--motion-ease-out);
 }
 
-#popularTextsGrid button:hover::after,
-.home-calendar-btn:hover::after,
-.sidebar-show-tab:hover::after {
-    opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+    #popularTextsGrid button:hover::after,
+    .home-calendar-btn:hover::after,
+    .sidebar-show-tab:hover::after {
+        opacity: 1;
+    }
 }
 
 :is([data-theme="dark"], body.theme-dark) :is(#popularTextsGrid button, .home-calendar-btn)::after {
@@ -468,12 +476,19 @@
     #chapterGridModal>div,
     #calendarModal>div,
     #libraryCategoryModal>div,
-    #readerTopBar,
-    #searchSuggestions,
+    #searchSuggestions {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    /* What arrives on screen still arrives as a short fade, with no travel and
+       no stagger: reduced motion means gentler, not none. */
+    #readerTopBar:not(.hidden),
     #readerSources>div,
     #popularTextsGrid>*,
     .home-today-section {
-        animation: none !important;
+        animation: shelah-overlay-in 120ms linear both !important;
+        animation-delay: 0ms !important;
         transition: none !important;
     }
 }
@@ -689,8 +704,10 @@ body.search-loading .search-ai-sparkle {
         background var(--motion-dur-fast) var(--motion-ease-out) !important;
 }
 
-.sidebar-show-tab:hover {
-    transform: translateX(2px);
+@media (hover: hover) and (pointer: fine) {
+    .sidebar-show-tab:hover {
+        transform: translateX(2px);
+    }
 }
 
 #closeLeftSidebarBtn,
@@ -716,8 +733,10 @@ body.search-loading .search-ai-sparkle {
     transition: transform var(--motion-dur-fast) var(--motion-ease-out), opacity var(--motion-dur-fast) var(--motion-ease-out), scale var(--motion-dur-fast) var(--motion-ease-out) !important;
 }
 
-.home-library-link:hover {
-    transform: translateX(2px);
+@media (hover: hover) and (pointer: fine) {
+    .home-library-link:hover {
+        transform: translateX(2px);
+    }
 }
 
 /* ── Legal modal ─────────────────────────────────────────── */
@@ -730,8 +749,13 @@ body.search-loading .search-ai-sparkle {
 }
 
 #legalAcceptBtn:not(:disabled):hover {
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(31, 63, 99, 0.3);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    #legalAcceptBtn:not(:disabled):hover {
+        transform: translateY(-1px);
+    }
 }
 
 #legalAcceptBtn:not(:disabled):active {
@@ -744,7 +768,7 @@ body.search-loading .search-ai-sparkle {
 }
 
 .lang-btn {
-    transition: background-color var(--motion-dur-fast) var(--motion-ease-out), font-weight var(--motion-dur-fast) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out) !important;
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out) !important;
 }
 
 .lang-btn-active {
@@ -760,7 +784,7 @@ body.search-loading .search-ai-sparkle {
     height: 2px;
     background: currentColor;
     border-radius: 1px;
-    animation: shelah-scale-in 0.2s ease both;
+    animation: shelah-scale-in var(--motion-dur-base) var(--motion-ease-decel) both;
 }
 
 /* The EN / עברית switch is 28px tall on a mouse; touch screens get the

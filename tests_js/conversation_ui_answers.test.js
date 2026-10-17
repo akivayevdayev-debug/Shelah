@@ -110,6 +110,55 @@ test('a search-bar question opens the overlay on a pending answer, then shows th
     }
 });
 
+test('the pending turn fades out over the answer as a copy, so the thread never goes blank', async () => {
+    const page = await openAnswerPage();
+    try {
+        let release;
+        page.setAsk(() => new Promise((resolve) => { release = resolve; }));
+        const pending = page.ui.askFromSearch('When do we light candles?', {});
+        await page.flush();
+        const li = turns(page)[1];
+        assert.ok(li.querySelector('.conv-turn__skel'), 'the pending turn shows its skeleton');
+        assert.equal(li.querySelector('.conv-ghost'), null);
+
+        release(answerData());
+        await pending;
+        await page.flush();
+        const ghost = li.querySelector('.conv-ghost');
+        assert.ok(ghost, 'a copy of the pending turn is laid over the answer');
+        assert.equal(ghost.getAttribute('aria-hidden'), 'true', 'assistive technology reads the answer, not the copy');
+        assert.equal(ghost.querySelector('[data-conv-status]'), null, 'the copy does not answer status updates');
+        assert.equal(li.classList.contains('conv-turn--ghosting'), true);
+        assert.match(li.textContent, /Light before sunset/);
+
+        ghost.dispatchEvent(new page.window.Event('animationend'));
+        assert.equal(li.querySelector('.conv-ghost'), null, 'it goes when its fade ends');
+        assert.equal(li.classList.contains('conv-turn--ghosting'), false);
+    } finally {
+        page.close();
+    }
+});
+
+test('a backgrounded tab never fires animationend, so the copy leaves on a timer', async () => {
+    const page = await openAnswerPage();
+    try {
+        let release;
+        page.setAsk(() => new Promise((resolve) => { release = resolve; }));
+        const pending = page.ui.askFromSearch('When do we light candles?', {});
+        await page.flush();
+        release(answerData());
+        await pending;
+        await page.flush();
+        const li = turns(page)[1];
+        assert.ok(li.querySelector('.conv-ghost'));
+        await page.tick(450);
+        assert.equal(li.querySelector('.conv-ghost'), null);
+        assert.equal(li.classList.contains('conv-turn--ghosting'), false);
+    } finally {
+        page.close();
+    }
+});
+
 test('a search-bar question that fails stays as Not sent and the caller hears about it', async () => {
     const page = await openAnswerPage();
     try {

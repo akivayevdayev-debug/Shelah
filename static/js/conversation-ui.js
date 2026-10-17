@@ -728,7 +728,11 @@ function applyStatus(host, view, l) {
             if (host.isConnected) applyStatus(host, progressView(store?.getState().progress || createProgress()), lang());
         }, STATUS_MIN_DWELL_MS - heldFor);
     } else if (shown !== wanted || host.dataset.lang !== l) {
-        host.querySelector("[data-status-now]").textContent = `${activeLabel(wanted, l)}…`;
+        const nowEl = host.querySelector("[data-status-now]");
+        nowEl.textContent = `${activeLabel(wanted, l)}…`;
+        // The line changing under the reader's eyes settles in; the first line
+        // (nothing shown yet) is part of the turn's own entrance.
+        if (shown !== undefined) motion()?.settleIn?.(nowEl);
         host.dataset.stage = wanted;
         host.dataset.lang = l;
         host._stageShownAt = performance.now();
@@ -867,7 +871,7 @@ function createTurnEntry(key) {
     li.dataset.turnKey = key;
     const entry = { li, sig: null };
     ui.turns.set(key, entry);
-    if (ui.animateInserts && !reducedMotion()) {
+    if (ui.animateInserts) {
         li.classList.add("conv-turn--enter");
         li.addEventListener("animationend", () => li.classList.remove("conv-turn--enter"), { once: true });
     }
@@ -879,14 +883,44 @@ function createTurnEntry(key) {
 // the staggered children each fire one.
 function revealArrivedAnswer(entry, message) {
     if (entry.status !== MESSAGE_STATUS.PENDING || message.status !== MESSAGE_STATUS.COMPLETE
-        || message.role !== "assistant" || reducedMotion()) return;
+        || message.role !== "assistant") return;
     entry.li.classList.add("conv-turn--reveal");
     clearTimeout(entry.revealTimer);
     entry.revealTimer = setTimeout(() => entry.li.classList.remove("conv-turn--reveal"), 900);
 }
 
+// The pending turn an answer replaces (status line and skeleton) fades out as a
+// copy laid over the top of the turn while the answer fades in, so the thread
+// never goes blank between the two. Null for any other redraw.
+function skeletonGhost(entry, message, li) {
+    if (entry.status !== MESSAGE_STATUS.PENDING || message.status !== MESSAGE_STATUS.COMPLETE
+        || message.role !== "assistant" || !li.querySelector(".conv-turn__skel")) return null;
+    const ghost = document.createElement("div");
+    ghost.className = "conv-ghost";
+    ghost.setAttribute("aria-hidden", "true");
+    ghost.innerHTML = li.innerHTML;
+    // A copy must not answer the status updates meant for the live line.
+    ghost.querySelectorAll("[data-conv-status]").forEach((node) => {
+        node.removeAttribute("data-conv-status");
+        node.removeAttribute("role");
+    });
+    return ghost;
+}
+
+function mountSkeletonGhost(li, ghost) {
+    li.classList.add("conv-turn--ghosting");
+    li.append(ghost);
+    const done = () => {
+        ghost.remove();
+        li.classList.remove("conv-turn--ghosting");
+    };
+    ghost.addEventListener("animationend", done, { once: true });
+    setTimeout(done, 400); // a backgrounded tab never fires animationend
+}
+
 function redrawTurn(entry, message, index, messages, l) {
     const li = entry.li;
+    const ghost = skeletonGhost(entry, message, li);
     li.className = `conv-turn conv-turn--${message.role}${message.status === MESSAGE_STATUS.FAILED ? " conv-turn--failed" : ""}${li.classList.contains("conv-turn--enter") ? " conv-turn--enter" : ""}`;
     li.setAttribute("aria-busy", message.status === MESSAGE_STATUS.PENDING ? "true" : "false");
     if (els.answerLink && li.contains(els.answerLink)) parkAnswerLink();
@@ -897,6 +931,7 @@ function redrawTurn(entry, message, index, messages, l) {
     if (message.citations?.length) hydrateCitations(li);
     if (citePop?.anchor() && !citePop.anchor().isConnected) citePop.close();
     revealArrivedAnswer(entry, message);
+    if (ghost) mountSkeletonGhost(li, ghost);
     entry.status = message.status;
 }
 

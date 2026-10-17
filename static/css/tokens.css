@@ -207,6 +207,9 @@
        distinct from --motion-ease-spring; was repeated as a raw literal at
        5+ sites across style.css/ai.css before being named here. */
     --motion-ease-decel: cubic-bezier(0.22, 1, 0.36, 1);
+    /* The gap between siblings of a cascade (answer blocks, source cards,
+       reveals): 30 to 80 ms reads as one gesture, and callers cap the length. */
+    --motion-stagger:     40ms;
     /* Views (audit §2): the old one fades out, the new one fades in
        shifted 12px from the side the navigation goes to. */
     --motion-dur-view-out: 120ms;
@@ -331,6 +334,13 @@
 @keyframes shelah-scale-in {
     from { opacity: 0; transform: scale(0.95); }
     to   { opacity: 1; transform: scale(1); }
+}
+
+/* A bar growing up from its baseline (admin trend). It starts at 60%, not 0:
+   nothing in the real world appears from nothing. */
+@keyframes shelah-grow-up {
+    from { opacity: 0; transform: scaleY(0.6); }
+    to   { opacity: 1; transform: scaleY(1); }
 }
 
 @keyframes shelah-slide-in-left {
@@ -468,6 +478,25 @@ html[data-vt-active] #calendarModal { view-transition-name: shelah-calendar; }
     ::view-transition-group(*),
     ::view-transition-old(*),
     ::view-transition-new(*) { animation: none !important; }
+}
+
+/* Theme switch (topbar_shared.js withThemeFade): the picture of the old theme
+   fades into the new one. Scoped by data-vt-theme, so the route transitions'
+   flag above is untouched. The browser's own cross-fade is kept; only its
+   length is ours. Reduced motion keeps a shorter fade, since a cut between a
+   light and a dark page is the harsher of the two. */
+html[data-vt-theme]::view-transition-group(root) {
+    animation-duration: var(--motion-dur-base);
+}
+html[data-vt-theme]::view-transition-old(root),
+html[data-vt-theme]::view-transition-new(root) {
+    animation-duration: var(--motion-dur-base);
+    animation-timing-function: var(--motion-ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-vt-theme]::view-transition-group(root) { animation: none !important; }
+    html[data-vt-theme]::view-transition-old(root) { animation: shelah-overlay-in 120ms linear reverse both !important; }
+    html[data-vt-theme]::view-transition-new(root) { animation: shelah-overlay-in 120ms linear both !important; }
 }
 
 
