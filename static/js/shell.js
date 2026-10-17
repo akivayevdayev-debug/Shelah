@@ -418,7 +418,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
             // Split inline headers/rules onto their own line before structural spacing enforcement.
             normalized = normalized
-                .replace(/([^\n])\s*(#{2,6}\s*)/g, '$1\n$2')
+                .replace(/([^\n#])\s*(#{2,6}\s*)/g, '$1\n$2')
                 .replace(/(^|\n)(#{2,6})([^\s#])/g, '$1$2 $3')
                 .replace(/([^\n])\s*---\s*([^\n])/g, '$1\n---\n$2')
                 .replace(/([^\n])\s*---(\n|$)/g, '$1\n---$2')
