@@ -5,14 +5,14 @@ Scope: backend, tests, CI and SonarCloud. Visual/UX and security findings were l
 
 Everything below was reproduced, not guessed. A change that alters behaviour carries a regression test that
 fails on the old code. Eleven fix commits came out of this pass: nine are already on `origin/main` (up to
-`bd7be17`), two (`ec28776`, `0b882c3`) and this report are local and unpushed.
+`bd7be17`), two (`ec28776`, `0b882c3`), this report and the jsdom test commits (section 1) are local and unpushed.
 
 ## 1. SonarCloud quality gate: still red, and two things block it
 
 | Condition | Server value (last analysis) | Needed |
 |---|---|---|
 | new reliability rating | 4 (23 open BUGs) | 1 |
-| new coverage | 72.8 % (70.8 % by line count) | 80 % |
+| new coverage | 72.8 % (70.8 % by line count); about 86 % projected with the jsdom tests, see below | 80 % |
 | duplication, maintainability, security, hotspots | OK | OK |
 
 - **The server still shows the pre-fix state.** SonarCloud's last analysis is `e7fb5c1` (2026-10-14), and the
@@ -21,21 +21,32 @@ fails on the old code. Eleven fix commits came out of this pass: nine are alread
   finishes, the reliability rating should go to 1; I could not confirm that from here.
 - **`SONAR_TOKEN` is not set in this shell** (checked in a login shell too), so I could not run
   `sonarqube-scanner` with `-Dsonar.qualitygate.wait=true`. Everything about the gate was read from the public API.
-- **Coverage needs a decision.** 27,008 lines count as new code and 7,874 are uncovered. Reaching 80 % means
-  covering about 2,470 more lines. Four files hold most of the gap, all at 0 %:
+- **Coverage is met with tests, not an exclusion.** 27,008 lines counted as new code and 7,874 were uncovered; four
+  files held most of the gap, all at 0 %: `static/js/shell.js` (5,584 executable lines), `conversation-ui.js`
+  (1,332), the two `scripts/build_*.mjs` (382) and `citation-popover.js` (134). A jsdom harness now runs the real
+  scripts on the real home page:
 
-  | File | Uncovered lines |
-  |---|---|
-  | `static/js/shell.js` (12,340 lines, DOM-bound) | 5,584 |
-  | `static/js/conversation-ui.js` | 1,332 |
-  | `scripts/build_critical_css.mjs` + `scripts/build_assets.mjs` | 382 |
-  | `static/js/citation-popover.js` | 134 |
-
-  Honest options, your call: (a) a jsdom harness that boots `shell.js` and drives the main flows (large, and adds a
-  dev dependency); (b) unit tests for the three small files above (about 650 lines, not enough alone);
-  (c) `sonar.coverage.exclusions` for `static/js/shell.js`, which takes the figure to about 89 %. I did **not** add
-  an exclusion, as instructed. Bumping `sonar.projectVersion` would also reset "new code", but that dodges the gate
-  rather than meeting it, so I left it.
+  - `tests_js/helpers/shell_page.js` boots `GET /` (stored in `tests_js/fixtures/index_page.txt`, regenerated with
+    `python scripts/build_shell_dom_fixture.py`; `tests/test_shell_dom_fixture.py` fails, naming that command, when the
+    template and the fixture drift) and runs the classic scripts in it with a routed `fetch`;
+    `conversation_page.js` installs the Ask panel on it with a manual clock and a recording conversation API.
+  - 128 tests in six files (`shell_*.test.js`, `conversation_ui.test.js`); `jsdom` is the only new dev dependency.
+  - Measured in the lcov that `npm run test:coverage` writes: `shell.js` 3,404 / 5,619 executable lines (61 %),
+    `conversation-ui.js` 1,143 / 1,332 (86 %). Sonar scores lines plus branch conditions, so applying its formula to
+    the last server counts gives about **86 %** for new code against the 80 % needed. That is a projection: without
+    `SONAR_TOKEN` I cannot run the scanner, so the first CI scan after a push is the real answer.
+  - Still uncovered in `shell.js`: search and the omnibox, the account flows (delete account, data export, preference
+    sync), the calendar, selection insights and commentary, ask-history pages, route helpers, infinite-scroll chunk
+    loading and the feedback widget. In `conversation-ui.js`: search-bar answers (guest-cap dialog, public and saved
+    answer states) and citation chips and previews. The two build scripts are still untested.
+  - **Dead UI found while writing them:** `shell.js` has handlers for a verse-compare strip (`compareModeToggle`,
+    `compareRefInput`, `compareOpenBtn`, `compareClearBtn`, `compareContainer`, `readerCompareControls`) and for the
+    community-timeline modal, but `templates/index.html` has none of those elements, so the code can only run if the
+    markup is injected, which the tests do. They look like deletion candidates for the frontend owner; I did not
+    remove them.
+  - A related edge in `conversation-ui.js` (`maybeShowTip`): if a menu is open when the discovery tip's timer fires,
+    the tip is skipped for the rest of the page's life, because the "come back when the menu closes" path only
+    exists for a tip that was already showing. Harmless, noted for the frontend owner.
 
 ## 2. Fixed (small commits, each with its test)
 
@@ -73,7 +84,7 @@ fails on the old code. Eleven fix commits came out of this pass: nine are alread
    `_build_last_resort_web_sources`, `text_engine._format_ui_answer`, `app._gather_ask_question_context_futures`.
    Deleting each means deleting its tests, so I left them.
 7. **Sonar leftovers I did not touch:** Python `S3776` x21, `S5843` x3, a few `S8786`; about 390 JavaScript smells,
-   almost all in `shell.js` (0 % covered, so a refactor there cannot be verified); `Web:S6819` x17 and `Web:S7927` x22
+   almost all in `shell.js` (now 61 % covered by line, so a refactor there can be checked in jsdom); `Web:S6819` x17 and `Web:S7927` x22
    (accessibility markup, another lane); CSS `S4666` x3; `plsql:S125` x1. None of these feed the gate.
 8. **Build hygiene:** `npm run build:css` changes `:where(.space-y-*)` specificity (a stale `.capitalize` rule in
    `tailwind.css` goes with it), and the critical CSS drifts from source at a pristine HEAD. Both need the frontend
@@ -93,6 +104,6 @@ fails on the old code. Eleven fix commits came out of this pass: nine are alread
 
 ## 5. State at the end of this pass
 
-`pytest` 5,520 passed at 99.51 % backend coverage (gate 85 %), run after rebasing onto `bd7be17`; `ruff check .`
-clean; `node --test` 709/709; JavaScript line coverage 96.75 % on the files that have tests. Nothing was pushed by
-me. To land the two local commits and this report: `git push origin main`.
+`pytest` 5,529 passed at 99.51 % backend coverage (gate 85 %), run after rebasing onto `2eb2a08`; `ruff check .`
+clean; `node --test` 837/837 (709 before the jsdom tests); `tests/test_shell_dom_fixture.py` passes. Nothing was
+pushed by me. To land the local commits and this report: `git push origin main`.
