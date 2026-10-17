@@ -100,7 +100,8 @@
     cursor: pointer;
     transition: background-color var(--motion-dur-fast) var(--motion-ease-out),
                 border-color var(--motion-dur-fast) var(--motion-ease-out),
-                opacity var(--motion-dur-fast) var(--motion-ease-out);
+                opacity var(--motion-dur-fast) var(--motion-ease-out),
+                scale var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 .admin-btn:hover:not(:disabled) {
@@ -269,7 +270,8 @@
     margin-inline-start: -1px;
     cursor: pointer;
     transition: background-color var(--motion-dur-fast) var(--motion-ease-out),
-                color var(--motion-dur-fast) var(--motion-ease-out);
+                color var(--motion-dur-fast) var(--motion-ease-out),
+                scale var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 .admin-seg-opt:first-of-type {
@@ -1178,6 +1180,40 @@
     display: none;
 }
 
+/* ── Motion ─────────────────────────────────────────────────────────────────
+   Seen a few times a day by one operator, so it stays small. Press feedback on
+   the controls; and, once, when the first data replaces the skeleton (the
+   script holds data-enter for a moment), the tiles rise in turn, the split and
+   the trend fade in and the bars grow up from their baseline, left to right.
+   A refresh or a filter redraws in place and plays none of it. Transform and
+   opacity only. */
+.admin-btn:active:not(:disabled),
+.admin-seg-opt:active {
+    scale: var(--press-scale, 0.97);
+}
+
+.admin-shell[data-enter] .admin-tile {
+    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) both;
+    animation-delay: calc(var(--i, 0) * var(--motion-stagger));
+}
+
+.admin-tile:nth-child(2) { --i: 1; }
+.admin-tile:nth-child(3) { --i: 2; }
+.admin-tile:nth-child(4) { --i: 3; }
+
+.admin-shell[data-enter] .admin-split,
+.admin-shell[data-enter] .admin-grid {
+    animation: shelah-overlay-in var(--motion-dur-base) var(--motion-ease-out) both;
+    animation-delay: calc(4 * var(--motion-stagger));
+}
+
+.admin-shell[data-enter] .admin-stack {
+    transform-origin: 50% 100%;
+    animation: shelah-grow-up var(--motion-dur-base) var(--motion-ease-decel) both;
+    /* 16ms a day, 20 days at most: a 30-day chart still finishes inside a third of a second. */
+    animation-delay: calc(5 * var(--motion-stagger) + min(var(--i, 0), 20) * var(--motion-stagger) * 0.4);
+}
+
 /* A refresh keeps the drawn page and only dims it. */
 .admin-shell[data-refreshing="true"] #adminContent {
     opacity: 0.6;
@@ -1203,6 +1239,17 @@
     .admin-sort svg,
     .admin-details summary::before {
         transition: none;
+    }
+
+    .admin-btn:active:not(:disabled),
+    .admin-seg-opt:active {
+        scale: none;
+    }
+
+    /* The entrance stays as a short fade; the rise and the growth are the motion. */
+    .admin-shell[data-enter] :is(.admin-tile, .admin-split, .admin-grid, .admin-stack) {
+        animation: shelah-overlay-in 120ms linear both !important;
+        animation-delay: 0ms !important;
     }
 }
 

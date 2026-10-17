@@ -495,6 +495,58 @@ test('Download CSV hands over exactly the rows the filters show', async () => {
     page.close();
 });
 
+test('the first data plays the entrance once; a refresh redraws in place without replaying it', async () => {
+    const page = await openAdmin({ digest: response(200, { rows: [row()] }) });
+    assert.equal(page.shell.hasAttribute('data-enter'), true, 'tiles and bars come in when the skeleton goes');
+    await new Promise((resolve) => page.window.setTimeout(resolve, 900));
+    assert.equal(page.shell.hasAttribute('data-enter'), false, 'the flag is gone once the entrance is over');
+    await page.click('#adminRefresh');
+    assert.equal(page.shell.dataset.view, 'ready');
+    assert.equal(page.shell.hasAttribute('data-enter'), false, 'a refresh does not replay it');
+    page.close();
+});
+
+test('each trend column carries its day index for the bars\' staggered entrance', async () => {
+    const page = await openAdmin({ digest: response(200, { rows: [row()] }) });
+    const indexes = [...page.doc.querySelectorAll('#trendCols .admin-col')].map((col) => col.style.getPropertyValue('--i'));
+    assert.deepEqual(indexes, Array.from({ length: 14 }, (_, i) => String(i)));
+    page.close();
+});
+
+test('a new verdict, sort or page size settles the rows in; searching and showing more do not', async () => {
+    const rows = many(30, (i) => row({ created_at: new Date(NOW - (i + 1) * HOUR).toISOString(), verdict: i % 2 ? 'helpful' : 'not_helpful', comment: `c ${i}` }));
+    const page = await openAdmin({ digest: response(200, { rows }) });
+    const runs = [];
+    page.window.HTMLElement.prototype.animate = function animate(frames, options) {
+        runs.push({ target: this, frames, options });
+    };
+
+    await page.check('input[name="adminVerdict"][value="helpful"]');
+    assert.equal(runs.length, 1);
+    assert.equal(runs[0].target, page.$('adminRows'));
+    // The frames are built inside the jsdom realm, so compare them as data.
+    assert.deepEqual(JSON.parse(JSON.stringify(runs[0].frames)), [{ opacity: 0.4 }, { opacity: 1 }], 'opacity only: the rows do not move');
+    assert.equal(runs[0].options.duration, 150);
+
+    await page.click('#adminSortDate');
+    assert.equal(runs.length, 2);
+
+    const search = page.$('adminSearch');
+    search.value = 'c 1';
+    search.dispatchEvent(new page.window.Event('input', { bubbles: true }));
+    await new Promise((resolve) => page.window.setTimeout(resolve, 200));
+    assert.equal(runs.length, 2, 'typing in the search box redraws without a flicker');
+
+    await page.check('input[name="adminVerdict"][value="all"]');
+    assert.equal(runs.length, 3);
+    search.value = '';
+    search.dispatchEvent(new page.window.Event('input', { bubbles: true }));
+    await new Promise((resolve) => page.window.setTimeout(resolve, 200));
+    await page.click('#adminMore');
+    assert.equal(runs.length, 3, 'showing more rows does not replay the fade');
+    page.close();
+});
+
 test('a failed refresh keeps the page that is already drawn and says so', async () => {
     const page = await openAdmin({ digest: [response(200, { rows: [row({ comment: 'kept' })] }), response(500, {})] });
     assert.match(page.text('adminLoadedAt'), /^Loaded /);

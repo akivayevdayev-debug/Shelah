@@ -22,6 +22,7 @@
     const DAY = 24 * HOUR;
     const FETCH_TIMEOUT_MS = 20000;
     const CLERK_WAIT_MS = 10000;
+    const ENTER_MS = 800; // how long data-enter stays on: the longest entrance in admin.css plus a margin
 
     const VERDICT_LABEL = { helpful: 'Helpful', not_helpful: 'Not helpful', unknown: 'Unrated' };
 
@@ -285,6 +286,16 @@
         return tr;
     }
 
+    /** The rows just replaced fade up from 40% (opacity only), with the page's own
+     *  duration and curve read from tokens.css so the two cannot drift. */
+    function settleRows(tbody) {
+        if (typeof tbody.animate !== 'function') return;
+        const style = tbody.ownerDocument.defaultView.getComputedStyle(tbody.ownerDocument.documentElement);
+        const duration = Number.parseFloat(style.getPropertyValue('--motion-dur-fast')) || 150;
+        const easing = style.getPropertyValue('--motion-ease-out').trim() || 'ease-out';
+        tbody.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration, easing });
+    }
+
     function renderRows(tbody, rows, now) {
         const doc = tbody.ownerDocument;
         const fragment = doc.createDocumentFragment();
@@ -393,6 +404,7 @@
         const columns = buckets.map((bucket, index) => {
             const col = make(doc, 'div', 'admin-col');
             col.dataset.index = String(index);
+            col.style.setProperty('--i', String(index)); // the bars' entrance follows the days
             if (bucket.total) {
                 const stack = make(doc, 'div', 'admin-stack');
                 stack.style.setProperty('--h', `${(bucket.total / scale.max) * 100}%`);
@@ -541,7 +553,14 @@
 
         // ── States ──
         function setView(view) {
+            const was = refs.shell.dataset.view;
             refs.shell.dataset.view = view; // loading | ready | state
+            // The tiles and bars come in once, when the first data replaces the
+            // skeleton. A refresh or a filter redraws in place and does not replay it.
+            if (view === 'ready' && was === 'loading') {
+                refs.shell.dataset.enter = '';
+                root.setTimeout(() => { delete refs.shell.dataset.enter; }, ENTER_MS);
+            }
             refs.content.hidden = view === 'state';
             refs.state.hidden = view !== 'state';
             refs.content.setAttribute('aria-busy', String(view === 'loading'));
@@ -710,10 +729,13 @@
             setActiveDay(-1);
         }
 
-        function renderTable() {
+        function renderTable(options) {
             ui.filtered = sortRows(filterRows(ui.all, { verdict: ui.verdict, query: ui.query }), ui.order);
             const shown = ui.filtered.slice(0, ui.visible);
             renderRows(refs.tbody, shown, clock);
+            // A different set of rows (a new verdict, sort or page size) settles in;
+            // typing in the search box or showing more does not flicker.
+            if (options && options.settle) settleRows(refs.tbody);
             const total = ui.filtered.length;
             refs.tableEmpty.hidden = total > 0;
             refs.count.textContent = total
@@ -837,7 +859,7 @@
                 if (!radio.checked) return;
                 ui.verdict = radio.value;
                 ui.visible = ui.pageSize;
-                renderTable();
+                renderTable({ settle: true });
             });
         }
         let searchTimer = 0;
@@ -852,12 +874,12 @@
         refs.pageSize.addEventListener('change', () => {
             ui.pageSize = Number(refs.pageSize.value) || DEFAULT_PAGE_SIZE;
             ui.visible = ui.pageSize;
-            renderTable();
+            renderTable({ settle: true });
         });
         refs.sortDate.addEventListener('click', () => {
             ui.order = ui.order === 'newest' ? 'oldest' : 'newest';
             ui.visible = ui.pageSize;
-            renderTable();
+            renderTable({ settle: true });
         });
         refs.more.addEventListener('click', () => {
             ui.visible += ui.pageSize;
