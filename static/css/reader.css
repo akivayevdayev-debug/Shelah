@@ -104,7 +104,7 @@ body.theme-dark .reader-topbar-library-track:focus-visible {
 }
 
 body.theme-dark #readerTopBar {
-    background: color-mix(in srgb, var(--surface-topbar) 93%, transparent) !important;
+    background: color-mix(in srgb, var(--surface-topbar) 93%, transparent);
     border-color: var(--surface-border) !important;
 }
 
@@ -144,15 +144,15 @@ html.rtl #readerSubtitle {
 }
 
 #reader>header .bg-slate-100 {
-    background: var(--surface-pill) !important;
+    background: var(--surface-pill);
     border: 1px solid var(--surface-border);
     border-radius: var(--radius-full, 9999px);
-    color: var(--text-muted) !important;
+    color: var(--text-muted);
 }
 
 #readerSources {
-    margin-top: 1.85rem !important;
-    padding-top: 0.65rem !important;
+    margin-top: 1.85rem;
+    padding-top: 0.65rem;
 }
 
 /* ─── Section title — consistent style across all chunks ─── */
@@ -265,7 +265,7 @@ body.theme-dark .reader-chapter-chip {
 body.theme-dark .reader-source-title {
     border-color: color-mix(in srgb, var(--surface-border) 76%, transparent);
     background: color-mix(in srgb, var(--surface-topbar) 92%, transparent);
-    color: var(--text-muted) !important;
+    color: var(--text-muted);
 }
 
 body.theme-dark .reader-source-title-main {
@@ -291,7 +291,7 @@ body.theme-dark .reader-source-clean+.reader-source-clean {
 
 @media (max-width: 640px) {
     #reader .source-grid {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: 1fr;
     }
 
     #reader .source-he,
