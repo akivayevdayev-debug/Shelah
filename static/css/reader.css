@@ -301,20 +301,6 @@ body.theme-dark .reader-source-clean+.reader-source-clean {
 }
 
 /* ═══════════════════════════════════════════════════════ */
-/* COMPARE VIEW IMPROVEMENTS */
-/* ═══════════════════════════════════════════════════════ */
-
-#compareContainer {
-    border-radius: var(--radius-md, 0.7rem);
-    overflow: hidden;
-}
-
-body.theme-dark #compareContainer {
-    background: var(--surface-elevated);
-    border-color: var(--surface-border);
-}
-
-/* ═══════════════════════════════════════════════════════ */
 /* COMMUNITY CUSTOMS: confidence chip, variants, notes */
 /* ═══════════════════════════════════════════════════════ */
 

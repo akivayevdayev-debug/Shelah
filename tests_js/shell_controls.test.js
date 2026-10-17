@@ -1,7 +1,7 @@
 /**
  * The reader's controls, the personal shelf (bookmarks, recents, import and
- * export), study notes, citation export and the compare view. Boots the real
- * home page in jsdom (tests_js/helpers/shell_page.js).
+ * export), study notes, citation export. Boots the real home page in jsdom
+ * (tests_js/helpers/shell_page.js).
  */
 'use strict';
 
@@ -26,26 +26,6 @@ function routes(overrides = {}) {
     };
 }
 
-// The compare strip and the community-timeline modal are not in the page
-// template any more, but shell.js still drives them when they exist; the tests
-// give the page those elements so the code runs as written.
-const COMPARE_DOM = `
-    <label><input type="checkbox" id="compareModeToggle"></label>
-    <div id="readerCompareControls" class="hidden">
-        <input id="compareRefInput" type="text">
-        <button id="compareOpenBtn" type="button">Compare</button>
-        <button id="compareClearBtn" type="button">Clear</button>
-    </div>
-    <div id="compareContainer" class="hidden"></div>`;
-const TIMELINE_DOM = `
-    <button id="communityTimelineBtn" type="button">Timeline</button>
-    <div id="communityTimelineModal" class="hidden">
-        <h3 id="communityTimelineTitle"></h3>
-        <div id="communityTimelineBody"></div>
-        <button id="closeCommunityTimelineBtn" type="button">Close</button>
-    </div>`;
-const withDom = (...markup) => (window) => window.document.body.insertAdjacentHTML('beforeend', markup.join('\n'));
-
 async function openText(options = {}) {
     const page = await openShellPage({ fetch: routes(options.fetch), storage: options.storage, url: options.url, before: options.before });
     await page.eval(`readText('Genesis 1', { skipNavigationGrid: true })`);
@@ -64,7 +44,7 @@ const change = (page, element, value) => {
 // --- the reader's display controls ----------------------------------------
 
 test('the display controls change the reader and are remembered', async () => {
-    const page = await openText({ before: withDom(COMPARE_DOM) });
+    const page = await openText();
     try {
         change(page, el(page, 'readerFontSize'), 24);
         change(page, el(page, 'readerLineHeight'), 2.1);
@@ -78,9 +58,6 @@ test('the display controls change the reader and are remembered', async () => {
         assert.equal(prefs(page).showCantillation, false);
         assert.match(page.$('#readerSources').textContent, /[A-Za-z]/);
 
-        change(page, el(page, 'compareModeToggle'), true);
-        assert.equal(prefs(page).compareMode, true);
-        assert.equal(el(page, 'readerCompareControls').classList.contains('hidden'), false);
         assert.deepEqual(page.errors, []);
     } finally {
         page.close();
@@ -376,7 +353,7 @@ test('preferences saved by an older version are carried forward', async () => {
     }
 });
 
-// --- study notes, export, compare -----------------------------------------
+// --- study notes, export -----------------------------------------
 
 test('saving a study note needs an open text', async () => {
     const page = await openShellPage({ fetch: routes() });
@@ -480,57 +457,7 @@ test('an export that fails, or has nothing to export, says so', async () => {
     }
 });
 
-test('comparing two texts shows them side by side, and clearing removes the comparison', async () => {
-    const page = await openText({ fetch: { '/api/text/Exodus%201': textPayload('Exodus 1', [['1', 'ואלה שמות', 'These are the names'], ['2', 'ראובן', 'Reuben']]) }, before: withDom(COMPARE_DOM) });
-    try {
-        change(page, el(page, 'compareModeToggle'), true);
-        el(page, 'compareRefInput').value = 'Exodus 1';
-        page.click(el(page, 'compareOpenBtn'));
-        await page.settle(10);
-        const compare = el(page, 'compareContainer');
-        assert.equal(compare.classList.contains('hidden'), false);
-        assert.match(compare.textContent, /Genesis 1 vs Exodus 1/);
-        assert.match(compare.textContent, /These are the names/);
-        assert.equal(prefs(page).compareRef, 'Exodus 1');
-
-        page.click(el(page, 'compareClearBtn'));
-        assert.equal(compare.classList.contains('hidden'), true);
-        assert.equal(prefs(page).compareRef, '');
-
-        el(page, 'compareRefInput').value = 'Exodus 1';
-        page.key(el(page, 'compareRefInput'), 'Enter');
-        await page.settle(10);
-        assert.equal(compare.classList.contains('hidden'), false);
-    } finally {
-        page.close();
-    }
-});
-
-test('a comparison that cannot load says so', async () => {
-    const page = await openText({
-        before: withDom(COMPARE_DOM),
-        fetch: {
-            '/api/text/Missing%201': { status: 404, body: {} },
-            '/api/text/Odd%201': { error: 'No such book' },
-            '/api/text/Throws%201': () => { throw new Error('offline'); },
-        },
-    });
-    try {
-        for (const [ref, expected] of [['Missing 1', /could not be loaded/], ['Odd 1', /No such book/], ['Throws 1', /could not be loaded/]]) {
-            el(page, 'compareRefInput').value = ref;
-            await page.eval(`loadCompareReference()`);
-            assert.match(el(page, 'compareContainer').textContent, expected, ref);
-        }
-        el(page, 'compareRefInput').value = '';
-        page.eval(`appState.prefs.compareRef = ''`);
-        await page.eval(`loadCompareReference()`);
-        assert.equal(el(page, 'compareContainer').classList.contains('hidden'), true);
-    } finally {
-        page.close();
-    }
-});
-
-// --- developer inspector, timeline, citations --------------------------------
+// --- developer inspector, citations --------------------------------
 
 test('the developer inspector opens on shift + double-click and polls the heartbeat', async () => {
     const page = await openShellPage({ fetch: routes({ '/api/devtools/heartbeat': { ts: 123, stats: { ok: 1 } } }) });
@@ -553,31 +480,6 @@ test('the developer inspector opens on shift + double-click and polls the heartb
         assert.match(el(down, 'devtoolsLog').textContent, /heartbeat-error down/);
     } finally {
         down.close();
-    }
-});
-
-test('the community timeline lists a community\'s events', async () => {
-    const page = await openShellPage({
-        before: withDom(TIMELINE_DOM),
-        fetch: routes({
-            '/api/community/Moroccan': (url) => (url.endsWith('/timeline')
-                ? { name: 'Moroccan', events: [{ approx_period: '1492', title: 'Expulsion', description: 'From Spain' }] }
-                : { name: 'Moroccan', customs: {} }),
-        }),
-    });
-    try {
-        await page.eval(`openCommunityTimeline()`);
-        assert.equal(el(page, 'communityTimelineModal').classList.contains('flex'), false);
-        await page.eval(`displayCommunity('Moroccan')`);
-        await page.settle();
-        page.click(el(page, 'communityTimelineBtn'));
-        await page.settle();
-        assert.match(el(page, 'communityTimelineBody').textContent, /Expulsion/);
-        assert.match(el(page, 'communityTimelineTitle').textContent, /Moroccan Timeline/);
-        page.click(el(page, 'closeCommunityTimelineBtn'));
-        assert.equal(el(page, 'communityTimelineModal').classList.contains('hidden'), true);
-    } finally {
-        page.close();
     }
 });
 

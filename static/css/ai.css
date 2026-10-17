@@ -199,9 +199,7 @@
 }
 
 /* Modal backdrop isolation */
-#textsMenuModal,
-#sourceGraphModal,
-#communityTimelineModal {
+#textsMenuModal {
     isolation: isolate;
 }
 

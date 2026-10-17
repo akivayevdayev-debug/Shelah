@@ -2189,10 +2189,6 @@ html.rtl #readerTopBar .reader-topbar-settings-label {
     font-kerning: normal;
 }
 
-#compareContainer {
-    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
-}
-
 #rightSidebar {
     align-self: flex-start;
 }
@@ -3181,8 +3177,6 @@ html.rtl .home-main-layout #popularTextsGrid {
 .library-shell #openReaderSettingsFromMenu,
 .library-shell #importShelfBtn,
 .library-shell #exportCitationBtn,
-.library-shell #sourceGraphBtn,
-.library-shell #communityTimelineBtn,
 .library-shell #themeToggleBtn {
     background-color: var(--control-bg) !important;
     border-color: var(--control-border) !important;
@@ -3207,8 +3201,6 @@ html.rtl .home-main-layout #popularTextsGrid {
 .library-shell #openReaderSettingsFromMenu:hover,
 .library-shell #importShelfBtn:hover,
 .library-shell #exportCitationBtn:hover,
-.library-shell #sourceGraphBtn:hover,
-.library-shell #communityTimelineBtn:hover,
 .library-shell #themeToggleBtn:hover {
     background-color: var(--control-bg-hover) !important;
     border-color: #ccbca2 !important;
@@ -3217,8 +3209,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 
 .library-shell #settingsPanel,
 .library-shell #readerSettingsPanel,
-.library-shell #selectionInsights,
-.library-shell #compareContainer {
+.library-shell #selectionInsights {
     background: var(--surface-elevated) !important;
     border-color: var(--surface-border) !important;
 }
@@ -3232,9 +3223,7 @@ html.rtl .home-main-layout #popularTextsGrid {
    gradient shape; now 4.75-5.63:1 against the subtitle and 5.52-6.76:1
    against the white title. */
 .library-shell #textsMenuModal .bg-linear-to-r.from-navy.to-blue-900,
-.library-shell #devtoolsInspectorModal .bg-linear-to-r.from-navy.to-blue-900,
-.library-shell #sourceGraphModal .bg-linear-to-r.from-navy.to-blue-900,
-.library-shell #communityTimelineModal .bg-linear-to-r.from-navy.to-blue-900 {
+.library-shell #devtoolsInspectorModal .bg-linear-to-r.from-navy.to-blue-900 {
     background-image: linear-gradient(to right, #615a51, #6f685d) !important;
 }
 
@@ -3816,9 +3805,7 @@ html.theme-dark,
    controls placed on top of them (--surface-2/--ctrl-bg, via --surface-elevated
    elsewhere), so the panel itself reads as a distinct backdrop instead of
    blending into its own contents. */
-:is([data-theme="dark"], body.theme-dark) #selectionInsights,
-:is([data-theme="dark"], body.theme-dark) #compareContainer,
-:is([data-theme="dark"], body.theme-dark) #sourceGraphCanvas {
+:is([data-theme="dark"], body.theme-dark) #selectionInsights {
     background: var(--surface-elevated) !important;
     border-color: var(--surface-border) !important;
     color: var(--accent-cream) !important;
@@ -4455,9 +4442,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) #textsMenuModal .bg-linear-to-r.from-navy.to-blue-900,
-:is([data-theme="dark"], body.theme-dark) #devtoolsInspectorModal .bg-linear-to-r.from-navy.to-blue-900,
-:is([data-theme="dark"], body.theme-dark) #sourceGraphModal .bg-linear-to-r.from-navy.to-blue-900,
-:is([data-theme="dark"], body.theme-dark) #communityTimelineModal .bg-linear-to-r.from-navy.to-blue-900 {
+:is([data-theme="dark"], body.theme-dark) #devtoolsInspectorModal .bg-linear-to-r.from-navy.to-blue-900 {
     background-image: linear-gradient(to right, var(--surface-elevated), var(--surface-pill)) !important;
 }
 

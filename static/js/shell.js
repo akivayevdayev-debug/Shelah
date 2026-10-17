@@ -48,7 +48,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         const themeToggleLabel = document.getElementById('themeToggleLabel');
         const brandHomeBtn = document.getElementById('brandHomeBtn');
         const transliterationToggle = document.getElementById('transliterationToggle');
-        const compareModeToggle = document.getElementById('compareModeToggle');
         const shulModeToggle = document.getElementById('shulModeToggle');
         const shulSubControls = document.getElementById('shulSubControls');
         const shulAutoScrollToggle = document.getElementById('shulAutoScrollToggle');
@@ -58,7 +57,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         const cantillationToggleRow = document.getElementById('cantillationToggleRow');
         const exportCitationBtn = document.getElementById('exportCitationBtn');
         const exportFormatSelect = document.getElementById('exportFormatSelect');
-        const communityTimelineBtn = document.getElementById('communityTimelineBtn');
         const libraryIndexSidebar = document.getElementById('libraryIndexSidebar');
         const libraryIndexModal = document.getElementById('libraryIndexModal');
         const libraryIndexFilterInput = document.getElementById('libraryIndexFilterInput');
@@ -90,11 +88,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         const readerLayoutSelect = document.getElementById('readerLayoutSelect');
         const readerFontSize = document.getElementById('readerFontSize');
         const readerLineHeight = document.getElementById('readerLineHeight');
-        const compareRefInput = document.getElementById('compareRefInput');
-        const compareOpenBtn = document.getElementById('compareOpenBtn');
-        const compareClearBtn = document.getElementById('compareClearBtn');
-        const readerCompareControls = document.getElementById('readerCompareControls');
-        const compareContainer = document.getElementById('compareContainer');
         const shulAutoScrollStatus = document.getElementById('shulAutoScrollStatus');
 
         const devtoolsInspectorModal = document.getElementById('devtoolsInspectorModal');
@@ -111,10 +104,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         const readerPrevTopBarBtn = document.getElementById('readerPrevTopBarBtn');
         const readerNextTopBarBtn = document.getElementById('readerNextTopBarBtn');
         const readerCommentaryTopBarBtn = document.getElementById('readerCommentaryTopBarBtn');
-        const communityTimelineModal = document.getElementById('communityTimelineModal');
-        const closeCommunityTimelineBtn = document.getElementById('closeCommunityTimelineBtn');
-        const communityTimelineTitle = document.getElementById('communityTimelineTitle');
-        const communityTimelineBody = document.getElementById('communityTimelineBody');
 
         const homeGrid = document.getElementById('homeGrid');
         const reader = document.getElementById('reader');
@@ -313,7 +302,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         }
         watchViewEntrance(homeGrid);
         watchViewEntrance(reader);
-        watchViewEntrance(compareContainer);
 
         const sidebarContent = document.getElementById('sourcesDynamicContent');
         const selectionInsights = document.getElementById('selectionInsights');
@@ -1201,8 +1189,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 transliteration: false,
                 showVowels: true,
                 showCantillation: true,
-                compareMode: false,
-                compareRef: '',
                 shulMode: false,
                 shulAutoScroll: false,
                 shulScrollSpeed: 28,
@@ -3085,11 +3071,9 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (transliterationToggle) transliterationToggle.checked = Boolean(appState.prefs.transliteration);
             if (showVowelsToggle) showVowelsToggle.checked = appState.prefs.showVowels !== false;
             if (showCantillationToggle) showCantillationToggle.checked = appState.prefs.showCantillation !== false;
-            if (compareModeToggle) compareModeToggle.checked = Boolean(appState.prefs.compareMode);
             if (shulModeToggle) shulModeToggle.checked = Boolean(appState.prefs.shulMode);
             if (shulAutoScrollToggle) shulAutoScrollToggle.checked = Boolean(appState.prefs.shulAutoScroll);
             if (shulScrollSpeed) shulScrollSpeed.value = String(appState.prefs.shulScrollSpeed || 28);
-            if (compareRefInput) compareRefInput.value = appState.prefs.compareRef || '';
             refreshReaderSliderFills();
             updateThemeToggleUi();
         }
@@ -3406,7 +3390,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 resetInfiniteReaderState(null);
                 collapseCommentaryPanel();
                 resetSelectionInsights();
-                clearCompareReference(false);
+                syncReaderSettingsVisibility();
                 document.getElementById('readerSources').innerHTML = '';
                 sidebarContent.innerHTML = `<p class="text-xs text-slate-500">${t(
                     'Every answer you get while signed in is saved here. Open one to read it again, copy its link, or share it.',
@@ -4542,135 +4526,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
         }
 
-        function closeSourceGraph() { }
-
-        function renderSourceGraph() { }
-
-        async function openSourceGraph() { }
-
-        function closeCommunityTimeline() {
-            if (!communityTimelineModal) return;
-            communityTimelineModal.classList.add('hidden');
-            communityTimelineModal.classList.remove('flex');
-        }
-
-        async function openCommunityTimeline() {
-            const current = appState.currentView;
-            if (!current || current.type !== 'community') {
-                appendDevtoolsLog('timeline-open-blocked current view is not community');
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/community/${encodeURIComponent(current.value)}/timeline`);
-                if (!response.ok) return;
-                const data = await response.json();
-                communityTimelineTitle.textContent = isHebrewMode()
-                    ? `ציר זמן ${getCommunityDisplayName(data.name || current.value)}`
-                    : `${data.name || current.value} Timeline`;
-                communityTimelineBody.innerHTML = (data.events || []).map((event) => {
-                    return `
-                        <div class="bg-white border border-slate-200 rounded-lg p-3">
-                            <p class="text-xs uppercase tracking-widest text-slate-400">${escapeHtml(event.approx_period || '')}</p>
-                            <h4 class="font-semibold text-slate-800 mt-1">${escapeHtml(event.title || '')}</h4>
-                            <p class="text-slate-600 mt-1">${escapeHtml(event.description || '')}</p>
-                        </div>
-                    `;
-                }).join('') || `<p class="text-slate-500 italic">${t('No timeline events were found.', 'לא נמצאו אירועים בציר הזמן.')}</p>`;
-                communityTimelineModal.classList.remove('hidden');
-                communityTimelineModal.classList.add('flex');
-            } catch (error) {
-                appendDevtoolsLog(`timeline-error ${error.message}`);
-            }
-        }
-
-        async function loadCompareReference() {
-            if (!compareContainer) return;
-            const base = window.currentTextPayload;
-            const compareRef = String(compareRefInput?.value || appState.prefs.compareRef || '').trim();
-            if (!base || !compareRef) {
-                compareContainer.classList.add('hidden');
-                compareContainer.innerHTML = '';
-                syncReaderSettingsVisibility();
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/text/${encodeURIComponent(compareRef)}`);
-                if (!response.ok) {
-                    compareContainer.classList.remove('hidden');
-                    compareContainer.innerHTML = `<p class="text-sm text-red-500">${t('Compare text could not be loaded.', 'לא ניתן לטעון את הטקסט להשוואה.')}</p>`;
-                    return;
-                }
-                const other = await response.json();
-                if (other.error) {
-                    compareContainer.classList.remove('hidden');
-                    compareContainer.innerHTML = `<p class="text-sm text-red-500">${escapeHtml(other.error)}</p>`;
-                    return;
-                }
-
-                appState.prefs.compareRef = compareRef;
-                savePrefs();
-
-                const leftSample = (base.lines || []).slice(0, 8);
-                const rightSample = (other.lines || []).slice(0, 8);
-                const maxRows = Math.max(leftSample.length, rightSample.length);
-                const cleanLine = (text = '') => escapeDisplayTextPreservingEmphasis(text).replace(/\n/g, '<br>');
-
-                let rows = '';
-                for (let i = 0; i < maxRows; i += 1) {
-                    const left = leftSample[i] || {};
-                    const right = rightSample[i] || {};
-                    const leftHebrewRaw = left.he || left.en || '';
-                    const rightHebrewRaw = right.he || right.en || '';
-                    const leftHebrewDisplay = cleanLine(applyHebrewDisplaySettings(leftHebrewRaw));
-                    const rightHebrewDisplay = cleanLine(applyHebrewDisplaySettings(rightHebrewRaw));
-                    const leftEnglish = cleanLine(left.en || '');
-                    const rightEnglish = cleanLine(right.en || '');
-
-                    rows += `
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 border-b border-slate-100 pb-3 mb-3 last:border-b-0">
-                            <div class="bg-white border border-slate-200 rounded-sm p-3">
-                                <p class="font-hebrew text-lg leading-[1.8]" dir="rtl">${leftHebrewDisplay || `<span class="text-slate-300">${t('—', '—')}</span>`}</p>
-                                ${transliterationMarkup(left.he || leftHebrewRaw)}
-                                ${leftEnglish ? `<p class="mt-2 text-sm text-slate-600">${leftEnglish}</p>` : ''}
-                            </div>
-                            <div class="bg-white border border-slate-200 rounded-sm p-3">
-                                <p class="font-hebrew text-lg leading-[1.8]" dir="rtl">${rightHebrewDisplay || `<span class="text-slate-300">${t('—', '—')}</span>`}</p>
-                                ${transliterationMarkup(right.he || rightHebrewRaw)}
-                                ${rightEnglish ? `<p class="mt-2 text-sm text-slate-600">${rightEnglish}</p>` : ''}
-                            </div>
-                        </div>
-                    `;
-                }
-
-                compareContainer.innerHTML = `
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="font-bold text-slate-700">${escapeHtml(base.ref || appState.currentView?.value || '')} ${t('vs', 'לעומת')} ${escapeHtml(other.ref || compareRef)}</h3>
-                    </div>
-                    ${rows}
-                `;
-                compareContainer.classList.remove('hidden');
-            } catch (error) {
-                appendDevtoolsLog(`compare-load-error ${error.message}`);
-                compareContainer.classList.remove('hidden');
-                compareContainer.innerHTML = `<p class="text-sm text-red-500">${t('Compare text could not be loaded.', 'לא ניתן לטעון את הטקסט להשוואה.')}</p>`;
-            }
-        }
-
-        function clearCompareReference(persist = true) {
-            appState.prefs.compareRef = '';
-            if (compareRefInput) compareRefInput.value = '';
-            if (compareContainer) {
-                compareContainer.classList.add('hidden');
-                compareContainer.innerHTML = '';
-            }
-            if (persist) {
-                savePrefs();
-            }
-            syncReaderSettingsVisibility();
-        }
-
         function shouldShowCantillationControl() {
             const current = appState.currentView;
             if (!current || current.type !== 'text') return false;
@@ -4679,9 +4534,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         }
 
         function syncReaderSettingsVisibility() {
-            if (readerCompareControls) {
-                readerCompareControls.classList.toggle('hidden', !appState.prefs.compareMode);
-            }
             if (cantillationToggleRow) {
                 cantillationToggleRow.classList.toggle('hidden', !shouldShowCantillationControl());
             }
@@ -7272,16 +7124,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 renderPrayerDisplayByLayout();
             }
 
-            const hasCompareRef = String(appState.prefs.compareRef || compareRefInput?.value || '').trim().length > 0;
-            if (appState.prefs.compareMode && window.currentTextPayload && hasCompareRef) {
-                void loadCompareReference();
-            } else {
-                if (compareContainer) {
-                    compareContainer.classList.add('hidden');
-                    compareContainer.innerHTML = '';
-                }
-            }
-
             syncReaderSettingsVisibility();
             applyShulMode();
         }
@@ -7546,8 +7388,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             appState.prefs.transliteration = Boolean(appState.prefs.transliteration);
             appState.prefs.showVowels = appState.prefs.showVowels !== false;
             appState.prefs.showCantillation = appState.prefs.showCantillation !== false;
-            appState.prefs.compareMode = Boolean(appState.prefs.compareMode);
-            appState.prefs.compareRef = String(appState.prefs.compareRef || '');
             appState.prefs.shulMode = Boolean(appState.prefs.shulMode);
             appState.prefs.shulAutoScroll = Boolean(appState.prefs.shulAutoScroll);
             appState.prefs.shulScrollSpeed = Number(appState.prefs.shulScrollSpeed || 28);
@@ -7663,14 +7503,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             transliterationToggle.addEventListener('change', () => {
                 appState.prefs.transliteration = transliterationToggle.checked;
                 releaseRouteDisplayPref('translit');
-                savePrefs();
-                applyReaderPreferences();
-            });
-        }
-
-        if (compareModeToggle) {
-            compareModeToggle.addEventListener('change', () => {
-                appState.prefs.compareMode = compareModeToggle.checked;
                 savePrefs();
                 applyReaderPreferences();
             });
@@ -7953,29 +7785,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             });
         }
 
-        if (compareOpenBtn) {
-            compareOpenBtn.addEventListener('click', () => {
-                appState.prefs.compareMode = true;
-                if (compareModeToggle) compareModeToggle.checked = true;
-                appState.prefs.compareRef = String(compareRefInput?.value || '').trim();
-                savePrefs();
-                void loadCompareReference();
-            });
-        }
-
-        if (compareRefInput) {
-            compareRefInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    compareOpenBtn?.click();
-                }
-            });
-        }
-
-        if (compareClearBtn) {
-            compareClearBtn.addEventListener('click', () => clearCompareReference(true));
-        }
-
         if (closeDevtoolsInspectorBtn) {
             closeDevtoolsInspectorBtn.addEventListener('click', closeDevtoolsInspector);
         }
@@ -7996,14 +7805,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             privacyDataModalEl.addEventListener('click', e => {
                 if (e.target === privacyDataModalEl) closePrivacyDataModal();
             });
-        }
-        if (communityTimelineBtn) {
-            communityTimelineBtn.addEventListener('click', () => {
-                void openCommunityTimeline();
-            });
-        }
-        if (closeCommunityTimelineBtn) {
-            closeCommunityTimelineBtn.addEventListener('click', closeCommunityTimeline);
         }
         if (exportCitationBtn) {
             exportCitationBtn.addEventListener('click', () => {
@@ -9085,7 +8886,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 resetInfiniteReaderState(null);
                 collapseCommentaryPanel();
                 resetSelectionInsights();
-                clearCompareReference(false);
+                syncReaderSettingsVisibility();
 
                 document.getElementById('readerContent').innerHTML = renderPrayerContent(prayerData.content, prayerName);
                 document.getElementById('readerSources').innerHTML = '';
@@ -9184,7 +8985,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 resetInfiniteReaderState(null);
                 collapseCommentaryPanel();
                 resetSelectionInsights();
-                clearCompareReference(false);
+                syncReaderSettingsVisibility();
                 document.getElementById('readerSources').innerHTML = '';
 
                 const { label, section } = siddur.mount(document.getElementById('readerContent'), prepared);
@@ -9331,7 +9132,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 resetInfiniteReaderState(null);
                 collapseCommentaryPanel();
                 resetSelectionInsights();
-                clearCompareReference(false);
+                syncReaderSettingsVisibility();
                 document.getElementById('readerSources').innerHTML = '';
 
                 const majorSources = Array.isArray(communityData?.major_authorities)
@@ -9588,7 +9389,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 collapseCommentaryPanel();
                 resetSelectionInsights();
                 applySidebarVisibility();
-                clearCompareReference(false);
+                syncReaderSettingsVisibility();
                 updateBookmarkButton();
                 scrollPrimaryToTop('instant');
                 window.scrollTo({ top: 0, behavior: 'instant' });
@@ -10820,9 +10621,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 searchInput.placeholder = lang === 'he' ? searchInput.dataset.hePlaceholder : searchInput.dataset.enPlaceholder;
             }
 
-            if (compareRefInput) {
-                compareRefInput.placeholder = lang === 'he' ? 'השווה מול הפניה אחרת...' : 'Compare with reference...';
-            }
             if (libraryIndexFilterInput) {
                 libraryIndexFilterInput.placeholder = lang === 'he'
                     ? (libraryIndexFilterInput.dataset.hePlaceholder || 'סנן נושאים או טקסטים...')
@@ -12245,8 +12043,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 // double-fire on every Escape press.
                 closeMobilePanels();
                 closeDevtoolsInspector();
-                closeSourceGraph();
-                closeCommunityTimeline();
                 closePrivacyDataModal();
             }
         });
