@@ -1566,7 +1566,7 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
        view, that top padding stacked with #reader>header's own margin to
        leave a large dead gap between the topbar and the title. Only the
        top inset needs trimming — left/right/bottom padding is untouched. */
-    padding-top: clamp(0.6rem, 1.6vw, 1.1rem) !important;
+    padding-top: clamp(0.6rem, 1.6vw, 1.1rem);
 }
 
 /* Removed responsive reader max-width overrides to keep layout stable and prevent inward/outward jumping */
@@ -3354,7 +3354,7 @@ html.theme-dark,
             rgba(255, 255, 255, 0.012) 0,
             rgba(255, 255, 255, 0.012) 3px,
             transparent 3px,
-            transparent 9px) !important;
+            transparent 9px);
 }
 
 :is([data-theme="dark"], body.theme-dark) .mobile-bottom-tabs {
@@ -4361,7 +4361,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="hover:text-[#a08a4a]"]:hover {
-    color: var(--accent-talmud) !important;
+    color: var(--accent-talmud);
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="hover:text-[#802f3e]"]:hover {
@@ -4382,7 +4382,7 @@ html.theme-dark,
 
 :is([data-theme="dark"], body.theme-dark) [id^="zRow"] span,
 :is([data-theme="dark"], body.theme-dark) #nextZmanBadge span {
-    color: var(--accent-zmanim) !important;
+    color: var(--accent-zmanim);
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="border-[#004e5f"] {
