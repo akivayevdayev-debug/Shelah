@@ -16,6 +16,11 @@ const HOVER_CLOSE_MS = 220;
 const GAP = 8;
 const EDGE = 8;
 
+function textState(row) {
+    // A source the reader cannot open has no text to show.
+    return row?.dataset.readable === "false" ? "none" : "loading";
+}
+
 // options:
 //   tr(en, he)           -> the string for the interface language
 //   lang()               -> "en" | "he"
@@ -70,11 +75,6 @@ export function createCitationPopover({
 
     const isOpen = () => Boolean(el) && !el.classList.contains("hidden");
 
-    function textState(row) {
-        // A source the reader cannot open has no text to show.
-        return row?.dataset.readable === "false" ? "none" : "loading";
-    }
-
     function contentHtml(chip) {
         const number = chip.dataset.mark;
         const ref = row.dataset.ref || "";
@@ -127,7 +127,7 @@ export function createCitationPopover({
     async function fillText(forToken) {
         const body = el.querySelector(".conv-citepop__text");
         const ref = row?.dataset.ref;
-        if (!body || body.dataset.state !== "loading" || !ref) return;
+        if (body?.dataset.state !== "loading" || !ref) return;
         body.innerHTML = '<div class="ai-src-skeleton-line ai-src-skeleton-line--wide"></div><div class="ai-src-skeleton-line ai-src-skeleton-line--medium"></div>';
         const payload = await fetchPayload(ref);
         if (forToken !== token || !isOpen()) return;
@@ -153,7 +153,7 @@ export function createCitationPopover({
         row.classList.add("conv-cite--active");
         if (!reducedMotion()) {
             el.classList.remove("conv-citepop--in");
-            void el.offsetWidth; // restart the entrance if it is reopened at once
+            el.getBoundingClientRect(); // restart the entrance if it is reopened at once
             el.classList.add("conv-citepop--in");
         }
         if (focus) el.focus({ preventScroll: true });
@@ -218,7 +218,7 @@ export function createCitationPopover({
         target.focus({ preventScroll: true });
         if (reducedMotion()) return;
         target.classList.remove("conv-cite--flash");
-        void target.offsetWidth;
+        target.getBoundingClientRect();
         target.classList.add("conv-cite--flash");
         win.setTimeout(() => target.classList.remove("conv-cite--flash"), 1400);
     }

@@ -147,7 +147,7 @@ const authReady = new Promise((resolve) => { resolveAuth = resolve; });
 function lang() {
     try {
         if (typeof window.getCurrentLanguage === "function") return window.getCurrentLanguage();
-    } catch (_err) { /* fall through */ }
+    } catch { /* fall through */ }
     return document.documentElement.lang === "he" ? "he" : "en";
 }
 
@@ -176,11 +176,12 @@ let iconPaths = {};
 function icon(name, cls = "") {
     const d = iconPaths[name];
     if (!d) return "";
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"${cls ? ` class="${cls}"` : ""}><path d="${d}"/></svg>`;
+    const classAttr = cls ? ` class="${cls}"` : "";
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"${classAttr}><path d="${d}"/></svg>`;
 }
 
 function clerkConfigured() {
-    return Boolean(window.APP_CLERK && window.APP_CLERK.publishableKey);
+    return Boolean(window.APP_CLERK?.publishableKey);
 }
 
 // The community list lives in index.html's <template id="communityOptions">.
@@ -209,7 +210,7 @@ function readCorner() {
     try {
         const value = window.localStorage.getItem(CORNER_KEY);
         return ["br", "bl", "tr", "tl"].includes(value) ? value : "br";
-    } catch (_err) {
+    } catch {
         return "br";
     }
 }
@@ -217,7 +218,7 @@ function readCorner() {
 function readFlag(key) {
     try {
         return window.localStorage.getItem(key) === "1";
-    } catch (_err) {
+    } catch {
         return false;
     }
 }
@@ -225,7 +226,7 @@ function readFlag(key) {
 function writeFlag(key) {
     try {
         window.localStorage.setItem(key, "1");
-    } catch (_err) {
+    } catch {
         // Blocked storage: the tip may show again next visit, which is harmless.
     }
 }
@@ -233,7 +234,7 @@ function writeFlag(key) {
 function clearFlag(key) {
     try {
         window.localStorage.removeItem(key);
-    } catch (_err) {
+    } catch {
         // Blocked storage: nothing was stored to clear.
     }
 }
@@ -241,7 +242,7 @@ function clearFlag(key) {
 function saveCorner(corner) {
     try {
         window.localStorage.setItem(CORNER_KEY, corner);
-    } catch (_err) {
+    } catch {
         // Private mode / blocked storage: the corner just isn't remembered.
     }
 }
@@ -336,7 +337,6 @@ function render() {
     const hasMessages = state.messages.length > 0;
     if (hasMessages) ui.publicState = null;
     const answerView = Boolean(state.answerView) && !conversation;
-    const hasAnswer = state.messages.some((m) => m.answer);
     els.panel.dataset.hasThread = conversation ? "true" : "false";
     els.panel.dataset.answerView = answerView || ui.publicState ? "true" : "false";
     els.panel.dataset.sending = state.sending ? "true" : "false";
@@ -349,9 +349,11 @@ function render() {
 
     // Header.
     const question = answerView ? (state.answerView.title || state.messages.find((m) => m.role === "user")?.content) : "";
+    let publicTitle = "";
+    if (ui.publicState) publicTitle = savedLink ? tr("Saved answer", "תשובה שמורה") : tr("Shared answer", "תשובה משותפת");
     const title = conversation?.title
         || question
-        || (ui.publicState ? (savedLink ? tr("Saved answer", "תשובה שמורה") : tr("Shared answer", "תשובה משותפת")) : "")
+        || publicTitle
         || (hasMessages ? tr("New conversation", "שיחה חדשה") : tr("Ask Sh'elah", "שאל את ש׳אלה"));
     if (!els.title.querySelector("input")) els.title.textContent = title;
     els.subtitle.textContent = ui.layout === "mobile" ? tr(`${name} practice`, `מנהג ${name}`) : "";
@@ -432,9 +434,9 @@ function render() {
     const continues = !answerView
         || (ui.signedIn && Boolean(state.answerView?.historyId))
         || (!ui.signedIn && store.canContinueAsGuest());
-    els.input.placeholder = !hasMessages
-        ? tr("Ask a question…", "שאל שאלה…")
-        : continues ? tr("Ask a follow-up…", "שאל שאלת המשך…") : tr("Ask a new question…", "שאל שאלה חדשה…");
+    let placeholder = tr("Ask a question…", "שאל שאלה…");
+    if (hasMessages) placeholder = continues ? tr("Ask a follow-up…", "שאל שאלת המשך…") : tr("Ask a new question…", "שאל שאלה חדשה…");
+    els.input.placeholder = placeholder;
     // As the guest allowance runs low it says so, above the box.
     const guestNote = !ui.signedIn && !conversation ? guestBannerText(state.guestUsage, l) : null;
     els.guestBanner?.classList.toggle("hidden", !guestNote);
@@ -514,7 +516,7 @@ function renderToast() {
 // data-theme); its label has to follow the theme and the language.
 function syncThemeBtn() {
     if (!els.themeBtn) return;
-    const dark = document.documentElement.getAttribute("data-theme") === "dark";
+    const dark = document.documentElement.dataset.theme === "dark";
     const label = dark ? tr("Switch to light theme", "עבור למצב בהיר") : tr("Switch to dark theme", "עבור למצב כהה");
     els.themeBtn.setAttribute("aria-label", label);
     els.themeBtn.title = label;
@@ -656,7 +658,7 @@ function answerHtml(content) {
     if (typeof window.renderAnswerMarkdown === "function") {
         try {
             return window.renderAnswerMarkdown(content);
-        } catch (_err) { /* fall back to plain text */ }
+        } catch { /* fall back to plain text */ }
     }
     return escapeText(content).replaceAll("\n", "<br>");
 }
@@ -665,7 +667,8 @@ function statusRow({ tone = "", text, action = null, actionLabel = "", messageId
     const button = action
         ? `<button type="button" class="conv-turn__retry" data-turn-action="${action}" data-message-id="${escapeText(messageId)}">${escapeText(actionLabel)}</button>`
         : "";
-    return `<p class="conv-turn__status${tone ? ` conv-turn__status--${tone}` : ""}">${tone === "error" ? icon("warning") : ""}<span>${escapeText(text)}</span>${button}</p>`;
+    const toneClass = tone ? ` conv-turn__status--${tone}` : "";
+    return `<p class="conv-turn__status${toneClass}">${tone === "error" ? icon("warning") : ""}<span>${escapeText(text)}</span>${button}</p>`;
 }
 
 // What Sh'elah is doing while a turn is pending: one line naming the step
@@ -768,7 +771,7 @@ function customsHtml(data, l) {
     const name = (community) => {
         try {
             if (typeof window.getCommunityDisplayName === "function") return window.getCommunityDisplayName(community);
-        } catch (_err) { /* fall through */ }
+        } catch { /* fall through */ }
         return communityName(community, l, communityOptions());
     };
     return `<section class="conv-customs" aria-label="${escapeText(tr("Community customs", "מנהגי קהילות"))}">`
@@ -871,7 +874,7 @@ function renderTurns(state, l) {
                 decorateAnswerTurn(li, message, state.messages[index - 1]?.content);
             }
             if (message.citations?.length) hydrateCitations(li);
-            if (citePop && citePop.anchor() && !citePop.anchor().isConnected) citePop.close();
+            if (citePop?.anchor() && !citePop.anchor().isConnected) citePop.close();
             // An answer arriving in place of its skeleton reveals block by
             // block (conversation.css .conv-turn--reveal); a timer, not
             // animationend, since the staggered children each fire one.
@@ -966,10 +969,13 @@ function renderLists(state, l) {
             const heading = bucket === group ? ""
                 : `<li class="conv-list__group" aria-hidden="true">${escapeText(conversationGroupLabel(bucket, l))}</li>`;
             group = bucket;
+            const pinned = item.pinnedAt
+                ? `${icon("pin", "conv-list__pin")}<span class="sr-only">${escapeText(tr("Pinned", "מוצמד"))}</span>`
+                : "";
             return `${heading}<li><button type="button" class="conv-list__item" data-conv-open="${escapeText(item.id)}" aria-current="${item.id === currentId ? "true" : "false"}">`
                 + `<span class="conv-list__text"><span class="conv-list__title" dir="auto">${escapeText(item.title || tr("Untitled conversation", "שיחה ללא שם"))}</span>`
                 + `<span class="conv-list__meta">${escapeText(meta)}</span></span>`
-                + `${item.pinnedAt ? `${icon("pin", "conv-list__pin")}<span class="sr-only">${escapeText(tr("Pinned", "מוצמד"))}</span>` : ""}</button></li>`;
+                + `${pinned}</button></li>`;
         }).join("");
     }
     els.lists.forEach((ul) => { ul.innerHTML = html; });
@@ -1371,7 +1377,8 @@ function showSavedLoading() {
 // `signIn`: neither the account nor the device holds the answer, and the
 // visitor is signed out, so the URL stays and signing in opens it.
 function showSavedUnavailable(gone, { signIn = false } = {}) {
-    ui.publicState = signIn ? "saved-signin" : gone ? "saved-gone" : "saved-error";
+    ui.publicState = gone ? "saved-gone" : "saved-error";
+    if (signIn) ui.publicState = "saved-signin";
     scheduleRender();
 }
 
@@ -1756,7 +1763,7 @@ function highlightCitedSegment(ref) {
     const row = chunk?.querySelector(".segment-row");
     if (!row) return;
     row.classList.remove("cite-highlight");
-    void row.offsetWidth; // restart the animation if the same verse is cited twice in a row
+    row.getBoundingClientRect(); // restart the animation if the same verse is cited twice in a row
     row.classList.add("cite-highlight");
     window.setTimeout(() => row.classList.remove("cite-highlight"), 1200);
 }
@@ -2112,16 +2119,13 @@ function onKeydown(event) {
     const items = focusables(els.panel);
     if (!items.length) return;
     const first = items[0];
-    const last = items[items.length - 1];
-    if (!els.panel.contains(document.activeElement)) {
+    const last = items.at(-1);
+    if (!els.panel.contains(document.activeElement) || (!event.shiftKey && document.activeElement === last)) {
         event.preventDefault();
         first.focus();
     } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
     }
 }
 
@@ -2407,7 +2411,7 @@ function bindEvents() {
         savePref("community", els.minhagSelect.value);
     });
     els.themeBtn?.addEventListener("click", () => {
-        const dark = document.documentElement.getAttribute("data-theme") === "dark";
+        const dark = document.documentElement.dataset.theme === "dark";
         if (typeof window.setThemePreference === "function") window.setThemePreference(dark ? "light" : "dark");
     });
     // The theme can change from anywhere (the site's own settings, the system):
@@ -2500,7 +2504,7 @@ export function installConversationUI({ storeFactory = createConversationStore }
 
     try {
         iconPaths = JSON.parse(document.getElementById("convIconPaths")?.textContent || "{}");
-    } catch (_err) {
+    } catch {
         iconPaths = {};
     }
 

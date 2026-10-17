@@ -98,7 +98,7 @@ async function isCacheableApiResponse(response) {
         if (payload && typeof payload === "object" && payload.error) {
             return false;
         }
-    } catch (_err) {
+    } catch {
         // Unparsable body -- fall back to the ok/type check already passed above.
     }
     return true;
@@ -154,7 +154,7 @@ async function networkFirstApi(request, offlineResponse) {
             await cache.put(request, fresh.clone());
         }
         return fresh;
-    } catch (_err) {
+    } catch {
         const cached = await (await caches.open(API_CACHE)).match(request);
         return cached || offlineResponse();
     }
@@ -174,7 +174,7 @@ async function networkFirstScript(request) {
         const fresh = await fetch(request);
         await cachePut(SHELL_CACHE, request, fresh);
         return fresh;
-    } catch (_err) {
+    } catch {
         return (await cache.match(request))
             || (await cache.match(request, { ignoreSearch: true }))
             || new Response("", { status: 503, statusText: "Offline" });
@@ -202,7 +202,7 @@ async function networkFirstNavigation(request) {
             await cachePut(RUNTIME_CACHE, request, fresh);
         }
         return fresh;
-    } catch (_err) {
+    } catch {
         const cache = await caches.open(RUNTIME_CACHE);
         const cached = await cache.match(request);
         if (cached) {
@@ -248,7 +248,7 @@ async function prewarmDailyRefs(refs) {
                 if (isCacheableResponse(response)) {
                     await cache.put(url, response.clone());
                 }
-            } catch (_err) {
+            } catch {
                 // Ignore individual prewarm failures.
             }
         })

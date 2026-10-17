@@ -50,7 +50,7 @@ export function safeCitationUrl(value) {
     if (url.startsWith("/") && !url.startsWith("//")) return url;
     try {
         return new URL(url).protocol === "https:" ? url : null;
-    } catch (_err) {
+    } catch {
         return null;
     }
 }
@@ -82,7 +82,7 @@ export function normalizeMessage(raw) {
 }
 
 function normalizeHeader(raw) {
-    if (!raw || !raw.id) return null;
+    if (!raw?.id) return null;
     return {
         id: String(raw.id),
         title: String(raw.title || ""),
@@ -152,7 +152,7 @@ export function answerCitations(data) {
     const citations = [];
     for (const raw of cited) {
         const text = String(raw || "").trim();
-        const match = text.match(CITED_SOURCE_RE);
+        const match = CITED_SOURCE_RE.exec(text);
         const ref = (match ? match[1] : text).trim();
         if (!ref || seen.has(ref.toLowerCase())) continue;
         seen.add(ref.toLowerCase());
@@ -190,6 +190,26 @@ function isServerId(id) {
     return Boolean(id) && !String(id).startsWith(LOCAL_ID_PREFIX);
 }
 
+function errorInfo(error) {
+    return {
+        code: error?.code || ERROR_CODES.NETWORK,
+        message: String(error?.message || "Something went wrong"),
+        retryAfter: error?.retryAfter ?? null,
+    };
+}
+
+function viewFor(data, request = null) {
+    const id = String(data?.history_id || data?.id || "").trim();
+    return { historyId: data?.public ? null : id || null, isPublic: Boolean(data?.public), request };
+}
+
+// Sources state once an answer turn has resolved (COMPLETE or ERROR).
+function sourcesFor(answer) {
+    return answer.status === MESSAGE_STATUS.COMPLETE
+        ? { phase: SOURCES_PHASE.DONE, citations: answer.citations, messageId: answer.id }
+        : { phase: SOURCES_PHASE.UNAVAILABLE, citations: [], messageId: answer.id };
+}
+
 export function createConversationStore({ api = defaultApi, getPrefs = () => ({}), askAnswer = null } = {}) {
     let state = {
         ...initialThreadState(getPrefs()?.community),
@@ -207,7 +227,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
         for (const listener of listeners) {
             try {
                 listener(state);
-            } catch (_err) {
+            } catch {
                 // One broken surface must not stop the others from rendering.
             }
         }
@@ -216,14 +236,6 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
     function nextLocalId() {
         localCounter += 1;
         return `${LOCAL_ID_PREFIX}${localCounter}`;
-    }
-
-    function errorInfo(error) {
-        return {
-            code: error?.code || ERROR_CODES.NETWORK,
-            message: String(error?.message || "Something went wrong"),
-            retryAfter: error?.retryAfter ?? null,
-        };
     }
 
     // errorInfo() for a one-shot /ask failure. A guest-limit refusal also
@@ -304,11 +316,6 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
             { ...normalizeMessage({ role: "user", content: question }), id: ids[0] },
             { ...normalizeMessage({ role: "assistant", content: data?.answer }), id: ids[1], citations: answerCitations(data), answer: data },
         ];
-    }
-
-    function viewFor(data, request = null) {
-        const id = String(data?.history_id || data?.id || "").trim();
-        return { historyId: data?.public ? null : id || null, isPublic: Boolean(data?.public), request };
     }
 
     // Show a stored answer (history, shelf, /answer/<id>, /a/<token>) as
@@ -552,13 +559,6 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
 
     function knownServerIds() {
         return state.messages.map((m) => m.id).filter(isServerId);
-    }
-
-    // Sources state once an answer turn has resolved (COMPLETE or ERROR).
-    function sourcesFor(answer) {
-        return answer.status === MESSAGE_STATUS.COMPLETE
-            ? { phase: SOURCES_PHASE.DONE, citations: answer.citations, messageId: answer.id }
-            : { phase: SOURCES_PHASE.UNAVAILABLE, citations: [], messageId: answer.id };
     }
 
     // Cost-guard refusals (budget_exhausted / ai_paused, with retryAfter) take

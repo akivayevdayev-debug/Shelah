@@ -20,7 +20,7 @@ export const SIGN_IN_HINT = "Sign in to save your conversations.";
 // for this deployment, plus a live session AND a user. Without a publishable
 // key there is no auth at all (e.g. local dev), so that reads as signed out.
 export function isSignedIn() {
-    const clerkConfigured = Boolean(window.APP_CLERK && window.APP_CLERK.publishableKey);
+    const clerkConfigured = Boolean(window.APP_CLERK?.publishableKey);
     return clerkConfigured && Boolean(window.Clerk?.session) && Boolean(window.Clerk?.user);
 }
 

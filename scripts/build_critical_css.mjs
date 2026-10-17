@@ -137,7 +137,7 @@ async function openPage(browser, base, route, cell, { blockScripts, onRequest })
         const url = req.url();
         if (/cdn\.jsdelivr|sentry|clerk|_vercel|googleapis|gstatic|challenges\.cloudflare/.test(url)) return req.abort();
         if (blockScripts && /\/static\/(?:min\/)?js\//.test(url)) return req.abort();
-        if (onRequest && onRequest(req)) return undefined;
+        if (onRequest?.(req)) return undefined;
         return req.continue();
     });
     await page.goto(base + route, { waitUntil: "load" });
@@ -371,7 +371,8 @@ function pageSignature(props) {
         const parts = [];
         for (let node = el; node && node !== document.documentElement; node = node.parentNode) {
             const i = [...node.parentNode.children].indexOf(node);
-            parts.unshift(`${node.tagName.toLowerCase()}${node.id ? `#${node.id}` : ""}:${i}`);
+            const idPart = node.id ? `#${node.id}` : "";
+            parts.unshift(`${node.tagName.toLowerCase()}${idPart}:${i}`);
         }
         return parts.join(">");
     };
@@ -461,7 +462,8 @@ async function main() {
     try {
         for (const kind of Object.keys(KINDS)) {
             const { bad, cells } = await verifyKind(browser2, shipped.base, kind);
-            console.log(`verify ${kind.padEnd(5)} ${bad ? `${bad} of ${cells} cells differ` : `all ${cells} cells identical`}`);
+            const outcome = bad ? `${bad} of ${cells} cells differ` : `all ${cells} cells identical`;
+            console.log(`verify ${kind.padEnd(5)} ${outcome}`);
             failed += bad;
         }
     } finally {
@@ -471,7 +473,9 @@ async function main() {
     if (failed) process.exit(1);
 }
 
-main().catch((err) => {
+try {
+    await main();
+} catch (err) {
     console.error(err);
     process.exit(1);
-});
+}

@@ -88,7 +88,7 @@ async function buildHeaders(withBody) {
     if (typeof window.authHeaders !== "function") return base;
     try {
         return await window.authHeaders(base);
-    } catch (_err) {
+    } catch {
         return base;
     }
 }
@@ -130,7 +130,7 @@ async function fetchWithPolicy(path, { method = "GET", body, retry = true, onRet
     for (let attempt = 1; attempt <= attempts; attempt++) {
         if (attempt > 1) {
             if (typeof onRetry === "function") {
-                try { onRetry(attempt); } catch (_err) { /* UI hooks never abort the request */ }
+                try { onRetry(attempt); } catch { /* UI hooks never abort the request */ }
             }
             await wait(BACKOFF_MS * attempt);
         }
@@ -163,7 +163,7 @@ async function fetchWithPolicy(path, { method = "GET", body, retry = true, onRet
 async function readJson(response) {
     try {
         return await response.json();
-    } catch (_err) {
+    } catch {
         return null;
     }
 }
@@ -292,7 +292,7 @@ export async function reconcileRetry(id, retryOf, knownMessageIds) {
     const askedIndex = errorIndex === -1 ? -1 : precedingUserIndex(messages, errorIndex);
     for (let i = 0; i < messages.length; i++) {
         const reply = messages[i];
-        if (!reply || reply.role !== "assistant" || known.has(reply.id)) continue;
+        if (reply?.role !== "assistant" || known.has(reply.id)) continue;
         const userIndex = precedingUserIndex(messages, i);
         if (userIndex === -1 || !known.has(messages[userIndex].id)) continue;
         // While the error row is still visible, only its own question counts.
@@ -342,7 +342,7 @@ export async function askInConversation(id, { question, mode, language, retryOf 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         if (attempt > 1) {
             if (typeof onRetry === "function") {
-                try { onRetry(attempt); } catch (_err) { /* UI hooks never abort the request */ }
+                try { onRetry(attempt); } catch { /* UI hooks never abort the request */ }
             }
             await wait(BACKOFF_MS * attempt);
         }
@@ -375,7 +375,7 @@ export async function askInConversation(id, { question, mode, language, retryOf 
             let state;
             try {
                 state = await reconcileRetry(id, body.retry_of, knownMessageIds);
-            } catch (_reconcileError) {
+            } catch {
                 throw failure;
             }
             if (state.outcome === "answered") return answeredResult(state);
@@ -389,7 +389,7 @@ export async function askInConversation(id, { question, mode, language, retryOf 
             state = retryOf
                 ? await reconcileRetry(id, body.retry_of, knownMessageIds)
                 : await reconcileAsk(id, body.question, knownMessageIds);
-        } catch (_reconcileError) {
+        } catch {
             // Can't tell whether the question landed -- re-sending could
             // duplicate it, so surface the failure instead of guessing.
             throw failure;

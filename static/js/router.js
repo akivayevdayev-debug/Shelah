@@ -135,13 +135,13 @@ function minhagName(value) {
     return String(value).toLowerCase().replace(/(^|-)([a-z])/g, (_, dash, ch) => dash + ch.toUpperCase());
 }
 
-const TOGGLE_VALUES = ["0", "1"];
+const TOGGLE_VALUES = new Set(["0", "1"]);
 const DISPLAY_VALIDATORS = {
     lang: (v) => ["en", "he"].includes(v),
     layout: (v) => READER_LAYOUTS.includes(v),
-    vowels: (v) => TOGGLE_VALUES.includes(v),
-    taamim: (v) => TOGGLE_VALUES.includes(v),
-    translit: (v) => TOGGLE_VALUES.includes(v),
+    vowels: (v) => TOGGLE_VALUES.has(v),
+    taamim: (v) => TOGGLE_VALUES.has(v),
+    translit: (v) => TOGGLE_VALUES.has(v),
     size: (v) => /^\d{2}$/.test(v) && Number(v) >= FONT_SIZE_RANGE.min && Number(v) <= FONT_SIZE_RANGE.max,
 };
 
@@ -177,7 +177,7 @@ function normalizeRoute(route) {
 function decodeSegment(value) {
     try {
         return decodeURIComponent(value);
-    } catch (_) {
+    } catch {
         return "";
     }
 }
@@ -197,8 +197,8 @@ function encodeSegment(value) {
 // plain ref / name the rest of the app uses, and the older `%20` / `:` forms
 // still parse unchanged.
 const SECTION = String.raw`\d+[ab]?`;
-const SECTIONS = String.raw`${SECTION}(?:[:.]${SECTION})*(?:-${SECTION}(?:[:.]${SECTION})*)?`;
-const REF_SECTIONS_RE = new RegExp(String.raw`^(.+?) (${SECTIONS})$`, "i");
+const SECTIONS = `${SECTION}(?:[:.]${SECTION})*(?:-${SECTION}(?:[:.]${SECTION})*)?`;
+const REF_SECTIONS_RE = new RegExp(`^(.+?) (${SECTIONS})$`, "i");
 const SLUG_SECTIONS_RE = new RegExp(String.raw`^(.+?)\.(${SECTIONS})$`, "i");
 
 function refToSlug(ref) {
@@ -383,7 +383,7 @@ function syncCanonical(route) {
             doc.head.appendChild(link);
         }
         link.setAttribute("href", `${origin}${canonicalPath(route)}`);
-    } catch (_) {
+    } catch {
         // Non-critical: crawlers read the server-rendered tag.
     }
 }
@@ -402,9 +402,9 @@ function markNotFound() {
         const meta = doc.createElement("meta");
         meta.setAttribute("name", "robots");
         meta.setAttribute("content", "noindex");
-        meta.setAttribute("data-not-found", "");
+        meta.dataset.notFound = "";
         doc.head.appendChild(meta);
-    } catch (_) {
+    } catch {
         // Non-critical: the server's 404 covers the next visit.
     }
 }
@@ -419,13 +419,13 @@ let shownState = null;
 function currentState() {
     try {
         return window.history.state || null;
-    } catch (_) {
+    } catch {
         return null;
     }
 }
 
 function isOverlayEntry(state, kind = null) {
-    return Boolean(state && state.pushedBy === "app" && state.overlay && (!kind || state.overlay === kind));
+    return Boolean(state?.pushedBy === "app" && state.overlay && (!kind || state.overlay === kind));
 }
 
 // The state for the entry about to be written. A push is one deeper than
@@ -433,12 +433,18 @@ function isOverlayEntry(state, kind = null) {
 // a replace keeps the entry's depth and its marker while that overlay is
 // still open (`overlay: null` drops it), and what the page saved on it
 // (annotateEntry).
+function navigationDirection(from, to) {
+    if (to === from) return null;
+    return to < from ? "back" : "forward";
+}
+
 function nextState(route, push, overlay) {
     const current = currentState() || {};
     const seq = (Number(current.seq) || 0) + (push ? 1 : 0);
     const state = { shelahRoute: route, seq };
     if (!push && current.saved) state.saved = current.saved;
-    const kind = push ? overlay : (overlay === null ? null : current.overlay);
+    let kind = overlay;
+    if (!push) kind = overlay === null ? null : current.overlay;
     const marked = push ? Boolean(overlay) : isOverlayEntry(current);
     if (marked && kind && (OVERLAY_ROUTE_KEYS[kind] || []).some((key) => route[key])) {
         state.overlay = kind;
@@ -454,10 +460,10 @@ function annotateEntry(fields) {
     if (!fields) return;
     try {
         const current = currentState() || {};
-        const state = { ...current, saved: { ...(current.saved || {}), ...fields } };
+        const state = { ...current, saved: { ...current.saved, ...fields } };
         window.history.replaceState(state, "");
         shownState = state;
-    } catch (_) {
+    } catch {
         // Non-critical history update failure.
     }
 }
@@ -473,7 +479,7 @@ function writeHistory(route, replace, overlay) {
         const state = nextState(route, push, overlay);
         window.history[push ? "pushState" : "replaceState"](state, "", url);
         shownState = state;
-    } catch (_) {
+    } catch {
         // Non-critical history update failure (e.g. sandboxed iframe).
     }
     syncCanonical(route);
@@ -524,7 +530,7 @@ function closeOverlay(kind, patch) {
         try {
             window.history.back();
             return "back";
-        } catch (_) {
+        } catch {
             // Fall through to the in-place removal.
         }
     }
@@ -543,7 +549,7 @@ function pushPath(url, { replace = false } = {}) {
         // any scheme works here, and https avoids SonarCloud's blanket
         // "http is insecure" rule (javascript:S5332) on this literal.
         parsed = new URL(String(url), "https://router.invalid");
-    } catch (_) {
+    } catch {
         return null;
     }
     if (parsed.origin !== "https://router.invalid" && parsed.origin !== window.location.origin) return null;
@@ -580,10 +586,10 @@ function canonicalizeUrl() {
     const url = buildUrl(route, pathname);
     if (url === pathname + search) return;
     try {
-        const state = { ...(window.history.state || {}), shelahRoute: route };
+        const state = { ...window.history.state, shelahRoute: route };
         window.history.replaceState(state, "", url);
         shownState = state;
-    } catch (_) {
+    } catch {
         // Non-critical history update failure.
     }
 }
@@ -606,19 +612,19 @@ function installRouter(handler) {
     onRouteChange = typeof handler === "function" ? handler : null;
     try {
         if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
-    } catch (_) {
+    } catch {
         // Not settable here; the browser keeps restoring.
     }
     shownState = currentState();
     canonicalizeUrl();
     window.addEventListener("popstate", (event) => {
         const state = event.state || null;
-        const route = (state && state.shelahRoute) || readRoute();
+        const route = state?.shelahRoute || readRoute();
         const from = Number(shownState?.seq) || 0;
         const to = Number(state?.seq) || 0;
         const left = shownState?.shelahRoute || null;
         shownState = state;
-        const direction = to === from ? null : (to < from ? "back" : "forward");
+        const direction = navigationDirection(from, to);
         syncCanonical(route);
         onRouteChange?.(route, { direction, saved: state?.saved || null, left });
     });

@@ -55,8 +55,10 @@ export function guessIsrael(location) {
 export function readIsrael(storage = globalThis.localStorage) {
     try {
         const value = storage?.getItem(ISRAEL_KEY);
-        return value === "1" ? true : value === "0" ? false : null;
-    } catch (_) {
+        if (value === "1") return true;
+        if (value === "0") return false;
+        return null;
+    } catch {
         return null;
     }
 }
@@ -64,7 +66,7 @@ export function readIsrael(storage = globalThis.localStorage) {
 export function writeIsrael(value, storage = globalThis.localStorage) {
     try {
         storage?.setItem(ISRAEL_KEY, value ? "1" : "0");
-    } catch (_) {
+    } catch {
         // Private mode / storage off: the choice lasts for this page only.
     }
 }
@@ -188,7 +190,8 @@ function targetsFor(key, day, active) {
         if (active.has("chanukah")) return [["chanukah", "shacharit"]];
         return active.has("purim") || active.has("shushan-purim") ? [["purim", "purim-day"]] : [];
     case "aneinu":
-        return day.fastDay === "tisha-beav" ? [["taaniyot", "mourning"]] : day.fastDay ? [["taaniyot", day.fastDay]] : [];
+        if (day.fastDay === "tisha-beav") return [["taaniyot", "mourning"]];
+        return day.fastDay ? [["taaniyot", day.fastDay]] : [];
     case "musaf":
         if (active.has("shabbat")) return [["musaf-shabbat", null]];
         if (festival) return [["shalosh-regalim", "mussaf"]];
@@ -319,7 +322,8 @@ export function hebrewDateText(day, isHebrew) {
 function pageLink(page, isHebrew, escapeHtml, label = null) {
     const title = isHebrew ? page.title.he : page.title.en;
     // A bare "Open" names nothing out of context: the label carries the page.
-    const aria = label ? ` aria-label="${escapeHtml(`${label}: ${title}`)}"` : "";
+    const labelled = `${label}: ${title}`;
+    const aria = label ? ` aria-label="${escapeHtml(labelled)}"` : "";
     return `<a class="siddur-today-link" href="${escapeHtml(page.href)}" data-siddur-path="${escapeHtml(page.value)}"${aria}>${escapeHtml(label || title)}</a>`;
 }
 
@@ -341,9 +345,7 @@ export function todayCardMarkup(day, { kind = null, il = false, afterSunset = nu
     const extra = extras.length
         ? `<p class="siddur-today-pages"><span class="siddur-today-pages-label">${escapeHtml(t("Also in the siddur today", "עוד בסידור היום"))}</span>${extras.map((page) => pageLink(page, isHebrew, escapeHtml)).join("")}</p>`
         : "";
-    const evening = afterSunset === null
-        ? t("Before sunset", "לפני השקיעה")
-        : afterSunset ? t("After sunset", "אחרי השקיעה") : t("Before sunset", "לפני השקיעה");
+    const evening = afterSunset ? t("After sunset", "אחרי השקיעה") : t("Before sunset", "לפני השקיעה");
     return `
         <section class="siddur-today" aria-labelledby="${headingId}">
             <div class="siddur-today-head">

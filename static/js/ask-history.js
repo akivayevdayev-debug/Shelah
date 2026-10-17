@@ -105,7 +105,7 @@ export async function resolveShelfAsk(entry, { signedIn, fetchEntry, searchHisto
                     .find((row) => isHistoryId(row?.id) && row?.answer && sameQuestion(row.question, question));
                 if (match) return { item: match, migrateTo: match.id };
             }
-        } catch (_) {
+        } catch {
             // Fall through to re-asking.
         }
     }
@@ -158,13 +158,15 @@ function rowHtml(item, state, h) {
     const confirming = state.confirmId === id;
     const deleting = state.deleting.has(id);
     const safeId = escapeHtml(id);
+    const confirmAttrs = deleting ? 'disabled aria-busy="true"' : "";
+    const cancelAttrs = deleting ? "disabled" : "";
     const actions = confirming
         ? `<div class="history-row-confirm" role="group" aria-label="${escapeHtml(t("Delete this answer?", "למחוק תשובה זו?"))}">
                 <span class="history-row-confirm-text" aria-hidden="true">${escapeHtml(t("Delete?", "למחוק?"))}</span>
                 <button type="button" class="history-btn history-btn--danger" data-action="confirm-delete" data-id="${safeId}"
-                    ${deleting ? 'disabled aria-busy="true"' : ""}>${escapeHtml(t("Delete", "מחק"))}</button>
+                    ${confirmAttrs}>${escapeHtml(t("Delete", "מחק"))}</button>
                 <button type="button" class="history-btn" data-action="cancel-delete" data-id="${safeId}"
-                    ${deleting ? "disabled" : ""}>${escapeHtml(t("Cancel", "ביטול"))}</button>
+                    ${cancelAttrs}>${escapeHtml(t("Cancel", "ביטול"))}</button>
            </div>`
         : `<button type="button" class="history-row-del" data-action="delete" data-id="${safeId}"
                 aria-label="${escapeHtml(`${t("Delete", "מחק")}: ${question}`)}">
@@ -312,12 +314,12 @@ export function createHistoryPage(root, deps) {
             if (append) {
                 announce(deps.t(`${incoming.length} more loaded.`, `נטענו עוד ${incoming.length}.`));
             } else if (q) {
+                const count = `${state.items.length}${state.nextCursor ? "+" : ""}`;
                 announce(state.items.length
-                    ? deps.t(`${state.items.length}${state.nextCursor ? "+" : ""} matching questions.`,
-                        `${state.items.length}${state.nextCursor ? "+" : ""} שאלות תואמות.`)
+                    ? deps.t(`${count} matching questions.`, `${count} שאלות תואמות.`)
                     : deps.t("No matching questions.", "אין שאלות תואמות."));
             }
-        } catch (_) {
+        } catch {
             if (seq !== requestSeq || destroyed) return;
             state.status = "error";
             state.loadingMore = false;
@@ -369,7 +371,7 @@ export function createHistoryPage(root, deps) {
         let ok = false;
         try {
             ok = Boolean(await deps.deleteEntry(id));
-        } catch (_) {
+        } catch {
             ok = false;
         }
         state.deleting.delete(id);
@@ -395,8 +397,8 @@ export function createHistoryPage(root, deps) {
     function onClick(event) {
         const target = event.target?.closest?.("[data-action]");
         if (!target || !root.contains?.(target)) return;
-        const action = target.getAttribute("data-action");
-        const id = target.getAttribute("data-id");
+        const action = target.dataset.action;
+        const id = target.dataset.id;
         if (action === "open") {
             // A modified click (new tab/window) keeps the link's own behaviour.
             if (event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

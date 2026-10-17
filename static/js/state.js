@@ -49,7 +49,7 @@ function emitChange() {
     for (const listener of listeners) {
         try {
             listener(snapshot);
-        } catch (_err) {
+        } catch {
             // Keep state updates resilient to consumer exceptions.
         }
     }

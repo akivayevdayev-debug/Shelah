@@ -251,7 +251,7 @@ function fakeRoot() {
 }
 
 function clickEvent(action, id, extra = {}) {
-    const target = { getAttribute: (name) => (name === 'data-action' ? action : id) };
+    const target = { dataset: { action, id } };
     let prevented = false;
     return {
         event: { target: { closest: () => target }, button: 0, preventDefault() { prevented = true; }, ...extra },

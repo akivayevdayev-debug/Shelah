@@ -73,8 +73,8 @@ export function createVoiceInput({ input, button, getLang = () => "en", onState,
 
     function onResult(event) {
         let spoken = "";
-        for (let i = 0; i < event.results.length; i += 1) {
-            spoken += event.results[i][0]?.transcript ?? "";
+        for (const result of Array.from(event.results)) {
+            spoken += result[0]?.transcript ?? "";
         }
         write(joinSpoken(base, spoken.trim() ? spoken.replace(/^\s+/, "") : ""));
     }
@@ -104,7 +104,7 @@ export function createVoiceInput({ input, button, getLang = () => "en", onState,
         try {
             recognition.start();
             setListening(true);
-        } catch (_err) {
+        } catch {
             // start() throws if a session is already running.
             recognition = null;
             setListening(false);
@@ -119,7 +119,7 @@ export function createVoiceInput({ input, button, getLang = () => "en", onState,
         }
         try {
             running.stop();
-        } catch (_err) {
+        } catch {
             // Already ended.
         }
         setListening(false);
@@ -136,7 +136,7 @@ export function createVoiceInput({ input, button, getLang = () => "en", onState,
             running.onend = null;
             try {
                 running.abort();
-            } catch (_err) {
+            } catch {
                 // Already ended.
             }
         }

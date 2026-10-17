@@ -15,6 +15,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { fakeDataset } = require('./helpers/dataset_fake');
 
 function withoutSeq(state) {
     if (!state || typeof state !== 'object') return state;
@@ -570,6 +571,13 @@ function makeHead(canonicalHref) {
         attrs: { ...attrs },
         getAttribute(name) { return this.attrs[name] ?? null; },
         setAttribute(name, value) { this.attrs[name] = String(value); },
+        get dataset() {
+            return fakeDataset({
+                get: (name) => this.attrs[name],
+                set: (name, value) => { this.attrs[name] = value; },
+                remove: (name) => { delete this.attrs[name]; },
+            });
+        },
         remove() { const i = nodes.indexOf(this); if (i !== -1) nodes.splice(i, 1); },
     });
     nodes.push(el({ property: 'og:url', content: 'https://shelah-app.vercel.app/text/Genesis.1' }));

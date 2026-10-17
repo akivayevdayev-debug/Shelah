@@ -208,7 +208,8 @@
     function parashotByBook() {
         const byBook = {};
         for (const entry of PARASHOT) {
-            (byBook[entry.book] = byBook[entry.book] || []).push({
+            byBook[entry.book] ||= [];
+            byBook[entry.book].push({
                 chapter: entry.chapter, verse: entry.verse, name: entry.name,
             });
         }

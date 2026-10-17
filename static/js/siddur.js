@@ -23,6 +23,17 @@ export class SiddurNotFound extends Error {
     }
 }
 
+// Cached promises; a failed load is dropped so a retry fetches again.
+function cached(map, key, load) {
+    if (!map.has(key)) {
+        map.set(key, load().catch((error) => {
+            map.delete(key);
+            throw error;
+        }));
+    }
+    return map.get(key);
+}
+
 export function createSiddur({ fetchImpl = globalThis.fetch, deps, storage = globalThis.localStorage, win = globalThis.window, nav = globalThis.navigator, doc = globalThis.document } = {}) {
     const tocs = new Map();
     const services = new Map();
@@ -40,17 +51,6 @@ export function createSiddur({ fetchImpl = globalThis.fetch, deps, storage = glo
         if (response.status === 404) throw new SiddurNotFound(url);
         if (!response.ok) throw new Error(`${url} ${response.status}`);
         return response.json();
-    }
-
-    // Cached promises; a failed load is dropped so a retry fetches again.
-    function cached(map, key, load) {
-        if (!map.has(key)) {
-            map.set(key, load().catch((error) => {
-                map.delete(key);
-                throw error;
-            }));
-        }
-        return map.get(key);
     }
 
     function loadToc(rite = DEFAULT_RITE) {
@@ -111,7 +111,7 @@ export function createSiddur({ fetchImpl = globalThis.fetch, deps, storage = glo
         let dayData = null;
         try {
             dayData = await dayClient.get(date, il);
-        } catch (_) {
+        } catch {
             dayData = null;
         }
         if (shown?.root !== root) return null;

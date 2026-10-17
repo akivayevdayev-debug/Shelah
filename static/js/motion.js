@@ -598,7 +598,7 @@ let _activeVT = null;
 
 export function viewTransitionsOn() {
     return typeof document.startViewTransition === 'function'
-        && document.documentElement.hasAttribute('data-view-transitions')
+        && document.documentElement.dataset.viewTransitions !== undefined
         && document.visibilityState === 'visible'
         && !isMotionReduced();
 }
@@ -612,20 +612,20 @@ export function transitionView(mutateSync, { direction = 'forward' } = {}) {
     const root = document.documentElement;
     // tokens.css keys Back off this where :active-view-transition-type()
     // isn't supported; data-vt-active names the chrome for the capture.
-    root.setAttribute('data-vt-direction', direction);
-    root.setAttribute('data-vt-active', '');
+    root.dataset.vtDirection = direction;
+    root.dataset.vtActive = '';
     let vt;
     try {
         vt = document.startViewTransition({ update: mutateSync, types: [direction] });
-    } catch (_) {
+    } catch {
         vt = document.startViewTransition(mutateSync); // engines without `types`
     }
     _activeVT = vt;
     const done = () => {
         if (_activeVT !== vt) return;
         _activeVT = null;
-        root.removeAttribute('data-vt-active');
-        root.removeAttribute('data-vt-direction');
+        delete root.dataset.vtActive;
+        delete root.dataset.vtDirection;
     };
     vt.finished.then(done, done);
     return vt;

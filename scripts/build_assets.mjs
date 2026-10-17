@@ -125,14 +125,19 @@ export async function compute(previousManifest = null) {
         const data = readStatic(`js/${name}`);
         (ES_MODULE.test(data.toString("utf8")) ? modules : classic).push([name, data]);
     }
-    for (const [name, data] of classic) {
-        const out = await transform(data.toString("utf8"), {
-            loader: "js",
-            minify: true,
-            target: JS_TARGET,
-            charset: "utf8",
-            legalComments: "none",
-        });
+    const minified = await Promise.all(
+        classic.map(([, data]) =>
+            transform(data.toString("utf8"), {
+                loader: "js",
+                minify: true,
+                target: JS_TARGET,
+                charset: "utf8",
+                legalComments: "none",
+            }),
+        ),
+    );
+    for (const [index, [name, data]] of classic.entries()) {
+        const out = minified[index];
         warnings(name, out.warnings);
         files.set(`js/${name}`, Buffer.from(out.code));
         manifest.js.classic[name] = { source: tagged(data) };
@@ -258,8 +263,10 @@ async function main() {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-    main().catch((err) => {
+    try {
+        await main();
+    } catch (err) {
         console.error(err);
         process.exit(1);
-    });
+    }
 }

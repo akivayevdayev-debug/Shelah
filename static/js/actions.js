@@ -80,7 +80,7 @@
     // Run the action named by the nearest [data-on<type>] ancestor of the
     // event target. Returns true when an action was called.
     function dispatch(type, event, scope) {
-        const target = event && event.target;
+        const target = event?.target;
         if (!target || typeof target.closest !== 'function') return false;
 
         const attr = 'data-on' + type;

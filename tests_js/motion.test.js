@@ -18,6 +18,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { fakeDataset } = require('./helpers/dataset_fake');
 
 const MOTION_PATH = 'static/js/motion.js';
 
@@ -700,6 +701,11 @@ function makeVtDocument({ api = true, flag = true, visible = true } = {}) {
             setAttribute: (name, value) => attrs.set(name, String(value)),
             removeAttribute: (name) => attrs.delete(name),
             getAttribute: (name) => (attrs.has(name) ? attrs.get(name) : null),
+            dataset: fakeDataset({
+                get: (name) => attrs.get(name),
+                set: (name, value) => attrs.set(name, value),
+                remove: (name) => attrs.delete(name),
+            }),
         },
         started: [],
     };

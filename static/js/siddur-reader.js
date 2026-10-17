@@ -187,7 +187,8 @@ function lineMarkup(line, sectionSlug, { layout, applyHebrew, today, t, escapeHt
     }
     const when = Array.isArray(line.when) ? line.when : [];
     const isToday = when.some((tag) => today.has(tag));
-    const attrs = `id="siddur-${sectionSlug}-${line.n}" data-n="${line.n}"${when.length ? ` data-when="${when.join(" ")}"` : ""}${isToday ? " data-today" : ""}`;
+    const whenAttr = when.length ? ` data-when="${when.join(" ")}"` : "";
+    const attrs = `id="siddur-${sectionSlug}-${line.n}" data-n="${line.n}"${whenAttr}${isToday ? " data-today" : ""}`;
     const badge = isToday ? `<span class="siddur-today-badge">${escapeHtml(t("Today", "היום"))}</span>` : "";
     const label = line.label ? `<span class="siddur-label" lang="he" dir="rtl">${escapeHtml(line.label)}</span>` : "";
     switch (line.t) {
@@ -229,7 +230,8 @@ export function serviceMarkup(toc, where, payload, {
                 <span lang="he" dir="rtl">${escapeHtml(sec.title.he)}</span>
                 <span class="siddur-section-alt" lang="en" dir="ltr">${escapeHtml(sec.title.en)}</span>
             </h2>` : "";
-        return `<section class="siddur-section" id="siddur-sec-${sec.slug}" data-siddur-section-body="${sec.slug}"${multi ? ` aria-labelledby="siddur-sec-${sec.slug}-title"` : ""}>
+        const labelledBy = multi ? ` aria-labelledby="siddur-sec-${sec.slug}-title"` : "";
+        return `<section class="siddur-section" id="siddur-sec-${sec.slug}" data-siddur-section-body="${sec.slug}"${labelledBy}>
             ${title}${noEnglish}<div class="siddur-lines">${lines}</div>
         </section>`;
     }).join("");
@@ -347,7 +349,7 @@ export function readPosition(key, storage = globalThis.localStorage) {
     try {
         const all = JSON.parse(storage?.getItem(POSITION_KEY) || "{}");
         return typeof all?.[key] === "string" ? all[key] : null;
-    } catch (_) {
+    } catch {
         return null;
     }
 }
@@ -357,7 +359,7 @@ export function writePosition(key, section, storage = globalThis.localStorage) {
         const all = JSON.parse(storage?.getItem(POSITION_KEY) || "{}") || {};
         all[key] = section;
         storage?.setItem(POSITION_KEY, JSON.stringify(all));
-    } catch (_) {
+    } catch {
         // Storage off: nothing to resume next time.
     }
 }
@@ -406,7 +408,7 @@ export function createWakeLock({ nav = globalThis.navigator, doc = globalThis.do
             sentinel = await nav.wakeLock.request("screen");
             sentinel.addEventListener?.("release", () => { sentinel = null; });
             return true;
-        } catch (_) {
+        } catch {
             wanted = false;
             sentinel = null;
             return false;
@@ -428,7 +430,7 @@ export function createWakeLock({ nav = globalThis.navigator, doc = globalThis.do
             wanted = false;
             const held = sentinel;
             sentinel = null;
-            try { await held?.release(); } catch (_) { /* already released */ }
+            try { await held?.release(); } catch { /* already released */ }
         },
         destroy() {
             doc?.removeEventListener?.("visibilitychange", onVisible);

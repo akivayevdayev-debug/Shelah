@@ -133,7 +133,7 @@ const TRACTATE_NAMES = {
 function foldName(name) {
     return String(name || "")
         .toLowerCase()
-        .replace(/kh/g, "ch")
+        .replaceAll("kh", "ch")
         .replace(/[^a-z]/g, "")
         .replace(/os$/, "ot")
         .replace(/(.)\1+/g, "$1");
@@ -157,7 +157,7 @@ export function alhatorahTractate(name) {
 // A daf of a tractate under any spelling ("Brachos 2a"), which the TALMUD
 // pattern above, written for the standard spellings, does not catch.
 function isTractateDaf(ref) {
-    const daf = String(ref || "").trim().match(DAF);
+    const daf = DAF.exec(String(ref || "").trim());
     return Boolean(daf) && TRACTATE_BY_FOLD.has(foldName(alhatorahTractate(daf[1])));
 }
 
@@ -172,7 +172,7 @@ export function alhatorahBook(name) {
 // "Berakhot 2a". Anything else is returned as written.
 export function readerRef(ref) {
     const r = String(ref || "").trim();
-    const daf = r.match(DAF);
+    const daf = DAF.exec(r);
     if (!daf || YERUSHALMI.test(r)) return r;
     const tractate = alhatorahTractate(daf[1]);
     return TRACTATE_BY_FOLD.has(foldName(tractate)) ? `${tractate}${r.slice(daf[1].length)}` : r;
@@ -185,7 +185,8 @@ function alhatorahLink(r, daf) {
     }
     const parts = r.match(TANAKH_REF);
     if (!parts) return null;
-    const verse = parts[3] ? `.${parts[3]}${parts[4] ? `-${parts[4]}` : ""}` : "";
+    const range = parts[4] ? `-${parts[4]}` : "";
+    const verse = parts[3] ? `.${parts[3]}${range}` : "";
     return { label: "AlHaTorah", href: `https://mg.alhatorah.org/Full/${alhatorahName(alhatorahBook(parts[1]))}/${parts[2]}${verse}` };
 }
 
@@ -206,11 +207,12 @@ export function externalLinks(ref) {
     const kind = sourceKind(r);
     let link = null;
     if (kind === "talmud") {
-        link = alhatorahLink(r, r.match(DAF));
+        link = alhatorahLink(r, DAF.exec(r));
     } else if (kind === "tanakh") {
         link = alhatorahLink(r, null);
     } else if (kind === "responsa" || (kind === "other" && !ON_SEFARIA.test(normalizeRefForMatch(r)))) {
-        link = { label: "HebrewBooks", href: `https://www.google.com/search?q=${encodeURIComponent(`site:hebrewbooks.org ${r.split(",")[0].trim()}`)}` };
+        const query = `site:hebrewbooks.org ${r.split(",")[0].trim()}`;
+        link = { label: "HebrewBooks", href: `https://www.google.com/search?q=${encodeURIComponent(query)}` };
     }
     return link ? [{ ...link, labelHe: SITE_LABELS_HE[link.label] || link.label }] : [];
 }
@@ -314,7 +316,8 @@ export function previewHtml(lines, { max = 3, lang = "en" } = {}) {
     if (!he.length && !en.length) return "";
     const showEn = en.length && !(lang === "he" && he.length);
     let html = '<div class="ai-src-box-body">';
-    if (he.length) html += `<div class="ai-src-box-he" dir="rtl">${he.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}</div>`;
-    if (showEn) html += `<div class="ai-src-box-en">${en.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}</div>`;
+    const paragraph = (text) => `<p>${escapeHtml(text)}</p>`;
+    if (he.length) html += `<div class="ai-src-box-he" dir="rtl">${he.map(paragraph).join("")}</div>`;
+    if (showEn) html += `<div class="ai-src-box-en">${en.map(paragraph).join("")}</div>`;
     return `${html}</div>`;
 }

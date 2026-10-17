@@ -56,7 +56,7 @@ async function defaultHeaders() {
     if (typeof window.authHeaders !== "function") return {};
     try {
         return await window.authHeaders({});
-    } catch (_) {
+    } catch {
         return {};
     }
 }
@@ -81,7 +81,7 @@ export function createShareApi({
         let body = null;
         try {
             body = await resp.json();
-        } catch (_) {
+        } catch {
             body = null;
         }
         if (resp.status === 503 && body?.code === "share_unavailable") throw new ShareUnavailableError();
@@ -218,7 +218,7 @@ export function installShareState(root, share, { translate = defaultTranslate } 
                 copyBtn?.focus({ preventScroll: true });
                 announce(translate("Sharing stopped. The old link no longer works.", "השיתוף הופסק. הקישור הישן כבר לא עובד."), true);
             }
-        } catch (_) {
+        } catch {
             if (id === currentId) {
                 revokeBtn.disabled = false;
                 announce(translate("Couldn't stop sharing. Try again.", "לא ניתן היה להפסיק את השיתוף. נסה/י שוב."), true);

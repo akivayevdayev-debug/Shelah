@@ -156,7 +156,7 @@
                 if (!fn || fn.indexOf('://') === -1) return false; // relative/inline — same-origin
                 try {
                     return new URL(fn).origin !== allowedOrigin;
-                } catch (e) {
+                } catch {
                     return false;
                 }
             });
@@ -255,7 +255,7 @@
         root.__shelahEarlyErrors = [];
         if (!Array.isArray(queued) || typeof Sentry.captureException !== 'function') return;
         queued.forEach(function (err) {
-            try { Sentry.captureException(err); } catch (e) { /* never break the app */ }
+            try { Sentry.captureException(err); } catch { /* never break the app */ }
         });
     }
 
@@ -289,7 +289,7 @@
                 beforeBreadcrumb: makeBeforeBreadcrumb(),
             });
             flushEarlyErrors(Sentry);
-        } catch (e) {
+        } catch {
             // Error-monitoring setup must never break the app itself.
         }
     }

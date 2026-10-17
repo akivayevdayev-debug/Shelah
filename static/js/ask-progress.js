@@ -50,10 +50,12 @@ export function createProgress() {
     return { order: [], status: {} };
 }
 
+const STEP_STATE = new Map([["start", "active"], ["done", "done"]]);
+
 // Pure: returns a new state, or the same object when the event changes nothing.
 export function applyProgressEvent(state, event) {
-    if (!event || event.type !== "stage" || !Object.hasOwn(STAGES, event.stage)) return state;
-    const next = event.state === "start" ? "active" : event.state === "done" ? "done" : null;
+    if (event?.type !== "stage" || !Object.hasOwn(STAGES, event.stage)) return state;
+    const next = STEP_STATE.get(event.state);
     if (!next || state.status[event.stage] === next) return state;
     return {
         order: state.order.includes(event.stage) ? state.order : [...state.order, event.stage],
@@ -99,14 +101,14 @@ export async function readProgressStream(response, onEvent, { timeoutMs = 60000 
         const text = line.trim();
         if (!text || terminal) return;
         let event;
-        try { event = JSON.parse(text); } catch (_err) { return; }
+        try { event = JSON.parse(text); } catch { return; }
         if (!event || typeof event !== "object") return;
         if (event.type === "result" || event.type === "error") {
             terminal = event;
             return;
         }
         if (typeof onEvent === "function") {
-            try { onEvent(event); } catch (_err) { /* progress UI never aborts the answer */ }
+            try { onEvent(event); } catch { /* progress UI never aborts the answer */ }
         }
     };
 

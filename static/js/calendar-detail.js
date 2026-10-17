@@ -98,7 +98,7 @@ function safeHebcalUrl(value) {
     try {
         const url = new URL(String(value || ''));
         return url.protocol === 'https:' && HEBCAL_HOSTS.has(url.hostname) ? url.href : null;
-    } catch (_) {
+    } catch {
         // Not a parseable URL at all: treat it the same as an off-list host.
         return null;
     }
@@ -214,7 +214,7 @@ function formats(he) {
     let hebrew = null;
     try {
         hebrew = new Intl.DateTimeFormat(he ? 'he-u-ca-hebrew' : 'en-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' });
-    } catch (_) { /* engine without the Hebrew calendar */ }
+    } catch { /* engine without the Hebrew calendar */ }
     return {
         long: (key) => long.format(dateOf(key)),
         short: (key) => short.format(dateOf(key)),
@@ -363,7 +363,7 @@ async function loadTimes(loc, keys) {
             if (data.days?.[key]) timeCache.set(timeId(loc, key), { tz: data.timezone, ...data.days[key] });
         }
         return true;
-    } catch (_) {
+    } catch {
         // Offline or a bad response: the card keeps its words ("at sundown") instead.
         return false;
     }
@@ -427,7 +427,7 @@ function timezoneLabel(timezone, lang) {
         const name = new Intl.DateTimeFormat(lang === 'he' ? 'he-IL' : 'en-US', { timeZone: tz, timeZoneName: 'longGeneric' })
             .formatToParts(new Date()).find((part) => part.type === 'timeZoneName')?.value;
         if (name && !/^GMT|^UTC/.test(name)) return name;
-    } catch (_) {
+    } catch {
         // Unknown zone ID: fall through to the ID itself.
     }
     return tz.split('/').pop().replaceAll('_', ' ');

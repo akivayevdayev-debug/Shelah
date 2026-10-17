@@ -10,7 +10,7 @@ async function buildAuthHeaders(baseHeaders) {
     if (typeof window.authHeaders === "function") {
         try {
             return await window.authHeaders(baseHeaders);
-        } catch (_err) {
+        } catch {
             return baseHeaders;
         }
     }
@@ -44,7 +44,7 @@ async function postClientError(payload) {
             },
             body: JSON.stringify(payload),
         });
-    } catch (_err) {
+    } catch {
         // Best effort telemetry should never break the UI.
     }
 }
@@ -136,7 +136,7 @@ export async function loadSemanticBookmarks() {
             },
         });
         return items;
-    } catch (_err) {
+    } catch {
         return [];
     }
 }

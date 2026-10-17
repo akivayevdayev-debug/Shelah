@@ -61,14 +61,14 @@ export async function copyText(text, env) {
             });
             await clipboard.write([new env.ClipboardItem({ "text/plain": blob })]);
             return true;
-        } catch (_) {
+        } catch {
             // Unsupported promise-valued items (older browsers) or no link:
             // retry below with the resolved string.
         }
     }
     try {
         text = await text;
-    } catch (_) {
+    } catch {
         return false;
     }
     if (!text) return false;
@@ -77,7 +77,7 @@ export async function copyText(text, env) {
             await clipboard.writeText(text);
             return true;
         }
-    } catch (_) {
+    } catch {
         // Permission denied or no user activation: try the legacy path.
     }
     const doc = env.document;
@@ -91,7 +91,7 @@ export async function copyText(text, env) {
     try {
         area.select();
         return doc.execCommand?.("copy") === true;
-    } catch (_) {
+    } catch {
         return false;
     } finally {
         area.remove();
@@ -164,14 +164,14 @@ export function installAnswerLink(root, {
         let copied = false;
         try {
             copied = await copy(urlPromise);
-        } catch (_) {
+        } catch {
             copied = false;
         }
         let url = "";
         let note = "";
         try {
             ({ url, note } = await link);
-        } catch (_) {
+        } catch {
             url = "";
         }
         copied = copied && Boolean(url);

@@ -36,7 +36,7 @@ export function createConversationShare({
         let copied = false;
         try {
             copied = await copy(link);
-        } catch (_) {
+        } catch {
             copied = false;
         }
         try {
@@ -51,7 +51,7 @@ export function createConversationShare({
         try {
             await share.revoke(id);
             return true;
-        } catch (_) {
+        } catch {
             return false;
         }
     }

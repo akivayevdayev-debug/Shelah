@@ -38,7 +38,7 @@ async function buildAuthHeaders(baseHeaders) {
     if (typeof window.authHeaders === "function") {
         try {
             return await window.authHeaders(baseHeaders);
-        } catch (_err) {
+        } catch {
             return baseHeaders;
         }
     }
@@ -60,7 +60,7 @@ async function waitBeforeRetry(onRetry, attempt) {
     if (typeof onRetry === "function") {
         try {
             onRetry(attempt);
-        } catch (_err) {
+        } catch {
             // Retry-UI hooks must never abort the request they're reporting on.
         }
     }

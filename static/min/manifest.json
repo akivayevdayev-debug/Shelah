@@ -54,7 +54,7 @@
   "js": {
     "classic": {
       "actions.js": {
-        "source": "sha256:ad770b2055215c4534d0ddf73297e47f3689927a8aa712e8ce7f566e1ec4e950"
+        "source": "sha256:6f350ca91dd53161bff6df3a9ddb5e92e3a2aac676064272dafc1104373d46de"
       },
       "clerk-appearance.js": {
         "source": "sha256:f1c54b0760a5e4d05486d65a5802453bbdfcd6e9026ac25c640e69d17179b25d"
@@ -63,13 +63,13 @@
         "source": "sha256:59399796d2270d577791b002accffcd7f2e17c910fb08741e8964e1f552e2e6a"
       },
       "hebrew-ref.js": {
-        "source": "sha256:bc115bd2fd125bab13cecbfe4bf11dc392b042d6451ef5dfbb227d62573e31c7"
+        "source": "sha256:16c827eb03412cf6796baaa5cd9aabc512effe3e97e46b40120c4e6b036236c2"
       },
       "load-region.js": {
         "source": "sha256:c33a070853e017a1c3cf01b9972f3dec8eb5e666cec8a9b5c024ee69aa29f3e0"
       },
       "sentry-init.js": {
-        "source": "sha256:4e5e1c00b67e3ee511f7776e5d3933a6295816e39b77fcfd1c7f428f55601679"
+        "source": "sha256:0c813149eb47c9b28ad3a9e4d05d05d7e894ba25df98a64aa50c7ab5c65c1ef6"
       },
       "shell.js": {
         "source": "sha256:43e061da15ff2dcd290726b3d31fadd3967297b319e5621abc828ee50b92a7d6"
@@ -85,46 +85,46 @@
         "calendar-detail.js": "js/calendar-detail.js"
       },
       "sources": {
-        "ai-service.js": "sha256:06631720775df3fb0623547b522c912ec389bd2b37352cc7e9e6e04ff785fb8a",
-        "answer-link.js": "sha256:1f86c2a7422b7db5baf8b0bbd8446b720cc41638d95578e92080cd9980765def",
-        "answer-share.js": "sha256:b66fad82f80897432e08eb572ddf547d49eb6de27ac4f63efcfd24b92e2f6cc2",
-        "ask-history.js": "sha256:05f37fe7e0f202dbd017d93587734eb41c8b0cfc958c7cd184e39115af7663db",
-        "ask-progress.js": "sha256:b961173bfff8edeca947f48fadcda3213eb6d04dd50236373c71cdfc4002113b",
-        "calendar-detail.js": "sha256:08720a83a1fb3d51a29673cb7e8f0b789212528fe3fefae135e442cba41c33e1",
+        "ai-service.js": "sha256:46f2256d6d2b4b6d9ed945802a698be29e0d6fb91e9f79e340dd18a399908f1c",
+        "answer-link.js": "sha256:16580c38da75feedb19e3770626816a8e2eb08a7253cbe7a08ffa5cf58caa706",
+        "answer-share.js": "sha256:a7c174bd7f175002b1e33a3f5cad94ce7eb74a850a52be0837ce5e4b545fc537",
+        "ask-history.js": "sha256:f73c7996e1948b0ec0397fddefa020ab121f14606d2cc1f77a6a7819cd5061e7",
+        "ask-progress.js": "sha256:c34ffdcc1ba97c79c2b09b9c7ddba6b774da9a564e7becea4609a4b562b90f1d",
+        "calendar-detail.js": "sha256:c387bbef34e9aadd7ef5bae9c92600cb986a3652ac923967da6c45023921831d",
         "citation-markers.js": "sha256:c94b4384898a504d502d116595714104a5a9e0f8074892a70571cd2b881f6da5",
-        "citation-popover.js": "sha256:1c319c551f8dacc21a001be83c8b7b5770de7834f0471904d569f5ef3a9d2a77",
-        "commentary-preload.js": "sha256:1270ddc2e89f03fef728e904eff8f2de18134b8d5d4ce6bd843f5078c38d6d7e",
-        "conversation-api.js": "sha256:18bfbc5088a0f02aa99aff53149a2536438ff9ee7c8ac9acfcfdb100a37a2b70",
-        "conversation-entry.js": "sha256:785c94ff34897ed298b711b326e327855fcffa4ed567d20f932d19526de0e303",
-        "conversation-share.js": "sha256:abad9bc12b499ca39ffe9f90649b6093e6f484a78df20d4e9454631866163772",
-        "conversation-store.js": "sha256:fb2cfa971d2c8cf59f5ab495cf99a49c38fca6003ca909a4135c5579b8c98493",
-        "conversation-ui-helpers.js": "sha256:cbb074fa851a210d6795a4936413335fb0c3ade075c535e52c3ab7bcd24169b2",
-        "conversation-ui.js": "sha256:15478bd1c028bfc118f3416dd8d7c52c5f30f048dc362f672bab83ba197889d7",
-        "conversation-voice.js": "sha256:39bef275a1b13860d11497077f0b621cdc242b73c2972d535d0338523d7a4e0e",
+        "citation-popover.js": "sha256:2452698153bb4f782f2787f88ec31a17633c5004c2a7627d8038de30491586e5",
+        "commentary-preload.js": "sha256:4c616d94e2898761172ecedf51b9c2019f6fbeeb10fca6d033af4976248683f7",
+        "conversation-api.js": "sha256:6043a6e4116938372672a3b3916268a6fdad950ec95112744e9f88b8be855092",
+        "conversation-entry.js": "sha256:25f9b62da24bcf0965429fa8162bc3b9dfa348b17ce0fdfa0d898ef945d24677",
+        "conversation-share.js": "sha256:558e3e593caba8f29042c936d285ff8eb1564712f1d44255b92d651f3b0faa08",
+        "conversation-store.js": "sha256:1e3dbe47e40fe13be9caf0745fae0d0dc40784241514bb2cf98b4fbebdd9308c",
+        "conversation-ui-helpers.js": "sha256:7e59db517e0a405355bfbaaa3c78bcb2714ec80e11a4803c209448068722f676",
+        "conversation-ui.js": "sha256:0036fe9d2896f8ca104ab5978366e11e809cc1d1a3e09566982e6be4491c5751",
+        "conversation-voice.js": "sha256:080daab3f5738ff4e47ffeca6a792c37868594bc03b902885b881b5ba6e89b05",
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
         "main.js": "sha256:f2f8344c40e23c295f9b9211f253a6e8aae7b45356af70a8bfc6445a7b48ef91",
-        "motion.js": "sha256:1fa83dc0ea0edf2898b9ee83d487f2c908f913b92ce5175c2b262317b248fc8d",
-        "reader-ui.js": "sha256:1b444e7d533c721b8ff4db5c0d8e16215872b039c196b9088222dd27cfc11dcb",
-        "router.js": "sha256:7f97069cf5b66a1376f3898ee862e25d46289798cc99a3f8b7dec0583208de63",
-        "siddur-day.js": "sha256:b1e21fff08e090efef2da707449b93e33df4fefd2252914e4820fff661e7ff2b",
-        "siddur-reader.js": "sha256:9dc2fc71c770d9fe0466f1b46bdc4678429b061b346a99874b0f8a86667ec826",
-        "siddur.js": "sha256:5c7c99c0bed9ec2b0141e0b199f28e6819560d43653fb083397c69c9dd543616",
-        "source-cards.js": "sha256:c9cef423f5f53924f57b799e71be57831166c214dd48e22c294e7986f99f3363",
-        "state.js": "sha256:bb2b6d0c60a7a63db07b48b701156eebb3b11cc361dca9b69ca4184f4590c395",
-        "zmanim.js": "sha256:ca0ce2200fc8df521f330f14b134fbecb8b52799d60d3a6233a97ac3399d4f36"
+        "motion.js": "sha256:147329151528115691bebb369eadb40fd27598853abd18c00ad5b0243b22bfa1",
+        "reader-ui.js": "sha256:afb5716e6b2112361fe652cc9efd2c6a4503ad9e560b898f0b00f992a4dc4fa8",
+        "router.js": "sha256:c9c4d14c661639c70e036376cd17f937afc1f67e13d2373677909cc9e7bac8c2",
+        "siddur-day.js": "sha256:b16c1ebc91fd5a68f69bd8ac9e459dd554f50e2a8cd92e701e2512d0c99fd307",
+        "siddur-reader.js": "sha256:00159a29d963fee4418966fad4def08f8a2ef4036b248f899b80dd1cb5e341f9",
+        "siddur.js": "sha256:ccf437ee7a22e2cb174bc6743919d4d48ce9d3dcf9e9d5435b7499bc0f642ba9",
+        "source-cards.js": "sha256:897ca074f01cf10f20ff2bd828267e832b2525ffbd8fc9b953c557f50efeb10a",
+        "state.js": "sha256:b86bf404aa0c9be5be88039297c6c1138a90e322035c3daf19c7a583cc18405c",
+        "zmanim.js": "sha256:9ce1c086c129eced6b65e2d1850b0c69465e543420bb5ed551a0b8b898fdd196"
       },
       "outputs": {
-        "js/actions.js": "6102e24e9f74",
+        "js/actions.js": "74c685cdac5b",
         "js/calendar-detail.js": "16d6bb96fd33",
         "js/chunks/chunk-GI7XZAIM.js": "7f7dabe88234",
         "js/chunks/chunk-YO7W2DAE.js": "e561d70f6820",
         "js/clerk-appearance.js": "9a44f13bc69b",
         "js/community-labels.js": "8a6529f6c365",
-        "js/hebrew-ref.js": "ca943945d5f1",
+        "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/load-region.js": "2833ed602bea",
-        "js/main.js": "a33466df9978",
-        "js/motion.js": "b05b24502966",
-        "js/sentry-init.js": "715c0413cb78",
+        "js/main.js": "ba37ccb4ff90",
+        "js/motion.js": "381788dc6aa5",
+        "js/sentry-init.js": "1332441afec8",
         "js/shell.js": "944eeb7adeb9",
         "js/topbar_shared.js": "51f0e772633b"
       },

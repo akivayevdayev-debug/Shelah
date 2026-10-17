@@ -98,7 +98,7 @@ export function createCommentaryPreloader(options) {
             await load(ref);
             return true;
         } catch (err) {
-            if (err && err.status === 429) backoffUntil = now() + BACKOFF_MS;
+            if (err?.status === 429) backoffUntil = now() + BACKOFF_MS;
             return false;
         }
     }

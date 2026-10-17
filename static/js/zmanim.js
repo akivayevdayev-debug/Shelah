@@ -260,7 +260,7 @@ export function timezoneLabel(timezone, lang = document.documentElement?.lang) {
         }).formatToParts(new Date());
         const name = parts.find((part) => part.type === 'timeZoneName')?.value;
         if (name && !/^GMT|^UTC/.test(name)) return name;
-    } catch (_) {
+    } catch {
         // Unknown zone ID: fall through to the ID itself.
     }
     return tz.split('/').pop().replaceAll('_', ' ');
@@ -313,7 +313,7 @@ export function getZmanimLocation() {
             const saved = JSON.parse(localStorage.getItem(ZMANIM_LOCATION_CACHE_KEY) || 'null');
             lat = saved?.lat;
             lon = saved?.lon;
-        } catch (_) {
+        } catch {
             // A corrupt cache entry is "no saved location", not an error.
             lat = null;
         }
@@ -748,7 +748,7 @@ export function initZmanim(deps) {
             if (Number.isFinite(parsed?.lat) && Number.isFinite(parsed?.lon)) {
                 cachedLocation = { lat: parsed.lat, lon: parsed.lon };
             }
-        } catch (_) {
+        } catch {
             // A corrupt cache entry is not an error: treat it as "no cached location"
             // (cachedLocation is still null; it is only assigned after a clean parse).
         }

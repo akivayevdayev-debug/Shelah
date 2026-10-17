@@ -49,7 +49,7 @@ export function relativeTime(iso, { now = Date.now(), lang = "en" } = {}) {
             day: "numeric",
             ...(days > 300 ? { year: "numeric" } : {}),
         });
-    } catch (_err) {
+    } catch {
         return date.toISOString().slice(0, 10);
     }
 }
