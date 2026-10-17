@@ -29,6 +29,40 @@ const PHOSPHOR_PATHS = (() => {
 })();
 const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`;
 
+// "<title> <section>" references are matched with the title as words separated
+// by whitespace. Written as `(.+?)\s+<section>` the title and the whitespace after
+// it can both take the same run of spaces, and a long run backtracks quadratically.
+const REF_TITLE = String.raw`(\S+(?:\s+\S+)*?)`;
+const refPattern = (section, flags = '') => new RegExp(`^${REF_TITLE}\\s+${section}$`, flags);
+const CHAPTER_REF_RE = refPattern(String.raw`(\d+)(?::\d+)?`);
+const INDEX_SECTION_RE = refPattern(String.raw`(\d+[ab]?)`, 'i');
+const TALMUD_REF_RE = refPattern(String.raw`(\d+)([ab])(?::(\d+))?`, 'i');
+const CHAPTER_RANGE_REF_RE = refPattern(String.raw`(\d+):(\d+)-(\d+):(\d+)`);
+const CHAPTER_VERSE_REF_RE = refPattern(String.raw`(\d+)(?::(\d+))?`);
+const COMMENTARY_ON_RE = refPattern(String.raw`on\s+(\S.*)`, 'i');
+const TRAILING_SECTION_RE = refPattern(String.raw`\d+[a-b]?(?:[:.]\d+[a-b]?)*(?:-\d+(?:[:.]\d+)*)?`, 'i');
+
+// A whitespace run that holds a newline is that newline; any other run is kept.
+const newlineIfAny = (run) => (run.includes('\n') ? '\n' : run);
+
+// `text` without the slashes at its end (what /\/+$/ would strip, without its rescans).
+function trimTrailingSlashes(text) {
+    let end = text.length;
+    while (end > 0 && text[end - 1] === '/') end -= 1;
+    return text.slice(0, end);
+}
+
+// `text` without the whitespace before each comma (what /\s+,/g would strip, without its rescans).
+function closeUpCommas(text) {
+    return text.split(',').map((piece, i, all) => (i < all.length - 1 ? piece.trimEnd() : piece)).join(',');
+}
+
+// Whether `text` holds a "(" with a ")" after at least one character of content.
+function hasParenthetical(text) {
+    const open = text.indexOf('(');
+    return open >= 0 && text.includes(')', open + 2);
+}
+
         // Initial-route gate for hydrateRoute()/hydratePreferences() (see
         // hydrateRoute below). Declared first so both stay callable even if a
         // later top-level statement in this script throws.
@@ -416,11 +450,12 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             let normalized = String(markdownText || '').replace(/\r\n?/g, '\n');
 
             // Split inline headers/rules onto their own line before structural spacing enforcement.
+            // (A gap of more than 64 whitespace characters is not looked through: it keeps the backtracking bounded.)
             normalized = normalized
-                .replace(/([^\n#])\s*(#{2,6}\s*)/g, '$1\n$2')
+                .replace(/([^\n#])\s{0,64}(#{2,6}\s*)/g, '$1\n$2')
                 .replace(/(^|\n)(#{2,6})([^\s#])/g, '$1$2 $3')
-                .replace(/([^\n])\s*---\s*([^\n])/g, '$1\n---\n$2')
-                .replace(/([^\n])\s*---(\n|$)/g, '$1\n---$2')
+                .replace(/([^\n])\s{0,64}---\s{0,64}([^\n])/g, '$1\n---\n$2')
+                .replace(/([^\n])\s{0,64}---(\n|$)/g, '$1\n---$2')
                 .replace(/(^|\n)---\s*([^\n])/g, '$1---\n$2');
 
             const lines = normalized.split('\n');
@@ -1116,7 +1151,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 return { book: normalizedBookOnly, chapter: 1 };
             }
 
-            const withChapterMatch = /^(.+?)\s+(\d+)(?::\d+)?$/.exec(raw);
+            const withChapterMatch = CHAPTER_REF_RE.exec(raw);
             if (!withChapterMatch) return null;
 
             return {
@@ -1138,10 +1173,10 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (!raw) return null;
 
             const chapterCandidate = raw.split(':')[0].trim();
-            const match = /^(.+?)\s+(\d+[ab]?)$/i.exec(chapterCandidate);
+            const match = INDEX_SECTION_RE.exec(chapterCandidate);
             if (!match) return null;
 
-            const indexTitle = String(match[1] || '').replace(/\s+,/g, ',').trim();
+            const indexTitle = closeUpCommas(String(match[1] || '')).trim();
             const sectionToken = String(match[2] || '').trim().toLowerCase();
             if (!indexTitle || !sectionToken) return null;
 
@@ -1722,7 +1757,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const direct = getHebrewStaticLabel(raw);
             if (direct) return direct;
 
-            const talmudMatch = /^(.+?)\s+(\d+)([ab])(?::(\d+))?$/i.exec(raw);
+            const talmudMatch = TALMUD_REF_RE.exec(raw);
             if (talmudMatch) {
                 const book = getHebrewBookDisplayName(talmudMatch[1]);
                 const dafLine = talmudMatch[4] ? `:${talmudMatch[4]}` : '';
@@ -1730,7 +1765,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 return `${book} ${dafToken}`;
             }
 
-            const chapterRangeMatch = /^(.+?)\s+(\d+):(\d+)-(\d+):(\d+)$/.exec(raw);
+            const chapterRangeMatch = CHAPTER_RANGE_REF_RE.exec(raw);
             if (chapterRangeMatch) {
                 const book = getHebrewBookDisplayName(chapterRangeMatch[1]);
                 const startChapter = hebrewNumber(chapterRangeMatch[2]);
@@ -1740,7 +1775,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 return `${book} ${startChapter}:${startVerse}-${endChapter}:${endVerse}`;
             }
 
-            const chapterMatch = /^(.+?)\s+(\d+)(?::(\d+))?$/.exec(raw);
+            const chapterMatch = CHAPTER_VERSE_REF_RE.exec(raw);
             if (chapterMatch) {
                 const book = getHebrewBookDisplayName(chapterMatch[1]);
                 const chapter = hebrewNumber(chapterMatch[2]);
@@ -1844,7 +1879,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const sefariaHeRef = commentaryRefMeta.get(raw)?.heRef;
             if (sefariaHeRef) return sefariaHeRef;
 
-            const onMatch = /^(.+?)\s+on\s+(.+)$/i.exec(raw);
+            const onMatch = COMMENTARY_ON_RE.exec(raw);
             if (onMatch) {
                 const author = getCommentaryAuthorDisplayName(onMatch[1]);
                 const target = localizeReferenceLabel(onMatch[2]);
@@ -1877,8 +1912,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
             // "15 Tishrei 5787" (or "Tishrei 5787 15") -> "ט״ו בתשרי תשפ״ז".
             const numeral = window.ShelahHebrewRef?.hebrewNumeral || String;
-            const dmy = /^(\d{1,2})\s+([^\d]+?)\s+(\d{4})$/.exec(localized);
-            const mdy = /^([^\d]+?)\s+(\d{4})\s+(\d{1,2})$/.exec(localized);
+            const dmy = /^(\d{1,2})\s+([^\d\s]+(?:\s+[^\d\s]+)*)\s+(\d{4})$/.exec(localized);
+            const mdy = /^([^\d\s]+(?:\s+[^\d\s]+)*)\s+(\d{4})\s+(\d{1,2})$/.exec(localized);
             if (dmy || mdy) {
                 const [day, month, year] = dmy ? [dmy[1], dmy[2], dmy[3]] : [mdy[3], mdy[1], mdy[2]];
                 return `${numeral(Number(day))} ב${month.trim()} ${numeral(Number(year))}`;
@@ -1986,7 +2021,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         function translateCategoryPath(path) {
             const text = String(path || '').trim();
             if (!text || !isHebrewMode()) return text;
-            const parts = text.split(/\s*[>›]\s*/g).map(part => part.trim()).filter(Boolean);
+            const parts = text.split(/[>›]/).map(part => part.trim()).filter(Boolean);
             if (!parts.length) return translateCategoryToken(text);
             return parts.map(translateCategoryToken).join(' › ');
         }
@@ -2042,7 +2077,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             });
 
             result = result
-                .replace(/Parashat\s+([a-z’'\s-]+?)(?=\s*$)/i, (_m, names) => {
+                .replace(/Parashat\s+([a-z’'-]+(?:\s+[a-z’'-]+)*)(?=\s*$)/i, (_m, names) => {
                     const clean = (s) => s.trim().replaceAll(/[’']/g, '');
                     const whole = PARASHA_HE_MAP[clean(names)];
                     if (whole) return `פרשת ${whole}`;
@@ -2122,7 +2157,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const raw = String(meta?.weekly_shabbat_parasha || '').trim();
             if (!raw) return '--';
             if (!isHebrewMode()) return `Shabbat ${raw}`;
-            const parts = raw.split(/\s*[-–]\s*/).map((part) => part.trim()).filter(Boolean);
+            const parts = raw.split(/[-–]/).map((part) => part.trim()).filter(Boolean);
             const he = parts.length
                 ? parts.map((part) => PARASHA_HE_MAP[part] || part).join('-')
                 : (PARASHA_HE_MAP[raw] || raw);
@@ -2190,14 +2225,14 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
             const withoutTags = withoutFootnotes
                 .replace(/<br\s*\/?>/gi, '\n')
-                .replace(/<[^>]*>/g, ' ');
+                .replace(/<[^<>]*>/g, ' ');
 
             return decodeHtmlEntities(withoutTags)
                 .replaceAll(/\u00a0/g, ' ')
                 .replace(/&nbsp;/gi, ' ')
                 .replace(/&thinsp;/gi, ' ')
                 .replace(/[ \t]+/g, ' ')
-                .replace(/\s*\n\s*/g, '\n')
+                .replace(/\s+/g, newlineIfAny)
                 .replace(/\n{3,}/g, '\n\n')
                 .trim();
         }
@@ -2223,14 +2258,14 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 // escapeDisplayTextPreservingEmphasis's DOMPurify pass)
                 // made rubric text visually identical to ordinary bolded
                 // prayer text -- no non-color way to style it distinctly.
-                .replace(/<(?!\/?(?:b|strong|i|em|small)(?:[\s>]|$))[^>]*>/gi, ' ');
+                .replace(/<(?!\/?(?:b|strong|i|em|small)(?:[\s>]|$))[^<>]*>/gi, ' ');
 
             return decodeHtmlEntities(withoutTags)
                 .replaceAll(/\u00A0/g, ' ')
                 .replace(/&nbsp;/gi, ' ')
                 .replace(/&thinsp;/gi, ' ')
                 .replace(/[ \t]+/g, ' ')
-                .replace(/\s*\n\s*/g, '\n')
+                .replace(/\s+/g, newlineIfAny)
                 .replace(/\n{3,}/g, '\n\n')
                 .trim();
         }
@@ -2261,14 +2296,14 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
             const sanitized = (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function')
                 ? DOMPurify.sanitize(withBreaksAsNewlines, { ALLOWED_TAGS: DISPLAY_SAFE_TAGS, ALLOWED_ATTR: [] })
-                : escapeHtml(withBreaksAsNewlines.replace(/<[^>]*>/g, ' '));
+                : escapeHtml(withBreaksAsNewlines.replace(/<[^<>]*>/g, ' '));
 
             return sanitized
                 .replaceAll(/\u00A0/g, ' ')
                 .replace(/&nbsp;/gi, ' ')
                 .replace(/&thinsp;/gi, ' ')
                 .replace(/[ \t]+/g, ' ')
-                .replace(/\s*\n\s*/g, '\n')
+                .replace(/\s+/g, newlineIfAny)
                 .replace(/\n{3,}/g, '\n\n')
                 .trim();
         }
@@ -2708,7 +2743,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             try {
                 const raw = sessionStorage.getItem(AUTH_RETURN_KEY);
                 if (!raw) return null;
-                if (window.location.pathname.replace(/\/+$/, '') !== '/signin') {
+                if (trimTrailingSlashes(window.location.pathname) !== '/signin') {
                     sessionStorage.removeItem(AUTH_RETURN_KEY);
                     return null;
                 }
@@ -5255,16 +5290,16 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             // Sefaria titles the Targum per book ("Onkelos Genesis"); one
             // "Onkelos" key ranks and groups it across the Chumash.
             if (sefariaTitle) return sefariaTitle.replace(/^Onkelos\s+(?:Genesis|Exodus|Leviticus|Numbers|Deuteronomy)$/i, 'Onkelos');
-            const onMatch = /^([^,]+?)\s+on\s+/i.exec(raw);
+            const onMatch = /^([^,\s]+(?:\s+[^,\s]+)*?)\s+on\s+/i.exec(raw);
             if (onMatch?.[1]) return onMatch[1].trim();
             // "Bereshit Rabbah 1:5", "Targum Neofiti 1:1": drop the section
             // numbers so every passage of one work lands in one group.
             const base = raw.split(',')[0]?.trim() || raw;
-            return base.replace(/\s+\d+[a-b]?(?:[:.]\d+[a-b]?)*(?:-\d+(?:[:.]\d+)*)?$/i, '').trim() || base;
+            return base.replace(TRAILING_SECTION_RE, '$1').trim() || base;
         }
 
         function commentaryBucket(ref) {
-            if (/\s+on\s+/i.test(ref)) return 0;
+            if (/\son\s/i.test(ref)) return 0;
             if (/^(?:onkelos|targum|tafsir)\b/i.test(ref)) return 1;
             return 2;
         }
@@ -5682,7 +5717,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         function buildGroupedCommentaries(links, currentRef) {
             let commentaryRefs = extractCommentaryRefs(links);
             if (!commentaryRefs.length) {
-                const tanakhMatch = currentRef.match(/^(.+?)\s+(\d+)(?::\d+)?$/);
+                const tanakhMatch = CHAPTER_REF_RE.exec(currentRef);
                 const tanakhBook = normalizeChapterGridBookName(tanakhMatch?.[1] || '');
                 if (tanakhBook && CHAPTER_GRID_BOOKS[tanakhBook]) {
                     const fallbackVerseRef = currentRef.includes(':')
@@ -6032,7 +6067,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 candidates.push(currentRef.split(':')[0]);
             }
 
-            const talmudDafBaseMatch = /^(.+?\s+\d+[ab])(?::\d+)?$/i.exec(currentRef);
+            const talmudDafBaseMatch = /^(\S+(?:\s+\S+)*?\s+\d+[ab])(?::\d+)?$/i.exec(currentRef);
             if (talmudDafBaseMatch?.[1]) {
                 candidates.push(String(talmudDafBaseMatch[1]).trim());
             }
@@ -6235,7 +6270,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const currentRef = String(payload.ref || '').trim();
             if (!currentRef) return payload;
 
-            const indexTitle = String(payload.title || '').trim() || currentRef.replace(/\s+\S+$/, '').trim();
+            const indexTitle = String(payload.title || '').trim() || currentRef.replace(/^(\S+(?:\s+\S+)*?)\s+\S+$/, '$1').trim();
             if (!indexTitle) return payload;
 
             const refs = await fetchIndexLeafRefs(indexTitle);
@@ -7930,7 +7965,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
         function withHebrewBookName(label) {
             const base = String(label || '').trim();
-            if (!base || /\(.+\)/.test(base)) return base;
+            if (!base || hasParenthetical(base)) return base;
             const suffix = TANAKH_EN_HE_LABELS[base];
             if (!suffix) return base;
             return `${base} (${suffix})`;
@@ -9487,7 +9522,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const raw = String(query || '').trim();
             if (!raw) return [];
 
-            const match = /^([a-z'"\- ]+?)\s+(\d+)([ab])$/i.exec(raw);
+            const match = /^([a-z'"-]+(?: +[a-z'"-]+)*)\s+(\d+)([ab])$/i.exec(raw);
             if (!match) return [];
 
             const tractateRaw = String(match[1] || '').trim();
@@ -9880,11 +9915,10 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const raw = String(ref || '').trim();
             if (!raw) return [];
 
-            const normalizedRaw = raw
+            const normalizedRaw = closeUpCommas(raw
                 .replaceAll(/[’‘]/g, "'")
                 .replaceAll(/[“”]/g, '"')
-                .replace(/\s+/g, ' ')
-                .replace(/\s+,/g, ',')
+                .replace(/\s+/g, ' '))
                 .trim();
             const candidates = [
                 ...fallbackCleanupVariants(raw, normalizedRaw),
