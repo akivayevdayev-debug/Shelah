@@ -2022,7 +2022,7 @@
                     aria-haspopup="dialog" aria-expanded="false" aria-controls="convHistoryPop"
                     aria-label="Conversation history" title="Conversation history"
                     data-aria-en="Conversation history" data-aria-he="היסטוריית שיחות">
-                    {{ phosphor('clock-counter-clockwise', size=16, class='h-4 w-4') }}
+                    <span class="contents" aria-hidden="true">{{ phosphor('clock-counter-clockwise', size=16, class='h-4 w-4') }}</span>
                 </button>
                 <div class="conv-heading">
                     <h2 id="convTitle" class="conv-title">Ask Sh'elah</h2>
@@ -2036,7 +2036,7 @@
                             data-conv-action="share" data-shared="false" aria-haspopup="dialog" aria-expanded="false"
                             aria-controls="convSharePop"
                             aria-label="Share this conversation publicly" title="Share this conversation publicly">
-                            {{ phosphor('share-network', size=16, class='h-4 w-4') }}
+                            <span class="contents" aria-hidden="true">{{ phosphor('share-network', size=16, class='h-4 w-4') }}</span>
                         </button>
                         <!-- Already shared: pressing Share asks before it stops, rather
                              than copying the link again behind the user's back. -->
@@ -2129,27 +2129,27 @@
                     <button type="button" class="conv-icon-btn conv-only-overlay-desktop" data-conv-size="mini"
                         aria-label="Pop out to floating widget" title="Pop out to floating widget"
                         data-aria-en="Pop out to floating widget" data-aria-he="הוצא לחלון צף">
-                        {{ phosphor('picture-in-picture', size=16, class='h-4 w-4') }}
+                        <span class="contents" aria-hidden="true">{{ phosphor('picture-in-picture', size=16, class='h-4 w-4') }}</span>
                     </button>
                     <button type="button" id="convExpandBtn" class="conv-icon-btn conv-only-expand" data-conv-size="expand"
                         aria-label="Open full page" title="Open full page"
                         data-aria-en="Open full page" data-aria-he="פתח בעמוד מלא">
-                        {{ phosphor('arrows-out-simple', size=16, class='h-4 w-4') }}
+                        <span class="contents" aria-hidden="true">{{ phosphor('arrows-out-simple', size=16, class='h-4 w-4') }}</span>
                     </button>
                     <button type="button" class="conv-icon-btn conv-only-full-desktop" data-conv-size="overlay"
                         aria-label="Collapse to overlay" title="Collapse to overlay"
                         data-aria-en="Collapse to overlay" data-aria-he="כווץ לחלון">
-                        {{ phosphor('arrows-in-simple', size=16, class='h-4 w-4') }}
+                        <span class="contents" aria-hidden="true">{{ phosphor('arrows-in-simple', size=16, class='h-4 w-4') }}</span>
                     </button>
                     <button type="button" class="conv-icon-btn conv-only-mobile" data-conv-size="mini"
                         aria-label="Minimize to bar" title="Minimize"
                         data-aria-en="Minimize to bar" data-aria-he="מזער לפס">
-                        {{ phosphor('caret-down', size=16, class='h-4 w-4') }}
+                        <span class="contents" aria-hidden="true">{{ phosphor('caret-down', size=16, class='h-4 w-4') }}</span>
                     </button>
                     <button type="button" class="conv-icon-btn conv-only-close" data-conv-action="close"
                         aria-label="Close conversation" title="Close"
                         data-aria-en="Close conversation" data-aria-he="סגור שיחה">
-                        {{ phosphor('x', size=14, class='h-3.5 w-3.5') }}
+                        <span class="contents" aria-hidden="true">{{ phosphor('x', size=14, class='h-3.5 w-3.5') }}</span>
                     </button>
                 </div>
             </header>
@@ -2196,7 +2196,7 @@
                 <button type="button" id="convJumpBtn" class="conv-jump hidden"
                     aria-label="Jump to latest answer" title="Jump to latest answer"
                     data-aria-en="Jump to latest answer" data-aria-he="קפוץ לתשובה האחרונה">
-                    {{ phosphor('caret-double-down', size=16, class='h-4 w-4') }}
+                    <span class="contents" aria-hidden="true">{{ phosphor('caret-double-down', size=16, class='h-4 w-4') }}</span>
                 </button>
             </div>
 
@@ -2215,7 +2215,7 @@
                     <button type="button" id="convToastAction" class="conv-toast__action hidden">Undo</button>
                     <button type="button" id="convToastClose" class="conv-toast__close"
                         aria-label="Dismiss" data-aria-en="Dismiss" data-aria-he="סגור">
-                        {{ phosphor('x', size=12, class='h-3 w-3') }}
+                        <span class="contents" aria-hidden="true">{{ phosphor('x', size=12, class='h-3 w-3') }}</span>
                     </button>
                 </div>
                 <!-- A signed-out visitor's allowance is running low (or spent): says so above
@@ -2233,11 +2233,11 @@
                         <button type="button" id="convMicBtn" class="conv-mic hidden" aria-pressed="false"
                             aria-label="Dictate your question" title="Dictate your question"
                             data-aria-en="Dictate your question" data-aria-he="הכתבת השאלה">
-                            {{ phosphor('microphone', size=16, class='h-4 w-4') }}
+                            <span class="contents" aria-hidden="true">{{ phosphor('microphone', size=16, class='h-4 w-4') }}</span>
                         </button>
                         <button type="submit" id="convSendBtn" class="conv-send" aria-label="Send" title="Send"
                             data-aria-en="Send" data-aria-he="שלח">
-                            {{ phosphor('arrow-up', size=14, class='h-3.5 w-3.5') }}
+                            <span class="contents" aria-hidden="true">{{ phosphor('arrow-up', size=14, class='h-3.5 w-3.5') }}</span>
                         </button>
                     </div>
                 </form>
@@ -2308,7 +2308,7 @@
         <button type="button" class="conv-icon-btn" data-conv-action="close"
             aria-label="Dismiss conversation" title="Dismiss"
             data-aria-en="Dismiss conversation" data-aria-he="סגור שיחה">
-            {{ phosphor('x', size=14, class='h-3.5 w-3.5') }}
+            <span class="contents" aria-hidden="true">{{ phosphor('x', size=14, class='h-3.5 w-3.5') }}</span>
         </button>
     </div>
 
@@ -2339,7 +2339,7 @@
             aria-haspopup="dialog" aria-expanded="false" aria-controls="convHistoryPop"
             aria-label="Conversation history" title="Conversation history"
             data-aria-en="Conversation history" data-aria-he="היסטוריית שיחות">
-            {{ phosphor('clock-counter-clockwise', size=18, class='h-[18px] w-[18px]') }}
+            <span class="contents" aria-hidden="true">{{ phosphor('clock-counter-clockwise', size=18, class='h-[18px] w-[18px]') }}</span>
         </button>
     </div>
 
