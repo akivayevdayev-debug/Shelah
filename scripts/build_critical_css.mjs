@@ -36,7 +36,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// SHELAH_ASSETS_ROOT builds another tree (tests_js/build_critical_css.test.js uses a temp one).
+const ROOT = process.env.SHELAH_ASSETS_ROOT
+    ? path.resolve(process.env.SHELAH_ASSETS_ROOT)
+    : path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const MIN = path.join(ROOT, "static", "min");
 
 // kind -> [route, matrix] pairs. Every route is the server-rendered shell; the
@@ -59,14 +62,16 @@ export const KINDS = {
         ["/signin", LITE],
     ],
 };
-const VERIFY_WIDTHS = [340, 540, 700, 820, 1100, 1700];
+// How long a loaded page gets to settle before it is measured (a test sets it to 0).
+const SETTLE_MS = Number(process.env.SHELAH_SETTLE_MS ?? 400);
+export const VERIFY_WIDTHS = [340, 540, 700, 820, 1100, 1700];
 
-const arg = (name) => {
-    const i = process.argv.indexOf(name);
-    return i >= 0 ? process.argv[i + 1] : null;
+export const arg = (name, argv = process.argv) => {
+    const i = argv.indexOf(name);
+    return i >= 0 ? argv[i + 1] : null;
 };
 
-function freePort() {
+export function freePort() {
     return new Promise((resolve, reject) => {
         const server = net.createServer();
         server.listen(0, "127.0.0.1", () => {
@@ -77,7 +82,7 @@ function freePort() {
     });
 }
 
-async function startServer(env) {
+export async function startServer(env, { attempts = 120, waitMs = 500 } = {}) {
     const port = await freePort();
     const python = fs.existsSync(path.join(ROOT, ".venv/bin/python")) ? path.join(ROOT, ".venv/bin/python") : "python3";
     const child = spawn(python, ["-m", "uvicorn", "asgi:app", "--port", String(port), "--log-level", "warning"], {
@@ -86,26 +91,26 @@ async function startServer(env) {
         stdio: "ignore",
     });
     const base = `http://127.0.0.1:${port}`;
-    for (let i = 0; i < 120; i += 1) {
+    for (let i = 0; i < attempts; i += 1) {
         try {
             const res = await fetch(`${base}/`);
             if (res.ok) return { base, stop: () => child.kill("SIGTERM") };
         } catch {
             /* not up yet */
         }
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, waitMs));
     }
     child.kill("SIGTERM");
     throw new Error("the server did not start");
 }
 
-function chromePath() {
+export function chromePath() {
     if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
     const mac = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
     return fs.existsSync(mac) ? mac : undefined;
 }
 
-function cellsFor(matrix, authToo = true) {
+export function cellsFor(matrix, authToo = true) {
     const cells = [];
     for (const w of matrix.widths) {
         for (const theme of ["light", "dark"]) {
@@ -117,7 +122,7 @@ function cellsFor(matrix, authToo = true) {
     return cells;
 }
 
-async function openPage(browser, base, route, cell, { blockScripts, onRequest }) {
+export async function openPage(browser, base, route, cell, { blockScripts, onRequest }) {
     const ctx = await browser.createBrowserContext();
     const page = await ctx.newPage();
     await page.setViewport({ width: cell.w, height: cell.w < 768 ? 800 : 900, deviceScaleFactor: 1, isMobile: cell.w < 768, hasTouch: cell.w < 768 });
@@ -141,12 +146,12 @@ async function openPage(browser, base, route, cell, { blockScripts, onRequest })
         return req.continue();
     });
     await page.goto(base + route, { waitUntil: "load" });
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, SETTLE_MS));
     return { page, close: () => ctx.close() };
 }
 
 /** Runs async tasks n at a time. */
-async function pool(tasks, n) {
+export async function pool(tasks, n) {
     const out = new Array(tasks.length);
     let next = 0;
     await Promise.all(
@@ -162,7 +167,7 @@ async function pool(tasks, n) {
 }
 
 // ── in-page: which rules of the page's own stylesheets match the first paint ──
-function pageKeepRules() {
+export function pageKeepRules() {
     // The elements the first paint needs rules for: those that are drawn, and the
     // roots of the subtrees that are not (an element hidden by display:none
     // under a drawn parent -- the rule that hides it is as critical as one that
@@ -262,7 +267,7 @@ function pageKeepRules() {
 }
 
 // ── in-page: serialize the kept rules, sheet by sheet, in document order ──────
-function pageSerialize(keepByHref) {
+export function pageSerialize(keepByHref) {
     const keyframes = [];
     // The at-rule head a grouping rule is written with; any other keeps just its body.
     const heads = {
@@ -307,7 +312,7 @@ function pageSerialize(keepByHref) {
 }
 
 // The rule paths each stylesheet keeps, over every route and matrix cell of a kind.
-async function collectKept(browser, base, kind) {
+export async function collectKept(browser, base, kind) {
     const union = {}; // href -> Set(rule paths)
     for (const [route, matrix] of KINDS[kind]) {
         const cells = cellsFor(matrix);
@@ -331,7 +336,7 @@ async function collectKept(browser, base, kind) {
 }
 
 // A keyframes block is kept when something kept names it.
-function withKeyframes(text, keyframes) {
+export function withKeyframes(text, keyframes) {
     let css = text;
     const seen = new Set();
     for (const [name, body] of keyframes) {
@@ -343,7 +348,7 @@ function withKeyframes(text, keyframes) {
     return css;
 }
 
-async function extractKind(browser, base, kind) {
+export async function extractKind(browser, base, kind) {
     const union = await collectKept(browser, base, kind);
     const { page, close } = await openPage(browser, base, KINDS[kind][0][0], { w: 1280, theme: "light", lang: "en", auth: false }, { blockScripts: true });
     const keepObj = Object.fromEntries(Object.entries(union).map(([k, v]) => [k, [...v]]));
@@ -355,7 +360,7 @@ async function extractKind(browser, base, kind) {
 }
 
 // ── verification: first paint with the bundle blocked == with it applied ──────
-const COMPARED = [
+export const COMPARED = [
     "display", "position", "visibility", "opacity", "color", "background-color", "background-image", "font-family", "font-size",
     "font-weight", "font-style", "line-height", "letter-spacing", "text-align", "text-transform", "text-decoration-line",
     "margin-top", "margin-right", "margin-bottom", "margin-left", "padding-top", "padding-right", "padding-bottom", "padding-left",
@@ -366,7 +371,7 @@ const COMPARED = [
     "aspect-ratio", "filter", "backdrop-filter", "list-style-type", "vertical-align",
 ];
 
-function pageSignature(props) {
+export function pageSignature(props) {
     // Animations are paused at their start so two loads compare the same frame.
     document.getAnimations().forEach((a) => {
         try {
@@ -398,7 +403,7 @@ function pageSignature(props) {
     return out;
 }
 
-async function verifyKind(browser, base, kind) {
+export async function verifyKind(browser, base, kind) {
     const [route] = KINDS[kind][0];
     const cells = cellsFor({ widths: VERIFY_WIDTHS }, false).concat(cellsFor({ widths: [412, 1280] }).filter((c) => c.auth));
     const signature = async (cell, bundle) => {
@@ -435,38 +440,42 @@ async function verifyKind(browser, base, kind) {
     return { bad, cells: cells.length };
 }
 
-async function main() {
-    const verify = !process.argv.includes("--no-verify");
-    const verifyOnly = process.argv.includes("--verify-only");
+/**
+ * The whole run. Resolves to the number of verification cells that differ (0
+ * when there was nothing to verify). `puppeteer` and `serve` are the browser
+ * library and the server starter, passed in so a test can supply fakes.
+ */
+export async function main({ argv = process.argv, puppeteer = require("puppeteer"), serve = startServer } = {}) {
+    const verify = !argv.includes("--no-verify");
+    const verifyOnly = argv.includes("--verify-only");
     const manifestPath = path.join(MIN, "manifest.json");
     if (!fs.existsSync(manifestPath)) throw new Error("static/min/manifest.json is missing: run npm run build:assets first");
     const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-    const puppeteer = require("puppeteer");
-    const given = arg("--base-url");
-    const source = given || verifyOnly ? { base: given, stop: () => {} } : await startServer({ SHELAH_SOURCE_ASSETS: "1" });
+    const given = arg("--base-url", argv);
+    const source = given || verifyOnly ? { base: given, stop: () => {} } : await serve({ SHELAH_SOURCE_ASSETS: "1" });
     const browser = verifyOnly ? null : await puppeteer.launch({ executablePath: chromePath(), headless: true });
     try {
-      if (!verifyOnly) {
-        const critical = {};
-        for (const kind of Object.keys(KINDS)) {
-            const started = Date.now();
-            const { code, order, routes } = await extractKind(browser, source.base, kind);
-            const file = `css/critical-${kind}.css`;
-            fs.mkdirSync(path.join(MIN, "css"), { recursive: true });
-            fs.writeFileSync(path.join(MIN, file), code);
-            critical[kind] = { file, sourcesHash: manifest.css.sourcesHash, routes };
-            console.log(`${kind.padEnd(5)} ${(code.length / 1024).toFixed(1)} KB from ${order.length} sheets, ${routes.length} route(s) (${((Date.now() - started) / 1000).toFixed(0)} s)`);
+        if (!verifyOnly) {
+            const critical = {};
+            for (const kind of Object.keys(KINDS)) {
+                const started = Date.now();
+                const { code, order, routes } = await extractKind(browser, source.base, kind);
+                const file = `css/critical-${kind}.css`;
+                fs.mkdirSync(path.join(MIN, "css"), { recursive: true });
+                fs.writeFileSync(path.join(MIN, file), code);
+                critical[kind] = { file, sourcesHash: manifest.css.sourcesHash, routes };
+                console.log(`${kind.padEnd(5)} ${(code.length / 1024).toFixed(1)} KB from ${order.length} sheets, ${routes.length} route(s) (${((Date.now() - started) / 1000).toFixed(0)} s)`);
+            }
+            manifest.css.critical = critical;
+            fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
         }
-        manifest.css.critical = critical;
-        fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-      }
     } finally {
         await browser?.close();
         source.stop();
     }
-    if (!verify) return;
+    if (!verify) return 0;
     // The verification page is the shipped one: static/min/ current, bundle and critical CSS in the head.
-    const shipped = given ? { base: given, stop: () => {} } : await startServer({ SHELAH_SOURCE_ASSETS: "" });
+    const shipped = given ? { base: given, stop: () => {} } : await serve({ SHELAH_SOURCE_ASSETS: "" });
     const browser2 = await puppeteer.launch({ executablePath: chromePath(), headless: true });
     let failed = 0;
     try {
@@ -480,12 +489,14 @@ async function main() {
         await browser2.close();
         shipped.stop();
     }
-    if (failed) process.exit(1);
+    return failed;
 }
 
-try {
-    await main();
-} catch (err) {
-    console.error(err);
-    process.exit(1);
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+    try {
+        if (await main()) process.exit(1);
+    } catch (err) {
+        console.error(err);
+        process.exit(1);
+    }
 }
