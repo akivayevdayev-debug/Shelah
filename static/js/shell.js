@@ -5919,9 +5919,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 renderCommentaryView(commentaryRef, data);
 
                 // Progressive translation: only when some lines have Hebrew
-                // but no English, and only if the plain payload we painted
-                // isn't already the translated one.
-                if (!commentaryTextCache.has(`${commentaryRef}\u0000t`) && commentaryNeedsTranslation(data)) {
+                // but no English, and only if the payload we painted isn't
+                // already the translated one. (The translated request can have
+                // landed in the cache while the plain one was still arriving:
+                // that does not mean the plain text on screen is translated.)
+                if (data !== commentaryTextCache.get(`${commentaryRef}\u0000t`) && commentaryNeedsTranslation(data)) {
                     try {
                         const translated = await (translatedRequest || fetchCommentaryText(commentaryRef, { translate: true }));
                         if (isCurrent()) renderCommentaryView(commentaryRef, translated);

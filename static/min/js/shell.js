@@ -151,7 +151,7 @@ ${devtoolsLog.textContent}`.slice(0,9e3)}function logReliability(e,n=null){const
                         <div class="sk-reader-para"></div>
                         <div class="sk-reader-para" style="width:80%"></div>
                         <div class="sk-reader-para"></div>
-                    </div>`);try{const i=a?null:fetchCommentaryText(n,{translate:!0});i?.catch(()=>{});const s=a||await fetchCommentaryText(n);if(!r())return;if(renderCommentaryView(n,s),!commentaryTextCache.has(`${n}\0t`)&&commentaryNeedsTranslation(s))try{const o=await(i||fetchCommentaryText(n,{translate:!0}));r()&&renderCommentaryView(n,o)}catch{}}catch{if(!r())return;selectionCommentaryState.activeCommentaryRef="",selectionInsightsBody.innerHTML=`
+                    </div>`);try{const i=a?null:fetchCommentaryText(n,{translate:!0});i?.catch(()=>{});const s=a||await fetchCommentaryText(n);if(!r())return;if(renderCommentaryView(n,s),s!==commentaryTextCache.get(`${n}\0t`)&&commentaryNeedsTranslation(s))try{const o=await(i||fetchCommentaryText(n,{translate:!0}));r()&&renderCommentaryView(n,o)}catch{}}catch{if(!r())return;selectionCommentaryState.activeCommentaryRef="",selectionInsightsBody.innerHTML=`
                     <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-3">
                         <p class="text-sm text-red-700 mb-2">${t("Unable to load commentary text right now.","לא ניתן לטעון כרגע את טקסט הפירוש.")}</p>
                         <button type="button" data-onclick="renderSelectionInsightsChooser"
