@@ -23,7 +23,7 @@
 <body>
     <h1>Feedback digest</h1>
     <p id="status" role="status">Checking your session…</p>
-    <div class="wrap"><table id="rows" hidden></table></div>
+    <div class="wrap"><table id="rows" hidden><thead><tr><th scope="col">Feedback</th></tr></thead></table></div>
     {# Same pinned Clerk build as index.html's loader (SRI hash included). The page
        sends the session token as a Bearer header: a plain address-bar visit to
        /api/devtools/feedback-digest cannot, which is why that URL alone says
@@ -57,8 +57,16 @@
                 const data = await response.json();
                 const columns = [];
                 data.rows.forEach((row) => Object.keys(row).forEach((key) => { if (!columns.includes(key)) columns.push(key); }));
-                const head = table.createTHead().insertRow();
-                columns.forEach((key) => { const th = document.createElement('th'); th.textContent = key; head.append(th); });
+                // The header row ships in the markup (a table needs one); its columns are the
+                // digest's own, which are whatever the feedback table has.
+                const head = table.tHead.rows[0];
+                head.replaceChildren();
+                columns.forEach((key) => {
+                    const th = document.createElement('th');
+                    th.scope = 'col';
+                    th.textContent = key;
+                    head.append(th);
+                });
                 const body = table.createTBody();
                 data.rows.forEach((row) => {
                     const tr = body.insertRow();
