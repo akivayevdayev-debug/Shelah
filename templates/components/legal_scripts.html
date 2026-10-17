@@ -12,6 +12,7 @@
 <script src="{{ asset_url('js/clerk-appearance.js') }}"></script>
 <script src="{{ asset_url('js/topbar_shared.js') }}"></script>
 <script src="{{ asset_url('js/actions.js') }}"></script>
+<script src="{{ asset_url('js/reveal.js') }}"></script>
 <script>
     // ===== APP STATE & CONSTANTS =====
     const LANGUAGE_MANUAL_KEY = 'preferredLanguageManual';
@@ -95,8 +96,13 @@
     function setThemePreference(themePreference, options = {}) {
         const persist = options.persist !== false;
         appState.prefs.theme = normalizeThemePreference(themePreference);
-        applyThemePreferenceClass();
-        updateThemeToggleUi();
+        const apply = () => {
+            applyThemePreferenceClass();
+            updateThemeToggleUi();
+        };
+        // A switch the visitor made crosses over (topbar_shared.js); a saved theme does not.
+        if (persist && typeof withThemeFade === 'function') withThemeFade(apply);
+        else apply();
         if (persist) {
             // Merge into the shared prefs blob rather than overwrite it —
             // other fields (font size, bookmarks UI state, etc.) written by
