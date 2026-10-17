@@ -3705,7 +3705,7 @@ html.theme-dark,
 :is([data-theme="dark"], body.theme-dark) #settingsPanel select,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel select {
     background-color: var(--surface-pill) !important;
-    border-color: var(--conv-edge) !important;
+    border-color: var(--conv-edge);
     color: var(--accent-cream) !important;
 }
 
@@ -3805,7 +3805,7 @@ html.theme-dark,
 :is([data-theme="dark"], body.theme-dark) #selectionInsights {
     background: var(--surface-elevated) !important;
     border-color: var(--surface-border) !important;
-    color: var(--accent-cream) !important;
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #aiTrustSection {
@@ -4050,7 +4050,7 @@ html.theme-dark,
 /* Dark mode – settings panel internal dividers */
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .border-t,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel .border-t {
-    border-top-color: var(--surface-border) !important;
+    border-top-color: var(--surface-border);
 }
 
 /* Fix right sidebar scrollbar in dark mode */
@@ -4215,7 +4215,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .shelf-open.shelf-open-active {
-    background: var(--surface-pill) !important;
+    background: var(--surface-pill);
     border-color: var(--control-border) !important;
     box-shadow: inset 0 0 0 1px rgba(165, 142, 101, 0.24);
 }
@@ -4524,29 +4524,29 @@ html[dir="rtl"] .mobile-drawer-right.mobile-open {
 
 /* City search popover dark mode */
 :is([data-theme="dark"], body.theme-dark) #citySearchPopover {
-    background: var(--surface-elevated) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--text-main) !important;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important;
+    background: var(--surface-elevated);
+    border-color: var(--surface-border);
+    color: var(--text-main);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
 }
 
 :is([data-theme="dark"], body.theme-dark) #citySearchPopover p {
-    color: var(--text-muted) !important;
+    color: var(--text-muted);
 }
 
 :is([data-theme="dark"], body.theme-dark) #citySearchInput {
     background: var(--surface-pill) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--accent-cream) !important;
+    border-color: var(--surface-border);
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #citySearchInput::placeholder {
-    color: var(--text-muted) !important;
+    color: var(--text-muted);
 }
 
 :is([data-theme="dark"], body.theme-dark) #citySearchInput:focus {
-    border-color: var(--control-border) !important;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 25%, transparent) !important;
+    border-color: var(--control-border);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 25%, transparent);
 }
 
 /* Gold accent (not the light-mode navy) to match this popover's warm dark
@@ -4556,39 +4556,39 @@ html[dir="rtl"] .mobile-drawer-right.mobile-open {
    which read as an out-of-place bright block against the rest of dark
    mode's muted button palette. */
 :is([data-theme="dark"], body.theme-dark) #citySearchSubmit {
-    background: var(--surface-elevated) !important;
-    color: var(--gold) !important;
-    border: 1px solid var(--gold) !important;
+    background: var(--surface-elevated);
+    color: var(--gold);
+    border: 1px solid var(--gold);
 }
 
 :is([data-theme="dark"], body.theme-dark) #citySearchSubmit:hover {
-    background: var(--surface-pill) !important;
-    color: var(--gold-light) !important;
-    border-color: var(--gold-light) !important;
+    background: var(--surface-pill);
+    color: var(--gold-light);
+    border-color: var(--gold-light);
 }
 
 :is([data-theme="dark"], body.theme-dark) #citySearchBtn {
-    background: var(--surface-pill) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--text-muted) !important;
+    background: var(--surface-pill);
+    border-color: var(--surface-border);
+    color: var(--text-muted);
 }
 
 :is([data-theme="dark"], body.theme-dark) #citySearchBtn:hover {
-    background: var(--control-bg-hover) !important;
-    color: var(--accent-cream) !important;
+    background: var(--control-bg-hover);
+    color: var(--accent-cream);
 }
 
 /* Commentary sidebar: back-to-list button dark mode */
 :is([data-theme="dark"], body.theme-dark) #rightSidebar [class*="text-[#004e5f]"],
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody [class*="text-[#004e5f]"] {
-    color: var(--accent-teal) !important;
+    color: var(--accent-teal);
 }
 
 /* selectionInsights body dark mode — word meaning and commentary chooser */
 :is([data-theme="dark"], body.theme-dark) #selectionInsights {
-    background: var(--surface-elevated) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--text-main) !important;
+    background: var(--surface-elevated);
+    border-color: var(--surface-border);
+    color: var(--text-main);
 }
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsHint {
@@ -4596,26 +4596,26 @@ html[dir="rtl"] .mobile-drawer-right.mobile-open {
 }
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody .rounded-lg {
-    background: var(--surface-pill) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--text-main) !important;
+    background: var(--surface-pill);
+    border-color: var(--surface-border);
+    color: var(--text-main);
 }
 
 /* Word meaning box */
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody [class*="bg-[#f2eadc]"],
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody [class*="bg-[#"] {
-    background: var(--surface-pill) !important;
+    background: var(--surface-pill);
 }
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody [class*="border-[#d7c8ad]"],
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody [class*="border-[#"] {
-    border-color: var(--surface-border) !important;
+    border-color: var(--surface-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody [class*="text-[#5d4c36]"],
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody [class*="text-[#4f4130]"],
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody [class*="text-[#6a5842]"] {
-    color: var(--text-muted) !important;
+    color: var(--text-muted);
 }
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody .text-slate-700,
@@ -4629,20 +4629,20 @@ html[dir="rtl"] .mobile-drawer-right.mobile-open {
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody .border-slate-100,
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody .border-slate-200 {
-    border-color: var(--surface-border) !important;
+    border-color: var(--surface-border);
 }
 
 /* Commentary text in dark mode */
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody article {
-    border-bottom-color: var(--surface-border) !important;
+    border-bottom-color: var(--surface-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody .font-hebrew {
-    color: var(--accent-cream) !important;
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody .font-serif {
-    color: var(--text-main) !important;
+    color: var(--text-main);
 }
 
 /* Reader topbar library button: right in RTL mode */
@@ -4655,17 +4655,17 @@ html.rtl #readerTopBar #readerLibraryTopBarBtn {
 :is([data-theme="dark"], body.theme-dark) .menu-parasha-quick-link {
     background: linear-gradient(180deg, var(--surface-elevated) 0%, var(--surface-pill) 100%) !important;
     border-color: var(--control-border) !important;
-    color: var(--accent-cream) !important;
-    box-shadow: inset 0 0 0 1px rgba(201, 168, 78, 0.18) !important;
+    color: var(--accent-cream);
+    box-shadow: inset 0 0 0 1px rgba(201, 168, 78, 0.18);
 }
 
 /* Selection insights - text area for commentary content */
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody button {
-    color: var(--accent-teal) !important;
+    color: var(--accent-teal);
 }
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody button:hover {
-    color: var(--control-text-strong) !important;
+    color: var(--control-text-strong);
 }
 
 /* Loading shimmer dark mode */
@@ -4681,14 +4681,14 @@ html.rtl #readerTopBar #readerLibraryTopBarBtn {
 :is([data-theme="dark"], body.theme-dark) #settingsPanel,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel {
     background: var(--surface-elevated) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--accent-cream) !important;
+    border-color: var(--surface-border);
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #searchInput {
-    background: var(--surface-pill) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--accent-cream) !important;
+    background: var(--surface-pill);
+    border-color: var(--surface-border);
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #searchInput:hover {
@@ -4705,16 +4705,16 @@ html.rtl #readerTopBar #readerLibraryTopBarBtn {
 :is([data-theme="dark"], body.theme-dark) #searchInput:focus {
     background: var(--surface-elevated) !important;
     border-color: var(--accent-gold) !important;
-    box-shadow: 0 0 0 3px rgba(201, 172, 94, 0.22) !important;
+    box-shadow: 0 0 0 3px rgba(201, 172, 94, 0.22);
 }
 
 :is([data-theme="dark"], body.theme-dark) #searchIcon { color: var(--text-muted) !important; }
 
 :is([data-theme="dark"], body.theme-dark) .fc .fc-col-header-cell-cushion,
-:is([data-theme="dark"], body.theme-dark) .fc .fc-daygrid-day-number { color: var(--accent-cream) !important; }
+:is([data-theme="dark"], body.theme-dark) .fc .fc-daygrid-day-number { color: var(--accent-cream); }
 
-:is([data-theme="dark"], body.theme-dark) .today-zmanim-list span { color: var(--accent-cream) !important; }
-:is([data-theme="dark"], body.theme-dark) .today-zmanim-list b { color: var(--text-main) !important; }
+:is([data-theme="dark"], body.theme-dark) .today-zmanim-list span { color: var(--accent-cream); }
+:is([data-theme="dark"], body.theme-dark) .today-zmanim-list b { color: var(--text-main); }
 
 :is([data-theme="dark"], body.theme-dark) #holidayName,
 :is([data-theme="dark"], body.theme-dark) #shabbatWeekName,
@@ -4728,8 +4728,8 @@ html.rtl #readerTopBar #readerLibraryTopBarBtn {
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .bg-slate-100,
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .bg-white {
     background: var(--surface-pill) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--accent-cream) !important;
+    border-color: var(--surface-border);
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .text-slate-700,
@@ -4737,29 +4737,29 @@ html.rtl #readerTopBar #readerLibraryTopBarBtn {
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .text-slate-500 { color: var(--accent-cream) !important; }
 
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .border-slate-100,
-:is([data-theme="dark"], body.theme-dark) #settingsPanel .border-slate-200 { border-color: var(--surface-border) !important; }
+:is([data-theme="dark"], body.theme-dark) #settingsPanel .border-slate-200 { border-color: var(--surface-border); }
 
 :is([data-theme="dark"], body.theme-dark) #settingsPanel input,
 :is([data-theme="dark"], body.theme-dark) #settingsPanel textarea,
 :is([data-theme="dark"], body.theme-dark) #settingsPanel button {
-    background: var(--surface-pill) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--accent-cream) !important;
+    background: var(--surface-pill);
+    border-color: var(--surface-border);
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #settingsPanel input::placeholder,
-:is([data-theme="dark"], body.theme-dark) #settingsPanel textarea::placeholder { color: var(--text-muted) !important; }
+:is([data-theme="dark"], body.theme-dark) #settingsPanel textarea::placeholder { color: var(--text-muted); }
 
 :is([data-theme="dark"], body.theme-dark) #themeToggleBtn {
-    background: rgba(148, 163, 184, 0.16) !important;
-    color: var(--accent-cream) !important;
-    border-color: rgba(148, 163, 184, 0.6) !important;
+    background: rgba(148, 163, 184, 0.16);
+    color: var(--accent-cream);
+    border-color: rgba(148, 163, 184, 0.6);
 }
 
 :is([data-theme="dark"], body.theme-dark) #themeToggleBtn:hover {
-    background: rgba(148, 163, 184, 0.26) !important;
-    border-color: rgba(148, 163, 184, 0.75) !important;
-    color: var(--accent-cream) !important;
+    background: rgba(148, 163, 184, 0.26);
+    border-color: rgba(148, 163, 184, 0.75);
+    color: var(--accent-cream);
 }
 
 /* The dark-mode Quick Settings button rules live only here (an identical
@@ -4808,11 +4808,11 @@ html.rtl #readerTopBar #readerLibraryTopBarBtn {
     background: #3d70ab !important;
     border-color: #7fb0e0 !important;
     color: #ffffff !important;
-    box-shadow: 0 0 0 2px rgba(127, 176, 224, 0.3) !important;
+    box-shadow: 0 0 0 2px rgba(127, 176, 224, 0.3);
 }
 
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .hover\:bg-slate-200:hover {
-    background-color: var(--control-bg-hover) !important;
+    background-color: var(--control-bg-hover);
 }
 
 /* ── Analytics consent banner ─────────────────────────────────────────── */
@@ -4869,9 +4869,9 @@ html[data-consent-set] #analyticsConsentBanner {
 }
 
 #analyticsConsentAccept {
-    background: var(--accent-primary) !important;
-    border-color: var(--accent-primary) !important;
-    color: var(--ink-on-accent) !important;
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: var(--ink-on-accent);
 }
 
 /* Dark theme's --accent-primary (#6888a8) against --ink-on-accent (#f0ebe3) is
@@ -4882,14 +4882,14 @@ html[data-consent-set] #analyticsConsentBanner {
 [data-theme="dark"] #analyticsConsentAccept,
 html.theme-dark #analyticsConsentAccept,
 body.theme-dark #analyticsConsentAccept {
-    background: #4e667e !important;
-    border-color: #4e667e !important;
+    background: #4e667e;
+    border-color: #4e667e;
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) #analyticsConsentAccept {
-        background: #4e667e !important;
-        border-color: #4e667e !important;
+        background: #4e667e;
+        border-color: #4e667e;
     }
 }
 
@@ -4971,7 +4971,7 @@ body.theme-dark #analyticsConsentAccept {
 }
 
 :is([data-theme="dark"], body.theme-dark) .shelf-open.shelf-open-active:hover {
-    background: var(--ctrl-bg-hover) !important;
+    background: var(--ctrl-bg-hover);
 }
 
 /* The consent banner's Accept fill is !important, so the shared
@@ -4979,19 +4979,19 @@ body.theme-dark #analyticsConsentAccept {
    accent's hover shade. Dark: deepen the AA-tuned fill (its text is
    light, so darker only widens the 5.0:1 margin). */
 #analyticsConsentAccept:hover {
-    background: var(--accent-primary-hover) !important;
-    border-color: var(--accent-primary-hover) !important;
+    background: var(--accent-primary-hover);
+    border-color: var(--accent-primary-hover);
 }
 
 :is([data-theme="dark"], html.theme-dark, body.theme-dark) #analyticsConsentAccept:hover {
-    background: color-mix(in srgb, #4e667e 82%, black) !important;
-    border-color: color-mix(in srgb, #4e667e 82%, black) !important;
+    background: color-mix(in srgb, #4e667e 82%, black);
+    border-color: color-mix(in srgb, #4e667e 82%, black);
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) #analyticsConsentAccept:hover {
-        background: color-mix(in srgb, #4e667e 82%, black) !important;
-        border-color: color-mix(in srgb, #4e667e 82%, black) !important;
+        background: color-mix(in srgb, #4e667e 82%, black);
+        border-color: color-mix(in srgb, #4e667e 82%, black);
     }
 }
 
