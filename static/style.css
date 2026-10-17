@@ -3504,7 +3504,7 @@ html.theme-dark,
 :is([data-theme="dark"], body.theme-dark) .text-slate-300,
 :is([data-theme="dark"], body.theme-dark) .text-gray-200,
 :is([data-theme="dark"], body.theme-dark) .text-gray-300 {
-    color: var(--tw-dark-text-slate-300) !important;
+    color: var(--tw-dark-text-slate-300);
 }
 
 :is([data-theme="dark"], body.theme-dark) .hover\:bg-white:hover,
@@ -3516,31 +3516,31 @@ html.theme-dark,
 
 :is([data-theme="dark"], body.theme-dark) .bg-emerald-50,
 :is([data-theme="dark"], body.theme-dark) .bg-emerald-100 {
-    background-color: var(--tw-dark-bg-emerald) !important;
+    background-color: var(--tw-dark-bg-emerald);
 }
 
 :is([data-theme="dark"], body.theme-dark) .border-emerald-200 {
-    border-color: var(--tw-dark-border-emerald) !important;
+    border-color: var(--tw-dark-border-emerald);
 }
 
 :is([data-theme="dark"], body.theme-dark) .text-emerald-500,
 :is([data-theme="dark"], body.theme-dark) .text-emerald-700,
 :is([data-theme="dark"], body.theme-dark) .text-emerald-800 {
-    color: var(--tw-dark-text-emerald) !important;
+    color: var(--tw-dark-text-emerald);
 }
 
 :is([data-theme="dark"], body.theme-dark) .bg-amber-50,
 :is([data-theme="dark"], body.theme-dark) .bg-amber-100 {
-    background-color: var(--tw-dark-bg-amber) !important;
+    background-color: var(--tw-dark-bg-amber);
 }
 
 :is([data-theme="dark"], body.theme-dark) .border-amber-200 {
-    border-color: var(--tw-dark-border-amber) !important;
+    border-color: var(--tw-dark-border-amber);
 }
 
 :is([data-theme="dark"], body.theme-dark) .text-amber-700,
 :is([data-theme="dark"], body.theme-dark) .text-amber-800 {
-    color: var(--tw-dark-text-amber) !important;
+    color: var(--tw-dark-text-amber);
 }
 
 /* Legal-acceptance modal: the ToS/Privacy links use an arbitrary-value
@@ -3548,34 +3548,34 @@ html.theme-dark,
    remaps above can't match, so they'd stay literal navy on the dark modal
    surface with poor contrast. */
 :is([data-theme="dark"], body.theme-dark) #legalModal a[class*="text-[#1f3f63]"] {
-    color: var(--accent-primary) !important;
+    color: var(--accent-primary);
 }
 
 :is([data-theme="dark"], body.theme-dark) #legalModal a[class*="text-[#1f3f63]"]:hover {
-    color: var(--accent-primary-hover) !important;
+    color: var(--accent-primary-hover);
 }
 
 :is([data-theme="dark"], body.theme-dark) .bg-red-50,
 :is([data-theme="dark"], body.theme-dark) .bg-rose-50 {
-    background-color: var(--tw-dark-bg-red) !important;
+    background-color: var(--tw-dark-bg-red);
 }
 
 :is([data-theme="dark"], body.theme-dark) .border-red-200,
 :is([data-theme="dark"], body.theme-dark) .border-rose-200 {
-    border-color: var(--tw-dark-border-red) !important;
+    border-color: var(--tw-dark-border-red);
 }
 
 :is([data-theme="dark"], body.theme-dark) .text-red-500,
 :is([data-theme="dark"], body.theme-dark) .text-red-700,
 :is([data-theme="dark"], body.theme-dark) .text-rose-700 {
-    color: var(--tw-dark-text-red) !important;
+    color: var(--tw-dark-text-red);
 }
 
 :is([data-theme="dark"], body.theme-dark) .text-navy,
 :is([data-theme="dark"], body.theme-dark) .hover\:text-navy:hover,
 :is([data-theme="dark"], body.theme-dark) [class*=" text-navy"],
 :is([data-theme="dark"], body.theme-dark) [class^="text-navy"] {
-    color: var(--accent-cream) !important;
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) .text-blue-500,
@@ -3586,30 +3586,30 @@ html.theme-dark,
 :is([data-theme="dark"], body.theme-dark) .text-indigo-700,
 :is([data-theme="dark"], body.theme-dark) .text-indigo-800,
 :is([data-theme="dark"], body.theme-dark) .text-indigo-900 {
-    color: var(--tw-dark-text-blue) !important;
+    color: var(--tw-dark-text-blue);
 }
 
 :is([data-theme="dark"], body.theme-dark) .bg-blue-50,
 :is([data-theme="dark"], body.theme-dark) .bg-blue-100,
 :is([data-theme="dark"], body.theme-dark) .bg-indigo-50 {
-    background-color: var(--tw-dark-bg-blue) !important;
+    background-color: var(--tw-dark-bg-blue);
 }
 
 :is([data-theme="dark"], body.theme-dark) .border-blue-200,
 :is([data-theme="dark"], body.theme-dark) .border-indigo-200 {
-    border-color: var(--tw-dark-border-blue) !important;
+    border-color: var(--tw-dark-border-blue);
 }
 
 :is([data-theme="dark"], body.theme-dark) .focus\:ring-blue-300:focus,
 :is([data-theme="dark"], body.theme-dark) .focus\:ring-blue-400:focus,
 :is([data-theme="dark"], body.theme-dark) .focus\:ring-blue-500:focus {
-    --tw-ring-color: rgba(176, 154, 116, 0.45) !important;
+    --tw-ring-color: rgba(176, 154, 116, 0.45);
 }
 
 :is([data-theme="dark"], body.theme-dark) .focus\:border-blue-300:focus,
 :is([data-theme="dark"], body.theme-dark) .focus\:border-blue-400:focus,
 :is([data-theme="dark"], body.theme-dark) .focus\:border-blue-500:focus {
-    border-color: var(--tw-dark-focus-border) !important;
+    border-color: var(--tw-dark-focus-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) .fc,
@@ -3618,18 +3618,18 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .fc {
-    --fc-page-bg-color: var(--surface-subtle) !important;
-    --fc-neutral-bg-color: var(--surface-elevated) !important;
-    --fc-border-color: var(--surface-border) !important;
-    --fc-neutral-text-color: var(--text-muted) !important;
-    --fc-list-event-hover-bg-color: var(--control-bg) !important;
+    --fc-page-bg-color: var(--surface-subtle);
+    --fc-neutral-bg-color: var(--surface-elevated);
+    --fc-border-color: var(--surface-border);
+    --fc-neutral-text-color: var(--text-muted);
+    --fc-list-event-hover-bg-color: var(--control-bg);
 }
 
 :is([data-theme="dark"], body.theme-dark) .fc-theme-standard td,
 :is([data-theme="dark"], body.theme-dark) .fc-theme-standard th,
 :is([data-theme="dark"], body.theme-dark) .fc-scrollgrid,
 :is([data-theme="dark"], body.theme-dark) .fc-scrollgrid-section>* {
-    border-color: var(--surface-border) !important;
+    border-color: var(--surface-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) .fc .fc-col-header-cell,
@@ -3638,15 +3638,15 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .fc .fc-scrollgrid-section-header>th {
-    background: var(--surface-elevated) !important;
+    background: var(--surface-elevated);
 }
 
 :is([data-theme="dark"], body.theme-dark) #calendarModal th {
-    background: var(--surface-elevated) !important;
+    background: var(--surface-elevated);
 }
 
 :is([data-theme="dark"], body.theme-dark) th {
-    background: var(--surface-elevated) !important;
+    background: var(--surface-elevated);
 }
 
 :is([data-theme="dark"], body.theme-dark) .fc .fc-daygrid-day-frame {
@@ -3654,7 +3654,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .fc-day-today {
-    background: var(--surface-pill) !important;
+    background: var(--surface-pill);
 }
 
 :is([data-theme="dark"], body.theme-dark) .fc .fc-toolbar-title {
@@ -3662,18 +3662,18 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .fc .fc-button {
-    background-color: var(--control-bg) !important;
-    border-color: var(--control-border) !important;
+    background-color: var(--control-bg);
+    border-color: var(--control-border);
     color: var(--accent-cream) !important;
 }
 
 :is([data-theme="dark"], body.theme-dark) .fc .fc-button:hover {
-    background-color: var(--control-bg-hover) !important;
-    border-color: var(--control-border) !important;
+    background-color: var(--control-bg-hover);
+    border-color: var(--control-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) .fc .fc-button:disabled {
-    background-color: var(--surface-pill) !important;
+    background-color: var(--surface-pill);
     border-color: var(--surface-border) !important;
     color: var(--text-muted) !important;
 }
@@ -3711,39 +3711,39 @@ html.theme-dark,
 
 /* Dark overlay backgrounds - neutralize to prevent color bleed */
 :is([data-theme="dark"], body.theme-dark) .bg-slate-900\/60 {
-    background-color: color-mix(in srgb, var(--surface-base) 84%, transparent) !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
+    background-color: color-mix(in srgb, var(--surface-base) 84%, transparent);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
 }
 
 :is([data-theme="dark"], body.theme-dark) .bg-slate-900\/45 {
-    background-color: color-mix(in srgb, var(--surface-base) 88%, transparent) !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
+    background-color: color-mix(in srgb, var(--surface-base) 88%, transparent);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
 }
 
 :is([data-theme="dark"], body.theme-dark) #calendarModal,
 :is([data-theme="dark"], body.theme-dark) #textsMenuModal {
-    background-color: color-mix(in srgb, var(--surface-base) 84%, transparent) !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
+    background-color: color-mix(in srgb, var(--surface-base) 84%, transparent);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
 }
 
 :is([data-theme="dark"], body.theme-dark) #mobileDrawerBackdrop {
-    background-color: color-mix(in srgb, var(--surface-base) 88%, transparent) !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
+    background-color: color-mix(in srgb, var(--surface-base) 88%, transparent);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
 }
 
 /* Dark mode focus rings - warm gold/brown, matching the rest of the palette */
 :is([data-theme="dark"], body.theme-dark) .ring-blue-400,
 :is([data-theme="dark"], body.theme-dark) .focus\:ring-blue-400:focus,
 :is([data-theme="dark"], body.theme-dark) .focus-ring {
-    --tw-ring-color: rgba(176, 154, 116, 0.42) !important;
+    --tw-ring-color: rgba(176, 154, 116, 0.42);
 }
 
 :is([data-theme="dark"], body.theme-dark) .border-blue-400 {
-    border-color: #7a6d57 !important;
+    border-color: #7a6d57;
 }
 
 /* Dark calendar button active states */
@@ -3762,14 +3762,14 @@ html.theme-dark,
 
 :is([data-theme="dark"], body.theme-dark) #settingsPanel select option,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel select option {
-    background: var(--surface-elevated) !important;
-    color: var(--accent-cream) !important;
+    background: var(--surface-elevated);
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #settingsPanel select option:checked,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel select option:checked {
-    background: var(--control-bg-hover) !important;
-    color: var(--control-text-strong) !important;
+    background: var(--control-bg-hover);
+    color: var(--control-text-strong);
 }
 
 :is([data-theme="dark"], body.theme-dark) #settingsPanel select:focus option:checked,
@@ -3803,29 +3803,29 @@ html.theme-dark,
    elsewhere), so the panel itself reads as a distinct backdrop instead of
    blending into its own contents. */
 :is([data-theme="dark"], body.theme-dark) #selectionInsights {
-    background: var(--surface-elevated) !important;
-    border-color: var(--surface-border) !important;
+    background: var(--surface-elevated);
+    border-color: var(--surface-border);
     color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #aiTrustSection {
-    background: var(--surface-pill) !important;
-    border-color: var(--surface-border) !important;
+    background: var(--surface-pill);
+    border-color: var(--surface-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) #aiConfidenceBadge,
 :is([data-theme="dark"], body.theme-dark) #aiModeBadge,
 :is([data-theme="dark"], body.theme-dark) #aiCommunityBadge,
 :is([data-theme="dark"], body.theme-dark) #aiSourcesBadge {
-    background: var(--surface-pill) !important;
-    border: 1px solid var(--surface-border) !important;
-    color: var(--accent-cream) !important;
+    background: var(--surface-pill);
+    border: 1px solid var(--surface-border);
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #aiWarningBadge {
-    background: var(--ai-warning-bg) !important;
-    border-color: var(--ai-warning-border) !important;
-    color: var(--ai-warning-text) !important;
+    background: var(--ai-warning-bg);
+    border-color: var(--ai-warning-border);
+    color: var(--ai-warning-text);
 }
 
 /* .segment-label/.segment-translit render real text (verse numbers,
@@ -3835,11 +3835,11 @@ html.theme-dark,
    clears 5.17-6.30:1 across all dark surfaces. */
 :is([data-theme="dark"], body.theme-dark) .segment-label,
 :is([data-theme="dark"], body.theme-dark) .segment-translit {
-    color: var(--ink-secondary) !important;
+    color: var(--ink-secondary);
 }
 
 :is([data-theme="dark"], body.theme-dark) #reader .reader-row-mid-label {
-    background: var(--surface-base) !important;
+    background: var(--surface-base);
 }
 
 :is([data-theme="dark"], body.theme-dark) svg {
@@ -3861,21 +3861,21 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) #readerTopBar {
-    background: rgba(27, 27, 25, 0.95) !important;
-    border-top-color: var(--reader-topbar-border) !important;
-    border-bottom-color: var(--reader-topbar-border) !important;
+    background: rgba(27, 27, 25, 0.95);
+    border-top-color: var(--reader-topbar-border);
+    border-bottom-color: var(--reader-topbar-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) #readerTopBar button {
-    background: transparent !important;
-    border: none !important;
-    color: var(--reader-btn-color) !important;
+    background: transparent;
+    border: none;
+    color: var(--reader-btn-color);
 }
 
 :is([data-theme="dark"], body.theme-dark) #readerTopBar button:hover {
-    background: transparent !important;
-    border: none !important;
-    color: var(--reader-btn-hover) !important;
+    background: transparent;
+    border: none;
+    color: var(--reader-btn-hover);
 }
 
 :is([data-theme="dark"], body.theme-dark) .library-shell .reader-topbar-shell #readerSettingsBtn {
@@ -3926,7 +3926,7 @@ html.theme-dark,
 :is([data-theme="dark"], body.theme-dark) .menu-parasha-quick-link:focus-visible {
     background: var(--control-strong-bg);
     border-color: color-mix(in srgb, var(--gold) 50%, var(--control-border));
-    color: var(--control-text-strong) !important;
+    color: var(--control-text-strong);
 }
 
 :is([data-theme="dark"], body.theme-dark) .chapter-grid-group-label {
@@ -3934,30 +3934,30 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .chapter-grid-item {
-    background: var(--surface-elevated) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--accent-cream) !important;
+    background: var(--surface-elevated);
+    border-color: var(--surface-border);
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) .chapter-grid-item:hover,
 :is([data-theme="dark"], body.theme-dark) .chapter-grid-item:focus-visible {
-    background: var(--surface-pill) !important;
-    border-color: var(--control-border) !important;
-    color: var(--control-text-strong) !important;
+    background: var(--surface-pill);
+    border-color: var(--control-border);
+    color: var(--control-text-strong);
 }
 
 :is([data-theme="dark"], body.theme-dark) .chapter-grid-item-number {
-    color: var(--accent-cream) !important;
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) .chapter-grid-item-label {
-    color: var(--text-muted) !important;
+    color: var(--text-muted);
 }
 
 /* Dark mode chapter grid modal scrollable area */
 :is([data-theme="dark"], body.theme-dark) #chapterGridModal>div {
     background: var(--surface-base) !important;
-    border-color: var(--surface-border) !important;
+    border-color: var(--surface-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) #chapterGridModal>div .px-5 {
@@ -3968,28 +3968,28 @@ html.theme-dark,
 /* Dark mode library category modal */
 :is([data-theme="dark"], body.theme-dark) #libraryCategoryModal>div {
     background: var(--surface-subtle) !important;
-    border-color: var(--surface-border) !important;
+    border-color: var(--surface-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) #libraryCategoryModal .chapter-grid-header {
-    background: var(--surface-elevated) !important;
-    border-bottom-color: var(--surface-border) !important;
+    background: var(--surface-elevated);
+    border-bottom-color: var(--surface-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) #libraryCategoryModal h2 {
-    color: var(--accent-cream) !important;
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #libraryCategoryModal #libraryCategorySubtitle {
-    color: var(--text-muted) !important;
+    color: var(--text-muted);
 }
 
 :is([data-theme="dark"], body.theme-dark) #libraryCategoryModal #libraryCategoryBody {
-    background: var(--surface-subtle) !important;
+    background: var(--surface-subtle);
 }
 
 :is([data-theme="dark"], body.theme-dark) #closeLibraryCategoryBtn {
-    color: var(--text-muted) !important;
+    color: var(--text-muted);
 }
 
 /* Dark mode reader settings + settings panel buttons */
@@ -3997,33 +3997,33 @@ html.theme-dark,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel .space-y-2 button,
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .grid button,
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .space-y-2 button {
-    background: var(--surface-pill) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--accent-cream) !important;
+    background: var(--surface-pill);
+    border-color: var(--surface-border);
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel .grid button:hover,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel .space-y-2 button:hover,
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .grid button:hover,
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .space-y-2 button:hover {
-    background: var(--control-bg-hover) !important;
-    border-color: var(--control-border) !important;
-    color: var(--control-text-strong) !important;
+    background: var(--control-bg-hover);
+    border-color: var(--control-border);
+    color: var(--control-text-strong);
 }
 
 /* Dark mode – all buttons in settings panels (broad catch-all) */
 :is([data-theme="dark"], body.theme-dark) #settingsPanel button,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel button {
-    background: var(--surface-pill) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--accent-cream) !important;
+    background: var(--surface-pill);
+    border-color: var(--surface-border);
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #settingsPanel button:hover,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel button:hover {
-    background: var(--control-bg-hover) !important;
-    border-color: var(--control-border) !important;
-    color: var(--control-text-strong) !important;
+    background: var(--control-bg-hover);
+    border-color: var(--control-border);
+    color: var(--control-text-strong);
 }
 
 /* Dark mode – settings panel label text */
@@ -4037,14 +4037,14 @@ html.theme-dark,
 /* Dark mode – settings panel text inputs */
 :is([data-theme="dark"], body.theme-dark) #settingsPanel input[type="text"],
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel input[type="text"] {
-    background: var(--surface-pill) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--accent-cream) !important;
+    background: var(--surface-pill);
+    border-color: var(--surface-border);
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #settingsPanel input[type="text"]::placeholder,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel input[type="text"]::placeholder {
-    color: var(--text-muted) !important;
+    color: var(--text-muted);
 }
 
 /* Dark mode – settings panel internal dividers */
@@ -4059,11 +4059,11 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) #rightSidebar::-webkit-scrollbar-track {
-    background: var(--surface-subtle) !important;
+    background: var(--surface-subtle);
 }
 
 :is([data-theme="dark"], body.theme-dark) #rightSidebar::-webkit-scrollbar-thumb {
-    background: var(--control-border) !important;
+    background: var(--control-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) #rightSidebar::-webkit-scrollbar-thumb:hover {
@@ -4073,54 +4073,54 @@ html.theme-dark,
 :is([data-theme="dark"], body.theme-dark) .home-section-label,
 :is([data-theme="dark"], body.theme-dark) .home-daily-label,
 :is([data-theme="dark"], body.theme-dark) .text-blue-100 {
-    color: var(--home-label-color) !important;
+    color: var(--home-label-color);
 }
 
 :is([data-theme="dark"], body.theme-dark) .home-topic-title,
 :is([data-theme="dark"], body.theme-dark) .home-library-title,
 :is([data-theme="dark"], body.theme-dark) .home-daily-link,
 :is([data-theme="dark"], body.theme-dark) #readerTitle {
-    color: var(--accent-cream) !important;
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) .home-link-tanakh .home-library-title {
-    color: var(--accent-tanakh) !important;
+    color: var(--accent-tanakh);
 }
 
 :is([data-theme="dark"], body.theme-dark) .home-link-mishnah .home-library-title {
-    color: var(--accent-mishnah) !important;
+    color: var(--accent-mishnah);
 }
 
 :is([data-theme="dark"], body.theme-dark) .home-link-talmud .home-library-title {
-    color: var(--accent-talmud) !important;
+    color: var(--accent-talmud);
 }
 
 :is([data-theme="dark"], body.theme-dark) .home-link-halakhah .home-library-title {
-    color: var(--accent-halakhah) !important;
+    color: var(--accent-halakhah);
 }
 
 :is([data-theme="dark"], body.theme-dark) .home-link-customs .home-library-title {
-    color: var(--accent-customs) !important;
+    color: var(--accent-customs);
 }
 
 :is([data-theme="dark"], body.theme-dark) .home-link-thought .home-library-title {
-    color: var(--accent-thought) !important;
+    color: var(--accent-thought);
 }
 
 :is([data-theme="dark"], body.theme-dark) .home-library-description {
-    color: var(--text-muted) !important;
+    color: var(--text-muted);
 }
 
 :is([data-theme="dark"], body.theme-dark) #popularTextsGrid button {
-    background: var(--surface-elevated) !important;
-    border-color: var(--surface-border) !important;
+    background: var(--surface-elevated);
+    border-color: var(--surface-border);
     box-shadow: inset 0 0 0 1px rgba(202, 189, 168, 0.08);
 }
 
 :is([data-theme="dark"], body.theme-dark) #popularTextsGrid button:hover,
 :is([data-theme="dark"], body.theme-dark) #popularTextsGrid button:focus-visible {
-    background: var(--surface-pill) !important;
-    border-color: var(--control-border) !important;
+    background: var(--surface-pill);
+    border-color: var(--control-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) #popularTextsGrid button .text-slate-700,
@@ -4135,46 +4135,46 @@ html.theme-dark,
 :is([data-theme="dark"], body.theme-dark) .home-library-link:hover .home-library-title,
 :is([data-theme="dark"], body.theme-dark) .home-topic-title:hover,
 :is([data-theme="dark"], body.theme-dark) .home-daily-link:hover {
-    color: var(--control-text-strong) !important;
+    color: var(--control-text-strong);
 }
 
 :is([data-theme="dark"], body.theme-dark) .home-calendar-btn {
-    background: linear-gradient(135deg, var(--surface-elevated) 0%, var(--surface-subtle) 100%) !important;
-    border-color: color-mix(in srgb, var(--gold) 55%, var(--surface-border)) !important;
-    color: var(--gold) !important;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) !important;
+    background: linear-gradient(135deg, var(--surface-elevated) 0%, var(--surface-subtle) 100%);
+    border-color: color-mix(in srgb, var(--gold) 55%, var(--surface-border));
+    color: var(--gold);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
 :is([data-theme="dark"], body.theme-dark) .home-calendar-btn:hover {
-    background: linear-gradient(135deg, var(--surface-pill) 0%, var(--surface-elevated) 100%) !important;
-    border-color: var(--gold) !important;
-    color: var(--gold-light) !important;
+    background: linear-gradient(135deg, var(--surface-pill) 0%, var(--surface-elevated) 100%);
+    border-color: var(--gold);
+    color: var(--gold-light);
 }
 
 :is([data-theme="dark"], body.theme-dark) #nextZmanBadge {
-    border-color: var(--surface-border) !important;
-    background: var(--surface-pill) !important;
-    color: var(--text-main) !important;
+    border-color: var(--surface-border);
+    background: var(--surface-pill);
+    color: var(--text-main);
     box-shadow: 0 1px 0 rgba(0, 0, 0, 0.28);
 }
 
 :is([data-theme="dark"], body.theme-dark) #zmanimWarning {
-    background: color-mix(in srgb, var(--zmanim-warn-accent) 12%, var(--surface-subtle)) !important;
-    border-color: var(--zmanim-warn-accent) !important;
-    color: var(--zmanim-warn-text) !important;
+    background: color-mix(in srgb, var(--zmanim-warn-accent) 12%, var(--surface-subtle));
+    border-color: var(--zmanim-warn-accent);
+    color: var(--zmanim-warn-text);
 }
 
 :is([data-theme="dark"], body.theme-dark) .today-zmanim-list [data-zman-row] {
-    background: transparent !important;
-    border-color: var(--surface-border) !important;
-    border-radius: 0 !important;
-    padding-inline-start: 0 !important;
-    padding-inline-end: 0 !important;
-    margin-bottom: 0 !important;
+    background: transparent;
+    border-color: var(--surface-border);
+    border-radius: 0;
+    padding-inline-start: 0;
+    padding-inline-end: 0;
+    margin-bottom: 0;
 }
 
 :is([data-theme="dark"], body.theme-dark) .today-zmanim-list [data-zman-row] span {
-    color: var(--text-muted) !important;
+    color: var(--text-muted);
 }
 
 :is([data-theme="dark"], body.theme-dark) .today-zmanim-list [data-zman-row] b {
@@ -4182,11 +4182,11 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .today-zmanim-list [data-zman-row].zman-next-highlight {
-    background: rgba(63, 57, 47, 0.46) !important;
+    background: rgba(63, 57, 47, 0.46);
     border-color: var(--control-border) !important;
-    border-radius: 0.45rem !important;
-    padding-inline-start: 0.45rem !important;
-    padding-inline-end: 0.45rem !important;
+    border-radius: 0.45rem;
+    padding-inline-start: 0.45rem;
+    padding-inline-end: 0.45rem;
     box-shadow: inset 0 0 0 1px rgba(195, 175, 138, 0.18);
 }
 
@@ -4203,33 +4203,33 @@ html.theme-dark,
 
 :is([data-theme="dark"], body.theme-dark) .library-node-open.library-node-active {
     background: transparent !important;
-    border: 0 !important;
-    border-inline-start: 3px solid var(--gold) !important;
-    color: var(--accent-cream) !important;
-    box-shadow: none !important;
+    border: 0;
+    border-inline-start: 3px solid var(--gold);
+    color: var(--accent-cream);
+    box-shadow: none;
 }
 
 :is([data-theme="dark"], body.theme-dark) .library-node-open.library-node-active:hover {
     background: rgba(68, 60, 48, 0.35) !important;
-    color: var(--control-text-strong) !important;
+    color: var(--control-text-strong);
 }
 
 :is([data-theme="dark"], body.theme-dark) .shelf-open.shelf-open-active {
     background: var(--surface-pill);
-    border-color: var(--control-border) !important;
+    border-color: var(--control-border);
     box-shadow: inset 0 0 0 1px rgba(165, 142, 101, 0.24);
 }
 
 :is([data-theme="dark"], body.theme-dark) .shelf-open.shelf-open-active span:first-child {
-    color: var(--accent-cream) !important;
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) .shelf-open.shelf-open-active span:last-child {
-    color: var(--gold) !important;
+    color: var(--gold);
 }
 
 :is([data-theme="dark"], body.theme-dark) #searchSuggestions .suggestion-item[class*="bg-[#efe5d4]"] {
-    background: var(--surface-pill) !important;
+    background: var(--surface-pill);
 }
 
 :is([data-theme="dark"], body.theme-dark) #searchSuggestions .suggestion-item[class*="bg-[#efe5d4]"] .text-slate-800 {
@@ -4253,15 +4253,15 @@ html.theme-dark,
 :is([data-theme="dark"], body.theme-dark) #leftSidebar .border-l-2,
 :is([data-theme="dark"], body.theme-dark) #leftSidebar .border-slate-100,
 :is([data-theme="dark"], body.theme-dark) #leftSidebar .border-slate-200 {
-    border-color: var(--surface-border) !important;
+    border-color: var(--surface-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) .mobile-drawer-left {
-    border-inline-end-color: var(--surface-border) !important;
+    border-inline-end-color: var(--surface-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) .mobile-drawer-right {
-    border-inline-start-color: var(--surface-border) !important;
+    border-inline-start-color: var(--surface-border);
 }
 
 /* Dark mode: ensure buttons and links inside mobile drawer / hamburger and settings
@@ -4274,17 +4274,17 @@ html.theme-dark,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel button,
 :is([data-theme="dark"], body.theme-dark) #settingsPanel a,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel a {
-    border-color: var(--surface-border) !important;
-    color: var(--accent-cream) !important;
+    border-color: var(--surface-border);
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) .mobile-drawer.mobile-open button:hover,
 :is([data-theme="dark"], body.theme-dark) .mobile-drawer.mobile-open a:hover,
 :is([data-theme="dark"], body.theme-dark) #settingsPanel button:hover,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel button:hover {
-    background: var(--control-bg-hover) !important;
-    border-color: var(--control-border) !important;
-    color: var(--control-text-strong) !important;
+    background: var(--control-bg-hover);
+    border-color: var(--control-border);
+    color: var(--control-text-strong);
 }
 
 :is([data-theme="dark"], body.theme-dark) .reader-range-slider {
@@ -4314,7 +4314,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .mobile-drawer-left {
-    border-inline-end-color: var(--surface-border) !important;
+    border-inline-end-color: var(--surface-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) .mobile-drawer-right {
@@ -4332,7 +4332,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="border-[#"] {
-    border-color: var(--surface-border) !important;
+    border-color: var(--surface-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="text-[#"] {
@@ -4386,35 +4386,35 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="border-[#004e5f"] {
-    border-color: rgba(138, 194, 205, 0.38) !important;
+    border-color: rgba(138, 194, 205, 0.38);
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="border-[#8b5e34"] {
-    border-color: rgba(204, 179, 137, 0.34) !important;
+    border-color: rgba(204, 179, 137, 0.34);
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="border-[#5a99b7"] {
-    border-color: rgba(153, 185, 221, 0.39) !important;
+    border-color: rgba(153, 185, 221, 0.39);
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="border-[#ccb479"] {
-    border-color: rgba(207, 184, 137, 0.43) !important;
+    border-color: rgba(207, 184, 137, 0.43);
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="border-[#802f3e"] {
-    border-color: rgba(207, 151, 162, 0.41) !important;
+    border-color: rgba(207, 151, 162, 0.41);
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="border-[#594176"] {
-    border-color: rgba(188, 168, 216, 0.4) !important;
+    border-color: rgba(188, 168, 216, 0.4);
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="border-[#00827f"] {
-    border-color: rgba(151, 199, 184, 0.39) !important;
+    border-color: rgba(151, 199, 184, 0.39);
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="border-[#002147"] {
-    border-color: rgba(169, 189, 210, 0.39) !important;
+    border-color: rgba(169, 189, 210, 0.39);
 }
 
 :is([data-theme="dark"], body.theme-dark) .prose p,
@@ -4426,21 +4426,21 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .prose code {
-    background: var(--surface-elevated) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--text-main) !important;
+    background: var(--surface-elevated);
+    border-color: var(--surface-border);
+    color: var(--text-main);
 }
 
 /* .ai-source-card / .ai-wiki-card / .ai-custom-card dark overrides — owned by static/css/ai.css */
 :is([data-theme="dark"], body.theme-dark) .ai-synthesis {
-    background: var(--surface-elevated) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--text-main) !important;
+    background: var(--surface-elevated);
+    border-color: var(--surface-border);
+    color: var(--text-main);
 }
 
 :is([data-theme="dark"], body.theme-dark) #textsMenuModal .bg-linear-to-r.from-navy.to-blue-900,
 :is([data-theme="dark"], body.theme-dark) #devtoolsInspectorModal .bg-linear-to-r.from-navy.to-blue-900 {
-    background-image: linear-gradient(to right, var(--surface-elevated), var(--surface-pill)) !important;
+    background-image: linear-gradient(to right, var(--surface-elevated), var(--surface-pill));
 }
 
 :is([data-theme="dark"], body.theme-dark) .source-ref {
