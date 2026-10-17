@@ -113,7 +113,7 @@ test('the menus open and close, and a click outside closes them', async () => {
         page.click(el(page, 'readerLibraryTopBarBtn'));
         page.click(el(page, 'readerCommentaryTopBarBtn'));
         await page.settle(4);
-        for (const name of ['hideLeftSidebarBtn', 'hideRightSidebarBtn', 'showLeftSidebarTopBtn', 'closeLeftSidebarBtn', 'closeRightSidebarBtn', 'mobileDrawerBackdrop', 'mobileNavBtn', 'mobileLangToggle']) {
+        for (const name of ['hideLeftSidebarBtn', 'hideRightSidebarBtn', 'showLeftSidebarTopBtn', 'closeLeftSidebarBtn', 'closeRightSidebarBtn', 'mobileDrawerBackdrop', 'mobileLangToggle']) {
             const target = page.eval(`typeof ${name} === 'undefined' ? null : ${name}`);
             if (target) page.click(target);
         }

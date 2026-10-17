@@ -79,7 +79,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         const userProfileSignOutAction = document.getElementById('userProfileSignOutAction');
         const userProfileLink = document.getElementById('userProfileLink');
         const signInBtn = document.getElementById('signInBtn');
-        const mobileNavBtn = document.getElementById('mobileNavBtn');
         const mobileBottomTabs = document.getElementById('mobileBottomTabs');
         const mobileLangToggle = document.getElementById('mobileLangToggle');
         const closeLeftSidebarBtn = document.getElementById('closeLeftSidebarBtn');
@@ -7585,12 +7584,6 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             // installSemanticBookmarking() guard — do not
             // remove until the inline copy above is deleted.
             window.__shelahLegacyBookmarkBound = true;
-        }
-        if (mobileNavBtn) {
-            mobileNavBtn.addEventListener('click', () => {
-                setMobileSearchExpanded(false);
-                toggleMobilePanel('left');
-            });
         }
         if (mobileLangToggle) {
             mobileLangToggle.addEventListener('click', () => {
