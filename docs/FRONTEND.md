@@ -211,7 +211,7 @@ The single source of truth, loaded before every other sheet.
 | Calendar | `--cal-event-holiday`, `--cal-event-shabbat`, … (kept in step with the backend's Hebcal colour palette) |
 | Geometry | `--radius-xs` to `--radius-full`, `--sp-1` to `--sp-12` (a 4 px / 8 px grid), `--shadow-sm/md/lg` |
 | Type | `--text-xs` to `--text-3xl` (fluid `clamp()` sizes; these are **sizes**, not colours), `--font-serif` (Cardo), `--font-sans` (Inter), `--font-hebrew` (Ezra SIL) |
-| Motion | `--motion-dur-*`, `--motion-ease-out/spring/decel`, `--motion-dur-view-*`, `--motion-view-shift` |
+| Motion | `--motion-dur-fast/base/slow` (150 / 220 / 400 ms), `--motion-ease-out/spring/decel`, `--motion-stagger` (40 ms), `--motion-dur-view-*`, `--motion-view-shift` |
 | Glass | `--glass-bg`, `--glass-edge`, `--glass-shadow` (the translucent surfaces) |
 
 Legacy aliases (`--surface-base`, `--text-main`, `--text-muted`, `--ink`, `--paper`, `--control-*`, …) remain so untouched sheets keep working; new code uses the semantic names above.
@@ -222,7 +222,7 @@ Fonts: Ezra SIL is self-hosted (`static/fonts/SILEOT.woff2`, preloaded); Cardo a
 
 Two layers, per `.agents/ENGINEERING_RULES.md`:
 
-1. **CSS keyframes** live in `tokens.css` (`shelah-fade-in`, `-fade-up`, `-scale-in`, `-slide-in-left/right`, `-slide-down-fade`, `-overlay-in`, `-shimmer`, `-spin`, `-dot-bounce`, `-warm-pulse`, `-attention-ping`, `-cite-highlight`, `-view-in`, `-view-out`) plus the Ask panel's five (`conv-rise`, `conv-cite-flash`, `conv-citepop-in`, `conv-status-blink`, `conv-status-dot`, which kept their `conv-` names). Feature sheets and inline template styles apply them by name. The rule is no `@keyframes` anywhere but `tokens.css`, and `tests/test_css_keyframes_guard.py` fails the build if one appears elsewhere.
+1. **CSS keyframes** live in `tokens.css` (`shelah-fade-in`, `-fade-up`, `-scale-in`, `-slide-in-left/right`, `-slide-down-fade`, `-overlay-in`, `-shimmer`, `-spin`, `-dot-bounce`, `-warm-pulse`, `-attention-ping`, `-cite-highlight`, `-view-in`, `-view-out`, `-grow-up`) plus the Ask panel's five (`conv-rise`, `conv-cite-flash`, `conv-citepop-in`, `conv-status-blink`, `conv-status-dot`, which kept their `conv-` names). Feature sheets and inline template styles apply them by name. The rule is no `@keyframes` anywhere but `tokens.css`, and `tests/test_css_keyframes_guard.py` fails the build if one appears elsewhere.
 2. **`static/js/motion.js`** (`window.ShelahMotion`) wraps the vanilla motion.dev `animate()` for anything JavaScript mounts, unmounts or moves:
 
 | Helper | Use for |
@@ -235,12 +235,35 @@ Two layers, per `.agents/ENGINEERING_RULES.md`:
 | `slideIn` / `slideOut` / `slideTo` | Drawers and sidebars |
 | `present` / `dismiss` | Popovers, cards and sheets that grow from, and fold back into, their trigger |
 | `transitionView`, `viewTransitionsOn` | The View Transitions API path for view changes, off unless the `data-view-transitions` flag is on |
+| `settleIn` | A 150 ms fade and 3 px rise for text that changes under the reader's eyes (the Ask panel's status line); native WAAPI, restarts instead of stacking |
 
-Spring for movement, tween only for opacity and colour, animate only `transform` and `opacity`. Every helper checks `isMotionReduced()` first and falls back to an instant state change.
+Spring for movement, tween only for opacity and colour, animate only `transform` and `opacity`. Every helper checks `isMotionReduced()` first. `present` and `dismiss` then keep a 120 ms opacity fade (so something visibly arrived or left) and drop the travel; the others fall back to an instant state change.
 
 `fadeOpacity` starts from the element's computed opacity (`[from, to]`). Motion remembers the last value it animated and would otherwise start a bare target from that, so code that sets `style.opacity` by hand and then fades back in (`swapContent`, `crossFade`) saw "already there" and left the element hidden.
 
-**Reduced motion.** `typography.css` carries the global `prefers-reduced-motion: reduce` fallback (near-zero durations, one iteration, no smooth scroll). Feature sheets (`loading.css`, `ai.css`, …) additionally set `animation: none` so the end state is static, and every skeleton disables its shimmer.
+**Reduced motion.** `typography.css` carries the global `prefers-reduced-motion: reduce` fallback (near-zero durations, one iteration, no smooth scroll). Feature sheets (`loading.css`, `ai.css`, …) additionally set `animation: none` so the end state is static, and every skeleton disables its shimmer. The policy is *fewer and gentler, not none*: an entrance that carries meaning (an answer arriving, a section revealed, a dialog opening, the theme changing) keeps a 120 ms linear opacity fade, and travel, scale and looping motion go. `typography.css` is not loaded on the legal pages, so their reduced-motion fades are written as `!important` shorthands with the specificity to win without it.
+
+### Motion spec (the October 2026 pass)
+
+Principles: motion has a named purpose (feedback, spatial consistency, state change, or bridging a jarring swap); entrances run 180–300 ms, feedback 100–200 ms, exits about two thirds of their entrance; ease-out for entrances, springs for movement, tweens only for opacity and colour; nothing scales from 0 (0.95 to 0.98, bars 0.6); 4 to 12 px of travel; transform and opacity only; nothing blocks input; content is visible if the motion layer fails. Hover lifts sit behind `@media (hover: hover) and (pointer: fine)`.
+
+| Surface | What moves | Timing and curve | Reduced motion |
+|---|---|---|---|
+| Ask panel turns | The user turn and the assistant turn rise 6 px into place (`conv-rise`) | 220 ms, `--motion-ease-decel` | 120 ms opacity |
+| Ask panel pending turn | Status line text settles in when the stage changes (`settleIn`); the skeleton shimmers; the status dot blinks | 150 ms; shimmer 1.4 s and blink 2.6 s loop | Text fades only; loops off |
+| Ask panel answer | The skeleton is cloned as a ghost (`.conv-ghost`) that cross-fades out over the arriving answer, so the thread does not jump; the answer's parts follow in turn | Ghost 150 ms linear opacity; parts `conv-rise` 220 ms, 40 ms apart (`--motion-stagger`), six steps at most | 120 ms opacity, no stagger |
+| Ask panel open / close, menus, dialogs, sheets | `ShelahMotion.present` / `dismiss` presets: `popover` (12 px, 0.98, grows from the trigger), `modal` (18 px, 0.97), `window` (0.985, no travel), `sheet` and `drawer` (slide from the bottom edge on phones) | Springs, 0.14 to 0.42 s settle, exits shorter than entrances | 120 ms opacity |
+| Buttons and rows | Press dips to 0.97 (0.985 on wide cards and rows) with the standalone `scale` property, so it composes with any `transform` | `--motion-dur-fast` | No scale |
+| Hover lifts (quick links, popular texts, calendar button, sidebar tab, library link, legal accept) | A small lift and its shadow layer's opacity | `--motion-dur-fast` | Not applied on touch (gated) |
+| Home, reader, panels | `.view-enter` rises into place when shown | 220 ms decel | Global fallback |
+| Theme change | A cross-fade of the whole page through the View Transitions API, scoped by `html[data-vt-theme]` (set by `withThemeFade` in `topbar_shared.js`, so it is separate from the route flag) | 220 ms ease-out | 120 ms opacity |
+| Info pages (about, help, accessibility, AI disclosure) | Blocks below the fold rise 8 px and fade in once, on first sight (`data-reveal` on the `<article>`, `reveal.js`); blocks arriving together follow 40 ms apart, three steps at most | 220 ms decel | 120 ms opacity |
+| `/admin/feedback` first data | The four tiles fade up 40 ms apart, the split and the grid fade in, the 13 to 30 trend bars grow from their baseline (`shelah-grow-up`, from 0.6) with at most 320 ms of spread; held by `data-enter` for 800 ms | 220 ms | 120 ms opacity, no delay |
+| `/admin/feedback` redraws | Rows fade from 0.4 to 1 on a verdict, sort or page-size change; a refresh only dims the content to 0.6 | 150 ms | Row fade only |
+
+**Do not animate.** The Ask button and the AI mark (the star, its hover glow and `shelah-warm-pulse` are deliberately custom). The terms, privacy and licences pages (people search and skim them; text still fading in cannot be read). Text and prayer bodies, the reader's verse rows, anything the user is reading or acting on. Keyboard-initiated focus moves and shortcuts. The route-change View Transition stays behind its flag (`VIEW_TRANSITIONS`) and off. Home keeps its existing mount cascade, with no scroll reveal added on top.
+
+**Checking motion.** In a browser, `document.documentElement.getAnimations({ subtree: true })` lists every running animation with its target, duration and easing (the `::view-transition-*` pseudo-elements appear too). Sample it a few tens of milliseconds after the trigger; a pane that is not in front throttles frames, so a headless run is the reliable one. Check once with 4x CPU throttling at 375 px and once with `prefers-reduced-motion: reduce`.
 
 ---
 
