@@ -122,6 +122,7 @@ html.rtl .prose ol {
 }
 
 .prose a {
+    overflow-wrap: anywhere; /* long repo URLs would push /licenses 14px wide at 320px */
     color: var(--accent-primary);
     text-decoration: underline;
     text-underline-offset: 2px;
