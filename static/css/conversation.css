@@ -148,7 +148,7 @@ body.conv-modal-open {
     inset-inline-start: var(--sp-6);
 }
 .conv-panel.is-dragging {
-    transition: none !important;
+    transition: none;
     cursor: grabbing;
     user-select: none;
 }
