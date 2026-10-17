@@ -208,13 +208,13 @@
 /* ═══════════════════════════════════════════════════════ */
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsights {
-    background: var(--surface-elevated) !important;
-    border-color: var(--surface-border) !important;
+    background: var(--surface-elevated);
+    border-color: var(--surface-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsights p,
 :is([data-theme="dark"], body.theme-dark) #selectionInsights span {
-    color: var(--text-main) !important;
+    color: var(--text-main);
 }
 
 /* ═══════════════════════════════════════════════════════ */
@@ -317,12 +317,12 @@
    #7093b5 clears 4.5:1 with margin (~4.99:1). */
 :is([data-theme="dark"], body.theme-dark) .src-ext-link,
 :is([data-theme="dark"], body.theme-dark) .src-open-link {
-    color: #7093b5 !important;
+    color: #7093b5;
 }
 
 :is([data-theme="dark"], body.theme-dark) .src-ext-link:hover,
 :is([data-theme="dark"], body.theme-dark) .src-open-link:hover {
-    color: var(--accent-cream) !important;
+    color: var(--accent-cream);
 }
 
 /* ═══════════════════════════════════════════════════════ */
@@ -548,11 +548,11 @@
 /* ── Mobile bottom tabs ──────────────────────────────────── */
 .mobile-tab-btn {
     transition: background-color var(--motion-dur-base) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out),
-        transform var(--motion-dur-fast) var(--motion-ease-out) !important;
+        transform var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 .mobile-tab-btn:active {
-    transform: scale(0.97) !important;
+    transform: scale(0.97);
 }
 
 /* ── Modal scrims on phones (audit M-9) ──────────────────────
@@ -593,7 +593,7 @@
 
 #mobileDrawerBackdrop.hidden {
     opacity: 0 !important;
-    pointer-events: none !important;
+    pointer-events: none;
 }
 
 /* ── Sidebar items ───────────────────────────────────────── */
@@ -601,7 +601,7 @@
 #rightSidebar button,
 #leftSidebar a,
 #rightSidebar a {
-    transition: background-color var(--motion-dur-fast) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out), scale var(--motion-dur-fast) var(--motion-ease-out) !important;
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out), scale var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 #leftSidebar details>summary {
@@ -609,7 +609,7 @@
 }
 
 #leftSidebar details>summary .text-slate-300 {
-    transition: transform var(--motion-dur-base) var(--motion-ease-decel) !important;
+    transition: transform var(--motion-dur-base) var(--motion-ease-decel);
 }
 
 /* ── Menus & modals ──────────────────────────────────────── */
@@ -640,7 +640,7 @@
 }
 
 #searchIcon {
-    transition: opacity var(--motion-dur-base) var(--motion-ease-out), transform var(--motion-dur-base) var(--motion-ease-decel) !important;
+    transition: opacity var(--motion-dur-base) var(--motion-ease-out), transform var(--motion-dur-base) var(--motion-ease-decel);
 }
 
 /* While asking AI: fade the magnifying glass down and let the AI star
@@ -683,23 +683,23 @@ body.search-loading .search-ai-sparkle {
 #closeRightSidebarBtn,
 #hideLeftSidebarBtn,
 #hideRightSidebarBtn {
-    transition: background-color var(--motion-dur-fast) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out), opacity var(--motion-dur-fast) var(--motion-ease-out) !important;
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out), opacity var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 /* ── Reader topbar ───────────────────────────────────────── */
 .reader-topbar-icon-btn {
-    transition: none !important;
+    transition: none;
 }
 
 .reader-topbar-icon-btn:active {
-    transform: none !important;
+    transform: none;
 }
 
 /* ── Home grid ───────────────────────────────────────────── */
 .home-library-link,
 .home-daily-link,
 .home-calendar-btn {
-    transition: transform var(--motion-dur-fast) var(--motion-ease-out), opacity var(--motion-dur-fast) var(--motion-ease-out), scale var(--motion-dur-fast) var(--motion-ease-out) !important;
+    transition: transform var(--motion-dur-fast) var(--motion-ease-out), opacity var(--motion-dur-fast) var(--motion-ease-out), scale var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 .home-library-link:hover {
@@ -708,11 +708,11 @@ body.search-loading .search-ai-sparkle {
 
 /* ── Legal modal ─────────────────────────────────────────── */
 #legalModal input[type="checkbox"] {
-    transition: background-color var(--motion-dur-fast) var(--motion-ease-out), border-color var(--motion-dur-fast) var(--motion-ease-out) !important;
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out), border-color var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 #legalAcceptBtn {
-    transition: opacity var(--motion-dur-base) var(--motion-ease-out), transform var(--motion-dur-fast) var(--motion-ease-out), background-color var(--motion-dur-fast) var(--motion-ease-out) !important;
+    transition: opacity var(--motion-dur-base) var(--motion-ease-out), transform var(--motion-dur-fast) var(--motion-ease-out), background-color var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 #legalAcceptBtn:not(:disabled):hover {
