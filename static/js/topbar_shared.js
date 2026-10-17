@@ -98,7 +98,34 @@
         };
     }
 
-    const api = { applyLanguagePreference, swapPendingLanguage, computeFloatingMenuPosition };
+    // A theme the visitor just chose crosses over instead of cutting: the
+    // browser keeps a picture of the old page and fades it into the new one
+    // (View Transitions API, the root only; tokens.css sets the timing under
+    // data-vt-theme). Engines without it, a hidden tab and a route transition
+    // already in flight just apply the change. `change` runs exactly once
+    // either way, so callers keep their own order of work.
+    function withThemeFade(change) {
+        const doc = typeof document !== 'undefined' ? document : null;
+        if (!doc || typeof doc.startViewTransition !== 'function' || doc.hidden
+            || doc.documentElement.hasAttribute('data-vt-active')) {
+            change();
+            return;
+        }
+        const html = doc.documentElement;
+        const done = () => html.removeAttribute('data-vt-theme');
+        html.setAttribute('data-vt-theme', '');
+        let transition;
+        try {
+            transition = doc.startViewTransition(change);
+        } catch (_) {
+            done();
+            change();
+            return;
+        }
+        transition.finished.then(done, done);
+    }
+
+    const api = { applyLanguagePreference, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade };
 
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = api;
@@ -106,5 +133,6 @@
         root.applyLanguagePreference = applyLanguagePreference;
         root.swapPendingLanguage = swapPendingLanguage;
         root.computeFloatingMenuPosition = computeFloatingMenuPosition;
+        root.withThemeFade = withThemeFade;
     }
 })(typeof window !== 'undefined' ? window : globalThis);

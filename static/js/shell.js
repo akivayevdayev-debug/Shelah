@@ -1363,8 +1363,13 @@ function hasParenthetical(text) {
         function setThemePreference(themePreference, options = {}) {
             const persist = options.persist !== false;
             appState.prefs.theme = normalizeThemePreference(themePreference);
-            applyThemePreferenceClass();
-            updateThemeToggleUi();
+            const apply = () => {
+                applyThemePreferenceClass();
+                updateThemeToggleUi();
+            };
+            // A switch the visitor made crosses over; applying a saved or system theme does not.
+            if (persist && typeof withThemeFade === 'function') withThemeFade(apply);
+            else apply();
             if (persist) {
                 savePrefs();
             }
