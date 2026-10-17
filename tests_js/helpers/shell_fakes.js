@@ -114,6 +114,7 @@ function fakeFullCalendar() {
         prev() { this.prevCalled = true; }
         updateSize() { this.sized = true; }
         getEvents() { return this.events; }
+        refetchEvents() { this.refetched = (this.refetched || 0) + 1; }
         addEvent(event) { this.events.push(event); return event; }
         removeAllEvents() { this.events = []; }
         setOption(name, value) { this.options[name] = value; }
