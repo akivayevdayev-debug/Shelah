@@ -3048,11 +3048,11 @@ html.rtl .home-main-layout #popularTextsGrid {
 }
 
 .library-shell .bg-slate-50 {
-    background-color: var(--surface-subtle) !important;
+    background-color: var(--surface-subtle);
 }
 
 .library-shell .bg-slate-100 {
-    background-color: var(--surface-pill) !important;
+    background-color: var(--surface-pill);
 }
 
 .library-shell .border-slate-100,
@@ -3062,7 +3062,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 }
 
 .library-shell .text-blue-100 {
-    color: #f8edd8 !important;
+    color: #f8edd8;
 }
 
 .library-shell .text-blue-500,
@@ -3070,24 +3070,24 @@ html.rtl .home-main-layout #popularTextsGrid {
 .library-shell .text-blue-700,
 .library-shell .text-blue-800,
 .library-shell .text-blue-900 {
-    color: #6a5840 !important;
+    color: #6a5840;
 }
 
 .library-shell .bg-blue-50,
 .library-shell .bg-blue-100,
 .library-shell .bg-indigo-50 {
-    background-color: #f4efe3 !important;
+    background-color: #f4efe3;
 }
 
 .library-shell .border-blue-200,
 .library-shell .border-indigo-200 {
-    border-color: #d9cfbe !important;
+    border-color: #d9cfbe;
 }
 
 .library-shell .text-indigo-700,
 .library-shell .text-indigo-800,
 .library-shell .text-indigo-900 {
-    color: #5f4f3a !important;
+    color: #5f4f3a;
 }
 
 .library-shell .hover\:bg-blue-100:hover,
@@ -3100,13 +3100,13 @@ html.rtl .home-main-layout #popularTextsGrid {
 .library-shell .focus\:ring-blue-300:focus,
 .library-shell .focus\:ring-blue-400:focus,
 .library-shell .focus\:ring-blue-500:focus {
-    --tw-ring-color: rgba(183, 167, 138, 0.65) !important;
+    --tw-ring-color: rgba(183, 167, 138, 0.65);
 }
 
 .library-shell .focus\:border-blue-300:focus,
 .library-shell .focus\:border-blue-400:focus,
 .library-shell .focus\:border-blue-500:focus {
-    border-color: #b8aa90 !important;
+    border-color: #b8aa90;
 }
 
 .library-shell .lang-btn {
@@ -3207,8 +3207,8 @@ html.rtl .home-main-layout #popularTextsGrid {
 .library-shell #settingsPanel,
 .library-shell #readerSettingsPanel,
 .library-shell #selectionInsights {
-    background: var(--surface-elevated) !important;
-    border-color: var(--surface-border) !important;
+    background: var(--surface-elevated);
+    border-color: var(--surface-border);
 }
 
 /* These modal headers carry a .text-blue-100 subtitle (color #f8edd8,
@@ -3221,22 +3221,22 @@ html.rtl .home-main-layout #popularTextsGrid {
    against the white title. */
 .library-shell #textsMenuModal .bg-linear-to-r.from-navy.to-blue-900,
 .library-shell #devtoolsInspectorModal .bg-linear-to-r.from-navy.to-blue-900 {
-    background-image: linear-gradient(to right, #615a51, #6f685d) !important;
+    background-image: linear-gradient(to right, #615a51, #6f685d);
 }
 
 .library-shell #searchSuggestions .suggestion-item[aria-selected="true"] {
-    background: #f4efe3 !important;
+    background: #f4efe3;
 }
 
 .library-shell .library-node-open.library-node-active {
-    background: #f2eadc !important;
-    border: 1px solid #d7c8ad !important;
-    color: #4f4130 !important;
+    background: #f2eadc;
+    border: 1px solid #d7c8ad;
+    color: #4f4130;
 }
 
 .library-shell .library-node-open.library-node-active:hover {
     background: #ede2d0 !important;
-    color: #433728 !important;
+    color: #433728;
 }
 
 @media (max-width: 768px) {
@@ -3247,8 +3247,8 @@ html.rtl .home-main-layout #popularTextsGrid {
     .library-shell #themeToggleBtn,
     .library-shell .lang-btn {
         min-height: 1.9rem;
-        padding-top: 0.22rem !important;
-        padding-bottom: 0.22rem !important;
+        padding-top: 0.22rem;
+        padding-bottom: 0.22rem;
     }
 }
 
@@ -3301,16 +3301,16 @@ html.rtl .home-main-layout #popularTextsGrid {
     background: linear-gradient(180deg,
             color-mix(in srgb, var(--surface-topbar) 98%, transparent) 0%,
             color-mix(in srgb, var(--surface-base) 98%, transparent) 100%);
-    border-color: var(--surface-border) !important;
+    border-color: var(--surface-border);
     box-shadow: 0 10px 28px color-mix(in srgb, var(--surface-base) 68%, transparent);
 }
 
 :is([data-theme="dark"], body.theme-dark) #searchInput {
-    background: var(--surface-pill) !important;
-    border-color: var(--surface-border) !important;
-    color: var(--accent-cream) !important;
-    -webkit-text-fill-color: var(--accent-cream) !important;
-    caret-color: var(--accent-cream) !important;
+    background: var(--surface-pill);
+    border-color: var(--surface-border);
+    color: var(--accent-cream);
+    -webkit-text-fill-color: var(--accent-cream);
+    caret-color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) #searchInput::placeholder {
@@ -3320,8 +3320,8 @@ html.rtl .home-main-layout #popularTextsGrid {
 :is([data-theme="dark"], body.theme-dark) #searchInput:-webkit-autofill,
 :is([data-theme="dark"], body.theme-dark) #searchInput:-webkit-autofill:hover,
 :is([data-theme="dark"], body.theme-dark) #searchInput:-webkit-autofill:focus {
-    -webkit-text-fill-color: var(--accent-cream) !important;
-    box-shadow: 0 0 0 1000px var(--surface-pill) inset !important;
+    -webkit-text-fill-color: var(--accent-cream);
+    box-shadow: 0 0 0 1000px var(--surface-pill) inset;
 }
 
 html.theme-dark,
@@ -3342,8 +3342,8 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) #searchSuggestions .suggestion-item[aria-selected="true"] {
-    background: var(--control-bg-hover) !important;
-    color: var(--accent-cream) !important;
+    background: var(--control-bg-hover);
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) .navigator-pane,
@@ -3391,15 +3391,15 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .bg-slate-100 {
-    background-color: var(--tw-dark-bg-slate-100) !important;
+    background-color: var(--tw-dark-bg-slate-100);
 }
 
 :is([data-theme="dark"], body.theme-dark) .bg-slate-200 {
-    background-color: var(--tw-dark-bg-slate-200) !important;
+    background-color: var(--tw-dark-bg-slate-200);
 }
 
 :is([data-theme="dark"], body.theme-dark) .bg-white\/85 {
-    background-color: var(--tw-dark-bg-white-85) !important;
+    background-color: var(--tw-dark-bg-white-85);
 }
 
 :is([data-theme="dark"], body.theme-dark) .border-slate-100,
@@ -3416,7 +3416,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .border-slate-400 {
-    border-color: var(--tw-dark-border-slate-400) !important;
+    border-color: var(--tw-dark-border-slate-400);
 }
 
 :is([data-theme="dark"], body.theme-dark) .text-slate-900 {
@@ -3432,7 +3432,7 @@ html.theme-dark,
 :is([data-theme="dark"], body.theme-dark) .text-slate-100,
 :is([data-theme="dark"], body.theme-dark) .text-gray-100,
 :is([data-theme="dark"], body.theme-dark) .text-white {
-    color: var(--tw-dark-text-white) !important;
+    color: var(--tw-dark-text-white);
 }
 
 :is([data-theme="dark"], body.theme-dark) .text-slate-700 {
@@ -3440,7 +3440,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .text-slate-600 {
-    color: var(--tw-dark-text-slate-600) !important;
+    color: var(--tw-dark-text-slate-600);
 }
 
 :is([data-theme="dark"], body.theme-dark) .text-slate-500 {
