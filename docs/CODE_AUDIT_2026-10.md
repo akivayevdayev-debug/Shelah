@@ -30,23 +30,18 @@ fails on the old code. Eleven fix commits came out of this pass: nine are alread
     `python scripts/build_shell_dom_fixture.py`; `tests/test_shell_dom_fixture.py` fails, naming that command, when the
     template and the fixture drift) and runs the classic scripts in it with a routed `fetch`;
     `conversation_page.js` installs the Ask panel on it with a manual clock and a recording conversation API.
-  - 128 tests in six files (`shell_*.test.js`, `conversation_ui.test.js`); `jsdom` is the only new dev dependency.
-  - Measured in the lcov that `npm run test:coverage` writes: `shell.js` 3,404 / 5,619 executable lines (61 %),
-    `conversation-ui.js` 1,143 / 1,332 (86 %). Sonar scores lines plus branch conditions, so applying its formula to
-    the last server counts gives about **86 %** for new code against the 80 % needed. That is a projection: without
-    `SONAR_TOKEN` I cannot run the scanner, so the first CI scan after a push is the real answer.
-  - Still uncovered in `shell.js`: search and the omnibox, the account flows (delete account, data export, preference
-    sync), the calendar, selection insights and commentary, ask-history pages, route helpers, infinite-scroll chunk
-    loading and the feedback widget. In `conversation-ui.js`: search-bar answers (guest-cap dialog, public and saved
-    answer states) and citation chips and previews. The two build scripts are still untested.
-  - **Dead UI found while writing them:** `shell.js` has handlers for a verse-compare strip (`compareModeToggle`,
-    `compareRefInput`, `compareOpenBtn`, `compareClearBtn`, `compareContainer`, `readerCompareControls`) and for the
-    community-timeline modal, but `templates/index.html` has none of those elements, so the code can only run if the
-    markup is injected, which the tests do. They look like deletion candidates for the frontend owner; I did not
-    remove them.
-  - A related edge in `conversation-ui.js` (`maybeShowTip`): if a menu is open when the discovery tip's timer fires,
-    the tip is skipped for the rest of the page's life, because the "come back when the menu closes" path only
-    exists for a tip that was already showing. Harmless, noted for the frontend owner.
+  - 128 tests in six files (`shell_*.test.js`, `conversation_ui.test.js`) in the first round; `jsdom` is the only new
+    dev dependency. The follow-up pass (section 6) grew the suite to 1,470 `node --test` tests.
+  - Measured in the lcov that `npm run test:coverage` writes, at the end of the follow-up pass: `shell.js` 97.1 % lines
+    (84.1 % branches), `conversation-ui.js` 99.7 %, `citation-popover.js` 98.8 %, `scripts/build_assets.mjs` and
+    `build_critical_css.mjs` 100 %. The first-round figures were 61 % and 86 %. Without `SONAR_TOKEN` I still cannot run
+    the scanner, so the first CI scan after a push is the real answer, but the margin over 80 % is now wide.
+  - Left uncovered in `shell.js` (the long tail, mostly one-line guards and error branches): the lines listed in the
+    lcov, plus `reader-ui.js` at 83.7 %. Nothing in the gate depends on them.
+  - **Dead UI found while writing them:** `shell.js` had handlers for a verse-compare strip, the community-timeline modal
+    and the source-graph modal whose markup is not in `templates/index.html`. Removed in `f9d1462`.
+  - **`maybeShowTip`** skipped the discovery tip for the rest of the page's life if a menu was open when its timer fired.
+    Fixed in `5b61a38` (the tip now waits for the menu to close), with a test.
 
 ## 2. Fixed (small commits, each with its test)
 
@@ -83,9 +78,8 @@ fails on the old code. Eleven fix commits came out of this pass: nine are alread
    `siddur_data.find_by_ref`, `siddur_lines.build_lines`/`english_is_aligned`, `search_provider._match_corpus`/
    `_build_last_resort_web_sources`, `text_engine._format_ui_answer`, `app._gather_ask_question_context_futures`.
    Deleting each means deleting its tests, so I left them.
-7. **Sonar leftovers I did not touch:** Python `S3776` x21, `S5843` x3, a few `S8786`; about 390 JavaScript smells,
-   almost all in `shell.js` (now 61 % covered by line, so a refactor there can be checked in jsdom); `Web:S6819` x17 and `Web:S7927` x22
-   (accessibility markup, another lane); CSS `S4666` x3; `plsql:S125` x1. None of these feed the gate.
+7. **Sonar leftovers:** the first pass left about 390 JavaScript smells, 22 Python `S3776`, `S8786`/`S5843`, `Web:S6819` x17,
+   `Web:S7927` x22 and `css:S9423` x701. Section 6 says which of these were fixed afterwards and which are still open.
 8. **Build hygiene:** `npm run build:css` changes `:where(.space-y-*)` specificity (a stale `.capitalize` rule in
    `tailwind.css` goes with it), and the critical CSS drifts from source at a pristine HEAD. Both need the frontend
    owner; I reverted my rebuild attempts.
@@ -102,8 +96,49 @@ fails on the old code. Eleven fix commits came out of this pass: nine are alread
   none found. The Gemini cooldown (`health_check.py`, `claude.py`) has no provable defect; share routes are sound.
 - Prod `/docs`, `/redoc`, `/openapi.json` answer 404.
 
-## 5. State at the end of this pass
+## 5. State at the end of the first pass
 
 `pytest` 5,529 passed at 99.51 % backend coverage (gate 85 %), run after rebasing onto `2eb2a08`; `ruff check .`
-clean; `node --test` 837/837 (709 before the jsdom tests); `tests/test_shell_dom_fixture.py` passes. Nothing was
-pushed by me. To land the local commits and this report: `git push origin main`.
+clean; `node --test` 837/837 (709 before the jsdom tests); `tests/test_shell_dom_fixture.py` passes. The follow-up
+pass below starts from `f3861a1`, which was pushed.
+
+## 6. Follow-up pass (2026-10-17): the Sonar leftovers
+
+All of it is in small commits on top of `f3861a1`; nothing here is pushed yet.
+
+**Fixed**
+
+| Rule | What changed | Commits |
+|---|---|---|
+| `javascript:S8786`, `S5843`, `S5869`, `S2486`, `S3358`, `S7781`, `S7761`, `S6594`, `S4624` and the other mechanical JavaScript findings | Quadratic regexes replaced by linear ones or by string scans, nested ternaries and empty catches rewritten, `replaceAll`/`at()`/`Number.isNaN` and similar. Each regex change was compared against the old pattern on several hundred thousand generated strings (a throw-away fuzz script, not checked in). | `9c91086`, `7c3df01`, `106a5b1`, `f28bdbe`, `cd48d26` |
+| `javascript:S3776` x53 | Long functions in `shell.js`, the router, the siddur reminders, the conversation, ask and zmanim modules and both build scripts split into named helpers; the jsdom suites pin the behaviour. | `fd2e5c9`, `884a372`, `a708ad8`, `c857d56` |
+| `python:S8786`, `S5843`, `S5869`, `S1110`, `S5958`, `S3415` | Quadratic patterns replaced by linear code with oracle tests (`tests/test_linear_regex_equivalence.py` keeps the old patterns and checks the new code against them on thousands of generated strings). | `e58fc3e`, `ee7114f` |
+| `python:S3776` x22 | `siddur_day` (tachanun exceptions are one month-keyed table; occasions come from per-holiday helpers, compared against the old code for every day of 1900-2099), `siddur_lines`, `build_siddur` (`_check_curation` / `_build_section` / `_check_slugs` / `_build_service` / `_content_version`; same output and the same `SystemExit` messages on eleven cases), `sidebar_bundle`, `routes_spa_paths`, `app.py` (cache tiers, primary-source collection), `claude.py` (history, Gemini fallback, prompt lines), `ai_tools`, `customs`, `rag`, `routes_community`, `routes_conversations`, `sefaria_library`, `crawl_library_leaves`, `verify_conversations_migration`. | `b00b65f`, `f454d23`, `38a94ba`, `d078009`, `30c0600` |
+| `css:S4666` x2, `plsql:S125` | Two duplicate selectors merged (minified assets and critical CSS rebuilt); a commented-out SQL read described in prose. | `6b17fd0`, `2f6752a` |
+| `Web:S7927` x13 | Icon-only conversation buttons: the `{{ phosphor(...) }}` call is wrapped in the `aria-hidden` `display: contents` span the reader buttons already use (`756e3fb`). The button's `aria-label` is unchanged. The scanner reads the template call as visible text, so this is a markup hint, not a change in what screen readers announce. | `81269b0` |
+| Coverage | Two build scripts and the home-page scripts now run under test; see section 1. | many |
+
+**Behaviour differences the regex rewrites accept** (each is a deliberate trade for linear time; none is reachable from
+normal text):
+
+- Reference patterns in `shell.js` need the book title to start with a non-whitespace character and no longer treat a
+  line terminator specially.
+- The tag strippers leave the `<a` of a malformed `<a<b>` in place; the markdown gap between a marker and its text is
+  bounded at 64 whitespace characters; a tag name containing a quote differs in the citation-marker TAG pattern.
+- The Yiddish verb suffix in `customs.py` is bounded at 30 characters.
+- A Mishneh Torah name (`ref_aliases`) can no longer start or end with a space inside the pattern.
+
+**Not fixed, and why**
+
+| Item | Reason |
+|---|---|
+| `css:S9423` x701 (`!important`) | Mostly in `static/style.css` (573). Removing them is visual work that has to be measured per component in light and dark, Hebrew and English; a separate session was proposed for it. |
+| `Web:S6819` x18 | Sonar wants `role="status"` replaced by `<output>`, `role="dialog"` by `<dialog>`, `role="radio"` by `<input>` and `role="group"` by `<fieldset>` and friends. Those swaps change focus, styling and (for `<dialog>`) top-layer behaviour, so they belong with the frontend owner; an earlier pass (`756e3fb`) already converted the status regions where `<output>` was safe. |
+| `javascript:S9382` x14 (await in a loop) | Sequential on purpose: the service worker's precache walk goes "one at a time: the reader's own requests go first" (its own comment), `commentary-preload.js` re-checks staleness between neighbour fetches, and the build scripts run their steps in order. `Promise.all` would change load and ordering for a style hint. |
+| `text_ssr` footnote regexes (lines 57-58) | They are written to mirror `normalizeDisplayText` in the browser (the module's own comment says "in the same order"); making only the server side linear would risk server- and client-rendered text differing. |
+| `loadNextTextChunk` speculative loop, `display_name` city-search edge, `renderAnswerMarkdown` without DOMPurify, the legacy `showSidebars` migration | Design or security calls, noted for their owners. |
+| `reader-ui.js` (83.7 %) and the `shell.js` long tail | Not needed for the gate. |
+
+`SONAR_TOKEN` is still not set in this shell, so I have not seen the quality gate after these commits; the Python
+cognitive-complexity counts were checked with a local approximation of the rule, which cannot confirm them. The first CI scan
+after a push is the check.

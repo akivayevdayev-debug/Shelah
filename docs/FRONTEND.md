@@ -160,7 +160,7 @@ What the modules read and write:
 | `dailyStudy` | `refs`, `prewarmedAt` |
 | `semanticBookmarks` | `items`, `lastUpdatedAt` |
 | `currentView`, `shownView` | The page on screen (inline script) |
-| `lastAiQuestion`, `lastAiResponse`, `readingState`, `reliability` | Inline-script state |
+| `readingState`, `reliability` | Inline-script state |
 
 Preferences persist in `localStorage["Sh'elahPrefs"]` and, when signed in, sync with Supabase through `/api/user/preferences`. Nothing else holds a copy of shared data.
 
