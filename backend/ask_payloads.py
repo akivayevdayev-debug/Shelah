@@ -19,6 +19,29 @@ from backend import claude
 from backend.helpers import _coarse_ai_error_reason
 
 
+# The answer text when synthesis failed and only the discovered sources can be
+# returned. It names what happened and what to do, in the answer's language;
+# the sources it points to travel in the same payload (``sources``).
+_SOURCE_FALLBACK_ANSWER = {
+    "en": (
+        "No written answer this time: the AI didn't respond. "
+        "These are the sources found for your question. "
+        "Open them to read the text, or try again in a minute."
+    ),
+    "he": (
+        "הפעם אין תשובה כתובה: הבינה המלאכותית לא הגיבה. "
+        "אלה המקורות שנמצאו לשאלתך. "
+        "אפשר לפתוח אותם ולקרוא את הטקסט, או לנסות שוב בעוד דקה."
+    ),
+}
+
+
+def source_fallback_answer(answer_language: Optional[str]) -> str:
+    """The fallback answer's text for ``answer_language`` (English unless it is Hebrew)."""
+    key = "he" if str(answer_language or "").lower().startswith("he") else "en"
+    return _SOURCE_FALLBACK_ANSWER[key]
+
+
 def is_usable_primary_source(source: Any) -> bool:
     """True for a fetched primary source worth showing the model and the
     reader: a dict whose fetch succeeded and that has some text. A ref that

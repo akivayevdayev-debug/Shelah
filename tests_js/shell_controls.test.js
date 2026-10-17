@@ -126,6 +126,22 @@ test('the menus open and close, and a click outside closes them', async () => {
     }
 });
 
+test('the search field and the settings button are named in the interface language', async () => {
+    const page = await openText();
+    try {
+        const search = el(page, 'searchInput');
+        const settings = el(page, 'settingsMenuBtn');
+        page.eval(`applyStaticHebrewFallbackTranslations('he'); localizePlaceholders('he')`);
+        assert.equal(settings.getAttribute('aria-label'), 'פתח תפריט הגדרות');
+        assert.equal(search.getAttribute('aria-label'), search.dataset.hePlaceholder.replace(/\.+$/, ''));
+        page.eval(`applyStaticHebrewFallbackTranslations('en'); localizePlaceholders('en')`);
+        assert.equal(settings.getAttribute('aria-label'), 'Open settings menu');
+        assert.equal(search.getAttribute('aria-label'), search.dataset.enPlaceholder.replace(/\.+$/, ''));
+    } finally {
+        page.close();
+    }
+});
+
 test('the AI settings button opens the conversation panel\'s settings', async () => {
     const ui = fakeConversationUI();
     const page = await openShellPage({ fetch: routes(), before: (window) => { window.ShelahConversationUI = ui; } });

@@ -548,8 +548,8 @@ function hasParenthetical(text) {
         function disclaimerBannerText(kind) {
             if (kind === 'breaker') {
                 return t(
-                    'AI answers are paused for today to stay within our usage budget — you can still browse and search the full Torah library below. Please try again after midnight UTC.',
-                    'תשובות בינה מלאכותית מושהות להיום כדי להישאר בתקציב השימוש שלנו — ניתן עדיין לעיין ולחפש בספריית התורה המלאה למטה. אנא נסה/י שוב לאחר חצות בשעון UTC.'
+                    'AI answers are paused for today to stay within our usage budget — you can still browse and search the full Torah library. Please try again after midnight UTC.',
+                    'תשובות בינה מלאכותית מושהות להיום כדי להישאר בתקציב השימוש שלנו — ניתן עדיין לעיין ולחפש בספריית התורה המלאה. אנא נסה/י שוב לאחר חצות בשעון UTC.'
                 );
             }
             if (kind === 'referral') {
@@ -2009,7 +2009,9 @@ function hasParenthetical(text) {
             });
 
             if (settingsMenuBtn) {
-                settingsMenuBtn.title = lang === 'he' ? 'פתח תפריט הגדרות' : 'Open settings menu';
+                const settingsLabel = lang === 'he' ? 'פתח תפריט הגדרות' : 'Open settings menu';
+                settingsMenuBtn.title = settingsLabel;
+                settingsMenuBtn.setAttribute('aria-label', settingsLabel);
             }
         }
 
@@ -4751,7 +4753,10 @@ function hasParenthetical(text) {
                 : t("Sh'elah - Torah Encyclopedia", 'שאלה - אנציקלופדיית תורה');
         }
 
-        const PRIMARY_TEXT_VIEWS = new Set(['text', 'prayer', 'siddur']);
+        // The views whose page Sh'elah composes itself; every other view is
+        // Sefaria's text or one of the app's own pages (history), neither of
+        // which is a synthesis.
+        const COMPOSED_VIEWS = new Set(['community']);
 
         function setCurrentView(type, value, label, options = {}) {
             // Leaving the siddur stops its scroll tracking and lets go of a
@@ -4759,10 +4764,10 @@ function hasParenthetical(text) {
             // over it ('ask') doesn't leave it.
             if (type !== 'siddur' && type !== 'ask') window.ShelahSiddur?.close();
             // "Sh'elah Synthesis" would claim Sefaria's own text (a verse, a
-            // prayer, the siddur) as the app's writing; it shows only once a
-            // page Sh'elah composes itself has loaded.
+            // prayer, the siddur) or a plain page (history) as the app's
+            // writing; it shows only once a page Sh'elah composes itself has loaded.
             if (type !== 'ask') {
-                document.getElementById('readerKindBadge')?.classList.toggle('hidden', PRIMARY_TEXT_VIEWS.has(type));
+                document.getElementById('readerKindBadge')?.classList.toggle('hidden', !COMPOSED_VIEWS.has(type));
                 // Styling hook (siddur.css sets the siddur's own title size).
                 document.getElementById('reader')?.setAttribute('data-view', type);
                 // The siddur sets its own type and lists: the markdown "prose"
@@ -10769,6 +10774,8 @@ function hasParenthetical(text) {
             const searchInput = document.getElementById('searchInput');
             if (searchInput) {
                 searchInput.placeholder = lang === 'he' ? searchInput.dataset.hePlaceholder : searchInput.dataset.enPlaceholder;
+                // The accessible name follows the visible prompt, minus its trailing dots.
+                searchInput.setAttribute('aria-label', searchInput.placeholder.replace(/[.…]+$/, ''));
             }
 
             if (libraryIndexFilterInput) {

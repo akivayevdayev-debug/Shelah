@@ -19,7 +19,12 @@ from pydantic import BaseModel, Field
 
 import app as flask_app_module
 from backend import ask_pipeline, ask_progress, claude, guest_cap, search
-from backend.ask_payloads import build_ai_answer_payload, build_source_fallback_payload, is_usable_primary_source
+from backend.ask_payloads import (
+    build_ai_answer_payload,
+    build_source_fallback_payload,
+    is_usable_primary_source,
+    source_fallback_answer,
+)
 from backend.auth import CLERK_ENFORCE_AUTH, extract_user_id_from_bearer_value
 from backend.device_identity import (
     bind_device, current_history_owner, release_device, request_is_secure, set_device_cookie,
@@ -786,7 +791,7 @@ async def _run_ask_async_fallback(
         fallback_payload.get("warning") or "").strip()
 
     fallback_answer = _compose_answer_with_prefixes(
-        "## Ruling\n\nAI synthesis unavailable. Returning discovered halakhic references.",
+        source_fallback_answer(answer_language),
         include_web_warning=bool(fallback_warning),
     )
 

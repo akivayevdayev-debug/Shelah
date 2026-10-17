@@ -59,7 +59,7 @@
        ~3.7:1 -- below the WCAG AA 4.5:1 floor. --ink-primary clears >8:1
        in both themes against this background. */
     color: var(--ink-primary, #334155);
-    font-size: 0.8125rem;
+    font-size: var(--text-meta);
     line-height: 1.5;
 }
 
@@ -193,7 +193,7 @@
 
 /* Focus ring for modal close button */
 #textsMenuModal button:focus-visible {
-    outline: 2px solid rgba(176, 154, 116, 0.65);
+    outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
     border-radius: 3px;
 }
@@ -245,7 +245,7 @@
     display: inline-flex;
     align-items: center;
     gap: var(--space-xs);
-    font-size: 0.68rem;
+    font-size: var(--text-xs);
     font-weight: 600;
     color: var(--accent-deep-blue, #1f3f63);
     text-decoration: none;
@@ -545,6 +545,20 @@
     transform: scale(0.94) !important;
 }
 
+/* Touch: the home "this week's parasha" link and the search field are a
+   little under 44px tall. The link gets balanced padding and margin so
+   nothing moves; the field simply grows to the minimum. */
+@media (pointer: coarse) {
+    #homeParashaQuickLink {
+        padding-block: var(--sp-1);
+        margin-block: calc(var(--sp-1) * -1);
+    }
+
+    #searchInput {
+        min-height: var(--hit-min);
+    }
+}
+
 /* ── Mobile bottom tabs ──────────────────────────────────── */
 .mobile-tab-btn {
     transition: background-color var(--motion-dur-base) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out),
@@ -747,6 +761,15 @@ body.search-loading .search-ai-sparkle {
     background: currentColor;
     border-radius: 1px;
     animation: shelah-scale-in 0.2s ease both;
+}
+
+/* The EN / עברית switch is 28px tall on a mouse; touch screens get the
+   44px target (iPad landscape and wider tablets show it, phones use the menu). */
+@media (pointer: coarse) {
+    .lang-btn {
+        min-block-size: var(--hit-min);
+        min-inline-size: var(--hit-min);
+    }
 }
 
 /* ── Respect reduced-motion additions ────────────────────── */

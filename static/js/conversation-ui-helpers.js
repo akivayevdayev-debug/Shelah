@@ -122,8 +122,8 @@ export function noticeFor(error, lang = "en") {
             return {
                 tone: "warn",
                 text: tr({
-                    en: "You've reached today's AI limit. It resets tomorrow.",
-                    he: "הגעת למגבלת הבינה המלאכותית היומית. היא מתאפסת מחר.",
+                    en: "You've reached today's AI limit. It resets at midnight UTC.",
+                    he: "הגעת למגבלת הבינה המלאכותית היומית. היא מתאפסת בחצות UTC.",
                 }, lang),
                 action: null,
             };
@@ -284,6 +284,16 @@ export function citationExcerpt(citation, lang = "en") {
     return lang === "he"
         ? citation.excerptHe || citation.excerptEn || ""
         : citation.excerptEn || citation.excerptHe || "";
+}
+
+// Whether most of the letters in `text` are Hebrew. Cardo's Hebrew bold face
+// covers only a few letters (a bold heading came out half regular, half
+// bold), so a Hebrew answer's headings take a stroke instead (conversation.css).
+export function mostlyHebrew(text) {
+    const s = String(text || "");
+    const hebrew = (s.match(/[\u05D0-\u05EA]/g) || []).length;
+    const latin = (s.match(/[A-Za-z]/g) || []).length;
+    return hebrew > 0 && hebrew >= latin;
 }
 
 // Change-detection key for a rendered transcript turn.

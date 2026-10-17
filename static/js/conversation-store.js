@@ -147,7 +147,12 @@ const CITED_SOURCE_RE = /^(.*?)\s[\u2013\u2014]\s(.*)$/;
 const CITED_SOURCE_LIMIT = 10;
 
 export function answerCitations(data) {
-    const cited = Array.isArray(data?.ai_cited_sources) ? data.ai_cited_sources : [];
+    let cited = Array.isArray(data?.ai_cited_sources) ? data.ai_cited_sources : [];
+    // An answer the AI never wrote (synthesis failed, or answers are paused)
+    // cites nothing; the sources it did find are the whole answer, so list them.
+    if (!cited.length && (data?.meta?.fallback_detail || data?.meta?.breaker_tripped) && Array.isArray(data?.sources)) {
+        cited = data.sources.map((source) => String(source?.ref || source?.title || ""));
+    }
     const seen = new Set();
     const citations = [];
     for (const raw of cited) {
@@ -180,6 +185,10 @@ function searchErrorCode(error) {
     if (error?.name === "AbortError") return SEARCH_ERROR_CODES.TIMEOUT;
     switch (error?.status) {
         case 401: return ERROR_CODES.UNAUTHORIZED;
+        // /ask's per-user daily budget (asgi.py _enforce_ask_async_budget):
+        // retrying cannot help until midnight UTC, so it must not read as a
+        // generic failure.
+        case 402: return ERROR_CODES.BUDGET_EXHAUSTED;
         case 429: return ERROR_CODES.RATE_LIMITED;
         case undefined: case null: return ERROR_CODES.NETWORK;
         default: return ERROR_CODES.SERVER;

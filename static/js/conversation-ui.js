@@ -71,6 +71,7 @@ import {
     conversationGroup,
     conversationGroupLabel,
     turnSignature,
+    mostlyHebrew,
 } from "./conversation-ui-helpers.js";
 
 const MOBILE_QUERY = "(max-width: 1023px)";
@@ -382,7 +383,10 @@ function panelTitle(state, answerView, hasMessages) {
 
 function renderHeader(state, { l, name, title, options }) {
     const conversation = state.conversation;
-    if (!els.title.querySelector("input")) els.title.textContent = title;
+    if (!els.title.querySelector("input")) {
+        els.title.textContent = title;
+        els.title.dataset.script = mostlyHebrew(title) ? "he" : "";
+    }
     els.subtitle.textContent = ui.layout === "mobile" ? tr(`${name} practice`, `מנהג ${name}`) : "";
     els.chipLabel.textContent = name;
     els.menuBtn.dataset.locked = state.minhagLocked ? "true" : "false";
@@ -680,6 +684,11 @@ function answerBodyHtml(message, idPrefix) {
     });
 }
 
+function answerBox(message, body) {
+    const script = mostlyHebrew(message.content) ? ' data-script="he"' : "";
+    return `<div class="conv-answer" dir="auto"${script}>${body}</div>`;
+}
+
 function answerHtml(content) {
     if (typeof window.renderAnswerMarkdown === "function") {
         try {
@@ -778,9 +787,13 @@ function turnInnerHtml(message, index, messages, l) {
             // carries its safety banner, community customs, feedback and
             // Copy link; decorateAnswerTurn fills the hosts.
             const data = message.answer;
-            if (!data) return `<div class="conv-answer" dir="auto">${body}</div>${cites}`;
+            if (!data) return `${answerBox(message, body)}${cites}`;
+            // Paused answers: the banner says it, in the reader's language;
+            // the server's English sentence under it would only repeat it.
+            const paused = data.meta?.breaker_tripped && typeof window.renderDisclaimerBanner === "function";
+            const answer = paused ? "" : answerBox(message, body);
             return '<div class="conv-turn__banner" data-answer-banner></div>'
-                + `<div class="conv-answer" dir="auto">${body}</div>`
+                + answer
                 + customsHtml(data, l)
                 + cites
                 + '<div class="conv-turn__actions" data-answer-actions><div class="conv-turn__feedback"></div></div>';
@@ -968,6 +981,9 @@ function latestTop() {
     const bottom = scroller.scrollHeight - scroller.clientHeight;
     const questions = els.messages.querySelectorAll(".conv-turn--user");
     const last = questions[questions.length - 1];
+    // Nothing asked yet: the empty state (heading, hint, suggestions) is read
+    // from its top, not landed on at its last line on a short screen.
+    if (!els.messages.children.length) return 0;
     if (!last) return bottom;
     const offset = last.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 12;
     return Math.max(0, Math.min(bottom, offset));
@@ -985,14 +1001,18 @@ function updateJumpButton() {
 
 function renderLists(state, l) {
     const list = state.list;
-    const listRef = `${l}:${list.status}:${state.conversation?.id || ""}:${ui.signedIn}`;
+    const listRef = `${l}:${list.status}:${state.conversation?.id || ""}:${ui.signedIn}:${ui.authResolved}`;
     if (ui.lastListRef === listRef && ui.lastListItems === list.items) return;
     ui.lastListRef = listRef;
     ui.lastListItems = list.items;
 
     let html;
     if (!ui.signedIn) {
-        html = "";
+        // Signed out there is no list to show; say why, so the heading above is
+        // not followed by blank space.
+        html = clerkConfigured() && ui.authResolved
+            ? `<li class="conv-list__empty">${escapeText(tr("Sign in to keep a list of your conversations.", "התחברו כדי לשמור רשימת שיחות."))}</li>`
+            : "";
     } else if (list.status !== "ready" && list.status !== "error" && list.items.length === 0) {
         // Not loaded yet (idle or loading): skeletons, never a premature
         // "No conversations yet".
@@ -1882,15 +1902,17 @@ function maybeShowTip() {
     ui.tipTimer = window.setTimeout(() => {
         // Only on a calm screen: never over an open panel, modal, search or reader.
         const menuOpen = openTipBlockingMenu();
-        // A menu open now is not "never": watchTipBlockingMenus brings the tip back
-        // once the last menu closes (it only does so for a tip it knows is waiting).
-        if (menuOpen) ui.tipDeferred = true;
         const busy = ui.open
             || menuOpen
             || document.body.classList.contains("mobile-search-open")
             || document.body.classList.contains("conv-modal-open");
         const anchor = tipAnchor();
-        if (busy || !anchor || anchor.offsetParent === null || readFlag(AI_USED_KEY) || readFlag(TIP_DISMISSED_KEY)) return;
+        if (busy || !anchor || anchor.offsetParent === null || readFlag(AI_USED_KEY) || readFlag(TIP_DISMISSED_KEY)) {
+            // A menu in the way only postpones the tip: the menu watcher
+            // brings it back once every menu is closed.
+            ui.tipDeferred = menuOpen;
+            return;
+        }
         ui.tipAnchor = anchor;
         anchor.classList.add("ai-attention");
         els.tip.classList.remove("hidden");

@@ -83,6 +83,35 @@ test('signed out, a question goes to the one-shot search instead of the conversa
     }
 });
 
+test('a paused answer shows the banner and the sources it found, not the server sentence again', async () => {
+    const page = await openConversationPage();
+    try {
+        page.window.renderDisclaimerBanner = (el, _safety, paused) => {
+            el.classList.toggle('ai-disclaimer-banner--breaker-paused', Boolean(paused));
+            el.textContent = 'Answers are paused today.';
+        };
+        await page.ui.open({ fresh: true });
+        await page.flush();
+        page.ui.showAnswer({
+            id: 'h-paused',
+            question: 'Hot plate?',
+            answer: 'AI answers are paused for today -- try later.',
+            ai_cited_sources: [],
+            sources: [{ ref: 'Shulchan Arukh, Orach Chayim 253:1', lines: [] }],
+            meta: { fallback: true, breaker_tripped: true },
+        });
+        await page.flush();
+
+        const turn = page.$('#convMessages .conv-turn--assistant') || page.$('#convMessages li:last-child');
+        assert.ok(turn.querySelector('.ai-disclaimer-banner--breaker-paused'));
+        assert.equal(turn.querySelector('.conv-answer'), null);
+        assert.match(turn.textContent, /Shulchan Arukh, Orach Chayim 253:1/);
+        assert.doesNotMatch(turn.textContent, /try later/);
+    } finally {
+        page.close();
+    }
+});
+
 // --- opening, sizes, the URL ----------------------------------------------
 
 test('Ask AI opens the mini widget and a second press closes it', async () => {
@@ -513,6 +542,27 @@ test('the jump button appears when the newest question is off screen', async () 
         page.click('#convJumpBtn');
         assert.ok(scroller.scrolledTo);
         assert.equal(scroller.scrolledTo[0].behavior, 'smooth');
+    } finally {
+        page.close();
+    }
+});
+
+test('a new conversation opens at the top of its empty state, even on a short screen', async () => {
+    const page = await openConversationPage({
+        signedIn: true,
+        before: (window) => {
+            const scroller = window.document.getElementById('convScroller');
+            Object.defineProperty(scroller, 'scrollHeight', { configurable: true, value: 600 });
+            Object.defineProperty(scroller, 'clientHeight', { configurable: true, value: 400 });
+        },
+    });
+    try {
+        await page.ui.open({ fresh: true });
+        await page.flush();
+        await page.tick(50);
+        const scroller = page.$('#convScroller');
+        assert.ok(scroller.scrolledTo, 'the thread was positioned on open');
+        assert.equal(scroller.scrolledTo[0].top, 0);
     } finally {
         page.close();
     }
@@ -1081,8 +1131,7 @@ test('a menu that is open when the tip is due holds it back until the menu close
         menu.classList.remove('hidden');
         await page.tick(1700);
         assert.equal(page.hidden('#aiDiscoveryTip'), true);
-
-        // The timer already fired and gave up for now; closing the menu brings the tip back.
+        // Not for good: closing the menu brings the tip that was due back.
         menu.classList.add('hidden');
         await page.flush();
         await page.tick(1700);

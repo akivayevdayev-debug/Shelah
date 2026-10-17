@@ -115,7 +115,7 @@ body.conv-modal-open {
 .conv-panel[data-layout="desktop"][data-size="overlay"] {
     top: 50%;
     left: 50%;
-    width: min(760px, calc(100vw - 2 * var(--sp-6)));
+    width: min(var(--conv-column), calc(100vw - 2 * var(--sp-6)));
     height: min(680px, calc(100dvh - 2 * var(--sp-8)));
     translate: -50% -50%;
     border-radius: var(--radius-xl);
@@ -390,12 +390,33 @@ body.conv-modal-open {
     color: var(--ink-heading);
 }
 .conv-panel[data-size="mini"] .conv-title { font-size: var(--text-base); }
+/* Cardo's Hebrew bold is partial (see .conv-answer[data-script]). */
+.conv-title[data-script="he"] {
+    font-weight: 400;
+    -webkit-text-stroke: 0.05em currentColor;
+}
 .conv-subtitle {
     margin: 0;
     font-size: var(--text-xs);
     color: var(--ink-secondary);
 }
 .conv-subtitle:empty { display: none; }
+/* A 320px sheet: four 44px buttons leave the title ~86px, so "Ask Sh'elah" read
+   "Ask..." and the community line wrapped to two. Snugger header edges and a
+   base-size title give the words back; the subtitle stays on one line. */
+@media (max-width: 26rem) {
+    .conv-panel[data-layout="mobile"][data-size="overlay"] .conv-header {
+        padding-inline: var(--sp-2);
+        gap: var(--sp-1);
+    }
+    .conv-panel[data-layout="mobile"][data-size="overlay"] .conv-header__actions { gap: 0; }
+    .conv-panel[data-layout="mobile"][data-size="overlay"] .conv-title { font-size: var(--text-base); }
+    .conv-panel[data-layout="mobile"] .conv-subtitle {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+}
 
 .conv-header__actions {
     display: flex;
@@ -801,7 +822,7 @@ body.conv-modal-open {
     scroll-padding-bottom: var(--sp-8);
 }
 .conv-panel[data-size="full"] .conv-scroller {
-    padding-inline: max(var(--sp-4), calc((100% - 760px) / 2));
+    padding-inline: max(var(--sp-4), calc((100% - var(--conv-column)) / 2));
 }
 .conv-panel[data-size="mini"] .conv-scroller {
     padding: var(--sp-3);
@@ -981,6 +1002,10 @@ body.conv-modal-open {
 
 .conv-answer {
     max-width: 68ch;
+    /* The answer's own direction (dir="auto") decides which edge of the column
+       it sits against: an English answer in the Hebrew UI starts at the left
+       edge, with the sources below it, instead of floating right-anchored. */
+    margin-inline-end: auto;
     color: var(--ink-primary);
     line-height: 1.7;
     overflow-wrap: anywhere;
@@ -997,9 +1022,19 @@ body.conv-modal-open {
 .conv-answer :is(h1, h2, h3, h4) {
     margin-block: var(--sp-6) var(--sp-2);
     font-size: var(--text-md);
+    /* The reset flattens headings to the body weight; weight, not colour
+       alone, is what sets a heading apart. */
+    font-weight: 700;
     line-height: 1.35;
     letter-spacing: -0.005em;
     color: var(--ink-heading);
+}
+/* Cardo's Hebrew bold covers only a few letters (ב and ו came out heavy, the
+   rest regular), so a Hebrew answer keeps the regular face and gets a thin
+   stroke for weight, as style.css does for Ezra SIL. */
+.conv-answer[data-script="he"] :is(h1, h2, h3, h4, strong, b) {
+    font-weight: 400;
+    -webkit-text-stroke: 0.05em currentColor;
 }
 .conv-answer li + li { margin-top: var(--sp-1); }
 .conv-answer blockquote {
@@ -1527,6 +1562,10 @@ body.conv-modal-open {
     /* Replays each time the notice un-hides (display: none -> flex). */
     animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-out) both;
 }
+.conv-panel[data-size="full"] .conv-notice {
+    /* Same column as the transcript and composer it sits between. */
+    margin-inline: max(var(--sp-4), calc((100% - var(--conv-column)) / 2));
+}
 .conv-notice[data-tone="info"] {
     border-color: var(--conv-hairline);
     background: var(--surface-2);
@@ -1616,7 +1655,7 @@ body.conv-modal-open {
     padding: var(--sp-2) var(--sp-4) var(--sp-3);
 }
 .conv-panel[data-size="full"] .conv-composer-shell {
-    padding-inline: max(var(--sp-4), calc((100% - 760px) / 2));
+    padding-inline: max(var(--sp-4), calc((100% - var(--conv-column)) / 2));
 }
 .conv-panel[data-size="mini"] .conv-composer-shell { padding: var(--sp-2) var(--sp-3); }
 

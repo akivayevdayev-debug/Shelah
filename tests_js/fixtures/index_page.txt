@@ -102,14 +102,6 @@
     
     
     
-    <!-- The CSS the first paint of this kind of page uses, inline (the paint no
-         longer waits for a stylesheet request), and the whole stylesheet bundle
-         behind it, which applies as soon as it has loaded. The bundle holds
-         every sheet listed in the fallback below, in that order, minified; the
-         critical CSS is the subset of it that matches the server-rendered page
-         (scripts/build_critical_css.mjs, npm run build:critical). -->
-    
-    
     
     
 
@@ -272,7 +264,7 @@
                     class="topbar-controls relative z-110 flex gap-1.5 items-center flex-wrap justify-end w-full lg:w-auto">
                     <div id="settingsMenuContainer" class="relative z-120 shrink-0">
                         <button id="settingsMenuBtn" type="button" aria-expanded="false" aria-haspopup="true"
-                            class="topbar-flat-btn text-[#7a6a52]" title="Open settings menu">
+                            class="topbar-flat-btn text-[#7a6a52]" title="Open settings menu" aria-label="Open settings menu">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="16" height="16" fill="currentColor" class="h-4 w-4" aria-hidden="true"><path d="M40,92H70.06a36,36,0,0,0,67.88,0H216a12,12,0,0,0,0-24H137.94a36,36,0,0,0-67.88,0H40a12,12,0,0,0,0,24Zm64-24A12,12,0,1,1,92,80,12,12,0,0,1,104,68Zm112,96H201.94a36,36,0,0,0-67.88,0H40a12,12,0,0,0,0,24h94.06a36,36,0,0,0,67.88,0H216a12,12,0,0,0,0-24Zm-48,24a12,12,0,1,1,12-12A12,12,0,0,1,168,188Z"/></svg>
                         </button>
 
@@ -377,7 +369,7 @@
                     </button>
 
                     
-                    <div id="authControls" class="hidden items-center gap-1.5 mr-1">
+                    <div id="authControls" class="flex items-center gap-1.5 mr-1" aria-busy="true">
                         <div id="userProfileMenuContainer" class="hidden relative shrink-0 flex items-center">
                             <button id="userProfileMenuBtn" type="button" aria-expanded="false" aria-haspopup="true"
                                 class="topbar-user-menu-btn topbar-flat-btn text-xs text-[#334155] inline-flex items-center gap-1.5"
@@ -1726,7 +1718,7 @@
                     <span class="contents" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="16" height="16" fill="currentColor" class="h-4 w-4" aria-hidden="true"><path d="M140,80v41.21l34.17,20.5a12,12,0,1,1-12.34,20.58l-40-24A12,12,0,0,1,116,128V80a12,12,0,0,1,24,0ZM128,28A99.38,99.38,0,0,0,57.24,57.34c-4.69,4.74-9,9.37-13.24,14V64a12,12,0,0,0-24,0v40a12,12,0,0,0,12,12H72a12,12,0,0,0,0-24H57.77C63,86,68.37,80.22,74.26,74.26a76,76,0,1,1,1.58,109,12,12,0,0,0-16.48,17.46A100,100,0,1,0,128,28Z"/></svg></span>
                 </button>
                 <div class="conv-heading">
-                    <h2 id="convTitle" class="conv-title">Ask Sh'elah</h2>
+                    <h2 id="convTitle" class="conv-title" dir="auto">Ask Sh'elah</h2>
                     <p id="convSubtitle" class="conv-subtitle"></p>
                 </div>
                 <div class="conv-header__actions">
@@ -1861,17 +1853,17 @@
                 <div id="convEmpty" class="conv-empty">
                     <p class="conv-empty__title font-serif" data-en="What would you like to learn?" data-he="מה תרצה ללמוד?">What would you like to learn?</p>
                     <p class="conv-empty__text"
-                        data-en="Ask a question and follow up as much as you like. Every answer cites its sources."
-                        data-he="שאל שאלה והמשך לשאול כרצונך. כל תשובה מציינת את מקורותיה.">Ask a question and follow up
-                        as much as you like. Every answer cites its sources.</p>
+                        data-en="Ask a question and follow up as much as you like. Answers show the sources they used."
+                        data-he="שאל שאלה והמשך לשאול כרצונך. התשובות מציגות את המקורות שבהם נעשה שימוש.">Ask a question and follow up
+                        as much as you like. Answers show the sources they used.</p>
                     <!-- Signed out: a question still gets an answer (a one-shot /ask) and
                          can be followed up, within the guest limits (backend/guest_cap.py)
                          -- say so up front. -->
                     <p id="convSignedOutHint" class="conv-empty__hint conv-signin-callout hidden">
                         <span class="conv-signin-callout__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M208,76H180V56A52,52,0,0,0,76,56V76H48A20,20,0,0,0,28,96V208a20,20,0,0,0,20,20H208a20,20,0,0,0,20-20V96A20,20,0,0,0,208,76ZM100,56a28,28,0,0,1,56,0V76H100ZM204,204H52V100H204Z"/></svg></span>
                         <span class="conv-signin-callout__text"
-                            data-en="You can ask as a guest. Sign in to save your conversations and keep going without limits."
-                            data-he="אפשר לשאול כאורח. התחברו כדי לשמור את השיחות ולהמשיך ללא הגבלה.">You can ask as a guest. Sign in to save your conversations and keep going without limits.</span>
+                            data-en="You can ask as a guest. Sign in to save your conversations and go past the guest limits."
+                            data-he="אפשר לשאול כאורח. התחברו כדי לשמור את השיחות ולעבור את מגבלות האורחים.">You can ask as a guest. Sign in to save your conversations and go past the guest limits.</span>
                         <button type="button" class="conv-link-btn" data-conv-action="sign-in" data-en="Sign in" data-he="התחברות">Sign in</button>
                     </p>
                     <!-- A few places to start; pressing one fills the question box (it does not send). -->
@@ -2055,8 +2047,8 @@
         <div class="ai-tip__body">
             <p id="aiDiscoveryTipTitle" class="ai-tip__title" data-en="Ask Sh'elah anything" data-he="שאל את ש׳אלה כל שאלה">Ask Sh'elah anything</p>
             <p id="aiDiscoveryTipText" class="ai-tip__text"
-                data-en="Our AI answers questions on halachah, customs and texts — and every answer cites its sources."
-                data-he="הבינה המלאכותית שלנו עונה על שאלות בהלכה, במנהגים ובטקסטים — וכל תשובה מציינת את מקורותיה.">Our AI answers questions on halachah, customs and texts — and every answer cites its sources.</p>
+                data-en="Our AI answers questions on halachah, customs and texts, and shows the sources it used."
+                data-he="הבינה המלאכותית שלנו עונה על שאלות בהלכה, במנהגים ובטקסטים, ומציגה את המקורות שבהם השתמשה.">Our AI answers questions on halachah, customs and texts, and shows the sources it used.</p>
             <div class="ai-tip__actions">
                 <button type="button" id="aiDiscoveryTipTry" class="ai-tip__try" data-en="Try it" data-he="נסה עכשיו">Try it</button>
                 <button type="button" id="aiDiscoveryTipDismiss" class="ai-tip__dismiss" data-en="Not now" data-he="לא עכשיו">Not now</button>

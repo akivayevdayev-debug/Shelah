@@ -46,7 +46,12 @@ from backend.logging_setup import (
     get_logger,
     submit_with_context,
 )
-from backend.ask_payloads import build_ai_answer_payload, build_source_fallback_payload, is_usable_primary_source
+from backend.ask_payloads import (
+    build_ai_answer_payload,
+    build_source_fallback_payload,
+    is_usable_primary_source,
+    source_fallback_answer,
+)
 from backend.customs import validate_all_customs_at_startup
 from backend.device_identity import issues_device_cookie
 from backend.customs import (  # noqa: F401  (re-import shims; see below)
@@ -2093,7 +2098,7 @@ def _run_ask_question_fallback(question, mode, canonical_lens, answer_language, 
         fallback_payload.get("warning") or "").strip()
 
     fallback_answer = _compose_answer_with_prefixes(
-        "## Ruling\n\nAI synthesis unavailable. Returning discovered halakhic references.",
+        source_fallback_answer(answer_language),
         include_web_warning=bool(fallback_warning),
     )
 

@@ -145,3 +145,23 @@ test('a blocked Sefaria is reported as unavailable rather than as a missing text
         page.close();
     }
 });
+
+test('the "Sh\'elah Synthesis" badge shows only on a page Sh\'elah composes, not on a text or on history', async () => {
+    const page = await readGenesis();
+    try {
+        const hidden = () => page.$('#readerKindBadge').classList.contains('hidden');
+        assert.equal(hidden(), true, 'a Sefaria text');
+
+        await page.eval(`setCurrentView('history', 'history', 'Your questions')`);
+        assert.equal(hidden(), true, 'the history page');
+
+        await page.eval(`setCurrentView('community', 'Sefardic', 'Sefardic')`);
+        assert.equal(hidden(), false, 'a community page');
+
+        await page.eval(`setCurrentView('text', 'Genesis 1', 'Genesis 1')`);
+        assert.equal(hidden(), true, 'back on a text');
+        assert.deepEqual(page.errors, []);
+    } finally {
+        page.close();
+    }
+});

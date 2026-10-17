@@ -127,6 +127,20 @@ test('answerCitations: splits "Ref — note", de-duplicates refs, caps at ten', 
     assert.deepEqual(answerCitations(null), []);
 });
 
+test('answerCitations: a failed-synthesis or paused answer lists the sources it found', async () => {
+    const { answerCitations } = await loadStore();
+    const sources = [{ ref: 'Shulchan Arukh, Orach Chayim 253:1', lines: [] }, { title: 'Mishneh Torah, Sabbath 3:9' }, { ref: 'shulchan arukh, orach chayim 253:1' }];
+
+    assert.deepEqual(answerCitations({ ai_cited_sources: [], sources, meta: { fallback: true, fallback_detail: { reason: 'timeout' } } }).map((c) => c.ref), [
+        'Shulchan Arukh, Orach Chayim 253:1',
+        'Mishneh Torah, Sabbath 3:9',
+    ]);
+    assert.equal(answerCitations({ ai_cited_sources: [], sources, meta: { fallback: true, breaker_tripped: true } }).length, 2);
+    // An ordinary answer that cites nothing stays citation-free, and cited sources win.
+    assert.deepEqual(answerCitations({ ai_cited_sources: [], sources, meta: { fallback: false } }), []);
+    assert.deepEqual(answerCitations({ ai_cited_sources: ['Rema'], sources, meta: { fallback_detail: {} } }).map((c) => c.ref), ['Rema']);
+});
+
 test('showAnswer shows a stored answer as the first turn, unlocked, with its sources', async () => {
     const { createConversationStore, SOURCES_PHASE } = await loadStore();
     const store = createConversationStore({ api: makeApi() });
@@ -271,6 +285,7 @@ test('askSearch failure: question stays FAILED with a search error code, and ret
         [Object.assign(new Error('slow'), { name: 'AbortError' }), 'timeout'],
         [Object.assign(new Error('busy'), { status: 429 }), 'rate_limited'],
         [Object.assign(new Error('signin'), { status: 401 }), 'unauthorized'],
+        [Object.assign(new Error('budget'), { status: 402 }), 'budget_exhausted'],
         [Object.assign(new Error('boom'), { status: 500 }), 'server'],
         [new Error('offline'), 'network'],
     ];

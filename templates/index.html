@@ -472,7 +472,7 @@
                     class="topbar-controls relative z-110 flex gap-1.5 items-center flex-wrap justify-end w-full lg:w-auto">
                     <div id="settingsMenuContainer" class="relative z-120 shrink-0">
                         <button id="settingsMenuBtn" type="button" aria-expanded="false" aria-haspopup="true"
-                            class="topbar-flat-btn text-[#7a6a52]" title="Open settings menu">
+                            class="topbar-flat-btn text-[#7a6a52]" title="Open settings menu" aria-label="Open settings menu">
                             {{ phosphor('sliders-horizontal', size=16, class='h-4 w-4') }}
                         </button>
 
@@ -1620,6 +1620,10 @@
             <!-- ═══════════════════════════════════════════════════════ -->
             <style>
                 .site-footer {
+                    /* A short view (history signed out, an empty list) leaves the
+                       pane taller than its content: the footer rides the bottom
+                       edge instead of floating mid-screen. */
+                    margin-top: auto;
                     background: var(--surface-2);
                     border-top: 1px solid var(--surface-border);
                     padding: var(--sp-2) var(--sp-4);
@@ -2025,7 +2029,7 @@
                     <span class="contents" aria-hidden="true">{{ phosphor('clock-counter-clockwise', size=16, class='h-4 w-4') }}</span>
                 </button>
                 <div class="conv-heading">
-                    <h2 id="convTitle" class="conv-title">Ask Sh'elah</h2>
+                    <h2 id="convTitle" class="conv-title" dir="auto">Ask Sh'elah</h2>
                     <p id="convSubtitle" class="conv-subtitle"></p>
                 </div>
                 <div class="conv-header__actions">
@@ -2160,17 +2164,17 @@
                 <div id="convEmpty" class="conv-empty">
                     <p class="conv-empty__title font-serif" data-en="What would you like to learn?" data-he="מה תרצה ללמוד?">What would you like to learn?</p>
                     <p class="conv-empty__text"
-                        data-en="Ask a question and follow up as much as you like. Every answer cites its sources."
-                        data-he="שאל שאלה והמשך לשאול כרצונך. כל תשובה מציינת את מקורותיה.">Ask a question and follow up
-                        as much as you like. Every answer cites its sources.</p>
+                        data-en="Ask a question and follow up as much as you like. Answers show the sources they used."
+                        data-he="שאל שאלה והמשך לשאול כרצונך. התשובות מציגות את המקורות שבהם נעשה שימוש.">Ask a question and follow up
+                        as much as you like. Answers show the sources they used.</p>
                     <!-- Signed out: a question still gets an answer (a one-shot /ask) and
                          can be followed up, within the guest limits (backend/guest_cap.py)
                          -- say so up front. -->
                     <p id="convSignedOutHint" class="conv-empty__hint conv-signin-callout hidden">
                         <span class="conv-signin-callout__icon" aria-hidden="true">{{ phosphor('lock-simple', size=16) }}</span>
                         <span class="conv-signin-callout__text"
-                            data-en="You can ask as a guest. Sign in to save your conversations and keep going without limits."
-                            data-he="אפשר לשאול כאורח. התחברו כדי לשמור את השיחות ולהמשיך ללא הגבלה.">You can ask as a guest. Sign in to save your conversations and keep going without limits.</span>
+                            data-en="You can ask as a guest. Sign in to save your conversations and go past the guest limits."
+                            data-he="אפשר לשאול כאורח. התחברו כדי לשמור את השיחות ולעבור את מגבלות האורחים.">You can ask as a guest. Sign in to save your conversations and go past the guest limits.</span>
                         <button type="button" class="conv-link-btn" data-conv-action="sign-in" data-en="Sign in" data-he="התחברות">Sign in</button>
                     </p>
                     <!-- A few places to start; pressing one fills the question box (it does not send). -->
@@ -2354,8 +2358,8 @@
         <div class="ai-tip__body">
             <p id="aiDiscoveryTipTitle" class="ai-tip__title" data-en="Ask Sh'elah anything" data-he="שאל את ש׳אלה כל שאלה">Ask Sh'elah anything</p>
             <p id="aiDiscoveryTipText" class="ai-tip__text"
-                data-en="Our AI answers questions on halachah, customs and texts — and every answer cites its sources."
-                data-he="הבינה המלאכותית שלנו עונה על שאלות בהלכה, במנהגים ובטקסטים — וכל תשובה מציינת את מקורותיה.">Our AI answers questions on halachah, customs and texts — and every answer cites its sources.</p>
+                data-en="Our AI answers questions on halachah, customs and texts, and shows the sources it used."
+                data-he="הבינה המלאכותית שלנו עונה על שאלות בהלכה, במנהגים ובטקסטים, ומציגה את המקורות שבהם השתמשה.">Our AI answers questions on halachah, customs and texts, and shows the sources it used.</p>
             <div class="ai-tip__actions">
                 <button type="button" id="aiDiscoveryTipTry" class="ai-tip__try" data-en="Try it" data-he="נסה עכשיו">Try it</button>
                 <button type="button" id="aiDiscoveryTipDismiss" class="ai-tip__dismiss" data-en="Not now" data-he="לא עכשיו">Not now</button>

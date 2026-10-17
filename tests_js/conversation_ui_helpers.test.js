@@ -57,7 +57,7 @@ test('lock line names the community, localized, and handles All', async () => {
 test('noticeFor maps store error codes to user-facing notices', async () => {
     const h = await load();
     assert.equal(h.noticeFor(null), null);
-    assert.match(h.noticeFor({ code: 'budget_exhausted' }).text, /today's AI limit/);
+    assert.match(h.noticeFor({ code: 'budget_exhausted' }).text, /today's AI limit.*midnight UTC/);
     assert.match(h.noticeFor({ code: 'ai_paused', retryAfter: 90 }).text, /2 min/);
     assert.match(h.noticeFor({ code: 'ai_paused' }).text, /paused/);
     assert.match(h.noticeFor({ code: 'rate_limited', retryAfter: 12 }).text, /12s/);
@@ -122,4 +122,14 @@ test('conversationGroupLabel is localized and falls back to Earlier', async () =
     assert.equal(h.conversationGroupLabel('today', 'he'), 'היום');
     assert.equal(h.conversationGroupLabel('week', 'en'), 'Previous 7 days');
     assert.equal(h.conversationGroupLabel('nope', 'en'), 'Earlier');
+});
+
+test('mostlyHebrew tells a Hebrew answer from an English one, with a few source names allowed in', async () => {
+    const h = await load();
+    assert.equal(h.mostlyHebrew('אסור לבשל בשבת'), true);
+    assert.equal(h.mostlyHebrew('מותר לבשל על להבה מכוסה (Rema)'), true);
+    assert.equal(h.mostlyHebrew('You may keep a pot on a blech.'), false);
+    assert.equal(h.mostlyHebrew('You may keep a pot, as the Rambam says: כירה'), false);
+    assert.equal(h.mostlyHebrew(''), false);
+    assert.equal(h.mostlyHebrew(undefined), false);
 });
