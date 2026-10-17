@@ -11656,7 +11656,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 window.ShelahModules.fetchZmanimAPI(location, buildZmanimDeps());
 
                 // Show short city name in location label
-                const shortName = display_name.split(',').slice(0, 2).join(', ');
+                const shortName = display_name.split(',').slice(0, 2).map((part) => part.trim()).join(', ');
                 window.ShelahModules.setCurrentZmanimLocationLabel(shortName);
 
                 statusEl.textContent = `${t('Using:', 'משתמש ב:')} ${shortName}`;
