@@ -102,6 +102,14 @@
     
     
     
+    <!-- The CSS the first paint of this kind of page uses, inline (the paint no
+         longer waits for a stylesheet request), and the whole stylesheet bundle
+         behind it, which applies as soon as it has loaded. The bundle holds
+         every sheet listed in the fallback below, in that order, minified; the
+         critical CSS is the subset of it that matches the server-rendered page
+         (scripts/build_critical_css.mjs, npm run build:critical). -->
+    
+    
     
     
 
@@ -163,7 +171,7 @@
     <!-- Mobile drawer backdrop — starts below the topbar -->
     <div id="mobileDrawerBackdrop" aria-hidden="true"
         class="hidden fixed left-0 right-0 bottom-0 bg-slate-900/45 backdrop-blur-[1px] z-85 lg:hidden"
-        style="top: var(--topbar-height, 3.4rem); transition: opacity 0.25s ease;">
+        style="top: var(--topbar-height, 3.4rem); transition: opacity var(--motion-dur-base) var(--motion-ease-out);">
     </div>
 
 
