@@ -86,7 +86,16 @@ function fakeRouter(initialRoute = {}) {
             }
         },
         clearRoute: (options) => { calls.push(['clearRoute', options || null]); router.route = {}; },
-        closeOverlay: (name, patch) => { calls.push(['closeOverlay', name, patch]); return 'replace'; },
+        closeOverlay: (name, patch) => { calls.push(['closeOverlay', name, patch]); return router.closeHow; },
+        closeHow: 'replace',
+        /** The URL of a route over a path: just the query the route's own keys make. */
+        routeUrl: (route, pathname) => {
+            const query = new URLSearchParams(Object.entries(route).filter(([, value]) => value)).toString();
+            return `${pathname}${query ? `?${query}` : ''}`;
+        },
+        /** Navigating to a path inside the app: the router takes it unless `pathTaken` is false. */
+        pathTaken: true,
+        pushPath: (path, options) => { calls.push(['pushPath', path, options || null]); return router.pathTaken; },
         markNotFound: () => calls.push(['markNotFound']),
     };
     return router;
