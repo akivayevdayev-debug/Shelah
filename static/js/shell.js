@@ -927,6 +927,46 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
         };
 
+        // What a library item does once the category modal has closed.
+        function libraryItemAction(item) {
+            if (item.chapters && item.chapters > 0) return () => openChapterGrid(item.ref, item.chapters);
+            if (item.useRefGrid) return () => { void readText(item.ref); };
+            if (item.customsFile) return () => { void displayCommunity(item.customsFile); };
+            if (item.query) return () => setQuery(item.query);
+            return null;
+        }
+
+        function libraryItemTypeLabel(item, isHe) {
+            if (item.chapters && item.chapters > 0) return isHe ? `${item.chapters} פרקים` : `${item.chapters} ch.`;
+            return isHe ? 'מנהגים' : 'Customs';
+        }
+
+        function libraryItemButton(item, isHe) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'chapter-grid-item';
+
+            const numberSpan = document.createElement('span');
+            numberSpan.className = 'chapter-grid-item-number';
+            numberSpan.textContent = isHe ? (item.labelHe || item.label) : item.label;
+            btn.appendChild(numberSpan);
+            if (!item.useRefGrid) {
+                const typeSpan = document.createElement('span');
+                typeSpan.className = 'chapter-grid-item-label';
+                typeSpan.textContent = libraryItemTypeLabel(item, isHe);
+                btn.appendChild(typeSpan);
+            }
+
+            const action = libraryItemAction(item);
+            if (action) {
+                btn.onclick = () => {
+                    closeLibraryCategory();
+                    action();
+                };
+            }
+            return btn;
+        }
+
         function openLibraryCategory(key) {
             const cat = HOME_LIBRARY_CATEGORIES[key];
             if (!cat) return;
@@ -953,51 +993,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const grid = document.createElement('div');
                 grid.className = 'chapter-grid-section-items';
 
-                sec.items.forEach(item => {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'chapter-grid-item';
-
-                    const labelText = isHe ? (item.labelHe || item.label) : item.label;
-                    const numberSpan = document.createElement('span');
-                    numberSpan.className = 'chapter-grid-item-number';
-                    numberSpan.textContent = labelText;
-
-                    btn.appendChild(numberSpan);
-                    if (!item.useRefGrid) {
-                        const typeSpan = document.createElement('span');
-                        typeSpan.className = 'chapter-grid-item-label';
-                        if (item.chapters && item.chapters > 0) {
-                            typeSpan.textContent = isHe ? `${item.chapters} פרקים` : `${item.chapters} ch.`;
-                        } else {
-                            typeSpan.textContent = isHe ? 'מנהגים' : 'Customs';
-                        }
-                        btn.appendChild(typeSpan);
-                    }
-
-                    if (item.chapters && item.chapters > 0) {
-                        btn.onclick = () => {
-                            closeLibraryCategory();
-                            openChapterGrid(item.ref, item.chapters);
-                        };
-                    } else if (item.useRefGrid) {
-                        btn.onclick = () => {
-                            closeLibraryCategory();
-                            void readText(item.ref);
-                        };
-                    } else if (item.customsFile) {
-                        btn.onclick = () => {
-                            closeLibraryCategory();
-                            void displayCommunity(item.customsFile);
-                        };
-                    } else if (item.query) {
-                        btn.onclick = () => {
-                            closeLibraryCategory();
-                            setQuery(item.query);
-                        };
-                    }
-                    grid.appendChild(btn);
-                });
+                sec.items.forEach(item => grid.appendChild(libraryItemButton(item, isHe)));
 
                 secDiv.appendChild(grid);
                 bodyEl.appendChild(secDiv);
@@ -1014,6 +1010,40 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         }
 
         // ─── COMMUNITY CUSTOMS MODAL ─────────────────────────────────────────
+        // Prefer raw_data.halacha_index (original list), fall back to Object.values(customs)
+        function customsHalachaIndex(data) {
+            if (data.raw_data && Array.isArray(data.raw_data.halacha_index)) return data.raw_data.halacha_index;
+            if (data.customs && typeof data.customs === 'object' && !Array.isArray(data.customs)) return Object.values(data.customs);
+            if (Array.isArray(data.halacha_index)) return data.halacha_index;
+            return [];
+        }
+
+        function customsItemHtml(item) {
+            const practices = Array.isArray(item.common_practices)
+                ? item.common_practices.map(p => `<li class="ml-4 list-disc text-slate-600">${escapeHtml(p)}</li>`).join('')
+                : '';
+            return `<div class="border border-slate-200 rounded-lg p-3 bg-white hover:bg-slate-50 transition">
+                            <p class="font-semibold text-navy text-sm" dir="auto">${escapeHtml(isHebrewMode() && item.topic_he ? String(item.topic_he).trim() : communityLabelText(item.topic))}${communityConfidenceChip(item.confidence)}</p>
+                            ${communityText(item, 'summary') ? `<p class="text-slate-600 text-sm mt-1" dir="auto">${escapeHtml(communityText(item, 'summary'))}</p>` : ''}
+                            ${communityRabbiNote(item.confidence)}
+                            ${practices ? `<ul class="text-sm mt-2 space-y-1" dir="auto">${practices}</ul>` : ''}
+                            ${communityVariantsHtml(item.variants)}
+                        </div>`;
+        }
+
+        // The customs grouped by category, each group a heading and its items.
+        function customsGroupsHtml(halachaIndex) {
+            const grouped = {};
+            halachaIndex.forEach(item => {
+                const cat = item.category || 'General';
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push(item);
+            });
+            return Object.entries(grouped).map(([cat, items]) => `<div class="mb-5">
+                        <p class="chapter-grid-group-label mb-2" dir="auto">${escapeHtml(communityLabelText(cat))}</p>
+                        <div class="space-y-3">${items.map(customsItemHtml).join('')}</div></div>`).join('');
+        }
+
         const _customsCache = {};
         async function openCustomsModal(communityName, displayLabel) {
             // Reuse the libraryCategoryModal to display customs data
@@ -1042,48 +1072,14 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     _customsCache[communityName] = data;
                 }
 
-                // Prefer raw_data.halacha_index (original list), fall back to Object.values(customs)
-                let halachaIndex = [];
-                if (data.raw_data && Array.isArray(data.raw_data.halacha_index)) {
-                    halachaIndex = data.raw_data.halacha_index;
-                } else if (data.customs && typeof data.customs === 'object' && !Array.isArray(data.customs)) {
-                    halachaIndex = Object.values(data.customs);
-                } else if (Array.isArray(data.halacha_index)) {
-                    halachaIndex = data.halacha_index;
-                }
+                const halachaIndex = customsHalachaIndex(data);
                 if (!halachaIndex.length) {
                     bodyEl.innerHTML = `<p class="text-slate-400 text-sm italic">${isHebrewMode() ? 'אין נתונים זמינים' : 'No customs data available'}</p>`;
                     bodyEl.setAttribute('aria-busy', 'false');
                     return;
                 }
 
-                // Group by category
-                const grouped = {};
-                halachaIndex.forEach(item => {
-                    const cat = item.category || 'General';
-                    if (!grouped[cat]) grouped[cat] = [];
-                    grouped[cat].push(item);
-                });
-
-                let html = '';
-                Object.entries(grouped).forEach(([cat, items]) => {
-                    html += `<div class="mb-5">
-                        <p class="chapter-grid-group-label mb-2" dir="auto">${escapeHtml(communityLabelText(cat))}</p>
-                        <div class="space-y-3">`;
-                    items.forEach(item => {
-                        const practices = Array.isArray(item.common_practices)
-                            ? item.common_practices.map(p => `<li class="ml-4 list-disc text-slate-600">${escapeHtml(p)}</li>`).join('')
-                            : '';
-                        html += `<div class="border border-slate-200 rounded-lg p-3 bg-white hover:bg-slate-50 transition">
-                            <p class="font-semibold text-navy text-sm" dir="auto">${escapeHtml(isHebrewMode() && item.topic_he ? String(item.topic_he).trim() : communityLabelText(item.topic))}${communityConfidenceChip(item.confidence)}</p>
-                            ${communityText(item, 'summary') ? `<p class="text-slate-600 text-sm mt-1" dir="auto">${escapeHtml(communityText(item, 'summary'))}</p>` : ''}
-                            ${communityRabbiNote(item.confidence)}
-                            ${practices ? `<ul class="text-sm mt-2 space-y-1" dir="auto">${practices}</ul>` : ''}
-                            ${communityVariantsHtml(item.variants)}
-                        </div>`;
-                    });
-                    html += `</div></div>`;
-                });
+                const html = customsGroupsHtml(halachaIndex);
 
                 bodyEl.innerHTML = html;
                 bodyEl.setAttribute('aria-busy', 'false');
@@ -2540,6 +2536,53 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             authControls.removeAttribute('aria-busy');
         }
 
+        async function showSignedInAuthUi(displayName, userId) {
+            authControls.style.display = 'flex';
+            signInBtn?.classList.add('hidden');
+            userProfileMenuContainer?.classList.remove('hidden');
+            if (userProfileMenuLabel) {
+                userProfileMenuLabel.textContent = displayName || 'Signed in';
+            }
+            settleAuthSlot();
+
+            if (syncedPrefsUserId !== userId) {
+                syncedPrefsUserId = userId;
+                await loadPrefsFromServerIfSignedIn();
+                void loadAskHistory();
+                // The initial hydrateRoute() call can run before Clerk has
+                // a session (main.js's module hydrate fires on
+                // DOMContentLoaded, ahead of Clerk's own async init), so a
+                // page loaded directly on an /answer/<id> link needs a retry here
+                // once sign-in actually completes.
+                const route = window.ShelahRouter?.readRoute();
+                if (route?.chat) {
+                    void hydrateChatId(route.chat);
+                }
+            }
+        }
+
+        function showSignedOutAuthUi(wasSignedIn) {
+            signInBtn?.classList.remove('hidden');
+            authControls.style.display = '';
+            userProfileMenuContainer?.classList.add('hidden');
+            settleAuthSlot();
+            closeUserProfileMenu();
+            syncedPrefsUserId = null;
+            // A page loaded on an /answer/<id> link signed out: Clerk has
+            // now settled with nobody, so the link is tried with the
+            // device cookie alone (see hydrateChatId). Once per change of
+            // who is signed in, not on every Clerk event.
+            if (wasSignedIn !== false) {
+                const chatRoute = window.ShelahRouter?.readRoute();
+                if (chatRoute?.chat) void hydrateChatId(chatRoute.chat);
+            }
+            // Hide and clear history when signed out
+            const histSec = document.getElementById('askHistorySection');
+            if (histSec) histSec.classList.add('hidden');
+            const histList = document.getElementById('askHistoryList');
+            if (histList) histList.innerHTML = '';
+        }
+
         async function refreshAuthUi() {
             if (!authControls) return;
             if (!isClerkConfigured()) {
@@ -2557,50 +2600,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const wasSignedIn = lastAuthSignedIn;
             lastAuthSignedIn = Boolean(user);
 
-            if (user) {
-                authControls.style.display = 'flex';
-                signInBtn?.classList.add('hidden');
-                userProfileMenuContainer?.classList.remove('hidden');
-                if (userProfileMenuLabel) {
-                    userProfileMenuLabel.textContent = displayName || 'Signed in';
-                }
-                settleAuthSlot();
-
-                if (syncedPrefsUserId !== userId) {
-                    syncedPrefsUserId = userId;
-                    await loadPrefsFromServerIfSignedIn();
-                    void loadAskHistory();
-                    // The initial hydrateRoute() call can run before Clerk has
-                    // a session (main.js's module hydrate fires on
-                    // DOMContentLoaded, ahead of Clerk's own async init), so a
-                    // page loaded directly on an /answer/<id> link needs a retry here
-                    // once sign-in actually completes.
-                    const route = window.ShelahRouter?.readRoute();
-                    if (route?.chat) {
-                        void hydrateChatId(route.chat);
-                    }
-                }
-            } else {
-                signInBtn?.classList.remove('hidden');
-                authControls.style.display = '';
-                userProfileMenuContainer?.classList.add('hidden');
-                settleAuthSlot();
-                closeUserProfileMenu();
-                syncedPrefsUserId = null;
-                // A page loaded on an /answer/<id> link signed out: Clerk has
-                // now settled with nobody, so the link is tried with the
-                // device cookie alone (see hydrateChatId). Once per change of
-                // who is signed in, not on every Clerk event.
-                if (wasSignedIn !== false) {
-                    const chatRoute = window.ShelahRouter?.readRoute();
-                    if (chatRoute?.chat) void hydrateChatId(chatRoute.chat);
-                }
-                // Hide and clear history when signed out
-                const histSec = document.getElementById('askHistorySection');
-                if (histSec) histSec.classList.add('hidden');
-                const histList = document.getElementById('askHistoryList');
-                if (histList) histList.innerHTML = '';
-            }
+            if (user) await showSignedInAuthUi(displayName, userId);
+            else showSignedOutAuthUi(wasSignedIn);
             document.dispatchEvent(new CustomEvent('shelah:auth-changed', { detail: { signedIn: Boolean(user) } }));
         }
 
@@ -3539,6 +3540,17 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             readerSubtitle.classList.remove('hidden');
         }
 
+        // The parasha a chapter falls in: the last one that starts at or before it.
+        function parashaForChapter(parashot, chapter) {
+            let matched = parashot[0] || null;
+            for (const parasha of parashot) {
+                if (chapter >= parasha.chapter) {
+                    matched = parasha;
+                }
+            }
+            return matched ? { ...matched, chapter } : null;
+        }
+
         function getTorahParashaForRef(ref, categories = []) {
             if (!Array.isArray(categories) || !categories.includes('Torah')) {
                 return null;
@@ -3547,25 +3559,16 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const refText = String(ref || '').trim();
             if (!refText) return null;
 
-            for (const [book, parashot] of Object.entries(TORAH_PARASHA_BY_BOOK)) {
-                if (!(refText === book || refText.startsWith(`${book} `))) continue;
+            const book = Object.keys(TORAH_PARASHA_BY_BOOK).find((name) => refText === name || refText.startsWith(`${name} `));
+            if (!book) return null;
 
-                const rest = refText.slice(book.length).trim();
-                const chapterMatch = /^(\d+)/.exec(rest);
-                if (!chapterMatch) return null;
+            const chapterMatch = /^(\d+)/.exec(refText.slice(book.length).trim());
+            if (!chapterMatch) return null;
 
-                const chapter = Number(chapterMatch[1]);
-                if (!Number.isFinite(chapter)) return null;
+            const chapter = Number(chapterMatch[1]);
+            if (!Number.isFinite(chapter)) return null;
 
-                let matched = parashot[0] || null;
-                for (const parasha of parashot) {
-                    if (chapter >= parasha.chapter) {
-                        matched = parasha;
-                    }
-                }
-                return matched ? { ...matched, chapter } : null;
-            }
-            return null;
+            return parashaForChapter(TORAH_PARASHA_BY_BOOK[book], chapter);
         }
 
         function isMobileViewport() {
@@ -3998,13 +4001,44 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
 
             if (readerSettingsBtn) {
-                const shouldShowSettingsBtn = true;
-                readerSettingsBtn.classList.toggle('hidden', !shouldShowSettingsBtn);
-                readerSettingsBtn.style.visibility = shouldShowSettingsBtn ? 'visible' : 'hidden';
-                readerSettingsBtn.disabled = !shouldShowSettingsBtn;
-                if (!shouldShowSettingsBtn) {
-                    closeReaderSettingsPanel();
-                }
+                readerSettingsBtn.classList.remove('hidden');
+                readerSettingsBtn.style.visibility = 'visible';
+                readerSettingsBtn.disabled = false;
+            }
+        }
+
+        function applyMobileSidebars() {
+            leftSidebar?.style.removeProperty('display');
+            rightSidebar?.style.removeProperty('display');
+            closeMobilePanels();
+        }
+
+        function applyDesktopSidebars(showLeft, showRight) {
+            if (leftSidebar) {
+                leftSidebar.classList.remove('mobile-open', 'hidden');
+                leftSidebar.style.display = showLeft ? '' : 'none';
+            }
+            if (rightSidebar) {
+                rightSidebar.classList.remove('mobile-open', 'hidden');
+                rightSidebar.style.display = showRight ? '' : 'none';
+            }
+            mobileDrawerBackdrop?.classList.add('hidden');
+            document.body.classList.remove('mobile-panel-open');
+        }
+
+        // The buttons that bring a hidden left sidebar back.
+        function syncSidebarRestoreButtons({ mobile, shulMode, showLeftSidebar, readerViewActive, homeVisible }) {
+            if (showLeftSidebarTopBtn) {
+                const showLeftRestore = !mobile && !shulMode && !showLeftSidebar && !readerViewActive;
+                showLeftSidebarTopBtn.style.display = showLeftRestore ? 'flex' : 'none';
+                showLeftSidebarTopBtn.style.top = getSidebarRestoreTopOffset();
+            }
+
+            // Show topbar library button only on homepage when left sidebar is hidden on desktop
+            const topbarLibraryBtn = document.getElementById('topbarLibraryBtn');
+            if (topbarLibraryBtn) {
+                const shouldShowLibraryBtn = homeVisible && !mobile && !shulMode && !showLeftSidebar;
+                topbarLibraryBtn.style.display = shouldShowLibraryBtn ? 'inline-flex' : 'none';
             }
         }
 
@@ -4032,42 +4066,10 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             document.body.classList.toggle('left-sidebar-hidden', leftHiddenDesktop);
             document.body.classList.toggle('right-sidebar-hidden', rightHiddenDesktop);
 
-            if (mobile) {
-                if (leftSidebar) {
-                    leftSidebar.style.removeProperty('display');
-                }
-                if (rightSidebar) {
-                    rightSidebar.style.removeProperty('display');
-                }
-                closeMobilePanels();
-            } else {
-                if (leftSidebar) {
-                    leftSidebar.classList.remove('mobile-open', 'hidden');
-                    leftSidebar.style.display = showLeftSidebar ? '' : 'none';
-                }
-                if (rightSidebar) {
-                    rightSidebar.classList.remove('mobile-open', 'hidden');
-                    rightSidebar.style.display = (showRightSidebar && !shulMode) ? '' : 'none';
-                }
+            if (mobile) applyMobileSidebars();
+            else applyDesktopSidebars(showLeftSidebar, showRightSidebar && !shulMode);
 
-                if (mobileDrawerBackdrop) {
-                    mobileDrawerBackdrop.classList.add('hidden');
-                }
-                document.body.classList.remove('mobile-panel-open');
-            }
-
-            if (showLeftSidebarTopBtn) {
-                const showLeftRestore = !mobile && !shulMode && !showLeftSidebar && !readerViewActive;
-                showLeftSidebarTopBtn.style.display = showLeftRestore ? 'flex' : 'none';
-                showLeftSidebarTopBtn.style.top = getSidebarRestoreTopOffset();
-            }
-
-            // Show topbar library button only on homepage when left sidebar is hidden on desktop
-            const topbarLibraryBtn = document.getElementById('topbarLibraryBtn');
-            if (topbarLibraryBtn) {
-                const shouldShowLibraryBtn = homeVisible && !mobile && !shulMode && !showLeftSidebar;
-                topbarLibraryBtn.style.display = shouldShowLibraryBtn ? 'inline-flex' : 'none';
-            }
+            syncSidebarRestoreButtons({ mobile, shulMode, showLeftSidebar, readerViewActive, homeVisible });
 
             syncReaderTopBarControls();
             syncReaderTopBarOffset();
@@ -5956,49 +5958,53 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             setCommentaryAvailability(true);
             showSelectionInsights();
 
+            revealCommentarySidebar();
+
+            await openCommentaryInline(rashiRef);
+        }
+
+        function revealCommentarySidebar() {
             if (isMobileViewport()) {
                 openMobilePanel('right');
             } else if (appState.prefs.showRightSidebar === false) {
                 setSidebarVisibility('right', true);
             }
-
-            await openCommentaryInline(rashiRef);
         }
 
-        async function updateSelectionInsights() {
-            // Newer selections (or a cleared one) supersede older lookups:
-            // every await below is followed by an isCurrent() check so a slow
-            // response can't paint over the passage the reader has moved to.
-            const lookupSeq = ++selectionInsightsSeq;
-            const isCurrent = () => lookupSeq === selectionInsightsSeq;
-
+        // The highlighted text worth a lookup. When there is none the panel is
+        // closed, or left as it is, and this answers ''.
+        function selectedTextForLookup() {
             if (!selectionInsightsBody || appState.currentView?.type !== 'text') {
                 collapseCommentaryPanel();
-                return;
+                return '';
             }
 
-            const sel = window.getSelection();
-            const selectedText = String(sel?.toString() || '').replace(/\s+/g, ' ').trim();
+            const selectedText = String(window.getSelection()?.toString() || '').replace(/\s+/g, ' ').trim();
             // A panel the reader opened on purpose (the Commentary button)
             // stays open when they click into the text or select too much.
             const keepReadingPanel = selectionCommentaryState.mode === 'reading';
             if (!selectedText) {
-                if (keepReadingPanel) return;
+                if (keepReadingPanel) return '';
                 resetSelectionInsights();
                 collapseCommentaryPanel();
-                return;
+                return '';
             }
 
             if (selectedText.length > 220) {
                 if (!keepReadingPanel) collapseCommentaryPanel();
-                return;
+                return '';
             }
 
             if (!isCommentaryEligiblePrimaryText()) {
                 collapseCommentaryPanel();
-                return;
+                return '';
             }
+            return selectedText;
+        }
 
+        // The ref the selection sits in and the refs to try for its commentary,
+        // most specific first (verse, passage, chapter, daf).
+        function commentaryRefCandidatesForSelection(sel) {
             const range = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
             const container = range?.commonAncestorContainer;
             const anchor = container?.nodeType === Node.ELEMENT_NODE ? container : (container?.parentElement ?? null);
@@ -6009,69 +6015,105 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             const currentRef = (segmentRow && commentaryBaseRefForRow(segmentRow))
                 || String(window.currentTextPayload?.ref || appState.currentView?.value || '').trim();
             const segmentRef = buildSegmentReference(currentRef, segmentRow?.dataset?.segment || '');
-            const commentaryRefCandidates = [];
-            selectionCommentaryState.mode = 'selection';
-            selectionCommentaryState.readingRef = '';
+            const candidates = [];
 
             if (segmentRef) {
-                commentaryRefCandidates.push(segmentRef);
+                candidates.push(segmentRef);
             }
             if (currentRef) {
-                commentaryRefCandidates.push(currentRef);
+                candidates.push(currentRef);
             }
             if (currentRef.includes(':')) {
-                commentaryRefCandidates.push(currentRef.split(':')[0]);
+                candidates.push(currentRef.split(':')[0]);
             }
 
             const talmudDafBaseMatch = /^(.+?\s+\d+[ab])(?::\d+)?$/i.exec(currentRef);
             if (talmudDafBaseMatch?.[1]) {
-                commentaryRefCandidates.push(String(talmudDafBaseMatch[1]).trim());
+                candidates.push(String(talmudDafBaseMatch[1]).trim());
             }
+            return { currentRef, candidates };
+        }
 
-            const singleWord = selectedText.split(/\s+/).length === 1;
-            const cleanWord = singleWord
-                ? selectedText.replace(/[^A-Za-z\u0590-\u05FF'-]/g, '').trim()
-                : '';
+        // Skeleton feedback as soon as we know this lookup won't resolve
+        // instantly from cache. This used to only paint when the panel
+        // was already open, so a first selection (panel closed) showed
+        // nothing at all until the network round-trip finished -- which
+        // read as the sidebar hanging rather than loading. Opening the
+        // panel early means a selection that ends up with no commentary
+        // or meaning briefly flashes open then collapses (see the
+        // `collapseCommentaryPanel()` call below); that's preferable to
+        // no feedback during a slow lookup.
+        function showSelectionLoadingSkeleton() {
+            selectionCommentaryState.activeCommentaryRef = '';
+            selectionInsightsBody.setAttribute('aria-busy', 'true');
+            selectionInsightsBody.innerHTML = `
+                <div class="rounded-lg border border-slate-200 bg-white px-3 py-3 space-y-2" aria-hidden="true">
+                    <div class="sk-reader-para" style="width:45%"></div>
+                    <div class="sk-reader-para"></div>
+                    <div class="sk-reader-para"></div>
+                    <div class="sk-reader-para" style="width:70%"></div>
+                </div>`;
+            showSelectionInsights();
+            revealCommentarySidebar();
+        }
+
+        // The word a one-word selection names, stripped of punctuation ('' for
+        // a longer selection, which is a passage, not a word to look up).
+        function singleWordOf(selectedText) {
+            if (selectedText.split(/\s+/).length !== 1) return '';
+            return selectedText.replace(/[^A-Za-z\u0590-\u05FF'-]/g, '').trim();
+        }
+
+        function fetchWordMeaning(cleanWord) {
+            if (!cleanWord) return Promise.resolve(null);
+            const lang = !containsHebrewLetters(cleanWord) && isHebrewMode() ? 'he' : 'en';
+            return fetch(`/api/word/meaning?word=${encodeURIComponent(cleanWord)}&lang=${encodeURIComponent(lang)}`)
+                .then(async (resp) => {
+                    if (!resp.ok) return null;
+                    return await resp.json();
+                })
+                .catch(() => null);
+        }
+
+        function normalizeWordInfo(info, cleanWord) {
+            return {
+                word: info.word || cleanWord,
+                meaning: info.meaning || '',
+                alternatives: Array.isArray(info.alternatives) ? info.alternatives : [],
+            };
+        }
+
+        function mergeLateWordMeaning(wordPromise, cleanWord, isCurrent) {
+            void wordPromise.then((lateWordInfo) => {
+                if (!isCurrent() || !lateWordInfo?.meaning) return;
+                selectionCommentaryState.wordInfo = normalizeWordInfo(lateWordInfo, cleanWord);
+                // Only re-render the list view; an open commentary keeps
+                // the meaning for when the reader goes back to the list.
+                if (!selectionCommentaryState.activeCommentaryRef) renderSelectionInsightsChooser();
+            });
+        }
+
+        async function updateSelectionInsights() {
+            // Newer selections (or a cleared one) supersede older lookups:
+            // every await below is followed by an isCurrent() check so a slow
+            // response can't paint over the passage the reader has moved to.
+            const lookupSeq = ++selectionInsightsSeq;
+            const isCurrent = () => lookupSeq === selectionInsightsSeq;
+
+            const selectedText = selectedTextForLookup();
+            if (!selectedText) return;
+
+            const { currentRef, candidates } = commentaryRefCandidatesForSelection(window.getSelection());
+            selectionCommentaryState.mode = 'selection';
+            selectionCommentaryState.readingRef = '';
+
+            const cleanWord = singleWordOf(selectedText);
 
             selectionInsightsHint.textContent = t('Loading selected passage tools...', 'טוען כלים לקטע שנבחר...');
-            // Skeleton feedback as soon as we know this lookup won't resolve
-            // instantly from cache. This used to only paint when the panel
-            // was already open, so a first selection (panel closed) showed
-            // nothing at all until the network round-trip finished -- which
-            // read as the sidebar hanging rather than loading. Opening the
-            // panel early means a selection that ends up with no commentary
-            // or meaning briefly flashes open then collapses (see the
-            // `collapseCommentaryPanel()` call below); that's preferable to
-            // no feedback during a slow lookup.
-            if (selectionInsightsBody && !commentaryLinksCache.has(commentaryRefCandidates[0])) {
-                selectionCommentaryState.activeCommentaryRef = '';
-                selectionInsightsBody.setAttribute('aria-busy', 'true');
-                selectionInsightsBody.innerHTML = `
-                    <div class="rounded-lg border border-slate-200 bg-white px-3 py-3 space-y-2" aria-hidden="true">
-                        <div class="sk-reader-para" style="width:45%"></div>
-                        <div class="sk-reader-para"></div>
-                        <div class="sk-reader-para"></div>
-                        <div class="sk-reader-para" style="width:70%"></div>
-                    </div>`;
-                showSelectionInsights();
-                if (isMobileViewport()) {
-                    openMobilePanel('right');
-                } else if (appState.prefs.showRightSidebar === false) {
-                    setSidebarVisibility('right', true);
-                }
-            }
+            if (selectionInsightsBody && !commentaryLinksCache.has(candidates[0])) showSelectionLoadingSkeleton();
 
-            const commentaryPromise = fetchCommentaryLinksWithFallback(commentaryRefCandidates);
-            const wordMeaningLang = !containsHebrewLetters(cleanWord) && isHebrewMode() ? 'he' : 'en';
-
-            const wordPromise = cleanWord
-                ? fetch(`/api/word/meaning?word=${encodeURIComponent(cleanWord)}&lang=${encodeURIComponent(wordMeaningLang)}`)
-                    .then(async (resp) => {
-                        if (!resp.ok) return null;
-                        return await resp.json();
-                    })
-                    .catch(() => null)
-                : Promise.resolve(null);
+            const commentaryPromise = fetchCommentaryLinksWithFallback(candidates);
+            const wordPromise = fetchWordMeaning(cleanWord);
 
             // Don't hold the commentary list hostage to the word lookup (it can
             // fall back to an online translation): if the links arrive first,
@@ -6098,38 +6140,17 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
 
             if (wordStillPending && groupedCommentaries.length) {
-                void wordPromise.then((lateWordInfo) => {
-                    if (!isCurrent() || !lateWordInfo?.meaning) return;
-                    selectionCommentaryState.wordInfo = {
-                        word: lateWordInfo.word || cleanWord,
-                        meaning: lateWordInfo.meaning || '',
-                        alternatives: Array.isArray(lateWordInfo.alternatives) ? lateWordInfo.alternatives : [],
-                    };
-                    // Only re-render the list view; an open commentary keeps
-                    // the meaning for when the reader goes back to the list.
-                    if (!selectionCommentaryState.activeCommentaryRef) renderSelectionInsightsChooser();
-                });
+                mergeLateWordMeaning(wordPromise, cleanWord, isCurrent);
             }
 
             selectionCommentaryState.groupedCommentaries = groupedCommentaries;
-            selectionCommentaryState.wordInfo = hasWordMeaning
-                ? {
-                    word: wordInfo.word || cleanWord,
-                    meaning: wordInfo.meaning || '',
-                    alternatives: Array.isArray(wordInfo.alternatives) ? wordInfo.alternatives : [],
-                }
-                : null;
+            selectionCommentaryState.wordInfo = hasWordMeaning ? normalizeWordInfo(wordInfo, cleanWord) : null;
             selectionCommentaryState.selectedText = selectedText;
             setCommentaryAvailability(true);
 
             renderSelectionInsightsChooser();
             showSelectionInsights();
-
-            if (isMobileViewport()) {
-                openMobilePanel('right');
-            } else if (appState.prefs.showRightSidebar === false) {
-                setSidebarVisibility('right', true);
-            }
+            revealCommentarySidebar();
         }
 
         let selectionInsightsSeq = 0;
@@ -6465,44 +6486,36 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         }
 
         // ─── Update Prev/Next Buttons for Visible Chunk ───────────────────────────
+        // The reader's previous/next button: it steps to the neighbouring chunk
+        // on the page (`inPageIndex`), else, at the end of the page, reads the
+        // neighbouring text (`adjacentRef()`, looked up when it is clicked).
+        function wireReaderStepButton(button, { inPageIndex, adjacentRef }) {
+            if (!button) return;
+            const hasStep = inPageIndex !== null || Boolean(adjacentRef());
+            button.disabled = !hasStep;
+            button.style.visibility = hasStep ? 'visible' : 'hidden';
+            button.onclick = hasStep ? () => {
+                if (inPageIndex !== null) {
+                    const target = document.querySelector(`.reader-source-clean[data-text-chunk-index="${inPageIndex}"]`);
+                    if (target) target.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+                } else {
+                    void readText(adjacentRef(), { skipNavigationGrid: true });
+                }
+            } : null;
+        }
+
         function updateReaderButtonsForChunk(chunkIndex) {
             const chain = getCurrentTextPayloadChain();
             if (!chain.length) return;
             updateReaderHeaderForVisibleChunk(chunkIndex);
-
-            const hasPrevChunk = chunkIndex > 0;
-            const hasPrevRef = !hasPrevChunk && Boolean(infiniteReaderState.prevRef);
-            const hasPrev = hasPrevChunk || hasPrevRef;
-
-            const hasNextChunk = chunkIndex < chain.length - 1;
-            const hasNextRef = !hasNextChunk && Boolean(infiniteReaderState.nextRef);
-            const hasNext = hasNextChunk || hasNextRef;
-
-            if (readerPrevTopBarBtn) {
-                readerPrevTopBarBtn.disabled = !hasPrev;
-                readerPrevTopBarBtn.style.visibility = hasPrev ? 'visible' : 'hidden';
-                readerPrevTopBarBtn.onclick = hasPrev ? () => {
-                    if (hasPrevChunk) {
-                        const prevEl = document.querySelector(`.reader-source-clean[data-text-chunk-index="${chunkIndex - 1}"]`);
-                        if (prevEl) prevEl.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
-                    } else if (hasPrevRef) {
-                        void readText(infiniteReaderState.prevRef, { skipNavigationGrid: true });
-                    }
-                } : null;
-            }
-
-            if (readerNextTopBarBtn) {
-                readerNextTopBarBtn.disabled = !hasNext;
-                readerNextTopBarBtn.style.visibility = hasNext ? 'visible' : 'hidden';
-                readerNextTopBarBtn.onclick = hasNext ? () => {
-                    if (hasNextChunk) {
-                        const nextEl = document.querySelector(`.reader-source-clean[data-text-chunk-index="${chunkIndex + 1}"]`);
-                        if (nextEl) nextEl.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
-                    } else if (hasNextRef) {
-                        void readText(infiniteReaderState.nextRef, { skipNavigationGrid: true });
-                    }
-                } : null;
-            }
+            wireReaderStepButton(readerPrevTopBarBtn, {
+                inPageIndex: chunkIndex > 0 ? chunkIndex - 1 : null,
+                adjacentRef: () => infiniteReaderState.prevRef,
+            });
+            wireReaderStepButton(readerNextTopBarBtn, {
+                inPageIndex: chunkIndex < chain.length - 1 ? chunkIndex + 1 : null,
+                adjacentRef: () => infiniteReaderState.nextRef,
+            });
         }
 
         // ─── Load Previous Text Chunk ─────────────────────────────────────────────
@@ -6583,132 +6596,134 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
 
             return data.lines.map((line, idx) => {
-                const label = formatSegmentLabel(line.segment, idx);
                 const heRaw = normalizeDisplayText(line.he || '');
-                const he = heRaw ? cleanLine(applyHebrewDisplaySettings(line.he || '')) : '';
                 const enRaw = normalizeDisplayText(line.en || '');
-                const en = enRaw ? cleanLine(line.en || '') : '';
-                const translit = appState.prefs.transliteration ? transliterationMarkup(heRaw) : '';
-
-                const hebrewBlock = he
-                    ? `<div class="source-he reader-text-he text-start font-hebrew text-2xl lg:text-3xl leading-[1.8] lg:leading-9 py-2" dir="rtl"><p>${he}</p>${translit}</div>`
-                    : '';
-                const englishBlock = en
-                    ? `<div class="source-en reader-text-en font-serif leading-relaxed py-2 text-slate-700 text-lg" dir="ltr"><p>${en}</p></div>`
-                    : '';
-
-                if (layout === 'english') {
-                    const englishLine = en
-                        ? `<p>${en}</p>`
-                        : `<p class="text-slate-400 italic text-sm">${t('No translation available.', 'אין תרגום זמין.')}</p>`;
-                    return `
-                        <div class="source-grid segment-row reader-text-row reader-single-row grid grid-cols-1 border-b border-slate-200 last:border-b-0" data-segment="${escapeHtml(String(line.segment || ''))}">
-                            <span class="segment-label reader-row-right-label">${label}</span>
-                            <div class="source-en reader-text-en font-serif leading-relaxed py-2 text-slate-700 text-lg" dir="ltr">
-                                ${englishLine}
-                            </div>
-                        </div>
-                    `;
-                }
-
-                if (layout === 'hebrew') {
-                    const hebrewLine = he
-                        ? `<p>${he}</p>${translit}`
-                        : `<p class="text-slate-400 italic text-sm">${t('No Hebrew text in this segment.', 'אין טקסט עברי בקטע זה.')}</p>`;
-                    return `
-                        <div class="source-grid segment-row reader-text-row reader-single-row grid grid-cols-1 border-b border-slate-200 last:border-b-0" data-segment="${escapeHtml(String(line.segment || ''))}">
-                            <span class="segment-label reader-row-right-label">${label}</span>
-                            <div class="source-he reader-text-he text-start font-hebrew text-2xl lg:text-3xl leading-[1.8] lg:leading-9 py-2" dir="rtl">
-                                ${hebrewLine}
-                            </div>
-                        </div>
-                    `;
-                }
-
-                if (layout === 'interleaved') {
-                    // Only render blocks that have content
-                    const hePart = hebrewBlock || '';
-                    const enPart = englishBlock ? englishBlock.replace('source-en reader-text-en', 'source-en reader-text-en mt-2 text-start') : '';
-                    return `
-                        <div class="source-grid source-grid-interleaved segment-row reader-text-row reader-interleaved-row grid grid-cols-1 border-b border-slate-200 last:border-b-0" data-segment="${escapeHtml(String(line.segment || ''))}">
-                            <span class="segment-label reader-row-right-label">${label}</span>
-                            ${hePart}${enPart}
-                        </div>
-                    `;
-                }
-
-                // Bilingual side-by-side layouts — only show columns that have content
-                const bothPresent = he && en;
-
-                if (bothPresent) {
-                    const sideBySideLeft = layout === 'bilingual-reverse'
-                        ? `<div class="source-en reader-text-en font-serif leading-relaxed py-2 text-slate-700 text-lg" dir="ltr"><p>${en}</p></div>`
-                        : `<div class="source-he reader-text-he text-start font-hebrew text-2xl lg:text-3xl leading-[1.8] lg:leading-9 py-2" dir="rtl"><p>${he}</p>${translit}</div>`;
-                    const sideBySideRight = layout === 'bilingual-reverse'
-                        ? `<div class="source-he reader-text-he text-start font-hebrew text-2xl lg:text-3xl leading-[1.8] lg:leading-9 py-2" dir="rtl"><p>${he}</p>${translit}</div>`
-                        : `<div class="source-en reader-text-en font-serif leading-relaxed py-2 text-slate-700 text-lg" dir="ltr"><p>${en}</p></div>`;
-                    return `
-                        <div class="source-grid segment-row reader-text-row reader-side-row grid grid-cols-1 lg:grid-cols-2 lg:gap-x-6 border-b border-slate-200 last:border-b-0" data-segment="${escapeHtml(String(line.segment || ''))}">
-                            <span class="segment-label reader-row-mid-label">${label}</span>
-                            ${sideBySideLeft}
-                            ${sideBySideRight}
-                        </div>
-                    `;
-                }
-
-                // Only one side has content — render full-width single column
-                const singleDir = he ? 'rtl' : 'ltr';
-                const singleClass = he
-                    ? 'source-he reader-text-he text-start font-hebrew text-2xl lg:text-3xl leading-[1.8] lg:leading-9 py-2'
-                    : 'source-en reader-text-en font-serif leading-relaxed py-2 text-slate-700 text-lg';
-                const singleInner = he ? `<p>${he}</p>${translit}` : `<p>${en}</p>`;
-                return `
-                    <div class="source-grid segment-row reader-text-row reader-single-row grid grid-cols-1 border-b border-slate-200 last:border-b-0" data-segment="${escapeHtml(String(line.segment || ''))}">
-                        <span class="segment-label reader-row-right-label">${label}</span>
-                        <div class="${singleClass}" dir="${singleDir}">${singleInner}</div>
-                    </div>
-                `;
+                return textRowMarkup(layout, {
+                    he: heRaw ? cleanLine(applyHebrewDisplaySettings(line.he || '')) : '',
+                    en: enRaw ? cleanLine(line.en || '') : '',
+                    label: formatSegmentLabel(line.segment, idx),
+                    segment: escapeHtml(String(line.segment || '')),
+                    translit: appState.prefs.transliteration ? transliterationMarkup(heRaw) : '',
+                });
             }).join('');
         }
 
-        function getChunkDisplayTitle(chunk = {}) {
-            const titleEn = String(chunk?.title || '').trim();
-            const titleHe = String(chunk?.heTitle || '').trim();
-            const chunkRef = String(chunk?.ref || '').trim();
+        function readerHebrewBlock({ he, translit }) {
+            return he
+                ? `<div class="source-he reader-text-he text-start font-hebrew text-2xl lg:text-3xl leading-[1.8] lg:leading-9 py-2" dir="rtl"><p>${he}</p>${translit}</div>`
+                : '';
+        }
 
-            if (isHebrewMode()) {
-                // heTitle is only the book ("במדבר"); a ref with a section
-                // gives the exact place ("במדבר ה׳").
-                if (/\d/.test(chunkRef)) {
-                    const located = localizeReferenceLabel(chunkRef);
-                    if (located && !/[A-Za-z]/.test(located)) return located;
-                    // Book name unknown to the local maps ("Shulchan Arukh,
-                    // Orach Chayim 345"): Sefaria's heTitle + the section.
-                    const tail = /\s(\d+[ab]?(?:[:.]\d+)*(?:-\d+[ab]?(?:[:.]\d+)*)?)$/i.exec(chunkRef)?.[1];
-                    if (titleHe && tail) {
-                        const heTail = tail.replace(/(\d+)([ab])?/gi, (_, n, side) => {
-                            let sideLabel = '';
-                            if (side) sideLabel = side.toLowerCase() === 'a' ? ' ע״א' : ' ע״ב';
-                            return hebrewNumber(n) + sideLabel;
-                        });
-                        return `${titleHe} ${heTail}`;
-                    }
-                }
-                if (titleHe) return titleHe;
-                if (titleEn) return localizeReferenceLabel(titleEn);
-            } else if (titleEn) {
-                // A Chumash chapter's header already names its parashah in
-                // English, so it doesn't also need the Hebrew book name.
-                if (getChunkParashaLabel(chunk)) return titleEn;
-                return titleHe && titleHe !== titleEn ? `${titleEn} · ${titleHe}` : titleEn;
+        function readerEnglishBlock({ en }) {
+            return en
+                ? `<div class="source-en reader-text-en font-serif leading-relaxed py-2 text-slate-700 text-lg" dir="ltr"><p>${en}</p></div>`
+                : '';
+        }
+
+        function singleColumnTextRow({ label, segment }, body) {
+            return `
+                <div class="source-grid segment-row reader-text-row reader-single-row grid grid-cols-1 border-b border-slate-200 last:border-b-0" data-segment="${segment}">
+                    <span class="segment-label reader-row-right-label">${label}</span>
+                    ${body}
+                </div>
+            `;
+        }
+
+        // One verse/segment row in the layout the reader chose.
+        function textRowMarkup(layout, row) {
+            const { he, en, label, segment, translit } = row;
+            if (layout === 'english') {
+                const englishLine = en
+                    ? `<p>${en}</p>`
+                    : `<p class="text-slate-400 italic text-sm">${t('No translation available.', 'אין תרגום זמין.')}</p>`;
+                return singleColumnTextRow(row, `<div class="source-en reader-text-en font-serif leading-relaxed py-2 text-slate-700 text-lg" dir="ltr">${englishLine}</div>`);
             }
+
+            if (layout === 'hebrew') {
+                const hebrewLine = he
+                    ? `<p>${he}</p>${translit}`
+                    : `<p class="text-slate-400 italic text-sm">${t('No Hebrew text in this segment.', 'אין טקסט עברי בקטע זה.')}</p>`;
+                return singleColumnTextRow(row, `<div class="source-he reader-text-he text-start font-hebrew text-2xl lg:text-3xl leading-[1.8] lg:leading-9 py-2" dir="rtl">${hebrewLine}</div>`);
+            }
+
+            if (layout === 'interleaved') {
+                // Only render blocks that have content
+                const enPart = readerEnglishBlock(row).replace('source-en reader-text-en', 'source-en reader-text-en mt-2 text-start');
+                return `
+                    <div class="source-grid source-grid-interleaved segment-row reader-text-row reader-interleaved-row grid grid-cols-1 border-b border-slate-200 last:border-b-0" data-segment="${segment}">
+                        <span class="segment-label reader-row-right-label">${label}</span>
+                        ${readerHebrewBlock(row)}${enPart}
+                    </div>
+                `;
+            }
+
+            // Bilingual side-by-side layouts: only show columns that have content
+            if (he && en) {
+                const reverse = layout === 'bilingual-reverse';
+                return `
+                    <div class="source-grid segment-row reader-text-row reader-side-row grid grid-cols-1 lg:grid-cols-2 lg:gap-x-6 border-b border-slate-200 last:border-b-0" data-segment="${segment}">
+                        <span class="segment-label reader-row-mid-label">${label}</span>
+                        ${reverse ? readerEnglishBlock(row) : readerHebrewBlock(row)}
+                        ${reverse ? readerHebrewBlock(row) : readerEnglishBlock(row)}
+                    </div>
+                `;
+            }
+
+            // Only one side has content: render full-width single column
+            return singleColumnTextRow(row, he
+                ? `<div class="source-he reader-text-he text-start font-hebrew text-2xl lg:text-3xl leading-[1.8] lg:leading-9 py-2" dir="rtl"><p>${he}</p>${translit}</div>`
+                : `<div class="source-en reader-text-en font-serif leading-relaxed py-2 text-slate-700 text-lg" dir="ltr"><p>${en}</p></div>`);
+        }
+
+        function hebrewSectionTail(tail) {
+            return tail.replace(/(\d+)([ab])?/gi, (_, n, side) => {
+                let sideLabel = '';
+                if (side) sideLabel = side.toLowerCase() === 'a' ? ' ע״א' : ' ע״ב';
+                return hebrewNumber(n) + sideLabel;
+            });
+        }
+
+        // A chunk's header in Hebrew mode, or null when it has nothing to say.
+        function hebrewChunkTitle({ titleEn, titleHe, chunkRef }) {
+            // heTitle is only the book ("במדבר"); a ref with a section
+            // gives the exact place ("במדבר ה׳").
+            if (/\d/.test(chunkRef)) {
+                const located = localizeReferenceLabel(chunkRef);
+                if (located && !/[A-Za-z]/.test(located)) return located;
+                // Book name unknown to the local maps ("Shulchan Arukh,
+                // Orach Chayim 345"): Sefaria's heTitle + the section.
+                const tail = /\s(\d+[ab]?(?:[:.]\d+)*(?:-\d+[ab]?(?:[:.]\d+)*)?)$/i.exec(chunkRef)?.[1];
+                if (titleHe && tail) return `${titleHe} ${hebrewSectionTail(tail)}`;
+            }
+            if (titleHe) return titleHe;
+            if (titleEn) return localizeReferenceLabel(titleEn);
+            return null;
+        }
+
+        function englishChunkTitle(chunk, { titleEn, titleHe }) {
+            if (!titleEn) return null;
+            // A Chumash chapter's header already names its parashah in
+            // English, so it doesn't also need the Hebrew book name.
+            if (getChunkParashaLabel(chunk)) return titleEn;
+            return titleHe && titleHe !== titleEn ? `${titleEn} · ${titleHe}` : titleEn;
+        }
+
+        function getChunkDisplayTitle(chunk = {}) {
+            const names = {
+                titleEn: String(chunk?.title || '').trim(),
+                titleHe: String(chunk?.heTitle || '').trim(),
+                chunkRef: String(chunk?.ref || '').trim(),
+            };
+            const hebrew = isHebrewMode();
+            const title = hebrew ? hebrewChunkTitle(names) : englishChunkTitle(chunk, names);
+            if (title !== null) return title;
 
             const ref = String(chunk?.ref || '').trim();
             if (!ref) {
                 return t('Text Section', 'קטע טקסט');
             }
 
-            return isHebrewMode() ? localizeReferenceLabel(ref) : ref;
+            return hebrew ? localizeReferenceLabel(ref) : ref;
         }
 
         // The reader header: exact place plus the weekly portion, e.g.
@@ -6932,6 +6947,95 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         window.addEventListener('scroll', saveViewScrollSoon, { passive: true });
         mainContainer?.addEventListener('scroll', saveViewScrollSoon, { passive: true });
 
+        function setControlLabel(button, label) {
+            button.setAttribute('aria-label', label);
+            button.title = label;
+        }
+
+        // Header strip above the text: show it and (re)label its buttons in the page language.
+        function labelReaderTopBar() {
+            if (!readerTopBar) return;
+            syncReaderTopBarOffset();
+            readerTopBar.classList.remove('hidden');
+
+            if (readerLibraryTopBarBtn) setControlLabel(readerLibraryTopBarBtn, t('Library', 'ספרייה'));
+
+            if (readerPrevTopBarBtn) {
+                readerPrevTopBarBtn.classList.remove('hidden');
+                setControlLabel(readerPrevTopBarBtn, t('Previous Section', 'קטע קודם'));
+            }
+
+            if (readerNextTopBarBtn) {
+                readerNextTopBarBtn.classList.remove('hidden');
+                setControlLabel(readerNextTopBarBtn, t('Next Section', 'קטע הבא'));
+            }
+
+            if (readerCommentaryTopBarBtn) {
+                setControlLabel(readerCommentaryTopBarBtn, t('Commentary', 'מפרשים'));
+                updateCommentaryHintVisibility();
+            }
+
+            if (readerSettingsBtn) {
+                const settingsLabel = t('Reader Settings', 'הגדרות קריאה');
+                setControlLabel(readerSettingsBtn, settingsLabel);
+                if (readerSettingsBtnLabel) {
+                    readerSettingsBtnLabel.textContent = settingsLabel;
+                }
+            }
+
+            syncReaderTopBarControls();
+        }
+
+        // The first section repeats the page heading, so its own title is left out.
+        function isRedundantSectionHeader(index, sectionTitle, sectionRefLabel) {
+            // Use the stable title snapshot from when this text was first
+            // loaded, not the live #readerTitle DOM text — that drifts as
+            // the user scrolls (updateReaderHeaderForVisibleChunk), which
+            // previously made this redundant-header decision flip on every
+            // re-render depending on scroll position.
+            const currentMainTitle = String(
+                window.currentTextAnchorTitle || document.getElementById('readerTitle')?.innerText || ''
+            ).trim();
+            return Boolean(
+                index === 0
+                && currentMainTitle
+                && (isLikelyDuplicateLabel(sectionTitle, currentMainTitle)
+                    || isLikelyDuplicateLabel(sectionRefLabel, currentMainTitle)),
+            );
+        }
+
+        function sectionTitleMarkup(chunk, index) {
+            const sectionTitle = getChunkDisplayTitle(chunk);
+            const sectionRefLabel = getChunkDisplayRef(chunk);
+            if (isRedundantSectionHeader(index, sectionTitle, sectionRefLabel)) return '';
+            const showRefMeta = Boolean(sectionRefLabel && !isLikelyDuplicateLabel(sectionTitle, sectionRefLabel));
+            const parashaLabel = getChunkParashaLabel(chunk);
+            const parashaChip = parashaLabel
+                ? `<span class="reader-parasha-chip">${escapeHtml(parashaLabel)}</span>`
+                : '';
+            const refMeta = showRefMeta ? `<span class="reader-source-title-ref">${escapeHtml(sectionRefLabel)}</span>` : '';
+            return `
+                <div class="reader-source-title mb-2">
+                    <span class="reader-source-title-main">${escapeHtml(sectionTitle)}</span>
+                    ${refMeta}
+                    ${parashaChip}
+                </div>
+            `;
+        }
+
+        function renderTextSection(chunk, index, layout) {
+            const sectionRows = renderTextRowsForPayload(chunk, layout);
+            const sectionRef = String(chunk?.ref || appState.currentView?.value || '').trim();
+            return `
+                <div class="reader-source-clean mb-6" data-text-chunk-index="${index}" data-text-chunk-ref="${escapeHtml(getRefTrackingKey(sectionRef) || sectionRef)}">
+                    ${sectionTitleMarkup(chunk, index)}
+                    <div class="reader-source-lines">
+                        ${sectionRows}
+                    </div>
+                </div>
+            `;
+        }
+
         function renderCurrentTextByLayout(options = {}) {
             const { preserveScroll = false, anchorToVisibleChunk = false } = options;
             const chain = getCurrentTextPayloadChain();
@@ -6951,91 +7055,9 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
             readerContent.innerHTML = '';
 
-            if (readerTopBar) {
-                syncReaderTopBarOffset();
-                readerTopBar.classList.remove('hidden');
+            labelReaderTopBar();
 
-                if (readerLibraryTopBarBtn) {
-                    const libraryLabel = t('Library', 'ספרייה');
-                    readerLibraryTopBarBtn.setAttribute('aria-label', libraryLabel);
-                    readerLibraryTopBarBtn.title = libraryLabel;
-                }
-
-                if (readerPrevTopBarBtn) {
-                    readerPrevTopBarBtn.classList.remove('hidden');
-                    readerPrevTopBarBtn.setAttribute('aria-label', t('Previous Section', 'קטע קודם'));
-                    readerPrevTopBarBtn.title = t('Previous Section', 'קטע קודם');
-                }
-
-                if (readerNextTopBarBtn) {
-                    readerNextTopBarBtn.classList.remove('hidden');
-                    readerNextTopBarBtn.setAttribute('aria-label', t('Next Section', 'קטע הבא'));
-                    readerNextTopBarBtn.title = t('Next Section', 'קטע הבא');
-                }
-
-                if (readerCommentaryTopBarBtn) {
-                    const commentaryLabel = t('Commentary', 'מפרשים');
-                    readerCommentaryTopBarBtn.setAttribute('aria-label', commentaryLabel);
-                    readerCommentaryTopBarBtn.title = commentaryLabel;
-                    updateCommentaryHintVisibility();
-                }
-
-                if (readerSettingsBtn) {
-                    const settingsLabel = t('Reader Settings', 'הגדרות קריאה');
-                    readerSettingsBtn.setAttribute('aria-label', settingsLabel);
-                    readerSettingsBtn.title = settingsLabel;
-                    if (readerSettingsBtnLabel) {
-                        readerSettingsBtnLabel.textContent = settingsLabel;
-                    }
-                }
-
-                syncReaderTopBarControls();
-            }
-
-            const sectionsMarkup = chain.map((chunk, index) => {
-                const sectionRows = renderTextRowsForPayload(chunk, layout);
-                const sectionRef = String(chunk?.ref || appState.currentView?.value || '').trim();
-                const sectionTitle = getChunkDisplayTitle(chunk);
-                const sectionRefLabel = getChunkDisplayRef(chunk);
-                const showRefMeta = Boolean(sectionRefLabel && !isLikelyDuplicateLabel(sectionTitle, sectionRefLabel));
-                // Use the stable title snapshot from when this text was first
-                // loaded, not the live #readerTitle DOM text — that drifts as
-                // the user scrolls (updateReaderHeaderForVisibleChunk), which
-                // previously made this redundant-header decision flip on every
-                // re-render depending on scroll position.
-                const currentMainTitle = String(
-                    window.currentTextAnchorTitle || document.getElementById('readerTitle')?.innerText || ''
-                ).trim();
-                const hideRedundantHeader = Boolean(
-                    index === 0
-                    && currentMainTitle
-                    && (isLikelyDuplicateLabel(sectionTitle, currentMainTitle)
-                        || isLikelyDuplicateLabel(sectionRefLabel, currentMainTitle)),
-                );
-                const parashaLabel = getChunkParashaLabel(chunk);
-
-                const parashaChip = parashaLabel
-                    ? `<span class="reader-parasha-chip">${escapeHtml(parashaLabel)}</span>`
-                    : '';
-
-                const refMeta = showRefMeta ? `<span class="reader-source-title-ref">${escapeHtml(sectionRefLabel)}</span>` : '';
-                const sectionTitleMarkup = hideRedundantHeader ? '' : `
-                    <div class="reader-source-title mb-2">
-                        <span class="reader-source-title-main">${escapeHtml(sectionTitle)}</span>
-                        ${refMeta}
-                        ${parashaChip}
-                    </div>
-                `;
-
-                return `
-                    <div class="reader-source-clean mb-6" data-text-chunk-index="${index}" data-text-chunk-ref="${escapeHtml(getRefTrackingKey(sectionRef) || sectionRef)}">
-                        ${sectionTitleMarkup}
-                        <div class="reader-source-lines">
-                            ${sectionRows}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            const sectionsMarkup = chain.map((chunk, index) => renderTextSection(chunk, index, layout)).join('');
 
             sourcesDiv.innerHTML = `${sectionsMarkup}${infiniteReaderStatusMarkup()}`;
 
@@ -7130,171 +7152,163 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             applyShulMode();
         }
 
+        function splitPrayerParagraphs(value = '') {
+            const deduped = stripDuplicateLeadingPrayerTitle(
+                String(value || ''),
+                String(window.currentPrayerName || ''),
+            );
+            const normalized = normalizeDisplayText(deduped).replaceAll(/\r/g, '').trim();
+            if (!normalized) return [];
+            return normalized
+                .split(/\n{2,}/)
+                .map((p) => p.trim())
+                .filter(Boolean);
+        }
+
+        // Security note (audit P1): rawText here may be either raw
+        // Sefaria/prayer-API text (never escaped upstream) or, on the
+        // Sefaria-augmented path, already-normalized-but-unescaped text
+        // (see paragraphPairs construction in displayPrayer) -- these two
+        // functions are the single point where paragraph text becomes
+        // HTML, so they escape unconditionally rather than trusting an
+        // upstream isHtml flag that doesn't cover every caller. They use
+        // escapeDisplayTextPreservingEmphasis() rather than escapeHtml()
+        // so Sefaria's <b>/<strong>/<i>/<em> rubric emphasis survives.
+        function renderHebrewParagraph(rawText = '', includeTransliteration = true) {
+            const displayText = applyHebrewDisplaySettings(rawText || '');
+            if (!displayText) {
+                return `<p class="text-slate-300 italic">${t('No Hebrew text in source', 'אין טקסט עברי במקור')}</p>`;
+            }
+            return `<p class="font-hebrew">${escapeDisplayTextPreservingEmphasis(displayText)}</p>${includeTransliteration ? transliterationMarkup(displayText) : ''}`;
+        }
+
+        function renderEnglishParagraph(rawText = '') {
+            const displayText = String(rawText || '').trim();
+            if (!displayText) {
+                return `<p class="text-slate-300 italic">${t('No English translation in source', 'אין תרגום אנגלי במקור')}</p>`;
+            }
+            return `<p class="font-serif">${escapeDisplayTextPreservingEmphasis(displayText)}</p>`;
+        }
+
+        function renderPrayerBilingualRow(layout, { heText = '', enText = '', isHeader = false }) {
+            const heDisplay = applyHebrewDisplaySettings(heText || '');
+            const enDisplay = String(enText || '').trim();
+            const rowPadding = isHeader ? 'pt-3 pb-2' : 'py-2';
+
+            const heHeading = heDisplay ? escapeDisplayTextPreservingEmphasis(heDisplay) : '&nbsp;';
+            const enHeading = enDisplay ? escapeDisplayTextPreservingEmphasis(enDisplay) : '&nbsp;';
+            const hebrewContent = isHeader
+                ? `<h3 class="font-hebrew text-xl font-bold">${heHeading}</h3>`
+                : renderHebrewParagraph(heText, true);
+            const englishContent = isHeader
+                ? `<h3 class="font-serif text-xl font-bold">${enHeading}</h3>`
+                : renderEnglishParagraph(enText);
+
+            if (layout === 'interleaved') {
+                return `
+                    <div class="prayer-clean-row border-b border-slate-200 last:border-b-0 ${rowPadding}">
+                        <div class="prayer-clean-he text-start" dir="rtl">${hebrewContent}</div>
+                        <div class="prayer-clean-en text-start mt-2" dir="ltr">${englishContent}</div>
+                    </div>
+                `;
+            }
+
+            const hebrewColumn = `<div class="prayer-clean-he text-start" dir="rtl">${hebrewContent}</div>`;
+            const englishColumn = `<div class="prayer-clean-en" dir="ltr">${englishContent}</div>`;
+            const columns = layout === 'bilingual-reverse' ? [englishColumn, hebrewColumn] : [hebrewColumn, englishColumn];
+
+            return `
+                <div class="prayer-clean-row prayer-clean-row-dual grid grid-cols-1 lg:grid-cols-2 gap-4 border-b border-slate-200 last:border-b-0 ${rowPadding}">
+                    ${columns[0]}
+                    ${columns[1]}
+                </div>
+            `;
+        }
+
+        // Rows for the side-by-side and interleaved layouts.
+        function prayerBilingualRows(layout, paragraphPairs) {
+            if (paragraphPairs.length > 0) {
+                return paragraphPairs.map((pair) => renderPrayerBilingualRow(layout, {
+                    heText: pair.he || '',
+                    enText: pair.en || '',
+                    isHeader: pair.type === 'header',
+                })).join('');
+            }
+            const heParagraphs = splitPrayerParagraphs(window.currentPrayerContent.he || '');
+            const enParagraphs = splitPrayerParagraphs(window.currentPrayerContent.en || '');
+            const maxRows = Math.max(heParagraphs.length, enParagraphs.length, 1);
+            return Array.from({ length: maxRows }, (_, idx) => renderPrayerBilingualRow(layout, {
+                heText: heParagraphs[idx] || '',
+                enText: enParagraphs[idx] || '',
+                isHeader: false,
+            })).join('');
+        }
+
+        // The prayer arrived as HTML: one row with the text as the server sent it.
+        function prayerHtmlSingleLanguageMarkup(lang, contentRaw) {
+            const dir = lang === 'he' ? 'rtl' : 'ltr';
+            const contentDisplay = lang === 'he'
+                ? applyHebrewDisplaySettings(contentRaw)
+                : contentRaw;
+            const fontClass = lang === 'he' ? 'font-hebrew' : 'font-serif';
+            const translit = lang === 'he' ? transliterationMarkup(normalizeDisplayText(contentRaw || '')) : '';
+            // Some Sefaria sources (e.g. Havdala in Siddur Sefard) have no
+            // English translation at all -- without this, a single-language
+            // English view renders a blank content pane instead of an
+            // explanation (audit C4). Matches the placeholder already used
+            // by renderHebrewParagraph/renderEnglishParagraph below.
+            const isEmpty = !String(contentDisplay || '').trim();
+            const emptyNote = lang === 'he'
+                ? t('No Hebrew text in source', 'אין טקסט עברי במקור')
+                : t('No English translation in source', 'אין תרגום אנגלי במקור');
+            const bodyMarkup = isEmpty
+                ? `<p class="text-slate-300 italic">${emptyNote}</p>`
+                : `<div class="${fontClass}">${contentDisplay}</div>${translit}`;
+
+            return `
+                <div class="prayer-clean-lines">
+                    <div class="prayer-clean-row border-b border-slate-200 last:border-b-0 py-2">
+                        <div class="${lang === 'he' ? 'prayer-clean-he text-start' : 'prayer-clean-en'}" dir="${dir}">
+                            ${bodyMarkup}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function prayerParagraphSingleLanguageMarkup(lang, contentRaw) {
+            const dir = lang === 'he' ? 'rtl' : 'ltr';
+            const paragraphs = splitPrayerParagraphs(contentRaw);
+            const list = (paragraphs.length ? paragraphs : [String(contentRaw || '')]).map((paragraph) => {
+                const rendered = lang === 'he'
+                    ? renderHebrewParagraph(paragraph, true)
+                    : renderEnglishParagraph(paragraph);
+                return `
+                    <div class="prayer-clean-row border-b border-slate-200 last:border-b-0 py-2">
+                        <div class="${lang === 'he' ? 'prayer-clean-he text-start' : 'prayer-clean-en'}" dir="${dir}">${rendered}</div>
+                    </div>
+                `;
+            }).join('');
+            return `<div class="prayer-clean-lines">${list}</div>`;
+        }
+
+        function prayerDisplayMarkup(layout, selectedLang) {
+            if (layout === 'bilingual' || layout === 'bilingual-reverse' || layout === 'interleaved') {
+                const pairs = Array.isArray(window.currentPrayerParagraphPairs) ? window.currentPrayerParagraphPairs : [];
+                return `<div class="prayer-clean-lines">${prayerBilingualRows(layout, pairs)}</div>`;
+            }
+            const lang = selectedLang || (layout === 'hebrew' ? 'he' : 'en');
+            const contentRaw = window.currentPrayerContent[lang] || window.currentPrayerContent.en || '';
+            return window.currentPrayerIsHtml && (lang === 'he' || lang === 'en')
+                ? prayerHtmlSingleLanguageMarkup(lang, contentRaw)
+                : prayerParagraphSingleLanguageMarkup(lang, contentRaw);
+        }
+
         function renderPrayerDisplayByLayout(selectedLang = null) {
             const contentDiv = document.getElementById('prayer-display');
             if (!contentDiv || !window.currentPrayerContent) return;
 
-            const layout = getNormalizedReaderLayout();
-            const reverseColumns = layout === 'bilingual-reverse';
-            const dualColumnLayout = layout === 'bilingual' || layout === 'bilingual-reverse';
-            const isHtml = Boolean(window.currentPrayerIsHtml);
-            const paragraphPairs = Array.isArray(window.currentPrayerParagraphPairs)
-                ? window.currentPrayerParagraphPairs
-                : [];
-            const splitPrayerParagraphs = (value = '') => {
-                const deduped = stripDuplicateLeadingPrayerTitle(
-                    String(value || ''),
-                    String(window.currentPrayerName || ''),
-                );
-                const normalized = normalizeDisplayText(deduped).replaceAll(/\r/g, '').trim();
-                if (!normalized) return [];
-                return normalized
-                    .split(/\n{2,}/)
-                    .map((p) => p.trim())
-                    .filter(Boolean);
-            };
-
-            // Security note (audit P1): rawText here may be either raw
-            // Sefaria/prayer-API text (never escaped upstream) or, on the
-            // Sefaria-augmented path, already-normalized-but-unescaped text
-            // (see paragraphPairs construction in displayPrayer) -- these two
-            // functions are the single point where paragraph text becomes
-            // HTML, so they escape unconditionally rather than trusting an
-            // upstream isHtml flag that doesn't cover every caller. They use
-            // escapeDisplayTextPreservingEmphasis() rather than escapeHtml()
-            // so Sefaria's <b>/<strong>/<i>/<em> rubric emphasis survives.
-            const renderHebrewParagraph = (rawText = '', includeTransliteration = true) => {
-                const displayText = applyHebrewDisplaySettings(rawText || '');
-                if (!displayText) {
-                    return `<p class="text-slate-300 italic">${t('No Hebrew text in source', 'אין טקסט עברי במקור')}</p>`;
-                }
-                return `<p class="font-hebrew">${escapeDisplayTextPreservingEmphasis(displayText)}</p>${includeTransliteration ? transliterationMarkup(displayText) : ''}`;
-            };
-
-            const renderEnglishParagraph = (rawText = '') => {
-                const displayText = String(rawText || '').trim();
-                if (!displayText) {
-                    return `<p class="text-slate-300 italic">${t('No English translation in source', 'אין תרגום אנגלי במקור')}</p>`;
-                }
-                return `<p class="font-serif">${escapeDisplayTextPreservingEmphasis(displayText)}</p>`;
-            };
-
-            const renderPrayerBilingualRow = ({ heText = '', enText = '', isHeader = false }) => {
-                const heDisplay = applyHebrewDisplaySettings(heText || '');
-                const enDisplay = String(enText || '').trim();
-                const rowPadding = isHeader ? 'pt-3 pb-2' : 'py-2';
-
-                const heHeading = heDisplay ? escapeDisplayTextPreservingEmphasis(heDisplay) : '&nbsp;';
-                const enHeading = enDisplay ? escapeDisplayTextPreservingEmphasis(enDisplay) : '&nbsp;';
-                const hebrewContent = isHeader
-                    ? `<h3 class="font-hebrew text-xl font-bold">${heHeading}</h3>`
-                    : renderHebrewParagraph(heText, true);
-                const englishContent = isHeader
-                    ? `<h3 class="font-serif text-xl font-bold">${enHeading}</h3>`
-                    : renderEnglishParagraph(enText);
-
-                if (layout === 'interleaved') {
-                    return `
-                        <div class="prayer-clean-row border-b border-slate-200 last:border-b-0 ${rowPadding}">
-                            <div class="prayer-clean-he text-start" dir="rtl">${hebrewContent}</div>
-                            <div class="prayer-clean-en text-start mt-2" dir="ltr">${englishContent}</div>
-                        </div>
-                    `;
-                }
-
-                const leftColumn = reverseColumns
-                    ? `<div class="prayer-clean-en" dir="ltr">${englishContent}</div>`
-                    : `<div class="prayer-clean-he text-start" dir="rtl">${hebrewContent}</div>`;
-                const rightColumn = reverseColumns
-                    ? `<div class="prayer-clean-he text-start" dir="rtl">${hebrewContent}</div>`
-                    : `<div class="prayer-clean-en" dir="ltr">${englishContent}</div>`;
-
-                return `
-                    <div class="prayer-clean-row prayer-clean-row-dual grid grid-cols-1 lg:grid-cols-2 gap-4 border-b border-slate-200 last:border-b-0 ${rowPadding}">
-                        ${leftColumn}
-                        ${rightColumn}
-                    </div>
-                `;
-            };
-
-            if (dualColumnLayout || layout === 'interleaved') {
-                let rows = '';
-
-                if (paragraphPairs.length > 0) {
-                    rows = paragraphPairs.map((pair) => {
-                        return renderPrayerBilingualRow({
-                            heText: pair.he || '',
-                            enText: pair.en || '',
-                            isHeader: pair.type === 'header',
-                        });
-                    }).join('');
-                } else {
-                    const heParagraphs = splitPrayerParagraphs(window.currentPrayerContent.he || '');
-                    const enParagraphs = splitPrayerParagraphs(window.currentPrayerContent.en || '');
-                    const maxRows = Math.max(heParagraphs.length, enParagraphs.length, 1);
-                    const generatedRows = [];
-
-                    for (let idx = 0; idx < maxRows; idx += 1) {
-                        generatedRows.push(renderPrayerBilingualRow({
-                            heText: heParagraphs[idx] || '',
-                            enText: enParagraphs[idx] || '',
-                            isHeader: false,
-                        }));
-                    }
-
-                    rows = generatedRows.join('');
-                }
-
-                contentDiv.innerHTML = `<div class="prayer-clean-lines">${rows}</div>`;
-            } else {
-                const lang = selectedLang || (layout === 'hebrew' ? 'he' : 'en');
-                const dir = lang === 'he' ? 'rtl' : 'ltr';
-                const contentRaw = window.currentPrayerContent[lang] || window.currentPrayerContent.en || '';
-
-                if (isHtml && (lang === 'he' || lang === 'en')) {
-                    const contentDisplay = lang === 'he'
-                        ? applyHebrewDisplaySettings(contentRaw)
-                        : contentRaw;
-                    const fontClass = lang === 'he' ? 'font-hebrew' : 'font-serif';
-                    const translit = lang === 'he' ? transliterationMarkup(normalizeDisplayText(contentRaw || '')) : '';
-                    // Some Sefaria sources (e.g. Havdala in Siddur Sefard) have no
-                    // English translation at all -- without this, a single-language
-                    // English view renders a blank content pane instead of an
-                    // explanation (audit C4). Matches the placeholder already used
-                    // by renderHebrewParagraph/renderEnglishParagraph below.
-                    const isEmpty = !String(contentDisplay || '').trim();
-                    const emptyNote = lang === 'he'
-                        ? t('No Hebrew text in source', 'אין טקסט עברי במקור')
-                        : t('No English translation in source', 'אין תרגום אנגלי במקור');
-                    const bodyMarkup = isEmpty
-                        ? `<p class="text-slate-300 italic">${emptyNote}</p>`
-                        : `<div class="${fontClass}">${contentDisplay}</div>${translit}`;
-
-                    contentDiv.innerHTML = `
-                        <div class="prayer-clean-lines">
-                            <div class="prayer-clean-row border-b border-slate-200 last:border-b-0 py-2">
-                                <div class="${lang === 'he' ? 'prayer-clean-he text-start' : 'prayer-clean-en'}" dir="${dir}">
-                                    ${bodyMarkup}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    const paragraphs = splitPrayerParagraphs(contentRaw);
-                    const list = (paragraphs.length ? paragraphs : [String(contentRaw || '')]).map((paragraph) => {
-                        const rendered = lang === 'he'
-                            ? renderHebrewParagraph(paragraph, true)
-                            : renderEnglishParagraph(paragraph);
-                        return `
-                            <div class="prayer-clean-row border-b border-slate-200 last:border-b-0 py-2">
-                                <div class="${lang === 'he' ? 'prayer-clean-he text-start' : 'prayer-clean-en'}" dir="${dir}">${rendered}</div>
-                            </div>
-                        `;
-                    }).join('');
-
-                    contentDiv.innerHTML = `<div class="prayer-clean-lines">${list}</div>`;
-                }
-            }
+            contentDiv.innerHTML = prayerDisplayMarkup(getNormalizedReaderLayout(), selectedLang);
 
             const sizePx = `${appState.prefs.fontSize}px`;
             const lineHeight = String(appState.prefs.lineHeight);
@@ -8417,6 +8431,24 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 return;
             }
 
+            setReferenceGridHeading(safeTitle, talmudMode);
+
+            if (chapterGridParashaStrip) {
+                chapterGridParashaStrip.classList.add('hidden');
+                chapterGridParashaStrip.innerHTML = '';
+            }
+
+            chapterGridItems.classList.toggle('chapter-grid-items-prayer', prayerMode);
+            chapterGridItems.classList.toggle('chapter-grid-items-sectioned', sectionLookup.length > 0);
+            applyPrayerGridSizeClass();
+
+            chapterGridItems.innerHTML = sectionLookup.length
+                ? referenceGridSectionedMarkup(safeTitle, visibleRefs, talmudMode, sectionLookup)
+                : referenceGridFlatMarkup(safeTitle, visibleRefs, talmudMode);
+            _openChapterGridDialog();
+        }
+
+        function setReferenceGridHeading(safeTitle, talmudMode) {
             if (chapterGridTitle) {
                 chapterGridTitle.textContent = isHebrewMode()
                     ? `בחר קטע: ${safeTitle}`
@@ -8428,111 +8460,91 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 else subtitle = talmudMode ? 'Select a daf or section to open' : 'Select a section to open';
                 chapterGridSubtitle.textContent = subtitle;
             }
+        }
 
-            if (chapterGridParashaStrip) {
-                chapterGridParashaStrip.classList.add('hidden');
-                chapterGridParashaStrip.innerHTML = '';
+        // What follows the index title in a ref: "Berakhot 2a:3" -> "2a:3".
+        function referenceGridRemainder(safeTitle, targetRef) {
+            if (safeTitle && targetRef.toLowerCase().startsWith(safeTitle.toLowerCase())) {
+                return targetRef.slice(safeTitle.length).replace(/^[,\s]+/, '').trim();
             }
+            return targetRef;
+        }
 
-            chapterGridItems.classList.toggle('chapter-grid-items-prayer', prayerMode);
-            chapterGridItems.classList.toggle('chapter-grid-items-sectioned', sectionLookup.length > 0);
-            applyPrayerGridSizeClass();
+        function dafOfRemainder(remainder) {
+            const dafMatch = /^(\d+[ab])/i.exec(remainder);
+            return dafMatch ? dafMatch[1].toLowerCase() : '';
+        }
 
-            if (sectionLookup.length) {
-                const groups = [];
-                let group = null;
+        function dafGroupLabel(dafStr) {
+            return isHebrewMode() ? `דף ${localizeDafToken(dafStr)}` : `Daf ${dafStr}`;
+        }
 
-                visibleRefs.forEach((targetRef, idx) => {
-                    let remainder = targetRef;
-                    if (safeTitle && targetRef.toLowerCase().startsWith(safeTitle.toLowerCase())) {
-                        remainder = targetRef.slice(safeTitle.length).replace(/^[,\s]+/, '').trim();
-                    }
-                    const label = getReferenceGridItemLabel(safeTitle, targetRef, idx);
+        function referenceGridItemMarkup(safeTitle, targetRef, idx) {
+            const label = getReferenceGridItemLabel(safeTitle, targetRef, idx);
+            return `
+                <button type="button"
+                    class="chapter-grid-item"
+                    data-ref="${escapeHtml(targetRef)}"
+                    title="${escapeHtml(label)}">
+                    <span class="chapter-grid-item-number">${escapeHtml(label)}</span>
+                </button>
+            `;
+        }
 
-                    let sectionLabel;
-                    if (talmudMode) {
-                        const dafMatch = /^(\d+[ab])/i.exec(remainder);
-                        const dafStr = dafMatch ? dafMatch[1].toLowerCase() : '';
-                        const dafKey = _dafToKey(dafStr);
-                        let dafLabel = t('Unsorted', 'ללא מיון');
-                        if (dafStr) dafLabel = isHebrewMode() ? `דף ${localizeDafToken(dafStr)}` : `Daf ${dafStr}`;
-                        sectionLabel = dafKey >= 0
-                            ? _getSectionForDaf(dafKey, sectionLookup, isHebrewMode())
-                            : dafLabel;
-                    } else {
-                        const numKey = _sectionKeyFromRef(remainder);
-                        sectionLabel = _getSectionForNumber(numKey, sectionLookup, isHebrewMode()) || t('Unsorted', 'ללא מיון');
-                    }
-
-                    if (!group || group.label !== sectionLabel) {
-                        group = { label: sectionLabel, items: [] };
-                        groups.push(group);
-                    }
-
-                    group.items.push(`
-                        <button type="button"
-                            class="chapter-grid-item"
-                            data-ref="${escapeHtml(targetRef)}"
-                            title="${escapeHtml(label)}">
-                            <span class="chapter-grid-item-number">${escapeHtml(label)}</span>
-                        </button>
-                    `);
-                });
-
-                chapterGridItems.innerHTML = groups.map((entry) => `
-                    <section class="chapter-grid-section-block">
-                        <div class="chapter-grid-group-label">${escapeHtml(entry.label)}</div>
-                        <div class="chapter-grid-section-items">
-                            ${entry.items.join('')}
-                        </div>
-                    </section>
-                `).join('');
-
-                _openChapterGridDialog();
-                return;
+        function referenceGridSectionLabel(remainder, talmudMode, sectionLookup) {
+            if (talmudMode) {
+                const dafStr = dafOfRemainder(remainder);
+                const dafKey = _dafToKey(dafStr);
+                if (dafKey >= 0) return _getSectionForDaf(dafKey, sectionLookup, isHebrewMode());
+                return dafStr ? dafGroupLabel(dafStr) : t('Unsorted', 'ללא מיון');
             }
+            const numKey = _sectionKeyFromRef(remainder);
+            return _getSectionForNumber(numKey, sectionLookup, isHebrewMode()) || t('Unsorted', 'ללא מיון');
+        }
 
+        // Refs grouped under their section headings (daf ranges or siman ranges).
+        function referenceGridSectionedMarkup(safeTitle, visibleRefs, talmudMode, sectionLookup) {
+            const groups = [];
+            let group = null;
+
+            visibleRefs.forEach((targetRef, idx) => {
+                const remainder = referenceGridRemainder(safeTitle, targetRef);
+                const sectionLabel = referenceGridSectionLabel(remainder, talmudMode, sectionLookup);
+                if (!group || group.label !== sectionLabel) {
+                    group = { label: sectionLabel, items: [] };
+                    groups.push(group);
+                }
+                group.items.push(referenceGridItemMarkup(safeTitle, targetRef, idx));
+            });
+
+            return groups.map((entry) => `
+                <section class="chapter-grid-section-block">
+                    <div class="chapter-grid-group-label">${escapeHtml(entry.label)}</div>
+                    <div class="chapter-grid-section-items">
+                        ${entry.items.join('')}
+                    </div>
+                </section>
+            `).join('');
+        }
+
+        // Refs in one flat list; Talmud refs get a label whenever the daf changes.
+        function referenceGridFlatMarkup(safeTitle, visibleRefs, talmudMode) {
             const items = [];
             let lastGroupLabel = '';
 
             visibleRefs.forEach((targetRef, idx) => {
                 if (talmudMode) {
-                    // Extract daf from ref: strip index title prefix then read daf
-                    let remainder = targetRef;
-                    if (safeTitle && targetRef.toLowerCase().startsWith(safeTitle.toLowerCase())) {
-                        remainder = targetRef.slice(safeTitle.length).replace(/^[,\s]+/, '').trim();
-                    }
-                    const dafMatch = /^(\d+[ab])/i.exec(remainder);
-                    const dafStr = dafMatch ? dafMatch[1].toLowerCase() : '';
-                    const dafKey = _dafToKey(dafStr);
-
-                    let groupLabel = '';
-                    if (sectionLookup.length && dafKey >= 0) {
-                        groupLabel = _getSectionForDaf(dafKey, sectionLookup, isHebrewMode());
-                    } else if (dafStr) {
-                        // Fallback: group by individual daf
-                        groupLabel = isHebrewMode() ? `דף ${localizeDafToken(dafStr)}` : `Daf ${dafStr}`;
-                    }
-
+                    const dafStr = dafOfRemainder(referenceGridRemainder(safeTitle, targetRef));
+                    const groupLabel = dafStr ? dafGroupLabel(dafStr) : '';
                     if (groupLabel && groupLabel !== lastGroupLabel) {
                         items.push(`<div class="chapter-grid-group-label">${escapeHtml(groupLabel)}</div>`);
                         lastGroupLabel = groupLabel;
                     }
                 }
-
-                const label = getReferenceGridItemLabel(safeTitle, targetRef, idx);
-                items.push(`
-                        <button type="button"
-                            class="chapter-grid-item"
-                            data-ref="${escapeHtml(targetRef)}"
-                            title="${escapeHtml(label)}">
-                            <span class="chapter-grid-item-number">${escapeHtml(label)}</span>
-                        </button>
-                    `);
+                items.push(referenceGridItemMarkup(safeTitle, targetRef, idx));
             });
 
-            chapterGridItems.innerHTML = items.join('');
-            _openChapterGridDialog();
+            return items.join('');
         }
 
         async function fetchIndexLeafRefs(indexTitle) {
@@ -8740,177 +8752,186 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             try {
                 await ensurePrayerListLoaded();
                 let prayerData = textsCache.prayers[prayerName];
-
                 if (!prayerData) {
-                    // Fetch prayer preview and Sefaria full text in parallel.
-                    const [staticResp, sefariaResp] = await Promise.all([
-                        fetch(`/api/prayer/${encodeURIComponent(prayerName)}`),
-                        fetch(`/api/siddur/full/${encodeURIComponent(prayerName)}`)
-                    ]);
-                    if (!staticResp.ok) {
-                        // No static preview entry for this title — only truly fatal if
-                        // Sefaria's full liturgical text is unavailable too. Otherwise
-                        // build a minimal prayerData from Sefaria's response alone
-                        // instead of discarding a successful fetch just because the
-                        // separate preview endpoint 404d (a "prayer books not loading
-                        // at all" case for titles with no hand-curated preview).
-                        if (!sefariaResp.ok) {
-                            // Both 404, and the preview says the name maps to no
-                            // prayer at all: retrying won't make one (audit L-3).
-                            // Sefaria failing to answer is a 404 there too, so
-                            // anything else may still load on a retry.
-                            const detail = staticResp.status === 404 && sefariaResp.status === 404
-                                ? await staticResp.json().then((body) => String(body?.error || ''), () => '')
-                                : '';
-                            throw Object.assign(new Error('Prayer not found'), { retryable: !/not found/i.test(detail) });
-                        }
-                        prayerData = { title: prayerName, content: { he: '', en: '' } };
-                    } else {
-                        prayerData = await staticResp.json();
-                    }
-                    const fallbackHeParagraphs = getPrayerFallbackParagraphs(prayerData?.content?.he || '');
-                    const fallbackEnParagraphs = getPrayerFallbackParagraphs(prayerData?.content?.en || '');
-
-                    // Augment he/en with full Sefaria liturgical text if available
-                    if (sefariaResp.ok) {
-                        const sefariaData = await sefariaResp.json();
-                        if (sefariaData.lines && sefariaData.lines.length > 0) {
-                            let heHtml = '', enHtml = '';
-                            const paragraphPairs = [];
-                            const comparablePrayerTitle = normalizeComparablePrayerTitle(prayerData?.title || prayerName);
-                            let skippedLeadingDuplicateTitle = false;
-
-                            const isDuplicateLeadingLine = (heCandidate = '', enCandidate = '') => {
-                                if (skippedLeadingDuplicateTitle || paragraphPairs.length > 0 || !comparablePrayerTitle) {
-                                    return false;
-                                }
-                                const comparableLine = normalizeComparablePrayerTitle(`${heCandidate} ${enCandidate}`);
-                                if (!comparableLine) return false;
-                                const duplicate = comparableLine === comparablePrayerTitle
-                                    || comparableLine.startsWith(`${comparablePrayerTitle} `)
-                                    || comparablePrayerTitle.startsWith(`${comparableLine} `);
-                                if (duplicate) {
-                                    skippedLeadingDuplicateTitle = true;
-                                }
-                                return duplicate;
-                            };
-
-                            // heHtml/enHtml are trusted pre-built HTML strings (rendered
-                            // directly via the isHtml path), so their content is escaped
-                            // here at the point each tag is built. paragraphPairs instead
-                            // stores raw (unescaped) text -- its consumer,
-                            // renderPrayerBilingualRow/renderHebrewParagraph/
-                            // renderEnglishParagraph, is the single point where that text
-                            // becomes HTML and escapes it there. Keeping both variants
-                            // raw-vs-escaped straight here (rather than escaping once and
-                            // reusing the same string for both) is what avoids
-                            // double-escaping paragraphPairs downstream.
-                            //
-                            // he/en are normalized with normalizeDisplayTextPreservingEmphasis()
-                            // rather than normalizeDisplayText() so Sefaria's <b>/<strong>/
-                            // <i>/<em> rubric emphasis survives into paragraphPairs (and
-                            // heHtml/enHtml, escaped below via
-                            // escapeDisplayTextPreservingEmphasis()) instead of being
-                            // stripped like every other tag. isDuplicateLeadingLine()'s own
-                            // normalizeComparablePrayerTitle() call re-normalizes with the
-                            // full strip internally, so passing it emphasis-preserving text
-                            // doesn't change that comparison.
-                            sefariaData.lines.forEach(line => {
-                                if (line.type === 'header') {
-                                    const heHeaderRaw = normalizeDisplayTextPreservingEmphasis(line.he || '');
-                                    const enHeaderRaw = normalizeDisplayTextPreservingEmphasis(line.en || '');
-                                    if (isDuplicateLeadingLine(heHeaderRaw, enHeaderRaw)) {
-                                        return;
-                                    }
-                                    heHtml += `<h3 class="text-xl font-bold font-hebrew mt-8 mb-3 pb-1 border-b border-slate-200">${escapeDisplayTextPreservingEmphasis(heHeaderRaw)}</h3>`;
-                                    enHtml += `<h3 class="text-xl font-bold font-serif mt-8 mb-3 pb-1 border-b border-slate-200">${escapeDisplayTextPreservingEmphasis(enHeaderRaw)}</h3>`;
-                                    paragraphPairs.push({
-                                        type: 'header',
-                                        he: heHeaderRaw,
-                                        en: enHeaderRaw,
-                                    });
-                                } else {
-                                    const heLine = normalizeDisplayTextPreservingEmphasis(line.he || '');
-                                    const enLine = normalizeDisplayTextPreservingEmphasis(line.en || '');
-                                    if (isDuplicateLeadingLine(heLine, enLine)) {
-                                        return;
-                                    }
-                                    let heParagraph = heLine;
-                                    let enParagraph = enLine;
-
-                                    if (!heParagraph && fallbackHeParagraphs.length > 0) {
-                                        heParagraph = fallbackHeParagraphs.shift();
-                                    }
-                                    if (!enParagraph && fallbackEnParagraphs.length > 0) {
-                                        enParagraph = fallbackEnParagraphs.shift();
-                                    }
-
-                                    if (!heParagraph && !enParagraph) {
-                                        return;
-                                    }
-
-                                    if (heParagraph) {
-                                        heHtml += `<p class="mb-3">${escapeDisplayTextPreservingEmphasis(heParagraph)}</p>`;
-                                    }
-                                    if (enParagraph) {
-                                        enHtml += `<p class="mb-3">${escapeDisplayTextPreservingEmphasis(enParagraph)}</p>`;
-                                    }
-
-                                    paragraphPairs.push({
-                                        type: 'paragraph',
-                                        he: heParagraph,
-                                        en: enParagraph,
-                                    });
-                                }
-                            });
-
-                            prayerData.content.he = heHtml;
-                            prayerData.content.en = enHtml;
-                            prayerData.paragraphPairs = paragraphPairs;
-                            prayerData.hasSefaria = true;
-                        }
-                    }
+                    prayerData = await fetchPrayerData(prayerName);
                     textsCache.prayers[prayerName] = prayerData;
                 }
 
                 if (myRequestId !== _readTextRequestGen) return;
-                hideReaderSkeleton();
-                applySidebarVisibility();
-
-                document.getElementById('readerTitle').innerText = prayerData.title;
-                setCurrentView('prayer', prayerName, prayerData.title || prayerName, options);
-
-                // Store current prayer content globally for language switching
-                window.currentPrayerContent = prayerData.content;
-                window.currentPrayerParagraphPairs = prayerData.paragraphPairs || [];
-                window.currentPrayerIsHtml = prayerData.hasSefaria || false;
-                window.currentPrayerName = prayerName;
-                window.currentCommunityData = null;
-                window.currentTextPayload = null;
-                window.currentTextPayloadChain = [];
-                resetInfiniteReaderState(null);
-                collapseCommentaryPanel();
-                resetSelectionInsights();
-                syncReaderSettingsVisibility();
-
-                document.getElementById('readerContent').innerHTML = renderPrayerContent(prayerData.content, prayerName);
-                document.getElementById('readerSources').innerHTML = '';
-                applyReaderPreferences();
-
-                sidebarContent.innerHTML = `
-                    <div class="text-xs space-y-2">
-                        <div><span class="font-bold text-slate-700">${t('From:', 'מקור:')}</span> <span class="text-slate-500">${prayerData.hasSefaria ? t('Sefaria Liturgy Collection', 'אוסף ליטורגיה מספריא') : t('Sefaria Prayer Book Preview', 'תצוגה מקדימה של סידור מספריא')}</span></div>
-                        <div><span class="font-bold text-slate-700">${t('Languages:', 'שפות:')}</span> <span class="text-slate-500">${t('Hebrew &amp; English', 'עברית ואנגלית')}</span></div>
-                    </div>`;
-
-                if (!restoreViewScroll(options.restoreScroll, 'prayer')) scrollPrimaryToTop('smooth');
-
+                paintPrayerView(prayerData, prayerName, options);
             } catch (err) {
                 if (myRequestId !== _readTextRequestGen) return;
                 hideReaderSkeleton({ loaded: false });
                 applySidebarVisibility();
                 renderPrayerLoadError(prayerName, options, err);
             }
+        }
+
+        // Both 404, and the preview says the name maps to no prayer at all:
+        // retrying won't make one (audit L-3). Sefaria failing to answer is a
+        // 404 there too, so anything else may still load on a retry.
+        async function prayerNotFoundError(staticResp, sefariaResp) {
+            const detail = staticResp.status === 404 && sefariaResp.status === 404
+                ? await staticResp.json().then((body) => String(body?.error || ''), () => '')
+                : '';
+            return Object.assign(new Error('Prayer not found'), { retryable: !/not found/i.test(detail) });
+        }
+
+        // Fetch prayer preview and Sefaria full text in parallel.
+        async function fetchPrayerData(prayerName) {
+            const [staticResp, sefariaResp] = await Promise.all([
+                fetch(`/api/prayer/${encodeURIComponent(prayerName)}`),
+                fetch(`/api/siddur/full/${encodeURIComponent(prayerName)}`)
+            ]);
+            let prayerData;
+            if (staticResp.ok) {
+                prayerData = await staticResp.json();
+            } else {
+                // No static preview entry for this title — only truly fatal if
+                // Sefaria's full liturgical text is unavailable too. Otherwise
+                // build a minimal prayerData from Sefaria's response alone
+                // instead of discarding a successful fetch just because the
+                // separate preview endpoint 404d (a "prayer books not loading
+                // at all" case for titles with no hand-curated preview).
+                if (!sefariaResp.ok) throw await prayerNotFoundError(staticResp, sefariaResp);
+                prayerData = { title: prayerName, content: { he: '', en: '' } };
+            }
+            // Augment he/en with full Sefaria liturgical text if available
+            if (sefariaResp.ok) augmentPrayerWithSefaria(prayerData, prayerName, await sefariaResp.json());
+            return prayerData;
+        }
+
+        // heHtml/enHtml are trusted pre-built HTML strings (rendered
+        // directly via the isHtml path), so their content is escaped
+        // here at the point each tag is built. paragraphPairs instead
+        // stores raw (unescaped) text -- its consumer,
+        // renderPrayerBilingualRow/renderHebrewParagraph/
+        // renderEnglishParagraph, is the single point where that text
+        // becomes HTML and escapes it there. Keeping both variants
+        // raw-vs-escaped straight here (rather than escaping once and
+        // reusing the same string for both) is what avoids
+        // double-escaping paragraphPairs downstream.
+        //
+        // he/en are normalized with normalizeDisplayTextPreservingEmphasis()
+        // rather than normalizeDisplayText() so Sefaria's <b>/<strong>/
+        // <i>/<em> rubric emphasis survives into paragraphPairs (and
+        // heHtml/enHtml, escaped below via
+        // escapeDisplayTextPreservingEmphasis()) instead of being
+        // stripped like every other tag. isDuplicateLeadingLine()'s own
+        // normalizeComparablePrayerTitle() call re-normalizes with the
+        // full strip internally, so passing it emphasis-preserving text
+        // doesn't change that comparison.
+        function augmentPrayerWithSefaria(prayerData, prayerName, sefariaData) {
+            if (!sefariaData.lines || sefariaData.lines.length === 0) return;
+            const fallbackHeParagraphs = getPrayerFallbackParagraphs(prayerData?.content?.he || '');
+            const fallbackEnParagraphs = getPrayerFallbackParagraphs(prayerData?.content?.en || '');
+            const paragraphPairs = [];
+            const isDuplicateLeadingLine = leadingTitleSkipper(prayerData?.title || prayerName, paragraphPairs);
+            let heHtml = '';
+            let enHtml = '';
+
+            sefariaData.lines.forEach(line => {
+                const entry = line.type === 'header'
+                    ? prayerHeaderEntry(line, isDuplicateLeadingLine)
+                    : prayerParagraphEntry(line, isDuplicateLeadingLine, fallbackHeParagraphs, fallbackEnParagraphs);
+                if (!entry) return;
+                heHtml += entry.heHtml;
+                enHtml += entry.enHtml;
+                paragraphPairs.push(entry.pair);
+            });
+
+            prayerData.content.he = heHtml;
+            prayerData.content.en = enHtml;
+            prayerData.paragraphPairs = paragraphPairs;
+            prayerData.hasSefaria = true;
+        }
+
+        // A predicate that is true once, for the first line that only repeats the prayer's title.
+        function leadingTitleSkipper(title, paragraphPairs) {
+            const comparablePrayerTitle = normalizeComparablePrayerTitle(title);
+            let skippedLeadingDuplicateTitle = false;
+            return (heCandidate = '', enCandidate = '') => {
+                if (skippedLeadingDuplicateTitle || paragraphPairs.length > 0 || !comparablePrayerTitle) {
+                    return false;
+                }
+                const comparableLine = normalizeComparablePrayerTitle(`${heCandidate} ${enCandidate}`);
+                if (!comparableLine) return false;
+                const duplicate = comparableLine === comparablePrayerTitle
+                    || comparableLine.startsWith(`${comparablePrayerTitle} `)
+                    || comparablePrayerTitle.startsWith(`${comparableLine} `);
+                if (duplicate) {
+                    skippedLeadingDuplicateTitle = true;
+                }
+                return duplicate;
+            };
+        }
+
+        function prayerHeaderEntry(line, isDuplicateLeadingLine) {
+            const heHeaderRaw = normalizeDisplayTextPreservingEmphasis(line.he || '');
+            const enHeaderRaw = normalizeDisplayTextPreservingEmphasis(line.en || '');
+            if (isDuplicateLeadingLine(heHeaderRaw, enHeaderRaw)) return null;
+            return {
+                heHtml: `<h3 class="text-xl font-bold font-hebrew mt-8 mb-3 pb-1 border-b border-slate-200">${escapeDisplayTextPreservingEmphasis(heHeaderRaw)}</h3>`,
+                enHtml: `<h3 class="text-xl font-bold font-serif mt-8 mb-3 pb-1 border-b border-slate-200">${escapeDisplayTextPreservingEmphasis(enHeaderRaw)}</h3>`,
+                pair: { type: 'header', he: heHeaderRaw, en: enHeaderRaw },
+            };
+        }
+
+        // Paragraph lines borrow the preview's text where Sefaria has none.
+        function prayerParagraphEntry(line, isDuplicateLeadingLine, fallbackHeParagraphs, fallbackEnParagraphs) {
+            const heLine = normalizeDisplayTextPreservingEmphasis(line.he || '');
+            const enLine = normalizeDisplayTextPreservingEmphasis(line.en || '');
+            if (isDuplicateLeadingLine(heLine, enLine)) return null;
+            let heParagraph = heLine;
+            let enParagraph = enLine;
+
+            if (!heParagraph && fallbackHeParagraphs.length > 0) {
+                heParagraph = fallbackHeParagraphs.shift();
+            }
+            if (!enParagraph && fallbackEnParagraphs.length > 0) {
+                enParagraph = fallbackEnParagraphs.shift();
+            }
+
+            if (!heParagraph && !enParagraph) return null;
+
+            return {
+                heHtml: heParagraph ? `<p class="mb-3">${escapeDisplayTextPreservingEmphasis(heParagraph)}</p>` : '',
+                enHtml: enParagraph ? `<p class="mb-3">${escapeDisplayTextPreservingEmphasis(enParagraph)}</p>` : '',
+                pair: { type: 'paragraph', he: heParagraph, en: enParagraph },
+            };
+        }
+
+        function paintPrayerView(prayerData, prayerName, options) {
+            hideReaderSkeleton();
+            applySidebarVisibility();
+
+            document.getElementById('readerTitle').innerText = prayerData.title;
+            setCurrentView('prayer', prayerName, prayerData.title || prayerName, options);
+
+            // Store current prayer content globally for language switching
+            window.currentPrayerContent = prayerData.content;
+            window.currentPrayerParagraphPairs = prayerData.paragraphPairs || [];
+            window.currentPrayerIsHtml = prayerData.hasSefaria || false;
+            window.currentPrayerName = prayerName;
+            window.currentCommunityData = null;
+            window.currentTextPayload = null;
+            window.currentTextPayloadChain = [];
+            resetInfiniteReaderState(null);
+            collapseCommentaryPanel();
+            resetSelectionInsights();
+            syncReaderSettingsVisibility();
+
+            document.getElementById('readerContent').innerHTML = renderPrayerContent(prayerData.content, prayerName);
+            document.getElementById('readerSources').innerHTML = '';
+            applyReaderPreferences();
+
+            sidebarContent.innerHTML = `
+                <div class="text-xs space-y-2">
+                    <div><span class="font-bold text-slate-700">${t('From:', 'מקור:')}</span> <span class="text-slate-500">${prayerData.hasSefaria ? t('Sefaria Liturgy Collection', 'אוסף ליטורגיה מספריא') : t('Sefaria Prayer Book Preview', 'תצוגה מקדימה של סידור מספריא')}</span></div>
+                    <div><span class="font-bold text-slate-700">${t('Languages:', 'שפות:')}</span> <span class="text-slate-500">${t('Hebrew &amp; English', 'עברית ואנגלית')}</span></div>
+                </div>`;
+
+            if (!restoreViewScroll(options.restoreScroll, 'prayer')) scrollPrimaryToTop('smooth');
         }
 
         // L-3: the prayer's own name stays the title (not the last view's),
@@ -9102,83 +9123,96 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
             try {
                 let communityData = textsCache.communities[communityName];
-
                 if (!communityData) {
-                    const response = await fetch(`/api/community/${encodeURIComponent(communityName)}`);
-                    // The customs are the app's own data: a 404 is a name it
-                    // doesn't have, and a retry won't change that.
-                    if (!response.ok) {
-                        throw Object.assign(new Error(`Community request failed (${response.status})`), { retryable: response.status !== 404 });
-                    }
-                    communityData = await response.json();
+                    communityData = await fetchCommunityData(communityName);
                     textsCache.communities[communityName] = communityData;
                 }
 
                 if (myRequestId !== _readTextRequestGen) return;
-                hideReaderSkeleton();
-                applySidebarVisibility();
-
-                // A link can spell the name loosely (/?community=moroccan);
-                // the data's own name is the one to show.
-                const canonicalName = String(communityData?.name || communityName).trim();
-                const communityLabel = getCommunityDisplayName(canonicalName);
-                const communityTitle = isHebrewMode()
-                    ? `מנהגי קהילת ${communityLabel}`
-                    : `${canonicalName} Community Customs`;
-                document.getElementById('readerTitle').innerText = communityTitle;
-                setCurrentView('community', communityName, communityTitle, options);
-                document.getElementById('readerContent').innerHTML = renderCommunityContent(communityData);
-                window.currentCommunityData = communityData;
-                window.currentPrayerContent = null;
-                window.currentPrayerParagraphPairs = [];
-                window.currentPrayerName = null;
-                window.currentTextPayload = null;
-                window.currentTextPayloadChain = [];
-                resetInfiniteReaderState(null);
-                collapseCommentaryPanel();
-                resetSelectionInsights();
-                syncReaderSettingsVisibility();
-                document.getElementById('readerSources').innerHTML = '';
-
-                const majorSources = Array.isArray(communityData?.major_authorities)
-                    ? communityData.major_authorities.slice(0, 4).join(', ')
-                    : '';
-
-                sidebarContent.innerHTML = `
-                    <div class="text-xs space-y-2">
-                        <div><span class="font-bold text-slate-700">${t('Community:', 'קהילה:')}</span> <span class="text-slate-500">${communityLabel}</span></div>
-                        <div><span class="font-bold text-slate-700">${t('Source Base:', 'בסיס מקורות:')}</span> <span class="text-slate-500">${t('Community source registry + major poskim', 'רישום מקורות קהילתי + פוסקים מרכזיים')}</span></div>
-                        ${majorSources ? `<div><span class="font-bold text-slate-700">${t('Major Authorities:', 'סמכויות מרכזיות:')}</span> <span class="text-slate-500" dir="auto">${escapeHtml(communitySourceText(majorSources))}</span></div>` : ''}
-                        <div><span class="font-bold text-slate-700">${t('Primary Origin:', 'מוצא עיקרי:')}</span> <span class="text-slate-500" dir="auto">${communityData.primary_origin ? escapeHtml(communityLabelText(communityData.primary_origin)) : '--'}</span></div>
-                    </div>`;
-
-                if (!restoreViewScroll(options.restoreScroll, 'community')) scrollPrimaryToTop('smooth');
-
+                paintCommunityView(communityData, communityName, options);
             } catch (err) {
                 if (myRequestId !== _readTextRequestGen) return;
                 hideReaderSkeleton({ loaded: false });
                 applySidebarVisibility();
-                const content = document.getElementById('readerContent');
-                const regions = window.ShelahLoadRegion;
-                if (!content || !regions) return;
-                const missing = err?.retryable === false;
-                const attempt = Number(options.loadRetryAttempt) || 0;
-                const retry = (nextAttempt) => {
-                    if (reader.classList.contains('hidden')) return;
-                    void displayCommunity(communityName, { ...options, loadRetryAttempt: nextAttempt });
-                };
-                regions.renderRegionError(content, {
-                    message: missing
-                        ? t("There are no customs for this community yet.", 'אין עדיין מנהגים לקהילה זו.')
-                        : t("Couldn't load these customs. Check your connection.", 'לא ניתן היה לטעון את המנהגים. בדקו את החיבור.'),
-                    retry: missing ? null : () => retry(0),
-                    actions: missing ? [{ label: t('Back to communities', 'חזרה לקהילות'), onClick: () => openTextsMenu() }] : [],
-                });
-                if (missing) {
-                    if (options.fromRoute) window.ShelahRouter?.markNotFound();
-                } else {
-                    regions.retryLater(content, retry, { attempt });
-                }
+                renderCommunityLoadError(communityName, options, err);
+            }
+        }
+
+        async function fetchCommunityData(communityName) {
+            const response = await fetch(`/api/community/${encodeURIComponent(communityName)}`);
+            // The customs are the app's own data: a 404 is a name it
+            // doesn't have, and a retry won't change that.
+            if (!response.ok) {
+                throw Object.assign(new Error(`Community request failed (${response.status})`), { retryable: response.status !== 404 });
+            }
+            return response.json();
+        }
+
+        function communitySidebarMarkup(communityData, communityLabel) {
+            const majorSources = Array.isArray(communityData?.major_authorities)
+                ? communityData.major_authorities.slice(0, 4).join(', ')
+                : '';
+            return `
+                <div class="text-xs space-y-2">
+                    <div><span class="font-bold text-slate-700">${t('Community:', 'קהילה:')}</span> <span class="text-slate-500">${communityLabel}</span></div>
+                    <div><span class="font-bold text-slate-700">${t('Source Base:', 'בסיס מקורות:')}</span> <span class="text-slate-500">${t('Community source registry + major poskim', 'רישום מקורות קהילתי + פוסקים מרכזיים')}</span></div>
+                    ${majorSources ? `<div><span class="font-bold text-slate-700">${t('Major Authorities:', 'סמכויות מרכזיות:')}</span> <span class="text-slate-500" dir="auto">${escapeHtml(communitySourceText(majorSources))}</span></div>` : ''}
+                    <div><span class="font-bold text-slate-700">${t('Primary Origin:', 'מוצא עיקרי:')}</span> <span class="text-slate-500" dir="auto">${communityData.primary_origin ? escapeHtml(communityLabelText(communityData.primary_origin)) : '--'}</span></div>
+                </div>`;
+        }
+
+        function paintCommunityView(communityData, communityName, options) {
+            hideReaderSkeleton();
+            applySidebarVisibility();
+
+            // A link can spell the name loosely (/?community=moroccan);
+            // the data's own name is the one to show.
+            const canonicalName = String(communityData?.name || communityName).trim();
+            const communityLabel = getCommunityDisplayName(canonicalName);
+            const communityTitle = isHebrewMode()
+                ? `מנהגי קהילת ${communityLabel}`
+                : `${canonicalName} Community Customs`;
+            document.getElementById('readerTitle').innerText = communityTitle;
+            setCurrentView('community', communityName, communityTitle, options);
+            document.getElementById('readerContent').innerHTML = renderCommunityContent(communityData);
+            window.currentCommunityData = communityData;
+            window.currentPrayerContent = null;
+            window.currentPrayerParagraphPairs = [];
+            window.currentPrayerName = null;
+            window.currentTextPayload = null;
+            window.currentTextPayloadChain = [];
+            resetInfiniteReaderState(null);
+            collapseCommentaryPanel();
+            resetSelectionInsights();
+            syncReaderSettingsVisibility();
+            document.getElementById('readerSources').innerHTML = '';
+
+            sidebarContent.innerHTML = communitySidebarMarkup(communityData, communityLabel);
+
+            if (!restoreViewScroll(options.restoreScroll, 'community')) scrollPrimaryToTop('smooth');
+        }
+
+        function renderCommunityLoadError(communityName, options, err) {
+            const content = document.getElementById('readerContent');
+            const regions = window.ShelahLoadRegion;
+            if (!content || !regions) return;
+            const missing = err?.retryable === false;
+            const attempt = Number(options.loadRetryAttempt) || 0;
+            const retry = (nextAttempt) => {
+                if (reader.classList.contains('hidden')) return;
+                void displayCommunity(communityName, { ...options, loadRetryAttempt: nextAttempt });
+            };
+            regions.renderRegionError(content, {
+                message: missing
+                    ? t("There are no customs for this community yet.", 'אין עדיין מנהגים לקהילה זו.')
+                    : t("Couldn't load these customs. Check your connection.", 'לא ניתן היה לטעון את המנהגים. בדקו את החיבור.'),
+                retry: missing ? null : () => retry(0),
+                actions: missing ? [{ label: t('Back to communities', 'חזרה לקהילות'), onClick: () => openTextsMenu() }] : [],
+            });
+            if (missing) {
+                if (options.fromRoute) window.ShelahRouter?.markNotFound();
+            } else {
+                regions.retryLater(content, retry, { attempt });
             }
         }
 
@@ -9477,17 +9511,17 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             ];
         }
 
-        async function resolveSearchTarget(query) {
-            const key = normalizeSearchKey(query);
-
-            // Liturgy searches open the siddur, the one prayer reader.
+        // Liturgy searches open the siddur, the one prayer reader.
+        async function findSiddurPage(query) {
             try {
-                const siddurPage = await window.ShelahSiddur?.find(query);
-                if (siddurPage) return { type: 'siddur', value: siddurPage };
+                return await window.ShelahSiddur?.find(query);
             } catch {
                 // The siddur's table of contents is unreachable: fall through to the text search.
+                return null;
             }
+        }
 
+        function searchQuickTarget(key) {
             // Fast aliases for common book/topic lookups
             const quickMap = {
                 'genesis': 'Genesis 1',
@@ -9532,9 +9566,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 'the five books of moses, by everett fox': 'The Five Books of Moses, by Everett Fox, Translator\'s Preface'
             };
 
-            if (quickMap[key]) return { type: 'text', value: quickMap[key] };
+            return Object.hasOwn(quickMap, key) ? quickMap[key] : undefined;
+        }
 
-            // Try direct lookup first (book name / direct ref).
+        // Try direct lookup first (book name / direct ref).
+        async function resolveDirectRef(query) {
             const hasSpecificSection = /:\d+/.test(query) || /\b\d+[ab]?\b/i.test(query) || /,/.test(query);
             const talmudCandidates = buildTalmudRefCandidates(query);
             const directCandidates = hasSpecificSection
@@ -9561,8 +9597,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     // Keep searching using fallback strategy below.
                 }
             }
+            return null;
+        }
 
-            // Fallback to library search and pick the best textual hit.
+        // Fallback to library search and pick the best textual hit.
+        async function resolveLibraryHit(query) {
             const searchParams = appendMetadataFilters(new URLSearchParams({ q: query, size: '8' }));
             const searchResp = await fetch(`/api/library/search?${searchParams.toString()}`);
             if (!searchResp.ok) return null;
@@ -9572,6 +9611,17 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
             const best = results[0];
             return best.ref ? { type: 'text', value: best.ref } : null;
+        }
+
+        async function resolveSearchTarget(query) {
+            const siddurPage = await findSiddurPage(query);
+            if (siddurPage) return { type: 'siddur', value: siddurPage };
+
+            // Fast aliases for common book/topic lookups
+            const quick = searchQuickTarget(normalizeSearchKey(query));
+            if (quick) return { type: 'text', value: quick };
+
+            return (await resolveDirectRef(query)) || resolveLibraryHit(query);
         }
 
         async function openSearchTarget(target, fallbackQuestion = '') {
@@ -9634,6 +9684,75 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // docstring for the ported behavior and the return contract.
         // `followUp`: a signed-out visitor's follow-up on the answers on screen
         // (conversation-ui.js), not a fresh question from the search bar.
+        // Brief "liftoff" glow pulse on the search bar itself, fired in the
+        // same tick as the panel opening -- a handoff moment, not a
+        // sustained loader. Self-cleaning via setTimeout so the class never
+        // lingers into the next search.
+        function pulseSearchLiftoff() {
+            if (!searchForm) return;
+            searchForm.classList.remove('search-liftoff');
+            // Force reflow so back-to-back searches restart the CSS
+            // animation instead of the re-add being a no-op.
+            searchForm.getBoundingClientRect();
+            searchForm.classList.add('search-liftoff');
+            setTimeout(() => searchForm.classList.remove('search-liftoff'), SEARCH_LIFTOFF_MS);
+        }
+
+        // A stale/invalid token, not a real answer failure -- clear it and
+        // ask the widget for a fresh one so the *next* submit has a shot
+        // at passing without the visitor doing anything (interaction-only
+        // appearance means this is often invisible; Cloudflare's risk
+        // engine decides, not this code).
+        function resetTurnstileChallenge() {
+            window.__turnstileToken = '';
+            // Re-running the widget pops the challenge modal up only if
+            // Cloudflare wants the visitor to interact.
+            const turnstileWidget = document.getElementById('turnstileWidget');
+            if (window.turnstile && turnstileWidget) {
+                try { window.turnstile.reset(turnstileWidget); } catch { /* widget not ready yet */ }
+            }
+        }
+
+        // The panel already shows the failure on the question's turn
+        // (Retry) and in its notice; these are the side effects.
+        function noteAiSearchFailure(error) {
+            if (error?.code === 'turnstile_required') {
+                resetTurnstileChallenge();
+                logReliability('ai-turnstile-required');
+            } else if (error?.code === 'guest_cap_reached') {
+                // Not a failure: the guest limit, which the panel's dialog explains.
+                logReliability('ai-guest-cap', { reason: error.reason });
+            } else if (error?.status === 401) {
+                logReliability('ai-response-error', { message: 'session expired' });
+            } else if (typeof error?.status === 'number') {
+                // askAi() got a completed, non-ok HTTP response -- a server-side
+                // failure, not a network/timeout one.
+                logReliability('ai-response-error', { message: error.message || 'request failed' });
+            } else {
+                const isTimeout = error?.name === 'AbortError';
+                logReliability('ai-network-error', { message: error?.message, timeout: isTimeout, attempts: error?.attempts || 1 });
+            }
+        }
+
+        function noteAiAnswer(panel, data, question) {
+            // Refresh history sidebar so the new entry appears immediately
+            void loadAskHistory();
+            if (data?.history_id) {
+                // Only while the answer is still up: one closed while it
+                // loaded gets no entry to come back to.
+                if (panel.isShowingAnswer?.()) {
+                    window.ShelahRouter?.pushRoute({ chat: data.history_id, ...panel.aiRoute?.() }, { exclusive: true, overlay: 'answer' });
+                }
+                promoteShelfAsk(question, data.history_id);
+            }
+            if (data?.meta?.fallback) {
+                logReliability('ai-fallback-used', {
+                    mode: data?.meta?.mode,
+                    source_count: data?.meta?.source_count,
+                });
+            }
+        }
+
         async function handleAiSearch(question, { followUp = false } = {}) {
             const sanitizedQuestion = sanitizeQuestionInput(question);
             if (!sanitizedQuestion) return;
@@ -9657,19 +9776,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             // (restoreShownView).
             setCurrentView('ask', question, question);
             document.body.classList.add('search-loading');
-
-            // Brief "liftoff" glow pulse on the search bar itself, fired in the
-            // same tick as the panel opening -- a handoff moment, not a
-            // sustained loader. Self-cleaning via setTimeout so the class never
-            // lingers into the next search.
-            if (searchForm) {
-                searchForm.classList.remove('search-liftoff');
-                // Force reflow so back-to-back searches restart the CSS
-                // animation instead of the re-add being a no-op.
-                searchForm.getBoundingClientRect();
-                searchForm.classList.add('search-liftoff');
-                setTimeout(() => searchForm.classList.remove('search-liftoff'), SEARCH_LIFTOFF_MS);
-            }
+            pulseSearchLiftoff();
 
             try {
                 // The conversation panel shows the question and a pending
@@ -9687,74 +9794,18 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 }, { followUp });
                 // Another question or answer replaced this one meanwhile.
                 if (!data) return;
-
-                // Refresh history sidebar so the new entry appears immediately
-                void loadAskHistory();
-                if (data?.history_id) {
-                    // Only while the answer is still up: one closed while it
-                    // loaded gets no entry to come back to.
-                    if (panel.isShowingAnswer?.()) {
-                        window.ShelahRouter?.pushRoute({ chat: data.history_id, ...panel.aiRoute?.() }, { exclusive: true, overlay: 'answer' });
-                    }
-                    promoteShelfAsk(question, data.history_id);
-                }
-                if (data?.meta?.fallback) {
-                    logReliability('ai-fallback-used', {
-                        mode: data?.meta?.mode,
-                        source_count: data?.meta?.source_count,
-                    });
-                }
+                noteAiAnswer(panel, data, question);
             } catch (error) {
-                // The panel already shows the failure on the question's turn
-                // (Retry) and in its notice; these are the side effects.
-                if (error?.code === 'turnstile_required') {
-                    // A stale/invalid token, not a real answer failure -- clear it and
-                    // ask the widget for a fresh one so the *next* submit has a shot
-                    // at passing without the visitor doing anything (interaction-only
-                    // appearance means this is often invisible; Cloudflare's risk
-                    // engine decides, not this code).
-                    window.__turnstileToken = '';
-                    // Re-running the widget pops the challenge modal up only if
-                    // Cloudflare wants the visitor to interact.
-                    const turnstileWidget = document.getElementById('turnstileWidget');
-                    if (window.turnstile && turnstileWidget) {
-                        try { window.turnstile.reset(turnstileWidget); } catch { /* widget not ready yet */ }
-                    }
-                    logReliability('ai-turnstile-required');
-                } else if (error?.code === 'guest_cap_reached') {
-                    // Not a failure: the guest limit, which the panel's dialog explains.
-                    logReliability('ai-guest-cap', { reason: error.reason });
-                } else if (error?.status === 401) {
-                    logReliability('ai-response-error', { message: 'session expired' });
-                } else if (typeof error?.status === 'number') {
-                    // askAi() got a completed, non-ok HTTP response -- a server-side
-                    // failure, not a network/timeout one.
-                    logReliability('ai-response-error', { message: error.message || 'request failed' });
-                } else {
-                    const isTimeout = error?.name === 'AbortError';
-                    logReliability('ai-network-error', { message: error?.message, timeout: isTimeout, attempts: error?.attempts || 1 });
-                }
+                noteAiSearchFailure(error);
             } finally {
                 document.body.classList.remove('search-loading');
                 suppressSuggestionMenu = false;
             }
         }
 
-        function buildFallbackTextRefs(ref) {
-            const raw = String(ref || '').trim();
-            if (!raw) return [];
-
+        // Spelling, "text " prefix, trailing punctuation and "; subtitle" slips in a ref.
+        function fallbackCleanupVariants(raw, normalizedRaw) {
             const candidates = [];
-            const normalizedRaw = raw
-                .replaceAll(/[’‘]/g, "'")
-                .replaceAll(/[“”]/g, '"')
-                .replace(/\s+/g, ' ')
-                .replace(/\s+,/g, ',')
-                .trim();
-            const hasGenesisChapter = /Genesis\s+\d+\b/i.test(raw);
-            const hasGenesisVerse = /Genesis\s+\d+:\d+/i.test(raw);
-            const specialTorahCommentator = /(rashi|ramban|ibn\s+ezra|sforno|kli\s+yakar)\s+on\s+torah/i.test(raw);
-
             if (normalizedRaw && normalizedRaw !== raw) {
                 candidates.push(normalizedRaw);
             }
@@ -9776,7 +9827,12 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 const suffix = (/\b\d+\b/.exec(normalizedRaw) || [])[0] || '1';
                 candidates.push(`Mishnah Beitzah ${suffix}`);
             }
+            return candidates;
+        }
 
+        // A bare book or commentary name with no chapter: try its first section.
+        function fallbackBareBookVariants(raw) {
+            const candidates = [];
             const looksLikeCommentary = /on\s+torah|rashi|ramban|ibn\s+ezra|sforno|kli\s+yakar|bahya|chizkuni|midrash|targum|tosafot/i.test(raw);
             const hasSpecificSection = /:\d+/.test(raw) || /\b\d+[ab]?\b/.test(raw) || /,/.test(raw);
 
@@ -9787,6 +9843,15 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             if (looksLikeCommentary && !/on\s+torah/i.test(raw)) {
                 candidates.push(`${raw} on Torah, Genesis 1:1`);
             }
+            return candidates;
+        }
+
+        // "Rashi on Torah" style names, which Sefaria files under the book ("Rashi on Genesis").
+        function fallbackTorahCommentaryVariants(raw) {
+            const candidates = [];
+            const hasGenesisChapter = /Genesis\s+\d+\b/i.test(raw);
+            const hasGenesisVerse = /Genesis\s+\d+:\d+/i.test(raw);
+            const specialTorahCommentator = /(rashi|ramban|ibn\s+ezra|sforno|kli\s+yakar)\s+on\s+torah/i.test(raw);
 
             if (specialTorahCommentator) {
                 let normalized = raw;
@@ -9801,13 +9866,32 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 }
             }
 
-            if (/on\s+torah/i.test(raw) && !/Genesis\s+1/i.test(raw)) {
+            const onTorah = /on\s+torah/i.test(raw);
+            if (onTorah && !/Genesis\s+1/i.test(raw)) {
                 candidates.push(`${raw}, Genesis 1:1`);
             }
 
-            if (/on\s+torah/i.test(raw) && hasGenesisChapter && !hasGenesisVerse) {
+            if (onTorah && hasGenesisChapter && !hasGenesisVerse) {
                 candidates.push(raw.replace(/Genesis\s+(\d+)\b(?!:)/i, 'Genesis $1:1'));
             }
+            return candidates;
+        }
+
+        function buildFallbackTextRefs(ref) {
+            const raw = String(ref || '').trim();
+            if (!raw) return [];
+
+            const normalizedRaw = raw
+                .replaceAll(/[’‘]/g, "'")
+                .replaceAll(/[“”]/g, '"')
+                .replace(/\s+/g, ' ')
+                .replace(/\s+,/g, ',')
+                .trim();
+            const candidates = [
+                ...fallbackCleanupVariants(raw, normalizedRaw),
+                ...fallbackBareBookVariants(raw),
+                ...fallbackTorahCommentaryVariants(raw),
+            ];
 
             const seen = new Set();
             return candidates.filter((candidate) => {
@@ -9963,16 +10047,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
         }
 
-        async function fetchTextPayloadWithFallback(ref, recoveryRetry = false) {
-            const requestedRef = String(ref || '').trim();
-            if (!requestedRef) {
-                return { payload: { error: 'Text not found' }, resolvedRef: '' };
-            }
-
-            if (textPayloadCache.has(requestedRef)) {
-                return { payload: textPayloadCache.get(requestedRef), resolvedRef: requestedRef };
-            }
-
+        // The ref as asked, then the spellings buildFallbackTextRefs suggests; six at most.
+        function textFetchAttempts(requestedRef) {
             const attempts = [];
             const seenAttempts = new Set();
             [requestedRef, ...buildFallbackTextRefs(requestedRef)].forEach((candidate) => {
@@ -9983,16 +10059,19 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 seenAttempts.add(key);
                 attempts.push(cleanCandidate);
             });
+            return attempts.slice(0, 6);
+        }
 
-            const boundedAttempts = attempts.slice(0, 6);
+        // The first candidate that loads ({ found }), or how the last attempt failed.
+        async function tryTextCandidates(requestedRef, candidates) {
             let lastErrorPayload = { error: 'Text not found' };
             let reachedServer = false;
 
-            for (const candidate of boundedAttempts) {
+            for (const candidate of candidates) {
                 if (textPayloadCache.has(candidate)) {
                     const cachedPayload = textPayloadCache.get(candidate);
                     cacheTextPayload(requestedRef, cachedPayload);
-                    return { payload: cachedPayload, resolvedRef: candidate };
+                    return { found: { payload: cachedPayload, resolvedRef: candidate } };
                 }
 
                 try {
@@ -10002,13 +10081,48 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     if (!payload?.error) {
                         cacheTextPayload(candidate, payload);
                         cacheTextPayload(requestedRef, payload);
-                        return { payload, resolvedRef: candidate };
+                        return { found: { payload, resolvedRef: candidate } };
                     }
                     lastErrorPayload = payload || lastErrorPayload;
                 } catch {
                     // Keep trying remaining candidates.
                 }
             }
+            return { lastErrorPayload, reachedServer };
+        }
+
+        // Last resort: try fetching directly from Sefaria API (browser CORS)
+        async function payloadAfterTextFailure(requestedRef, lastErrorPayload, reachedServer) {
+            const directPayload = await _fetchFromSefariaDirectly(requestedRef);
+            if (directPayload && !directPayload.error) {
+                cacheTextPayload(requestedRef, directPayload);
+                return { payload: directPayload, resolvedRef: requestedRef };
+            }
+            // Neither our server nor Sefaria answered: that's the connection.
+            if (!reachedServer) {
+                return { payload: { error: 'Network error', error_type: 'network', he: [], en: [] }, resolvedRef: requestedRef };
+            }
+            // If the direct fetch returned a typed error (blocked/CORS), surface it.
+            if (directPayload?.error_type) {
+                return { payload: directPayload, resolvedRef: requestedRef };
+            }
+
+            return { payload: lastErrorPayload, resolvedRef: requestedRef };
+        }
+
+        async function fetchTextPayloadWithFallback(ref, recoveryRetry = false) {
+            const requestedRef = String(ref || '').trim();
+            if (!requestedRef) {
+                return { payload: { error: 'Text not found' }, resolvedRef: '' };
+            }
+
+            if (textPayloadCache.has(requestedRef)) {
+                return { payload: textPayloadCache.get(requestedRef), resolvedRef: requestedRef };
+            }
+
+            const tried = await tryTextCandidates(requestedRef, textFetchAttempts(requestedRef));
+            if (tried.found) return tried.found;
+            const { lastErrorPayload, reachedServer } = tried;
 
             const errorMessage = String(lastErrorPayload?.error || '').toLowerCase();
             const shouldRecoverAndRetry = !recoveryRetry && (
@@ -10030,22 +10144,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 return { payload: lastErrorPayload, resolvedRef: requestedRef };
             }
 
-            // Last resort: try fetching directly from Sefaria API (browser CORS)
-            const directPayload = await _fetchFromSefariaDirectly(requestedRef);
-            if (directPayload && !directPayload.error) {
-                cacheTextPayload(requestedRef, directPayload);
-                return { payload: directPayload, resolvedRef: requestedRef };
-            }
-            // Neither our server nor Sefaria answered: that's the connection.
-            if (!reachedServer) {
-                return { payload: { error: 'Network error', error_type: 'network', he: [], en: [] }, resolvedRef: requestedRef };
-            }
-            // If the direct fetch returned a typed error (blocked/CORS), surface it.
-            if (directPayload?.error_type) {
-                return { payload: directPayload, resolvedRef: requestedRef };
-            }
-
-            return { payload: lastErrorPayload, resolvedRef: requestedRef };
+            return payloadAfterTextFailure(requestedRef, lastErrorPayload, reachedServer);
         }
 
         // ─── INLINE SEFARIA TEXT READER ───────────────────────────────────────
@@ -10088,63 +10187,207 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             searchInput.select();
         }
 
-        async function readText(ref, options = {}) {
-            const myRequestId = ++_readTextRequestGen;
-            const normalizedRequestRef = String(ref || '').replace(/\s+/g, ' ').trim();
+        // 'opened' when the ref went to a chapter or reference grid instead of the
+        // text, 'stale' when a newer load took over while it asked, else 'read'.
+        async function openGridInsteadOfText(normalizedRequestRef, options, myRequestId) {
             const skipNavigationGrid = Boolean(options?.skipNavigationGrid);
-            const chapterGridTarget = skipNavigationGrid ? null : shouldOpenChapterGrid(normalizedRequestRef);
+            if (skipNavigationGrid) return 'read';
 
+            const chapterGridTarget = shouldOpenChapterGrid(normalizedRequestRef);
             if (chapterGridTarget) {
                 openChapterGrid(chapterGridTarget.book, chapterGridTarget.chapters);
-                return;
+                return 'opened';
             }
 
-            if (!skipNavigationGrid) {
-                // maybeOpenReferenceGrid may fetch the book's leaf refs before it
-                // knows whether a grid opens; meanwhile the control that asked
-                // shows it is working (audit L-2) so the click doesn't look inert.
-                const settleTrigger = markTriggerPending();
-                let openedGrid = false;
-                try {
-                    openedGrid = await maybeOpenReferenceGrid(normalizedRequestRef);
-                } finally {
-                    settleTrigger();
-                }
-                if (openedGrid) {
-                    finishViewSwap();
-                    return;
-                }
-                // Another load started while this one asked.
-                if (myRequestId !== _readTextRequestGen) return;
+            // maybeOpenReferenceGrid may fetch the book's leaf refs before it
+            // knows whether a grid opens; meanwhile the control that asked
+            // shows it is working (audit L-2) so the click doesn't look inert.
+            const settleTrigger = markTriggerPending();
+            let openedGrid = false;
+            try {
+                openedGrid = await maybeOpenReferenceGrid(normalizedRequestRef);
+            } finally {
+                settleTrigger();
             }
+            if (openedGrid) {
+                finishViewSwap();
+                return 'opened';
+            }
+            // Another load started while this one asked.
+            return myRequestId === _readTextRequestGen ? 'read' : 'stale';
+        }
 
+        function resetReaderChrome() {
+            homeGrid.style.display = 'none';
+            closeMobilePanels();
+            closeChapterGrid();
+            closeReaderSettingsPanel();
+            setReaderSubtitle('');
+            collapseCommentaryPanel();
+            resetSelectionInsights();
+        }
+
+        // The skeleton (and fade) while a text loads, or nothing when the chapter
+        // is already on the page (server-rendered): no skeleton, no fetch, no
+        // fade; the rows are redrawn with this reader's own preferences, which
+        // look the same by default.
+        async function prepareReaderForText(ref, normalizedRequestRef, options, serverText) {
             leaveViewScroll();
             appState.shownView = null;
-            // The chapter is already on the page (server-rendered): no
-            // skeleton, no fetch, no fade; the rows are redrawn below with
-            // this reader's own preferences, which look the same by default.
-            const serverText = options.fromRoute ? takeServerRenderedText(normalizedRequestRef) : null;
             if (serverText) {
+                resetReaderChrome();
+                return;
+            }
+            // A retry stays on the view it's retrying: no transition.
+            await swapView(() => {
                 homeGrid.style.display = 'none';
+                showReaderSkeleton(normalizedRequestRef || String(ref || ''), { toolbar: true });
                 closeMobilePanels();
                 closeChapterGrid();
                 closeReaderSettingsPanel();
                 setReaderSubtitle('');
                 collapseCommentaryPanel();
                 resetSelectionInsights();
-            } else {
-                // A retry stays on the view it's retrying: no transition.
-                await swapView(() => {
-                    homeGrid.style.display = 'none';
-                    showReaderSkeleton(normalizedRequestRef || String(ref || ''), { toolbar: true });
-                    closeMobilePanels();
-                    closeChapterGrid();
-                    closeReaderSettingsPanel();
-                    setReaderSubtitle('');
-                    collapseCommentaryPanel();
-                    resetSelectionInsights();
-                }, { transition: options.loadRetryAttempt == null });
+            }, { transition: options.loadRetryAttempt == null });
+        }
+
+        function friendlyTextError(data) {
+            const errStr = String(data.error || '');
+            const errType = data.error_type || '';
+            if (errType === 'network') {
+                return t(
+                    "Couldn't connect to load this text. Check your connection.",
+                    'לא ניתן היה להתחבר כדי לטעון את הטקסט. בדקו את החיבור.'
+                );
             }
+            if (errType === 'not_found') {
+                return t('This text could not be found.', 'הטקסט לא נמצא.');
+            }
+            if (errType === 'sefaria_blocked' || errStr.includes('403') || errStr.toLowerCase().includes('blocked')) {
+                return t(
+                    '\u26a0\ufe0f Sefaria is temporarily unavailable (access blocked). Please try again later.',
+                    '\u26a0\ufe0f ספריא אינה זמינה כרגע (חסימת גישה). אנא נסה שנית מאוחר יותר.'
+                );
+            }
+            if (errType === 'cors_blocked') {
+                return t(
+                    '\u26a0\ufe0f Cannot connect to Sefaria from this browser (CORS policy). Try reloading the page.',
+                    '\u26a0\ufe0f לא ניתן להתחבר לספריא מדפדפן זה. נסה לרענן את הדף.'
+                );
+            }
+            return `${t('Could not load text:', 'לא ניתן לטעון את הטקסט:')} ${errStr}`;
+        }
+
+        function clearReaderAfterLoadFailure() {
+            readerTopBar?.classList.add('hidden');
+            syncReaderTopBarOffset();
+            window.currentTextPayload = null;
+            window.currentTextPayloadChain = [];
+            resetInfiniteReaderState(null);
+        }
+
+        function showTextLoadError(data, ref, normalizedRequestRef, options) {
+            const errType = data.error_type || '';
+            document.getElementById('readerTitle').innerText = normalizedRequestRef || String(ref || '');
+            // A missing text won't appear on a retry; everything else may.
+            renderReaderLoadError(friendlyTextError(data), ref, options, { notFound: errType === 'not_found' });
+            // Only where the address is this text's: a click that failed
+            // leaves the last view's URL, which is still a real page.
+            if (errType === 'not_found' && options.fromRoute) window.ShelahRouter?.markNotFound();
+            clearReaderAfterLoadFailure();
+            logReliability('text-load-error', { ref: normalizedRequestRef || String(ref || ''), error: String(data.error || ''), error_type: errType });
+        }
+
+        function textSidebarMarkup(data, requestedRef) {
+            const categories = data.categories || [];
+            const sidebarReference = isHebrewMode()
+                ? localizeReferenceLabel(data.ref || requestedRef)
+                : String(data.ref || requestedRef || '');
+            const categoryPath = (isHebrewMode() ? categories.map(translateCategoryToken) : categories).join(' › ');
+            return `
+                <div class="text-xs space-y-2">
+                    <div><span class="font-bold text-slate-700">${t('Reference:', 'הפניה:')}</span> <span class="text-slate-500">${escapeHtml(sidebarReference)}</span></div>
+                    ${data.heTitle ? `<div><span class="font-bold text-slate-700">${t('Hebrew:', 'עברית:')}</span> <span class="font-hebrew text-slate-600">${data.heTitle}</span></div>` : ''}
+                    ${categories.length ? `<div><span class="font-bold text-slate-700">${t('Category:', 'קטגוריה:')}</span> <span class="text-slate-500">${categoryPath}</span></div>` : ''}
+                    ${data.era ? `<div><span class="font-bold text-slate-700">${t('Era:', 'תקופה:')}</span> <span class="text-slate-500">${data.era}</span></div>` : ''}
+                </div>`;
+        }
+
+        function paintTextView(data, resolvedRef, ref, normalizedRequestRef, options, serverText) {
+            // Title
+            const titleEl = document.getElementById('readerTitle');
+            const fallbackTitle = data.title || normalizedRequestRef || String(ref || '');
+            titleEl.innerText = getChunkHeaderTitle({ ...data, title: fallbackTitle, ref: data.ref || normalizedRequestRef || String(ref || '') }) || fallbackTitle;
+            // Stable snapshot of the title as first loaded — used to decide
+            // whether the first chunk's own section-title bar would be a
+            // redundant repeat of the page title (see renderCurrentTextByLayout).
+            // readerTitle.innerText itself later drifts as the user scrolls
+            // (updateReaderHeaderForVisibleChunk keeps it in sync with whatever
+            // chunk is on screen), so re-reading the live DOM there instead of
+            // this snapshot made that redundant-header decision flip on every
+            // re-render depending on scroll position — the "inconsistent
+            // titling" bug where a chunk's title box would appear/disappear
+            // across renders for no reason tied to that chunk itself.
+            window.currentTextAnchorTitle = titleEl.innerText;
+            setCurrentView('text', data.ref || resolvedRef || normalizedRequestRef || ref, data.title || data.ref || resolvedRef || normalizedRequestRef || ref, options);
+            if (options.fromRoute) canonicalizeTextRoute(data.ref || resolvedRef);
+            window.currentTextPayload = data;
+            window.currentTextPayloadChain = [data];
+            resetInfiniteReaderState(data);
+            commentaryPreloader?.reset();
+            window.currentPrayerName = null;
+
+            // Badge
+            const categories = data.categories || [];
+            document.querySelector('#reader header .bg-slate-100').textContent =
+                (isHebrewMode() ? categories.map(translateCategoryToken).join(' › ') : categories.join(' › ')) || t("Sh'elah Library", "ספריית ש'אלה");
+
+            // Continuous reading uses per-chunk section headers; avoid duplicating old single-subtitle logic.
+            setReaderSubtitle('');
+
+            applyReaderPreferences({ adoptRenderedText: Boolean(serverText) });
+
+            // Update left sidebar with metadata
+            sidebarContent.innerHTML = textSidebarMarkup(data, normalizedRequestRef || ref);
+
+            // Back/Forward to this text: the verse it was left at (U-7).
+            // A server-rendered page is already at its top, and a reader
+            // who started scrolling before the app booted stays where they are.
+            if (!restoreViewScroll(options.restoreScroll, 'text') && !serverText) scrollPrimaryToTop('smooth');
+
+            // Adjacent (prev/next) refs are only needed for infinite-scroll
+            // continuation, not for painting the current chunk — fetch them
+            // after first paint instead of blocking on them, so the user
+            // isn't staring at a blank reader pane during this extra round
+            // trip. Guarded against the user having navigated to a different
+            // text before this resolves.
+            ensurePayloadAdjacentRefs(data).then(() => {
+                if (window.currentTextPayload !== data) return;
+                infiniteReaderState.nextRef = String(data.next || '').trim();
+                infiniteReaderState.prevRef = String(data.prev || '').trim();
+            }).catch(() => {});
+        }
+
+        function showTextRuntimeError(err, ref, normalizedRequestRef, options) {
+            hideReaderSkeleton({ loaded: false });
+            reader.classList.remove('hidden');
+            applySidebarVisibility();
+            const fallbackMessage = t('Error loading text.', 'שגיאה בטעינת הטקסט.');
+            const runtimeMessage = String(err?.message || '').trim();
+            const displayMessage = runtimeMessage ? `${fallbackMessage} ${runtimeMessage}` : fallbackMessage;
+            renderReaderLoadError(displayMessage, ref, options);
+            clearReaderAfterLoadFailure();
+            logReliability('text-load-runtime-error', { ref: normalizedRequestRef || String(ref || ''), message: runtimeMessage || 'unknown' });
+        }
+
+        async function readText(ref, options = {}) {
+            const myRequestId = ++_readTextRequestGen;
+            const normalizedRequestRef = String(ref || '').replace(/\s+/g, ' ').trim();
+
+            if (await openGridInsteadOfText(normalizedRequestRef, options, myRequestId) !== 'read') return;
+
+            const serverText = options.fromRoute ? takeServerRenderedText(normalizedRequestRef) : null;
+            await prepareReaderForText(ref, normalizedRequestRef, options, serverText);
             if (myRequestId !== _readTextRequestGen) return;
 
             try {
@@ -10161,125 +10404,14 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 applySidebarVisibility();
 
                 if (data.error) {
-                    document.getElementById('readerTitle').innerText = normalizedRequestRef || String(ref || '');
-                    const _errStr = String(data.error || '');
-                    const _errType = data.error_type || '';
-                    let _friendlyError;
-                    if (_errType === 'network') {
-                        _friendlyError = t(
-                            "Couldn't connect to load this text. Check your connection.",
-                            'לא ניתן היה להתחבר כדי לטעון את הטקסט. בדקו את החיבור.'
-                        );
-                    } else if (_errType === 'not_found') {
-                        _friendlyError = t('This text could not be found.', 'הטקסט לא נמצא.');
-                    } else if (_errType === 'sefaria_blocked' || _errStr.includes('403') || _errStr.toLowerCase().includes('blocked')) {
-                        _friendlyError = t(
-                            '\u26a0\ufe0f Sefaria is temporarily unavailable (access blocked). Please try again later.',
-                            '\u26a0\ufe0f ספריא אינה זמינה כרגע (חסימת גישה). אנא נסה שנית מאוחר יותר.'
-                        );
-                    } else if (_errType === 'cors_blocked') {
-                        _friendlyError = t(
-                            '\u26a0\ufe0f Cannot connect to Sefaria from this browser (CORS policy). Try reloading the page.',
-                            '\u26a0\ufe0f לא ניתן להתחבר לספריא מדפדפן זה. נסה לרענן את הדף.'
-                        );
-                    } else {
-                        _friendlyError = `${t('Could not load text:', 'לא ניתן לטעון את הטקסט:')} ${_errStr}`;
-                    }
-                    // A missing text won't appear on a retry; everything else may.
-                    renderReaderLoadError(_friendlyError, ref, options, { notFound: _errType === 'not_found' });
-                    // Only where the address is this text's: a click that failed
-                    // leaves the last view's URL, which is still a real page.
-                    if (_errType === 'not_found' && options.fromRoute) window.ShelahRouter?.markNotFound();
-                    readerTopBar?.classList.add('hidden');
-                    syncReaderTopBarOffset();
-                    window.currentTextPayload = null;
-                    window.currentTextPayloadChain = [];
-                    resetInfiniteReaderState(null);
-                    logReliability('text-load-error', { ref: normalizedRequestRef || String(ref || ''), error: _errStr, error_type: _errType });
+                    showTextLoadError(data, ref, normalizedRequestRef, options);
                     return;
                 }
-
-                // Title
-                const titleEl = document.getElementById('readerTitle');
-                const fallbackTitle = data.title || normalizedRequestRef || String(ref || '');
-                titleEl.innerText = getChunkHeaderTitle({ ...data, title: fallbackTitle, ref: data.ref || normalizedRequestRef || String(ref || '') }) || fallbackTitle;
-                // Stable snapshot of the title as first loaded — used to decide
-                // whether the first chunk's own section-title bar would be a
-                // redundant repeat of the page title (see renderCurrentTextByLayout).
-                // readerTitle.innerText itself later drifts as the user scrolls
-                // (updateReaderHeaderForVisibleChunk keeps it in sync with whatever
-                // chunk is on screen), so re-reading the live DOM there instead of
-                // this snapshot made that redundant-header decision flip on every
-                // re-render depending on scroll position — the "inconsistent
-                // titling" bug where a chunk's title box would appear/disappear
-                // across renders for no reason tied to that chunk itself.
-                window.currentTextAnchorTitle = titleEl.innerText;
-                setCurrentView('text', data.ref || resolvedRef || normalizedRequestRef || ref, data.title || data.ref || resolvedRef || normalizedRequestRef || ref, options);
-                if (options.fromRoute) canonicalizeTextRoute(data.ref || resolvedRef);
-                window.currentTextPayload = data;
-                window.currentTextPayloadChain = [data];
-                resetInfiniteReaderState(data);
-                commentaryPreloader?.reset();
-                window.currentPrayerName = null;
-
-                // Badge
-                const categories = data.categories || [];
-                document.querySelector('#reader header .bg-slate-100').textContent =
-                    (isHebrewMode() ? categories.map(translateCategoryToken).join(' › ') : categories.join(' › ')) || t("Sh'elah Library", "ספריית ש'אלה");
-
-                // Continuous reading uses per-chunk section headers; avoid duplicating old single-subtitle logic.
-                setReaderSubtitle('');
-
-                applyReaderPreferences({ adoptRenderedText: Boolean(serverText) });
-
-                const sidebarReference = isHebrewMode()
-                    ? localizeReferenceLabel(data.ref || normalizedRequestRef || ref)
-                    : String(data.ref || normalizedRequestRef || ref || '');
-
-                const categoryPath = (isHebrewMode() ? categories.map(translateCategoryToken) : categories).join(' › ');
-
-                // Update left sidebar with metadata
-                sidebarContent.innerHTML = `
-                    <div class="text-xs space-y-2">
-                        <div><span class="font-bold text-slate-700">${t('Reference:', 'הפניה:')}</span> <span class="text-slate-500">${escapeHtml(sidebarReference)}</span></div>
-                        ${data.heTitle ? `<div><span class="font-bold text-slate-700">${t('Hebrew:', 'עברית:')}</span> <span class="font-hebrew text-slate-600">${data.heTitle}</span></div>` : ''}
-                        ${categories.length ? `<div><span class="font-bold text-slate-700">${t('Category:', 'קטגוריה:')}</span> <span class="text-slate-500">${categoryPath}</span></div>` : ''}
-                        ${data.era ? `<div><span class="font-bold text-slate-700">${t('Era:', 'תקופה:')}</span> <span class="text-slate-500">${data.era}</span></div>` : ''}
-                    </div>`;
-
-                // Back/Forward to this text: the verse it was left at (U-7).
-                // A server-rendered page is already at its top, and a reader
-                // who started scrolling before the app booted stays where they are.
-                if (!restoreViewScroll(options.restoreScroll, 'text') && !serverText) scrollPrimaryToTop('smooth');
-
-                // Adjacent (prev/next) refs are only needed for infinite-scroll
-                // continuation, not for painting the current chunk — fetch them
-                // after first paint instead of blocking on them, so the user
-                // isn't staring at a blank reader pane during this extra round
-                // trip. Guarded against the user having navigated to a different
-                // text before this resolves.
-                ensurePayloadAdjacentRefs(data).then(() => {
-                    if (window.currentTextPayload !== data) return;
-                    infiniteReaderState.nextRef = String(data.next || '').trim();
-                    infiniteReaderState.prevRef = String(data.prev || '').trim();
-                }).catch(() => {});
-
+                paintTextView(data, resolvedRef, ref, normalizedRequestRef, options, serverText);
             } catch (err) {
                 // A newer load owns the reader; this one's failure is moot.
                 if (myRequestId !== _readTextRequestGen) return;
-                hideReaderSkeleton({ loaded: false });
-                reader.classList.remove('hidden');
-                applySidebarVisibility();
-                const fallbackMessage = t('Error loading text.', 'שגיאה בטעינת הטקסט.');
-                const runtimeMessage = String(err?.message || '').trim();
-                const displayMessage = runtimeMessage ? `${fallbackMessage} ${runtimeMessage}` : fallbackMessage;
-                renderReaderLoadError(displayMessage, ref, options);
-                readerTopBar?.classList.add('hidden');
-                syncReaderTopBarOffset();
-                window.currentTextPayload = null;
-                window.currentTextPayloadChain = [];
-                resetInfiniteReaderState(null);
-                logReliability('text-load-runtime-error', { ref: normalizedRequestRef || String(ref || ''), message: runtimeMessage || 'unknown' });
+                showTextRuntimeError(err, ref, normalizedRequestRef, options);
             }
         }
 
@@ -10575,6 +10707,151 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         });
 
         // Multi-language Toggle with data attributes
+        // Handle lang + RTL for Hebrew. The search icon and the input's
+        // room for it follow dir in style.css, so a Hebrew load has them
+        // on the left from the head script's first paint.
+        function setHtmlLanguage(lang) {
+            const html = document.documentElement;
+            if (lang === 'he') {
+                html.setAttribute('lang', 'he');
+                html.setAttribute('dir', 'rtl');
+                html.classList.add('rtl');
+            } else {
+                html.setAttribute('lang', 'en');
+                html.setAttribute('dir', 'ltr');
+                html.classList.remove('rtl');
+            }
+        }
+
+        function markActiveLanguageButton(lang) {
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.remove('lang-btn-active');
+                if (btn.dataset.lang === lang) {
+                    btn.classList.add('lang-btn-active');
+                }
+            });
+        }
+
+        function localizePlaceholders(lang) {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.placeholder = lang === 'he' ? searchInput.dataset.hePlaceholder : searchInput.dataset.enPlaceholder;
+            }
+
+            if (libraryIndexFilterInput) {
+                libraryIndexFilterInput.placeholder = lang === 'he'
+                    ? (libraryIndexFilterInput.dataset.hePlaceholder || 'סנן נושאים או טקסטים...')
+                    : (libraryIndexFilterInput.dataset.enPlaceholder || 'Filter topics or texts...');
+            }
+            const citySearchInput = document.getElementById('citySearchInput');
+            if (citySearchInput) {
+                citySearchInput.placeholder = lang === 'he'
+                    ? (citySearchInput.dataset.hePlaceholder || 'לדוגמה: ירושלים, ניו יורק')
+                    : (citySearchInput.dataset.enPlaceholder || 'e.g. Jerusalem, New York...');
+                citySearchInput.dir = lang === 'he' ? 'rtl' : 'ltr';
+            }
+        }
+
+        function localizeAccountLabels(lang) {
+            if (signInBtn) signInBtn.textContent = lang === 'he' ? 'התחברות' : 'Sign In';
+            if (userProfileSignOutAction) userProfileSignOutAction.textContent = lang === 'he' ? 'התנתקות' : 'Sign Out';
+            if (userProfileMenuLabel?.textContent === 'Signed in') {
+                userProfileMenuLabel.textContent = lang === 'he' ? 'מחובר' : 'Signed in';
+            }
+        }
+
+        function localizeReaderButtonLabels(lang) {
+            const hebrew = lang === 'he';
+            const labelled = [
+                [readerSettingsBtn, 'הגדרות קריאה', 'Reader Settings'],
+                [readerPrevTopBarBtn, 'קטע קודם', 'Previous Section'],
+                [readerNextTopBarBtn, 'קטע הבא', 'Next Section'],
+                [readerCommentaryTopBarBtn, 'מפרשים', 'Commentary'],
+                [document.getElementById('citySearchBtn'), 'חפש לפי עיר', 'Search by city'],
+            ];
+            for (const [button, he, en] of labelled) {
+                if (button) setControlLabel(button, hebrew ? he : en);
+            }
+            if (readerSettingsBtn && readerSettingsBtnLabel) {
+                readerSettingsBtnLabel.textContent = hebrew ? 'הגדרות קריאה' : 'Reader Settings';
+            }
+        }
+
+        function refreshCalendarLanguage() {
+            const calendarModalEl = document.getElementById('calendarModal');
+            // toggleLanguage also runs during startup, before the calendar's
+            // `let` below is initialized: touch it only once it was built.
+            if (calendarModalEl?.dataset.calendarBuilt === '1') syncCalendarLanguage();
+            if (calendarModalEl?.open && holidaysCalendar) {
+                holidaysCalendar.refetchEvents();
+                if (calendarSelectedKey) renderCalendarAgenda();
+            }
+        }
+
+        // Re-render dynamic widgets so their generated labels follow the selected language.
+        function refreshLanguageWidgets(lang) {
+            if (appState.currentView?.type === 'text') {
+                updateReaderHeaderForVisibleChunk(infiniteReaderState.currentVisibleChunkIndex || 0);
+            }
+
+            refreshHebrewDateDisplay(lang);
+            syncHebrewDateMobilePosition();
+
+            renderPersonalShelf();
+            updateBookmarkButton();
+            applySidebarVisibility();
+            refreshCalendarLanguage();
+            if (appState.suggestionItems.length) {
+                renderSearchSuggestions();
+            }
+
+            // static/js/zmanim.js owns zmanimData and the full render; this used
+            // to duplicate ~80 lines of fetchZmanimAPI's own render logic here. refreshZmanimDisplay()
+            // itself no-ops when the module hasn't fetched anything yet, so
+            // no local zmanimData guard is needed -- just skip the call
+            // entirely if the module bridge isn't up yet (e.g. this runs
+            // once automatically before main.js's deferred module has had a
+            // chance to bootstrap).
+            if (window.ShelahModules?.refreshZmanimDisplay) {
+                window.ShelahModules.refreshZmanimDisplay(buildZmanimDeps());
+            }
+        }
+
+        function refreshSiddurForLanguage() {
+            renderSiddurMenus();
+            const siddurPage = appState.currentView?.type === 'siddur' ? window.ShelahSiddur?.rerender() : null;
+            if (siddurPage) {
+                appState.currentView.label = siddurPage.label;
+                document.getElementById('readerTitle').innerText = siddurPage.label;
+                syncDocumentTitle();
+            }
+        }
+
+        function refreshSelectionInsightsForLanguage() {
+            if (!selectionCommentaryState.groupedCommentaries.length) return;
+            if (selectionCommentaryState.wordInfo?.word) {
+                void refreshSelectionWordMeaning();
+            } else if (selectionCommentaryState.activeCommentaryRef) {
+                void openCommentaryInline(selectionCommentaryState.activeCommentaryRef);
+            } else {
+                renderSelectionInsightsChooser();
+            }
+        }
+
+        // Update reader content if showing prayer or community
+        function refreshReaderContentForLanguage(lang) {
+            if (!reader || reader.classList.contains('hidden')) return;
+            if (window.currentPrayerContent) {
+                const currentPrayerName = appState.currentView?.type === 'prayer'
+                    ? appState.currentView.value
+                    : (window.currentPrayerName || '');
+                document.getElementById('readerContent').innerHTML = renderPrayerContent(window.currentPrayerContent, currentPrayerName);
+                renderPrayerDisplayByLayout(lang);
+            } else if (window.currentCommunityData) {
+                document.getElementById('readerContent').innerHTML = renderCommunityContent(window.currentCommunityData);
+            }
+        }
+
         function toggleLanguage(lang, options = {}) {
             // Normalizing, persisting, and swapping [data-en]/[data-he] text
             // lives in static/js/topbar_shared.js, shared with
@@ -10593,113 +10870,12 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 releaseRouteDisplayPref('lang');
             }
 
-            // Handle lang + RTL for Hebrew. The search icon and the input's
-            // room for it follow dir in style.css, so a Hebrew load has them
-            // on the left from the head script's first paint.
-            const html = document.documentElement;
-            if (lang === 'he') {
-                html.setAttribute('lang', 'he');
-                html.setAttribute('dir', 'rtl');
-                html.classList.add('rtl');
-            } else {
-                html.setAttribute('lang', 'en');
-                html.setAttribute('dir', 'ltr');
-                html.classList.remove('rtl');
-            }
-
-            // Update language button styles
-            document.querySelectorAll('.lang-btn').forEach(btn => {
-                btn.classList.remove('lang-btn-active');
-                if (btn.dataset.lang === lang) {
-                    btn.classList.add('lang-btn-active');
-                }
-            });
-
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.placeholder = lang === 'he' ? searchInput.dataset.hePlaceholder : searchInput.dataset.enPlaceholder;
-            }
-
-            if (libraryIndexFilterInput) {
-                libraryIndexFilterInput.placeholder = lang === 'he'
-                    ? (libraryIndexFilterInput.dataset.hePlaceholder || 'סנן נושאים או טקסטים...')
-                    : (libraryIndexFilterInput.dataset.enPlaceholder || 'Filter topics or texts...');
-            }
-            const citySearchInput = document.getElementById('citySearchInput');
-            if (citySearchInput) {
-                citySearchInput.placeholder = lang === 'he'
-                    ? (citySearchInput.dataset.hePlaceholder || 'לדוגמה: ירושלים, ניו יורק')
-                    : (citySearchInput.dataset.enPlaceholder || 'e.g. Jerusalem, New York...');
-                citySearchInput.dir = lang === 'he' ? 'rtl' : 'ltr';
-            }
-
-            if (signInBtn) signInBtn.textContent = lang === 'he' ? 'התחברות' : 'Sign In';
-            if (userProfileSignOutAction) userProfileSignOutAction.textContent = lang === 'he' ? 'התנתקות' : 'Sign Out';
-            if (userProfileMenuLabel?.textContent === 'Signed in') {
-                userProfileMenuLabel.textContent = lang === 'he' ? 'מחובר' : 'Signed in';
-            }
-            if (readerSettingsBtn) {
-                const settingsLabel = lang === 'he' ? 'הגדרות קריאה' : 'Reader Settings';
-                readerSettingsBtn.setAttribute('aria-label', settingsLabel);
-                readerSettingsBtn.title = settingsLabel;
-                if (readerSettingsBtnLabel) {
-                    readerSettingsBtnLabel.textContent = settingsLabel;
-                }
-            }
-            if (readerPrevTopBarBtn) {
-                const prevLabel = lang === 'he' ? 'קטע קודם' : 'Previous Section';
-                readerPrevTopBarBtn.setAttribute('aria-label', prevLabel);
-                readerPrevTopBarBtn.title = prevLabel;
-            }
-            if (readerNextTopBarBtn) {
-                const nextLabel = lang === 'he' ? 'קטע הבא' : 'Next Section';
-                readerNextTopBarBtn.setAttribute('aria-label', nextLabel);
-                readerNextTopBarBtn.title = nextLabel;
-            }
-            if (readerCommentaryTopBarBtn) {
-                const commentaryLabel = lang === 'he' ? 'מפרשים' : 'Commentary';
-                readerCommentaryTopBarBtn.setAttribute('aria-label', commentaryLabel);
-                readerCommentaryTopBarBtn.title = commentaryLabel;
-            }
-            const citySearchBtn = document.getElementById('citySearchBtn');
-            if (citySearchBtn) {
-                const citySearchLabel = lang === 'he' ? 'חפש לפי עיר' : 'Search by city';
-                citySearchBtn.setAttribute('aria-label', citySearchLabel);
-                citySearchBtn.title = citySearchLabel;
-            }
-            if (appState.currentView?.type === 'text') {
-                updateReaderHeaderForVisibleChunk(infiniteReaderState.currentVisibleChunkIndex || 0);
-            }
-
-            refreshHebrewDateDisplay(lang);
-            syncHebrewDateMobilePosition();
-
-            // Re-render dynamic widgets so their generated labels follow the selected language.
-            renderPersonalShelf();
-            updateBookmarkButton();
-            applySidebarVisibility();
-            const calendarModalEl = document.getElementById('calendarModal');
-            // toggleLanguage also runs during startup, before the calendar's
-            // `let` below is initialized: touch it only once it was built.
-            if (calendarModalEl?.dataset.calendarBuilt === '1') syncCalendarLanguage();
-            if (calendarModalEl?.open && holidaysCalendar) {
-                holidaysCalendar.refetchEvents();
-                if (calendarSelectedKey) renderCalendarAgenda();
-            }
-            if (appState.suggestionItems.length) {
-                renderSearchSuggestions();
-            }
-
-            // static/js/zmanim.js owns zmanimData and the full render; this used
-            // to duplicate ~80 lines of fetchZmanimAPI's own render logic here. refreshZmanimDisplay()
-            // itself no-ops when the module hasn't fetched anything yet, so
-            // no local zmanimData guard is needed -- just skip the call
-            // entirely if the module bridge isn't up yet (e.g. this runs
-            // once automatically before main.js's deferred module has had a
-            // chance to bootstrap).
-            if (window.ShelahModules?.refreshZmanimDisplay) {
-                window.ShelahModules.refreshZmanimDisplay(buildZmanimDeps());
-            }
+            setHtmlLanguage(lang);
+            markActiveLanguageButton(lang);
+            localizePlaceholders(lang);
+            localizeAccountLabels(lang);
+            localizeReaderButtonLabels(lang);
+            refreshLanguageWidgets(lang);
 
             // Keep pane visibility/layout controlled by reader preferences.
             applyReaderPreferences();
@@ -10711,42 +10887,15 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 
             applyStaticHebrewFallbackTranslations(lang);
 
-            renderSiddurMenus();
-            const siddurPage = appState.currentView?.type === 'siddur' ? window.ShelahSiddur?.rerender() : null;
-            if (siddurPage) {
-                appState.currentView.label = siddurPage.label;
-                document.getElementById('readerTitle').innerText = siddurPage.label;
-                syncDocumentTitle();
-            }
+            refreshSiddurForLanguage();
             if (Array.isArray(textsCache.communitiesList)) {
                 populateCommunitiesListHTML(textsCache.communitiesList);
             }
             renderLibraryIndexViews({ modal: textsMenuIsOpen() });
             void populatePopularTexts();
 
-            if (selectionCommentaryState.groupedCommentaries.length) {
-                if (selectionCommentaryState.wordInfo?.word) {
-                    void refreshSelectionWordMeaning();
-                } else if (selectionCommentaryState.activeCommentaryRef) {
-                    void openCommentaryInline(selectionCommentaryState.activeCommentaryRef);
-                } else {
-                    renderSelectionInsightsChooser();
-                }
-            }
-
-            // Update reader content if showing prayer or community
-            if (reader && !reader.classList.contains('hidden')) {
-                if (window.currentPrayerContent) {
-                    const currentPrayerName = appState.currentView?.type === 'prayer'
-                        ? appState.currentView.value
-                        : (window.currentPrayerName || '');
-                    document.getElementById('readerContent').innerHTML = renderPrayerContent(window.currentPrayerContent, currentPrayerName);
-                    renderPrayerDisplayByLayout(lang);
-                } else if (window.currentCommunityData) {
-                    document.getElementById('readerContent').innerHTML = renderCommunityContent(window.currentCommunityData);
-                }
-            }
-
+            refreshSelectionInsightsForLanguage();
+            refreshReaderContentForLanguage(lang);
         }
 
         // Load saved language preference on page load
@@ -11959,6 +12108,42 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
         }
 
+        // What a delete-account reply that is anything short of full success
+        // means for the reader: the server's own message, else which part of
+        // the account is left over.
+        function privacyDeleteFailureMessage(response, body) {
+            const failedTables = body?.table_errors ? Object.keys(body.table_errors) : [];
+            let detail = '';
+            if (failedTables.length) {
+                detail = isHebrewMode()
+                    ? ` (קטגוריות שנכשלו: ${failedTables.join(', ')})`
+                    : ` (failed categories: ${failedTables.join(', ')})`;
+            } else if (body?.clerk_error) {
+                detail = isHebrewMode() ? ' (מחיקת ההתחברות נכשלה)' : ' (sign-in deletion failed)';
+            }
+            return body?.error || `Delete incomplete (${response.status})${detail}`;
+        }
+
+        async function requestAccountDeletion() {
+            const headers = await authHeaders({ 'Content-Type': 'application/json' });
+            const response = await fetch('/api/user/delete-account', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ confirmation: 'DELETE' }),
+            });
+            const body = await response.json().catch(() => ({}));
+
+            // The backend only reports full success (ok: true) once every
+            // Supabase table AND the Clerk identity are confirmed deleted
+            // -- a 200 with ok:false, or any 207, means something is left
+            // over (see backend/routes_privacy.py::delete_account). Do
+            // NOT sign the user out or redirect on anything less than
+            // that, and never close the modal before showing why.
+            if (!response.ok || body?.ok !== true) {
+                throw new Error(privacyDeleteFailureMessage(response, body));
+            }
+        }
+
         async function handlePrivacyDeleteAccount() {
             const confirmInput = document.getElementById('privacyDeleteConfirmInput');
             const statusEl = document.getElementById('privacyDeleteStatus');
@@ -11972,32 +12157,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             _setPrivacyStatus(statusEl, 'pending', isHebrewMode() ? 'מוחק את החשבון...' : 'Deleting your account...');
 
             try {
-                const headers = await authHeaders({ 'Content-Type': 'application/json' });
-                const response = await fetch('/api/user/delete-account', {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify({ confirmation: 'DELETE' }),
-                });
-                const body = await response.json().catch(() => ({}));
-
-                // The backend only reports full success (ok: true) once every
-                // Supabase table AND the Clerk identity are confirmed deleted
-                // -- a 200 with ok:false, or any 207, means something is left
-                // over (see backend/routes_privacy.py::delete_account). Do
-                // NOT sign the user out or redirect on anything less than
-                // that, and never close the modal before showing why.
-                if (!response.ok || body?.ok !== true) {
-                    const failedTables = body?.table_errors ? Object.keys(body.table_errors) : [];
-                    let detail = '';
-                    if (failedTables.length) {
-                        detail = isHebrewMode()
-                            ? ` (קטגוריות שנכשלו: ${failedTables.join(', ')})`
-                            : ` (failed categories: ${failedTables.join(', ')})`;
-                    } else if (body?.clerk_error) {
-                        detail = isHebrewMode() ? ' (מחיקת ההתחברות נכשלה)' : ' (sign-in deletion failed)';
-                    }
-                    throw new Error(body?.error || `Delete incomplete (${response.status})${detail}`);
-                }
+                await requestAccountDeletion();
 
                 // Deletion is fully confirmed at this point -- close the
                 // modal now. handleSignOut() is wrapped separately: if it
@@ -12135,24 +12295,24 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             }
         }
 
-        function hydrateRouteViews(route, { isInitial, restoreScroll, left = null }) {
-            // Display keys first, so a text/prayer opened below renders with
-            // them instead of re-rendering afterwards.
-            if (applyRouteDisplayPrefs(route)) {
-                syncPrefsInputsFromState();
-                applyReaderPreferences();
-            }
-            const onScreen = !isInitial && routeViewOnScreen(route);
-            if (onScreen) {
-                restoreShownView();
-                // Back/Forward within one continuous text (the section named
-                // still loaded): to where that entry was left. Opening or
-                // closing an overlay (an answer, a conversation, a calendar
-                // day) leaves the page under it as it is.
-                const overlayMoved = ['chat', 'a', 'conversation', 'date', 'auth'].some((key) => (route[key] || null) !== (left?.[key] || null));
-                if (route.text && left?.text && !overlayMoved) restoreViewScroll(restoreScroll, 'text');
-                if (route.siddur && !overlayMoved) window.ShelahSiddur?.scrollTo(route.siddur);
-            } else if (route.text) {
+        // Back/Forward onto the page already on screen: put it back as it was
+        // rather than blanking and refetching it.
+        function restoreOnScreenRouteView(route, restoreScroll, left) {
+            restoreShownView();
+            // Back/Forward within one continuous text (the section named
+            // still loaded): to where that entry was left. Opening or
+            // closing an overlay (an answer, a conversation, a calendar
+            // day) leaves the page under it as it is.
+            const overlayMoved = ['chat', 'a', 'conversation', 'date', 'auth'].some((key) => (route[key] || null) !== (left?.[key] || null));
+            if (route.text && left?.text && !overlayMoved) restoreViewScroll(restoreScroll, 'text');
+            if (route.siddur && !overlayMoved) window.ShelahSiddur?.scrollTo(route.siddur);
+        }
+
+        // Opens the one page the route names (the first of text, prayer, siddur,
+        // community, chat, answer, history); a route naming none goes home,
+        // except on first load when home is already what is on screen.
+        function openRouteView(route, isInitial, restoreScroll) {
+            if (route.text) {
                 // A link names the exact section to show: /text/Genesis.1 is
                 // chapter 1, not a request to pick a chapter from the grid a
                 // library click on "Genesis" opens.
@@ -12171,6 +12331,20 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 displayAskHistoryPage({ fromRoute: true, query: route.q || '' });
             } else if (!isInitial) {
                 void goHome({ fromRoute: true }).then(() => restoreViewScroll(restoreScroll, 'home'));
+            }
+        }
+
+        function hydrateRouteViews(route, { isInitial, restoreScroll, left = null }) {
+            // Display keys first, so a text/prayer opened below renders with
+            // them instead of re-rendering afterwards.
+            if (applyRouteDisplayPrefs(route)) {
+                syncPrefsInputsFromState();
+                applyReaderPreferences();
+            }
+            if (!isInitial && routeViewOnScreen(route)) {
+                restoreOnScreenRouteView(route, restoreScroll, left);
+            } else {
+                openRouteView(route, isInitial, restoreScroll);
             }
 
             if (route.date) {
