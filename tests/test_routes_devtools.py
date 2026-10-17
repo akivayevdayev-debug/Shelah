@@ -30,7 +30,8 @@ AUTH_HEADERS = {"Authorization": "Bearer faketoken.faketoken.faketoken"}
 
 @pytest.fixture
 def authed(monkeypatch):
-    """Make require_clerk_auth accept any Bearer token."""
+    """Make require_clerk_auth accept any Bearer token, as the operator."""
+    monkeypatch.setenv("ADMIN_USER_IDS", FAKE_USER_ID)
     monkeypatch.setattr(
         auth_module, "_verify_clerk_token",
         lambda token: {"sub": FAKE_USER_ID, "sid": "sess_fake"},
@@ -396,10 +397,6 @@ class TestFeedbackDigest:
     reader-supplied free text."""
 
     URL = "/api/devtools/feedback-digest"
-
-    @pytest.fixture(autouse=True)
-    def _operator_is_admin(self, monkeypatch):
-        monkeypatch.setenv("ADMIN_USER_IDS", FAKE_USER_ID)
 
     @pytest.fixture
     def devtools_module(self):

@@ -1101,7 +1101,7 @@ async def _ask_async_impl(
     # there is no in-route check left here (this route used
     # to carry its own independent limiter; that duplication is removed).
     client_ip = _get_client_ip(request)
-    user_id = extract_user_id_from_bearer_value(authorization)
+    user_id = await asyncio.to_thread(extract_user_id_from_bearer_value, authorization)
 
     question, question_was_sanitized = _resolve_ask_async_question(payload)
     _enforce_ask_async_auth_required(user_id)

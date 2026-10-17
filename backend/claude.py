@@ -1010,8 +1010,22 @@ def _sanitize_prompt_payload(prompt_text: str, max_chars: int = MAX_PROMPT_CHARS
     return cleaned
 
 
+# Embedded images load a URL the moment an answer renders (CSP allows
+# ``img-src https:``), so injected text could beacon conversation content to a
+# third party. Answers are prose; keep only the alt text (audit F3).
+_MARKDOWN_IMAGE_RE = re.compile(r"!\[([^\]\n]{0,200})\]\([^)\n]{0,2000}\)")
+_MARKDOWN_IMAGE_REF_RE = re.compile(r"!\[([^\]\n]{0,200})\]\[[^\]\n]{0,200}\]")
+_HTML_IMG_RE = re.compile(r"<img\b[^>]{0,2000}>", re.IGNORECASE)
+
+
+def _strip_embedded_images(text: str) -> str:
+    text = _MARKDOWN_IMAGE_RE.sub(r"\1", text)
+    text = _MARKDOWN_IMAGE_REF_RE.sub(r"\1", text)
+    return _HTML_IMG_RE.sub("", text)
+
+
 def _sanitize_model_output(text: str, max_chars: int = 0) -> str:
-    cleaned = HIDDEN_UNICODE_RE.sub("", str(text or "")).strip()
+    cleaned = _strip_embedded_images(HIDDEN_UNICODE_RE.sub("", str(text or ""))).strip()
     if max_chars > 0 and len(cleaned) > max_chars:
         cleaned = cleaned[:max_chars].rstrip()
     return cleaned

@@ -555,7 +555,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         )
         user_id = None
         if route_class in ("llm", "account"):
-            user_id = extract_user_id_from_bearer_value(request.headers.get("authorization"))
+            # Off the event loop: a cold or unknown-kid JWKS lookup is a
+            # blocking HTTP fetch (audit F5).
+            user_id = await asyncio.to_thread(
+                extract_user_id_from_bearer_value, request.headers.get("authorization"))
 
         allowed, retry_after = await _check(route_class, client_ip, user_id, path)
         if not allowed:

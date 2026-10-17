@@ -12,6 +12,7 @@ import hmac
 import json
 import os
 import time
+from functools import wraps
 from typing import Any
 
 from flask import Blueprint, jsonify, request, g
@@ -46,8 +47,32 @@ from app import (
 routes_devtools = Blueprint("devtools", __name__)
 
 
+def _is_admin_user(user_id):
+    """True only for a Clerk user id listed in ADMIN_USER_IDS (comma-separated).
+    Fails closed: an unset or empty list means nobody is an admin."""
+    allowed = {u.strip() for u in os.environ.get("ADMIN_USER_IDS", "").split(",") if u.strip()}
+    return bool(user_id) and user_id in allowed
+
+
+def require_admin(route_fn):
+    """Operator-only: place directly under ``@require_clerk_auth``. Any signed-in
+    account passes that decorator, so diagnostics that expose configuration or
+    other users' data also need the caller's ``sub`` in ADMIN_USER_IDS (audit
+    F1/F7)."""
+
+    @wraps(route_fn)
+    def wrapped(*args, **kwargs):
+        claims = getattr(g, "clerk_claims", None) or {}
+        if not _is_admin_user(claims.get("sub")):
+            return jsonify({"error": "Forbidden"}), 403
+        return route_fn(*args, **kwargs)
+
+    return wrapped
+
+
 @routes_devtools.route("/api/stack/health")
 @require_clerk_auth
+@require_admin
 def stack_health():
     """Return runtime readiness for Bento stack components.
 
@@ -119,15 +144,9 @@ def _feedback_digest_limit(raw):
     return min(requested, _FEEDBACK_DIGEST_MAX_LIMIT)
 
 
-def _is_admin_user(user_id):
-    """True only for a Clerk user id listed in ADMIN_USER_IDS (comma-separated).
-    Fails closed: an unset or empty list means nobody is an admin."""
-    allowed = {u.strip() for u in os.environ.get("ADMIN_USER_IDS", "").split(",") if u.strip()}
-    return bool(user_id) and user_id in allowed
-
-
 @routes_devtools.route("/api/devtools/feedback-digest", methods=["GET"])
 @require_clerk_auth
+@require_admin
 def feedback_digest():
     """Recent answer-feedback rows, newest first.
 
@@ -135,11 +154,6 @@ def feedback_digest():
     supplied by readers (sanitized, but not meant for public display), so
     this has no legitimate anonymous caller.
     """
-    # Any signed-in account passes require_clerk_auth, and this returns every
-    # reader's free-text comments: restrict it to the operator (audit F1).
-    claims = getattr(g, "clerk_claims", None) or {}
-    if not _is_admin_user(claims.get("sub")):
-        return jsonify({"error": "Forbidden"}), 403
     limit = _feedback_digest_limit(request.args.get("limit"))
     supabase = _get_supabase_client()
     if not supabase:
@@ -213,6 +227,7 @@ def devtools_heartbeat():
 
 @routes_devtools.route("/api/devtools/reliability")
 @require_clerk_auth
+@require_admin
 def devtools_reliability():
     """Auth-gated (security audit P2): not called by any frontend feature
     (the public devtools-inspector panel uses /api/devtools/heartbeat
@@ -288,6 +303,7 @@ def _observe_rls_row_counts(user_id):
 
 @routes_devtools.route("/api/devtools/rls-audit")
 @require_clerk_auth
+@require_admin
 def devtools_rls_audit():
     """Surface security posture for user-scoped Supabase table access.
 
@@ -392,6 +408,7 @@ def report_segment_issue():
 # ─── Backward-compat route alias ──────────────────────────────────────────────
 @routes_devtools.route("/api/health")
 @require_clerk_auth
+@require_admin
 def api_health_alias():
     """/api/health → /api/stack/health (backward compat). Auth-gated to
     match stack_health() (security audit P2) — stated directly here too,

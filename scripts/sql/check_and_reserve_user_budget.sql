@@ -121,3 +121,7 @@ $$;
 -- anon/authenticated -- matches ai_usage_log's own
 -- no-RLS-because-service-role-only posture.
 REVOKE ALL ON FUNCTION public.check_and_reserve_user_budget(TEXT, TEXT, NUMERIC, NUMERIC) FROM PUBLIC;
+
+-- Supabase default privileges grant EXECUTE to anon/authenticated directly, which
+-- REVOKE ... FROM PUBLIC does not remove (security audit F6, applied 2026-10-16).
+REVOKE EXECUTE ON FUNCTION public.check_and_reserve_user_budget(TEXT, TEXT, NUMERIC, NUMERIC) FROM anon, authenticated;

