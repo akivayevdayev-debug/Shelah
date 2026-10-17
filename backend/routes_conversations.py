@@ -955,6 +955,26 @@ def _insert_user_turn(supabase, conversation_id, question):
     return rows[0] if rows else None
 
 
+def _conversation_lens(conversation):
+    """The community lens a conversation asks through ("All" for none)."""
+    minhag = str(conversation.get("minhag") or "").strip()
+    if not minhag or minhag.lower() == "all":
+        return "All"
+    return _canonicalize_community_name(minhag) or minhag
+
+
+def _touch_conversation(supabase, conversation, conversation_id, user_id, question):
+    """Mark the conversation as just used, naming it from the question when it
+    has no title yet. Returns the fields that were written."""
+    updates = {"updated_at": _now_iso()}
+    if not conversation.get("title") and not conversation.get("title_is_custom"):
+        updates["title"] = _derive_title(question)
+    supabase.table(SUPABASE_CONVERSATIONS_TABLE).update(
+        updates
+    ).eq("id", str(conversation_id)).eq("user_id", user_id).execute()
+    return updates
+
+
 def _run_conversation_ask(supabase, conversation_id, user_id, question, retry_of, mode, answer_language):
     """ask_in_conversation()'s body once the request itself is validated:
     ownership, retry-target resolution, cost gates, then (fresh asks only)
@@ -965,9 +985,7 @@ def _run_conversation_ask(supabase, conversation_id, user_id, question, retry_of
         if not conversation:
             return jsonify({"error": _ERR_NOT_FOUND}), 404
 
-        minhag = str(conversation.get("minhag") or "").strip()
-        canonical_lens = "All" if not minhag or minhag.lower() == "all" else (
-            _canonicalize_community_name(minhag) or minhag)
+        canonical_lens = _conversation_lens(conversation)
 
         user_message = None
         history_before = None
@@ -991,12 +1009,7 @@ def _run_conversation_ask(supabase, conversation_id, user_id, question, retry_of
                 return jsonify({"error": "Failed to save message"}), 500
         user_message["citations"] = []
 
-        conversation_updates = {"updated_at": _now_iso()}
-        if not conversation.get("title") and not conversation.get("title_is_custom"):
-            conversation_updates["title"] = _derive_title(question)
-        supabase.table(SUPABASE_CONVERSATIONS_TABLE).update(
-            conversation_updates
-        ).eq("id", str(conversation_id)).eq("user_id", user_id).execute()
+        conversation_updates = _touch_conversation(supabase, conversation, conversation_id, user_id, question)
     except Exception as e:
         _capture_backend_error("conversation_ask_setup_failed", e, {
             "user_id_hash": hash_user_id(user_id), "conversation_id": conversation_id,

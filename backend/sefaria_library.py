@@ -871,6 +871,28 @@ def _add_direct_name_ref(name_data, add):
         add(name_data.get("ref"))
 
 
+def _candidate_adder(candidates):
+    """An ``add(value)`` that appends each non-blank value to ``candidates``
+    once, compared case-insensitively."""
+    seen = set()
+
+    def add(value):
+        candidate = str(value or "").strip()
+        key = candidate.lower()
+        if candidate and key not in seen:
+            seen.add(key)
+            candidates.append(candidate)
+
+    return add
+
+
+def _add_with_dotted_variant(add, ref):
+    """``ref`` and, when it has a ``:``, the same ref with ``.`` instead."""
+    add(ref)
+    if ":" in ref:
+        add(ref.replace(":", "."))
+
+
 def _resolve_ref_candidates(raw_ref, max_candidates=12):
     """Build candidate refs for texts that require canonical title or leaf-node resolution."""
     raw = _normalize_requested_ref(raw_ref)
@@ -878,29 +900,15 @@ def _resolve_ref_candidates(raw_ref, max_candidates=12):
         return []
 
     candidates = []
-    seen = set()
-
-    def add(value):
-        candidate = str(value or "").strip()
-        if not candidate:
-            return
-        key = candidate.lower()
-        if key in seen:
-            return
-        seen.add(key)
-        candidates.append(candidate)
+    add = _candidate_adder(candidates)
 
     # "Hilchot Shabbat 2" is not a title Sefaria knows ("Mishneh Torah,
     # Sabbath 2" is): try the title first, so a transliterated Rambam ref is
     # found without the failed lookups of its own spelling coming first.
     alias = canonical_mishneh_torah_ref(raw)
     if alias:
-        add(alias)
-        if ":" in alias:
-            add(alias.replace(":", "."))
-    add(raw)
-    if ":" in raw:
-        add(raw.replace(":", "."))
+        _add_with_dotted_variant(add, alias)
+    _add_with_dotted_variant(add, raw)
 
     _add_corpus_stripped_ref_variants(raw, add)
 

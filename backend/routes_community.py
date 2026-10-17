@@ -89,6 +89,33 @@ def get_communities_list():
     return jsonify([{"name": c} for c in communities])
 
 
+def _customs_content(data, trusted_sources):
+    """The halacha_index entries as ``{category_topic: entry}`` for display."""
+    customs_content = {}
+    for item in data.get("halacha_index", []) if isinstance(data, dict) else []:
+        if not isinstance(item, dict):
+            continue
+        topic = item.get("topic", "")
+        category = item.get("category", "")
+        key = f"{category}_{topic}".lower().strip("_")
+        # The key is lowercased for stable lookup; the entry keeps the data's
+        # own capitalisation ("HaShatz", "Tisha B'Av") for display.
+        customs_content[key] = {
+            "category": category,
+            "topic": topic,
+            "topic_he": _hebrew(item, "topic"),
+            "ruling": item.get("summary", ""),
+            "ruling_he": _hebrew(item, "summary"),
+            "common_practices": item.get("common_practices", []),
+            "variants": item.get("variants", []),
+            "confidence": item.get("confidence", ""),
+            "source": item.get("source", "") or ", ".join(trusted_sources[:4]),
+            "source_url": item.get("source_url", ""),
+            "references": item.get("references", []),
+        }
+    return customs_content
+
+
 @routes_community.route("/api/community/<name>")
 def get_community(name):
     """Returns community customs data."""
@@ -109,29 +136,7 @@ def get_community(name):
         identity = data.get("identity", {})
         trusted_sources = _build_trusted_custom_sources(data)
 
-        # Extract customs from halacha_index
-        customs_content = {}
-        for item in data.get("halacha_index", []) if isinstance(data, dict) else []:
-            if not isinstance(item, dict):
-                continue
-            topic = item.get("topic", "")
-            category = item.get("category", "")
-            key = f"{category}_{topic}".lower().strip("_")
-            # The key is lowercased for stable lookup; the entry keeps the data's
-            # own capitalisation ("HaShatz", "Tisha B'Av") for display.
-            customs_content[key] = {
-                "category": category,
-                "topic": topic,
-                "topic_he": _hebrew(item, "topic"),
-                "ruling": item.get("summary", ""),
-                "ruling_he": _hebrew(item, "summary"),
-                "common_practices": item.get("common_practices", []),
-                "variants": item.get("variants", []),
-                "confidence": item.get("confidence", ""),
-                "source": item.get("source", "") or ", ".join(trusted_sources[:4]),
-                "source_url": item.get("source_url", ""),
-                "references": item.get("references", []),
-            }
+        customs_content = _customs_content(data, trusted_sources)
 
         fallback_customs = data if isinstance(data, dict) else {}
 
@@ -152,29 +157,33 @@ def get_community(name):
         return jsonify({"error": "Could not load community data."}), 500
 
 
+def _timeline_entry(item):
+    """One historical_background.timeline object as a timeline entry, or None
+    when it names neither an event nor an impact."""
+    event = str(item.get("event") or "").strip()
+    impact = str(item.get("halachic_impact") or "").strip()
+    first, _, rest = event.partition(". ")
+    title = (first if rest else event.rstrip(".")).strip()
+    description = " ".join(part for part in (rest.strip(), impact) if part)
+    if not title and not description:
+        return None
+    return {
+        "title": title[:120],
+        "description": description[:400],
+        "approx_period": str(item.get("period") or "").strip()[:80],
+    }
+
+
 def _background_timeline_entries(data):
     """Timeline entries from historical_background.timeline ({period, event,
     halachic_impact} objects): the first sentence of the event is the title,
     the rest of it and the halachic impact the description."""
     background = data.get("historical_background") if isinstance(data, dict) else None
     timeline = background.get("timeline") if isinstance(background, dict) else None
-    entries = []
-    for item in timeline if isinstance(timeline, list) else []:
-        if not isinstance(item, dict):
-            continue
-        event = str(item.get("event") or "").strip()
-        impact = str(item.get("halachic_impact") or "").strip()
-        first, _, rest = event.partition(". ")
-        title = (first if rest else event.rstrip(".")).strip()
-        description = " ".join(part for part in (rest.strip(), impact) if part)
-        if not title and not description:
-            continue
-        entries.append({
-            "title": title[:120],
-            "description": description[:400],
-            "approx_period": str(item.get("period") or "").strip()[:80],
-        })
-    return entries
+    if not isinstance(timeline, list):
+        return []
+    entries = (_timeline_entry(item) for item in timeline if isinstance(item, dict))
+    return [entry for entry in entries if entry is not None]
 
 
 def _timeline_entries_from_value(key, value):
