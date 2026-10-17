@@ -423,6 +423,12 @@ function _clearMotionStyles(...els) {
     });
 }
 
+// Opacity an entrance starts from: 0 for a fresh one, else where a cancelled
+// exit had got to.
+function _entranceStartOpacity(el, fresh) {
+    return fresh ? 0 : Number.parseFloat(getComputedStyle(el).opacity) || 0;
+}
+
 /**
  * Show `el` with an entrance. `card` (optional) is a child that carries the
  * movement while `el` itself only fades -- the shape of a modal, where `el` is
@@ -439,7 +445,7 @@ export async function present(el, { preset = 'popover', card = null, replay = fa
     // Already showing (or still entering): nothing to replay.
     if (!wasHidden && !leaving && !replay) return;
     // Cancelling an exit half-way: fade back in from where it had got to.
-    const startOpacity = wasHidden || (replay && !leaving) ? 0 : Number.parseFloat(getComputedStyle(el).opacity) || 0;
+    const startOpacity = _entranceStartOpacity(el, wasHidden || (replay && !leaving));
     const state = _presenceState(el);
     const token = ++state.token;
     state.origin = origin; // dismiss() folds back into it; never carry a stale trigger over

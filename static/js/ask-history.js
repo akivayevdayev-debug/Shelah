@@ -46,34 +46,42 @@ export function sameQuestion(a, b) {
     return Boolean(left) && left === normalizeQuestion(b);
 }
 
+// One bucket with this question's legacy 'ask' entries pointing at `id`, and
+// a second entry for the same id dropped. `changed` says whether anything moved.
+function promoteBucket(items, question, id, label) {
+    const key = `ask:${id}`;
+    let changed = false;
+    let seen = false;
+    const promoted = [];
+    for (const item of items) {
+        const legacy = item?.type === "ask" && !isHistoryId(item.value) && sameQuestion(item.value, question);
+        const entry = legacy ? { ...item, value: id, label: String(item.label || "").trim() || label } : item;
+        if (legacy) changed = true;
+        if (entry?.type === "ask" && `ask:${entry.value}` === key) {
+            if (seen) {
+                changed = true;
+                continue;
+            }
+            seen = true;
+        }
+        promoted.push(entry);
+    }
+    return { items: promoted, changed };
+}
+
 // The shelf with this question's 'ask' entries pointing at its stored answer
 // (`id`), or null when there was nothing to rewrite. Entries already keyed
 // by an id are left alone; a duplicate the rewrite creates is dropped.
 export function promoteAskEntries(shelf, question, id) {
     if (!shelf || !isHistoryId(id) || !normalizeQuestion(question)) return null;
     const label = String(question).trim();
-    const key = `ask:${id}`;
     let changed = false;
     const next = { ...shelf };
     for (const bucket of SHELF_BUCKETS) {
         if (!Array.isArray(shelf[bucket])) continue;
-        let seen = false;
-        next[bucket] = [];
-        for (const item of shelf[bucket]) {
-            let entry = item;
-            if (item?.type === "ask" && !isHistoryId(item.value) && sameQuestion(item.value, question)) {
-                entry = { ...item, value: id, label: String(item.label || "").trim() || label };
-                changed = true;
-            }
-            if (entry?.type === "ask" && `ask:${entry.value}` === key) {
-                if (seen) {
-                    changed = true;
-                    continue;
-                }
-                seen = true;
-            }
-            next[bucket].push(entry);
-        }
+        const promoted = promoteBucket(shelf[bucket], question, id, label);
+        next[bucket] = promoted.items;
+        changed ||= promoted.changed;
     }
     return changed ? next : null;
 }
@@ -95,21 +103,26 @@ export async function resolveShelfAsk(entry, { signedIn, fetchEntry, searchHisto
     const question = byId ? String(entry?.label || "").trim() : (value || String(entry?.label || "").trim());
     if (signedIn) {
         try {
-            if (byId) {
-                const item = await fetchEntry(value);
-                if (item?.answer) return { item };
-                return { reask: question, staleId: value };
-            } else if (question) {
-                const page = await searchHistory(question);
-                const match = (Array.isArray(page?.items) ? page.items : [])
-                    .find((row) => isHistoryId(row?.id) && row?.answer && sameQuestion(row.question, question));
-                if (match) return { item: match, migrateTo: match.id };
-            }
+            const found = await findStoredAsk({ value, byId, question, fetchEntry, searchHistory });
+            if (found) return found;
         } catch {
             // Fall through to re-asking.
         }
     }
     return { reask: question };
+}
+
+// The stored answer for a shelf entry, or null when there is none to find.
+async function findStoredAsk({ value, byId, question, fetchEntry, searchHistory }) {
+    if (byId) {
+        const item = await fetchEntry(value);
+        return item?.answer ? { item } : { reask: question, staleId: value };
+    }
+    if (!question) return null;
+    const page = await searchHistory(question);
+    const match = (Array.isArray(page?.items) ? page.items : [])
+        .find((row) => isHistoryId(row?.id) && row?.answer && sameQuestion(row.question, question));
+    return match ? { item: match, migrateTo: match.id } : null;
 }
 
 // ── /history page ──────────────────────────────────────────────────────

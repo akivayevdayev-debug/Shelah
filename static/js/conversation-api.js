@@ -120,6 +120,26 @@ async function fetchOnce(path, { method, body, accept }) {
     }
 }
 
+// Before a repeat attempt: tell the UI (its hook never aborts the request),
+// then back off a little longer each time.
+async function waitBeforeRetry(attempt, onRetry) {
+    if (typeof onRetry === "function") {
+        try { onRetry(attempt); } catch { /* UI hooks never abort the request */ }
+    }
+    await wait(BACKOFF_MS * attempt);
+}
+
+// fetchOnce(), with a retryable network failure returned as { error } and
+// anything else thrown.
+async function tryFetch(path, request) {
+    try {
+        return { response: await fetchOnce(path, request) };
+    } catch (error) {
+        if (!isRetryableNetworkError(error)) throw error;
+        return { error };
+    }
+}
+
 // Fetch with bounded retry on transient failures (`retry: false` disables
 // it), plus the one-time 401 token-refresh repeat. Returns the final
 // Response; throws ConversationApiError(NETWORK) when no response arrived.
@@ -128,19 +148,11 @@ async function fetchWithPolicy(path, { method = "GET", body, retry = true, onRet
     let refreshedAuth = false;
     let lastError = null;
     for (let attempt = 1; attempt <= attempts; attempt++) {
-        if (attempt > 1) {
-            if (typeof onRetry === "function") {
-                try { onRetry(attempt); } catch { /* UI hooks never abort the request */ }
-            }
-            await wait(BACKOFF_MS * attempt);
-        }
-        let response;
-        try {
-            response = await fetchOnce(path, { method, body, accept });
-        } catch (error) {
+        if (attempt > 1) await waitBeforeRetry(attempt, onRetry);
+        const { response, error } = await tryFetch(path, { method, body, accept });
+        if (error) {
             lastError = error;
-            if (isRetryableNetworkError(error)) continue;
-            throw error;
+            continue;
         }
         if (response.status === 401 && !refreshedAuth) {
             // window.authHeaders() re-asks Clerk for a token each call; one
@@ -316,6 +328,77 @@ function answeredResult(state) {
     };
 }
 
+// The end of a progress stream: { done, value } for its result, else the
+// failure it ended with. A stream cut off or timed out after the server
+// started on the turn is the same "no usable response" case as a network failure.
+async function readAskStream(response, onProgress) {
+    try {
+        const terminal = await readProgressStream(response, onProgress, { timeoutMs: REQUEST_TIMEOUT_MS });
+        if (terminal.type === "result") return { done: true, value: terminal.body };
+        return { failure: streamTerminalToApiError(terminal) };
+    } catch (streamError) {
+        return {
+            failure: new ConversationApiError(streamError?.message || "Network request failed", {
+                code: ERROR_CODES.NETWORK,
+            }),
+        };
+    }
+}
+
+// One POST of the question: { done, value } when it produced the route's
+// body (a plain 201 or a stream's result), else { failure }, the error to
+// reconcile or surface.
+async function sendAsk(path, body, onProgress) {
+    let response;
+    try {
+        response = await fetchWithPolicy(path, { method: "POST", body, retry: false, accept: ACCEPT_PROGRESS });
+    } catch (error) {
+        if (!(error instanceof ConversationApiError)) throw error;
+        return { failure: error };
+    }
+    if (!response.ok) {
+        // The body is read once, here: its `code` decides transient vs not.
+        return { failure: await toApiError(response) };
+    }
+    if (isProgressResponse(response)) return readAskStream(response, onProgress);
+    return { done: true, value: await readJson(response) };
+}
+
+// Rethrows `failure` when the reconcile itself cannot tell what landed.
+async function reconcileOrFail(failure, reconcile) {
+    try {
+        return await reconcile();
+    } catch {
+        throw failure;
+    }
+}
+
+// After a failed attempt: the answer when the turn landed anyway, null when
+// the next attempt can re-send cleanly, else a throw of the error to surface.
+async function settleAskFailure(id, body, failure, knownMessageIds) {
+    const isRetry = "retry_of" in body;
+    const reconcileTurn = () => reconcileRetry(id, body.retry_of, knownMessageIds);
+    if (isRetry && failure.code === ERROR_CODES.INVALID_RETRY) {
+        // Another attempt (or tab) already answered this turn: re-read it.
+        const state = await reconcileOrFail(failure, reconcileTurn);
+        if (state.outcome === "answered") return answeredResult(state);
+        throw failure;
+    }
+    if (!isTransientAskFailure(failure)) throw failure;
+
+    // Transient failure: the server may or may not have saved the turn. If
+    // that can't be told, re-sending could duplicate it, so surface the failure.
+    const state = await reconcileOrFail(failure, isRetry ? reconcileTurn : () => reconcileAsk(id, body.question, knownMessageIds));
+    if (state.outcome === "answered") return answeredResult(state);
+    if (state.outcome === "incomplete") {
+        throw new ConversationApiError("The question was saved but the answer did not finish.", {
+            code: ERROR_CODES.ANSWER_INCOMPLETE,
+            userMessage: state.user_message,
+        });
+    }
+    return null;
+}
+
 // POST .../ask with reconcile-before-resend (see module header). Resolves
 // with the route's 201 body: { user_message, assistant_message, conversation }
 // (+ superseded_message_id for a retry). assistant_message.status === "error"
@@ -340,67 +423,11 @@ export async function askInConversation(id, { question, mode, language, retryOf 
     if (retryOf) body.retry_of = String(retryOf);
     const path = conversationPath(id, "/ask");
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        if (attempt > 1) {
-            if (typeof onRetry === "function") {
-                try { onRetry(attempt); } catch { /* UI hooks never abort the request */ }
-            }
-            await wait(BACKOFF_MS * attempt);
-        }
-        let response = null;
-        let error = null;
-        try {
-            response = await fetchWithPolicy(path, { method: "POST", body, retry: false, accept: ACCEPT_PROGRESS });
-        } catch (err) {
-            if (!(err instanceof ConversationApiError)) throw err;
-            error = err;
-        }
-        if (response?.ok && isProgressResponse(response)) {
-            try {
-                const terminal = await readProgressStream(response, onProgress, { timeoutMs: REQUEST_TIMEOUT_MS });
-                if (terminal.type === "result") return terminal.body;
-                error = streamTerminalToApiError(terminal);
-            } catch (streamError) {
-                // Cut off or timed out after the server started on the turn:
-                // the same "no usable response" case as a network failure.
-                error = new ConversationApiError(streamError?.message || "Network request failed", {
-                    code: ERROR_CODES.NETWORK,
-                });
-            }
-            response = null;
-        }
-        if (response?.ok) return readJson(response);
-        // The body is read once, here: its `code` decides transient vs not.
-        const failure = error || await toApiError(response);
-        if (retryOf && failure.code === ERROR_CODES.INVALID_RETRY) {
-            let state;
-            try {
-                state = await reconcileRetry(id, body.retry_of, knownMessageIds);
-            } catch {
-                throw failure;
-            }
-            if (state.outcome === "answered") return answeredResult(state);
-            throw failure;
-        }
-        if (!isTransientAskFailure(failure)) throw failure;
-
-        // Transient failure: the server may or may not have saved the turn.
-        let state;
-        try {
-            state = retryOf
-                ? await reconcileRetry(id, body.retry_of, knownMessageIds)
-                : await reconcileAsk(id, body.question, knownMessageIds);
-        } catch {
-            // Can't tell whether the question landed -- re-sending could
-            // duplicate it, so surface the failure instead of guessing.
-            throw failure;
-        }
-        if (state.outcome === "answered") return answeredResult(state);
-        if (state.outcome === "incomplete") {
-            throw new ConversationApiError("The question was saved but the answer did not finish.", {
-                code: ERROR_CODES.ANSWER_INCOMPLETE,
-                userMessage: state.user_message,
-            });
-        }
+        if (attempt > 1) await waitBeforeRetry(attempt, onRetry);
+        const sent = await sendAsk(path, body, onProgress);
+        if (sent.done) return sent.value;
+        const answered = await settleAskFailure(id, body, sent.failure, knownMessageIds);
+        if (answered) return answered;
         // not_saved: nothing landed, so the next attempt is a clean re-send.
     }
     throw new ConversationApiError("Network request failed", { code: ERROR_CODES.NETWORK });

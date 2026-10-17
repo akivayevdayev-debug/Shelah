@@ -82,27 +82,17 @@ function searchKey(text) {
 export function findPage(toc, query) {
     const key = searchKey(query);
     if (!key) return null;
-    let partial = null;
-    for (const occasion of toc?.occasions || []) {
-        for (const service of occasion.services) {
-            const names = [service.title.en, service.title.he].map(searchKey);
-            if (names.includes(key)) return routeValue(toc.rite.slug, service.slug);
-            if (!partial && key.length >= 5 && names.some((name) => name.startsWith(key))) {
-                partial = routeValue(toc.rite.slug, service.slug);
-            }
-        }
+    const services = (toc?.occasions || []).flatMap((occasion) => occasion.services);
+    const namesOf = (item) => [item.title.en, item.title.he].map(searchKey);
+    const exact = services.find((service) => namesOf(service).includes(key));
+    if (exact) return routeValue(toc.rite.slug, exact.slug);
+    for (const service of services) {
+        if (service.sections.length < 2) continue;
+        const section = service.sections.find((candidate) => namesOf(candidate).includes(key));
+        if (section) return routeValue(toc.rite.slug, service.slug, section.slug);
     }
-    for (const occasion of toc?.occasions || []) {
-        for (const service of occasion.services) {
-            if (service.sections.length < 2) continue;
-            for (const section of service.sections) {
-                if ([section.title.en, section.title.he].map(searchKey).includes(key)) {
-                    return routeValue(toc.rite.slug, service.slug, section.slug);
-                }
-            }
-        }
-    }
-    return partial;
+    const partial = key.length >= 5 ? services.find((service) => namesOf(service).some((name) => name.startsWith(key))) : null;
+    return partial ? routeValue(toc.rite.slug, partial.slug) : null;
 }
 
 // The label a view gets (tab title, Recent, bookmarks).
@@ -174,17 +164,20 @@ export function landingMarkup(toc, { t, escapeHtml, isHebrew = false }) {
 
 const LAYOUTS_WITH_ENGLISH = new Set(["bilingual", "bilingual-reverse", "interleaved", "english"]);
 
-function lineMarkup(line, sectionSlug, { layout, applyHebrew, today, t, escapeHtml }) {
+// The Hebrew and English spans a line shows in `layout`.
+function lineBody(line, layout, applyHebrew) {
     const he = line.he ? safeLineHtml(applyHebrew(line.he)) : "";
     const en = line.en ? safeLineHtml(line.en) : "";
-    let body;
-    if (layout === "english") {
-        body = en ? `<span class="siddur-en" lang="en" dir="ltr">${en}</span>` : `<span class="siddur-he" lang="he" dir="rtl">${he}</span>`;
-    } else {
-        body = he ? `<span class="siddur-he" lang="he" dir="rtl">${he}</span>` : "";
-        if (en && LAYOUTS_WITH_ENGLISH.has(layout)) body += `<span class="siddur-en" lang="en" dir="ltr">${en}</span>`;
-        if (!body) body = `<span class="siddur-en" lang="en" dir="ltr">${en}</span>`;
-    }
+    const heSpan = `<span class="siddur-he" lang="he" dir="rtl">${he}</span>`;
+    const enSpan = `<span class="siddur-en" lang="en" dir="ltr">${en}</span>`;
+    if (layout === "english") return en ? enSpan : heSpan;
+    let body = he ? heSpan : "";
+    if (en && LAYOUTS_WITH_ENGLISH.has(layout)) body += enSpan;
+    return body || enSpan;
+}
+
+function lineMarkup(line, sectionSlug, { layout, applyHebrew, today, t, escapeHtml }) {
+    const body = lineBody(line, layout, applyHebrew);
     const when = Array.isArray(line.when) ? line.when : [];
     const isToday = when.some((tag) => today.has(tag));
     const whenAttr = when.length ? ` data-when="${when.join(" ")}"` : "";

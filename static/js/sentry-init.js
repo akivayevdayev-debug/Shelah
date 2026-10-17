@@ -76,6 +76,25 @@
         return out;
     }
 
+    // The `data` of a breadcrumb: sensitive keys filtered on HTTP and /ask
+    // breadcrumbs, query strings stripped from its URLs, headers scrubbed.
+    function scrubBreadcrumbData(data, category) {
+        var url = typeof data.url === 'string' ? data.url : '';
+        var isHttpBreadcrumb = category === 'xhr' || category === 'fetch';
+        if (isHttpBreadcrumb || isAskUrl(url)) {
+            // Sentry's browser SDK doesn't attach request/response bodies
+            // to xhr/fetch breadcrumbs by default, and dataCollection.
+            // httpBodies=[] blocks it at the source — this survives a
+            // future SDK/config change that starts doing so anyway.
+            Object.keys(data).forEach(function (key) {
+                if (isSensitiveKey(key)) data[key] = '[Filtered]';
+            });
+        }
+        if (typeof data.url === 'string') data.url = stripQuery(data.url);
+        if (typeof data.to === 'string') data.to = stripQuery(data.to);
+        if (data.headers) data.headers = scrubHeaders(data.headers);
+    }
+
     function scrubBreadcrumb(breadcrumb) {
         if (!breadcrumb || typeof breadcrumb !== 'object') return breadcrumb;
         var category = breadcrumb.category || '';
@@ -92,22 +111,7 @@
             return breadcrumb;
         }
 
-        if (data && typeof data === 'object') {
-            var url = typeof data.url === 'string' ? data.url : '';
-            var isHttpBreadcrumb = category === 'xhr' || category === 'fetch';
-            if (isHttpBreadcrumb || isAskUrl(url)) {
-                // Sentry's browser SDK doesn't attach request/response bodies
-                // to xhr/fetch breadcrumbs by default, and dataCollection.
-                // httpBodies=[] blocks it at the source — this survives a
-                // future SDK/config change that starts doing so anyway.
-                Object.keys(data).forEach(function (key) {
-                    if (isSensitiveKey(key)) data[key] = '[Filtered]';
-                });
-            }
-            if (typeof data.url === 'string') data.url = stripQuery(data.url);
-            if (typeof data.to === 'string') data.to = stripQuery(data.to);
-            if (data.headers) data.headers = scrubHeaders(data.headers);
-        }
+        if (data && typeof data === 'object') scrubBreadcrumbData(data, category);
 
         if (typeof breadcrumb.message === 'string') {
             breadcrumb.message = isAskUrl(breadcrumb.message) ? '[Filtered]' : stripQuery(breadcrumb.message);

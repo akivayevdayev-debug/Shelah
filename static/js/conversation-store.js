@@ -509,22 +509,24 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
         if (myGeneration !== generation) return null;
         const conversation = normalizeHeader(created);
         const patch = { conversation, minhagLocked: true, answerView: null, guestUsage: null };
-        if (seedId) {
-            // The thread is seeded from the answer being followed up -- the
-            // latest one on screen. A signed-out conversation of several
-            // answers keeps its earlier turns above it, as plain history.
-            const seeded = (created?.messages || []).map(normalizeMessage);
-            const shownAt = state.messages.map((m) => Boolean(m.answer)).lastIndexOf(true);
-            const payload = shownAt >= 0 ? state.messages[shownAt].answer : null;
-            const lastSeeded = [...seeded].reverse().find((m) => m.role === "assistant");
-            if (lastSeeded && payload) lastSeeded.answer = payload;
-            const localIds = (shownAt > 0 ? state.messages.slice(shownAt - 1, shownAt + 1) : state.messages.slice(0, 2))
-                .map((m) => m.id);
-            patch.messages = seeded.length ? replaceLocal(localIds, seeded) : state.messages;
-        }
+        if (seedId) patch.messages = seededMessages(created);
         setState(patch);
         upsertListItem(conversation);
         return conversation;
+    }
+
+    // The thread is seeded from the answer being followed up -- the latest
+    // one on screen. A signed-out conversation of several answers keeps its
+    // earlier turns above it, as plain history.
+    function seededMessages(created) {
+        const seeded = (created?.messages || []).map(normalizeMessage);
+        const shownAt = state.messages.map((m) => Boolean(m.answer)).lastIndexOf(true);
+        const payload = shownAt >= 0 ? state.messages[shownAt].answer : null;
+        const lastSeeded = [...seeded].reverse().find((m) => m.role === "assistant");
+        if (lastSeeded && payload) lastSeeded.answer = payload;
+        const localIds = (shownAt > 0 ? state.messages.slice(shownAt - 1, shownAt + 1) : state.messages.slice(0, 2))
+            .map((m) => m.id);
+        return seeded.length ? replaceLocal(localIds, seeded) : state.messages;
     }
 
     function seedHistoryId() {

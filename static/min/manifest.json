@@ -24,14 +24,14 @@
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "b39539861edae78561f13abfe9d101e229878b19acd47c2b5a755ea2c604bebd",
+        "sourcesHash": "bd9086b76d4903fb6287fd840ec20750d2d01cae4f570d3a0b7d584510e15b35",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "b39539861edae78561f13abfe9d101e229878b19acd47c2b5a755ea2c604bebd",
+        "sourcesHash": "bd9086b76d4903fb6287fd840ec20750d2d01cae4f570d3a0b7d584510e15b35",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "b39539861edae78561f13abfe9d101e229878b19acd47c2b5a755ea2c604bebd",
+        "sourcesHash": "bd9086b76d4903fb6287fd840ec20750d2d01cae4f570d3a0b7d584510e15b35",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
@@ -69,7 +69,7 @@
         "source": "sha256:c33a070853e017a1c3cf01b9972f3dec8eb5e666cec8a9b5c024ee69aa29f3e0"
       },
       "sentry-init.js": {
-        "source": "sha256:0c813149eb47c9b28ad3a9e4d05d05d7e894ba25df98a64aa50c7ab5c65c1ef6"
+        "source": "sha256:eb2bad4c77b42cee50161aed9d4b0832ab6fb83a3ee2d65a353298f9751d60f7"
       },
       "shell.js": {
         "source": "sha256:82638a541db3d8dc988039d3cc6e97449802c4450811a3ca920b1dfc08e5c4de"
@@ -85,33 +85,33 @@
         "calendar-detail.js": "js/calendar-detail.js"
       },
       "sources": {
-        "ai-service.js": "sha256:46f2256d6d2b4b6d9ed945802a698be29e0d6fb91e9f79e340dd18a399908f1c",
+        "ai-service.js": "sha256:a7454b2d4de3866147fefd848b80e8f3113e9692bf681f26f0c6f28ad811f7ca",
         "answer-link.js": "sha256:16580c38da75feedb19e3770626816a8e2eb08a7253cbe7a08ffa5cf58caa706",
         "answer-share.js": "sha256:a7c174bd7f175002b1e33a3f5cad94ce7eb74a850a52be0837ce5e4b545fc537",
-        "ask-history.js": "sha256:f73c7996e1948b0ec0397fddefa020ab121f14606d2cc1f77a6a7819cd5061e7",
+        "ask-history.js": "sha256:fe28ba5343b9134744d6203d93a3725361d214b40a21927b62b2d1b428ffc352",
         "ask-progress.js": "sha256:c34ffdcc1ba97c79c2b09b9c7ddba6b774da9a564e7becea4609a4b562b90f1d",
         "calendar-detail.js": "sha256:c387bbef34e9aadd7ef5bae9c92600cb986a3652ac923967da6c45023921831d",
         "citation-markers.js": "sha256:c94b4384898a504d502d116595714104a5a9e0f8074892a70571cd2b881f6da5",
         "citation-popover.js": "sha256:2452698153bb4f782f2787f88ec31a17633c5004c2a7627d8038de30491586e5",
         "commentary-preload.js": "sha256:4c616d94e2898761172ecedf51b9c2019f6fbeeb10fca6d033af4976248683f7",
-        "conversation-api.js": "sha256:6043a6e4116938372672a3b3916268a6fdad950ec95112744e9f88b8be855092",
+        "conversation-api.js": "sha256:5952fd3e37a3004dbfdb4e5a15e81158fb32da3bd4985cf03b93f899d7844eed",
         "conversation-entry.js": "sha256:25f9b62da24bcf0965429fa8162bc3b9dfa348b17ce0fdfa0d898ef945d24677",
         "conversation-share.js": "sha256:558e3e593caba8f29042c936d285ff8eb1564712f1d44255b92d651f3b0faa08",
-        "conversation-store.js": "sha256:1e3dbe47e40fe13be9caf0745fae0d0dc40784241514bb2cf98b4fbebdd9308c",
+        "conversation-store.js": "sha256:9a33c4fc84a467e6d98f9c8c5c1f6407f80693cd73ab85390f8ed8fdd299aa8f",
         "conversation-ui-helpers.js": "sha256:7e59db517e0a405355bfbaaa3c78bcb2714ec80e11a4803c209448068722f676",
-        "conversation-ui.js": "sha256:0036fe9d2896f8ca104ab5978366e11e809cc1d1a3e09566982e6be4491c5751",
+        "conversation-ui.js": "sha256:860995c098578efbf0544da2f6a5990f670b9e7da1f53deb926e80006a824835",
         "conversation-voice.js": "sha256:080daab3f5738ff4e47ffeca6a792c37868594bc03b902885b881b5ba6e89b05",
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
         "main.js": "sha256:f2f8344c40e23c295f9b9211f253a6e8aae7b45356af70a8bfc6445a7b48ef91",
-        "motion.js": "sha256:147329151528115691bebb369eadb40fd27598853abd18c00ad5b0243b22bfa1",
+        "motion.js": "sha256:e3c7c8864bee2f6161dc4d95ada3ce3bf532821e26463411b49402c45083f9ca",
         "reader-ui.js": "sha256:afb5716e6b2112361fe652cc9efd2c6a4503ad9e560b898f0b00f992a4dc4fa8",
         "router.js": "sha256:712579f51ff6faece9b77f831e548130d75f150002fc2639ad97bdb9d5453ced",
         "siddur-day.js": "sha256:c8c6dade0de211346d6fbed5afa0ae5e33cb1aa863d600b5a67ae86569f84a12",
-        "siddur-reader.js": "sha256:00159a29d963fee4418966fad4def08f8a2ef4036b248f899b80dd1cb5e341f9",
+        "siddur-reader.js": "sha256:ad0b53625bec6ed7f5dfa7f73e30b35d54ecdfc96fc2cf2f30b6e6e24eec440d",
         "siddur.js": "sha256:ccf437ee7a22e2cb174bc6743919d4d48ce9d3dcf9e9d5435b7499bc0f642ba9",
         "source-cards.js": "sha256:897ca074f01cf10f20ff2bd828267e832b2525ffbd8fc9b953c557f50efeb10a",
         "state.js": "sha256:b86bf404aa0c9be5be88039297c6c1138a90e322035c3daf19c7a583cc18405c",
-        "zmanim.js": "sha256:9ce1c086c129eced6b65e2d1850b0c69465e543420bb5ed551a0b8b898fdd196"
+        "zmanim.js": "sha256:1179f537a443f7903e9b85c3853d873ba0fe50d27f3e42699300e796c74f84f4"
       },
       "outputs": {
         "js/actions.js": "74c685cdac5b",
@@ -122,9 +122,9 @@
         "js/community-labels.js": "8a6529f6c365",
         "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/load-region.js": "2833ed602bea",
-        "js/main.js": "8966adf589d1",
-        "js/motion.js": "381788dc6aa5",
-        "js/sentry-init.js": "1332441afec8",
+        "js/main.js": "7221a49fda68",
+        "js/motion.js": "9714dc88530d",
+        "js/sentry-init.js": "5f32eede1174",
         "js/shell.js": "c2b35f20eae9",
         "js/topbar_shared.js": "51f0e772633b"
       },

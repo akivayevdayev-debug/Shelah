@@ -369,6 +369,77 @@ function nextCountdownDelay() {
     return document.hidden ? COUNTDOWN_HIDDEN_TICK_MS : COUNTDOWN_TICK_MS;
 }
 
+// When a zman happens today: its ISO timestamp, else (older payloads
+// without one) the clock time in its text, else null.
+function zmanTime(text, iso) {
+    if (iso) {
+        const parsed = new Date(iso);
+        if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    const match = /(\d{1,2}):(\d{2})\s+(AM|PM)/.exec(text);
+    if (!match) return null;
+    let h = Number.parseInt(match[1]);
+    const m = Number.parseInt(match[2]);
+    if (match[3] === 'PM' && h !== 12) h += 12;
+    if (match[3] === 'AM' && h === 12) h = 0;
+    const t = new Date();
+    t.setHours(h, m, 0, 0);
+    return t;
+}
+
+function clearZmanHighlight() {
+    document.querySelectorAll('[data-zman-row]').forEach((row) => {
+        row.classList.remove('zman-next-highlight');
+    });
+}
+
+// The Baal HaTanya rows that are hidden when they match the GRA's, and the GRA
+// row to highlight instead.
+const COMBINED_ZMAN_ROWS = new Map([
+    ['Latest Shema (Baal HaTanya)', ['shemaBhtRow', 'shemaGraRow']],
+    ['Latest Shacharit (Baal HaTanya)', ['shacharitBhtRow', 'shacharitGraRow']],
+]);
+
+function highlightRowIdFor(zmanName) {
+    const combined = COMBINED_ZMAN_ROWS.get(zmanName);
+    if (combined && document.getElementById(combined[0])?.classList.contains('hidden')) return combined[1];
+    return ZMAN_ROW_BY_KEY[zmanName];
+}
+
+function renderCountdownBadge(badge, nextZman, row, now, deps) {
+    const rowLabel = row?.querySelector('span')?.textContent?.trim();
+    const label = rowLabel || nextZman.name;
+    const remaining = Math.max(0, nextZman.t.getTime() - now.getTime());
+    const countdownLabel = formatCountdownDuration(remaining, deps);
+    const html = `<span class="text-[1.03rem] leading-snug font-semibold text-[#31597d]">${deps.escapeHtml(label)} <span class="font-medium text-[#4f7596]">${deps.t('in', 'בעוד')} ${deps.escapeHtml(countdownLabel)}</span></span>`;
+    if (html !== countdownBadgeHtml || !badge.innerHTML || badge.classList.contains('hidden')) {
+        badge.innerHTML = html;
+        badge.classList.remove('hidden');
+        countdownBadgeHtml = html;
+    }
+}
+
+function showNextZman(nextZman, badge, now, deps) {
+    const highlightRowId = highlightRowIdFor(nextZman.name);
+    const row = highlightRowId ? document.getElementById(highlightRowId) : null;
+    if (row !== countdownRow) {
+        clearZmanHighlight();
+        if (row) row.classList.add('zman-next-highlight');
+        countdownRow = row;
+    }
+    if (badge) renderCountdownBadge(badge, nextZman, row, now, deps);
+}
+
+function showNoNextZman(badge) {
+    clearZmanHighlight();
+    countdownRow = null;
+    if (badge && countdownBadgeHtml !== '') {
+        badge.classList.add('hidden');
+        badge.textContent = '';
+        countdownBadgeHtml = '';
+    }
+}
+
 export function startCountdown(deps) {
     if (countdownInterval) clearTimeout(countdownInterval);
     const times = [];
@@ -380,79 +451,15 @@ export function startCountdown(deps) {
 
     Object.entries(zmanimData.zmanim).forEach(([key, val]) => {
         if (!val || val === 'N/A') return;
-
-        let t = null;
-        const iso = isoMap[key];
-        if (iso) {
-            const parsed = new Date(iso);
-            if (!Number.isNaN(parsed.getTime())) {
-                t = parsed;
-            }
-        }
-
-        // Fallback for older payloads without ISO timestamps.
-        if (!t) {
-            const match = /(\d{1,2}):(\d{2})\s+(AM|PM)/.exec(val);
-            if (!match) return;
-            let h = Number.parseInt(match[1]);
-            let m = Number.parseInt(match[2]);
-            if (match[3] === 'PM' && h !== 12) h += 12;
-            if (match[3] === 'AM' && h === 12) h = 0;
-            t = new Date();
-            t.setHours(h, m, 0, 0);
-        }
-
-        if (t > now) {
-            times.push({ name: key, t });
-        }
+        const t = zmanTime(val, isoMap[key]);
+        if (t && t > now) times.push({ name: key, t });
     });
 
     times.sort((a, b) => a.t - b.t);
     const nextZman = times.length > 0 ? times[0] : null;
 
-    if (!nextZman) {
-        document.querySelectorAll('[data-zman-row]').forEach((row) => {
-            row.classList.remove('zman-next-highlight');
-        });
-        countdownRow = null;
-        if (nextZmanBadge && countdownBadgeHtml !== '') {
-            nextZmanBadge.classList.add('hidden');
-            nextZmanBadge.textContent = '';
-            countdownBadgeHtml = '';
-        }
-        countdownInterval = setTimeout(() => startCountdown(deps), nextCountdownDelay());
-        return;
-    }
-
-    let highlightRowId = ZMAN_ROW_BY_KEY[nextZman.name];
-    if (nextZman.name === 'Latest Shema (Baal HaTanya)' && document.getElementById('shemaBhtRow')?.classList.contains('hidden')) {
-        highlightRowId = 'shemaGraRow';
-    }
-    if (nextZman.name === 'Latest Shacharit (Baal HaTanya)' && document.getElementById('shacharitBhtRow')?.classList.contains('hidden')) {
-        highlightRowId = 'shacharitGraRow';
-    }
-
-    const row = highlightRowId ? document.getElementById(highlightRowId) : null;
-    if (row !== countdownRow) {
-        document.querySelectorAll('[data-zman-row]').forEach((other) => {
-            other.classList.remove('zman-next-highlight');
-        });
-        if (row) row.classList.add('zman-next-highlight');
-        countdownRow = row;
-    }
-
-    if (nextZmanBadge) {
-        const rowLabel = row?.querySelector('span')?.textContent?.trim();
-        const label = rowLabel || nextZman.name;
-        const remaining = Math.max(0, nextZman.t.getTime() - now.getTime());
-        const countdownLabel = formatCountdownDuration(remaining, deps);
-        const html = `<span class="text-[1.03rem] leading-snug font-semibold text-[#31597d]">${deps.escapeHtml(label)} <span class="font-medium text-[#4f7596]">${deps.t('in', 'בעוד')} ${deps.escapeHtml(countdownLabel)}</span></span>`;
-        if (html !== countdownBadgeHtml || !nextZmanBadge.innerHTML || nextZmanBadge.classList.contains('hidden')) {
-            nextZmanBadge.innerHTML = html;
-            nextZmanBadge.classList.remove('hidden');
-            countdownBadgeHtml = html;
-        }
-    }
+    if (nextZman) showNextZman(nextZman, nextZmanBadge, now, deps);
+    else showNoNextZman(nextZmanBadge);
 
     countdownInterval = setTimeout(() => startCountdown(deps), nextCountdownDelay());
 }

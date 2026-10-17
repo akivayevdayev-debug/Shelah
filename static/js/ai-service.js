@@ -109,21 +109,60 @@ async function fetchAskWithRetry(requestBody, headers, onRetry) {
     throw lastError || new Error("Request failed after retries");
 }
 
+function askSettings(options) {
+    const state = getState();
+    const historyIds = Array.isArray(options.historyIds)
+        ? options.historyIds.map((id) => String(id || "").trim()).filter(Boolean)
+        : [];
+    return {
+        mode: String(options.mode || state?.prefs?.mode || "balanced"),
+        community: String(options.community || state?.prefs?.community || "All"),
+        language: String(options.language || state?.prefs?.language || "en"),
+        onRetry: typeof options.onRetry === "function" ? options.onRetry : null,
+        onProgress: typeof options.onProgress === "function" ? options.onProgress : null,
+        historyIds,
+    };
+}
+
+// The answer body and the status it failed with (0 when it did not fail):
+// a progress stream's last line, or the plain JSON response.
+async function readAskResponse(response, onProgress) {
+    if (response.ok && isProgressResponse(response)) {
+        const terminal = await readProgressStream(response, onProgress, { timeoutMs: AI_REQUEST_TIMEOUT_MS });
+        if (terminal.type === "result") return { payload: terminal.payload, failedStatus: 0 };
+        // A failure after the stream started: same body shape the plain
+        // response would have had, just carried in the last line.
+        return { payload: { detail: terminal.detail }, failedStatus: Number(terminal.status) || 500 };
+    }
+    return {
+        payload: await response.json().catch(() => ({})),
+        failedStatus: response.ok ? 0 : response.status,
+    };
+}
+
+// FastAPI's default HTTPException handler nests structured errors (e.g.
+// turnstile_required) under detail as { error, code } rather than a top
+// -level "error" string -- unwrap that shape before falling back.
+function askError(payload, status) {
+    const detail = payload?.detail;
+    const structured = detail && typeof detail === "object";
+    const error = new Error(String(payload?.error || (structured ? detail.error : detail) || "Ask request failed"));
+    error.status = status;
+    if (structured && detail.code) {
+        error.code = detail.code;
+        if (detail.reason) error.reason = detail.reason;
+        if (detail.usage && typeof detail.usage === "object") error.usage = detail.usage;
+    }
+    return error;
+}
+
 export async function askAi(question, options = {}) {
     const q = String(question || "").trim();
     if (!q) {
         throw new Error("Question is required");
     }
 
-    const state = getState();
-    const mode = String(options.mode || state?.prefs?.mode || "balanced");
-    const community = String(options.community || state?.prefs?.community || "All");
-    const language = String(options.language || state?.prefs?.language || "en");
-    const onRetry = typeof options.onRetry === "function" ? options.onRetry : null;
-    const onProgress = typeof options.onProgress === "function" ? options.onProgress : null;
-    const historyIds = Array.isArray(options.historyIds)
-        ? options.historyIds.map((id) => String(id || "").trim()).filter(Boolean)
-        : [];
+    const { mode, community, language, onRetry, onProgress, historyIds } = askSettings(options);
 
     setState({
         ai: {
@@ -161,38 +200,8 @@ export async function askAi(question, options = {}) {
             response = await fetchAskWithRetry(requestBody, headers, onRetry);
         }
 
-        let payload;
-        let failedStatus = response.ok ? 0 : response.status;
-        if (response.ok && isProgressResponse(response)) {
-            const terminal = await readProgressStream(response, onProgress, { timeoutMs: AI_REQUEST_TIMEOUT_MS });
-            if (terminal.type === "result") {
-                payload = terminal.payload;
-            } else {
-                // A failure after the stream started: same body shape the
-                // plain response would have had, just carried in the last line.
-                failedStatus = Number(terminal.status) || 500;
-                payload = { detail: terminal.detail };
-            }
-        } else {
-            payload = await response.json().catch(() => ({}));
-        }
-        if (failedStatus) {
-            // FastAPI's default HTTPException handler nests structured errors (e.g.
-            // turnstile_required) under detail as { error, code } rather than a top
-            // -level "error" string -- unwrap that shape before falling back.
-            const detail = payload?.detail;
-            const message = String(
-                payload?.error || (detail && typeof detail === "object" ? detail.error : detail) || "Ask request failed"
-            );
-            const error = new Error(message);
-            error.status = failedStatus;
-            if (detail && typeof detail === "object" && detail.code) {
-                error.code = detail.code;
-                if (detail.reason) error.reason = detail.reason;
-                if (detail.usage && typeof detail.usage === "object") error.usage = detail.usage;
-            }
-            throw error;
-        }
+        const { payload, failedStatus } = await readAskResponse(response, onProgress);
+        if (failedStatus) throw askError(payload, failedStatus);
 
         setState({
             ai: {

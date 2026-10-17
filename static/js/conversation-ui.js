@@ -326,6 +326,124 @@ function scheduleRender() {
     });
 }
 
+// What the panel says about a public (/answer/<id>) link that did not open,
+// by `ui.publicState`.
+const PUBLIC_STATE_NOTICES = {
+    "saved-signin": () => ({ tone: "info", text: tr(
+        "Sign in to see this saved answer, or open the link on the device that saved it.",
+        "התחבר כדי לראות את התשובה השמורה, או פתח את הקישור במכשיר שבו נשמרה."), action: "sign-in" }),
+    "saved-gone": () => ({ tone: "info", text: tr(
+        "This saved answer isn't available. It may have been deleted, or saved under another account or device.",
+        "התשובה השמורה אינה זמינה. ייתכן שנמחקה, או שנשמרה בחשבון או במכשיר אחר.") }),
+    "saved-error": () => ({ tone: "warn", text: tr(
+        "Couldn't load this saved answer. Check your connection and reload the page to try again.",
+        "לא ניתן היה לטעון את התשובה השמורה. בדוק/י את החיבור וטען/י מחדש את הדף.") }),
+    gone: () => ({ tone: "info", text: tr(
+        "This shared answer isn't available. The link may have been turned off, or the answer was deleted. You can still ask your own question.",
+        "התשובה המשותפת אינה זמינה. ייתכן שהקישור בוטל או שהתשובה נמחקה. עדיין אפשר לשאול שאלה משלך.") }),
+    error: () => ({ tone: "warn", text: tr(
+        "Couldn't load this shared answer. Check your connection and reload the page to try again.",
+        "לא ניתן היה לטעון את התשובה המשותפת. בדוק/י את החיבור וטען/י מחדש את הדף.") }),
+};
+
+// Notice: load error > send error > awaiting sign-in > a public link that
+// did not open. A passing confirmation is not one of these: it is the toast,
+// drawn apart.
+function currentNotice(state, l) {
+    if (state.loadStatus === "error") {
+        const notice = noticeFor(state.loadError, l);
+        if (notice && !notice.action) notice.action = "retry-open";
+        return notice;
+    }
+    if (state.lastError) return noticeFor(state.lastError, l);
+    if (ui.awaitingOpenId && ui.authResolved && !ui.signedIn && clerkConfigured()) {
+        return { tone: "info", text: tr("Sign in to open this conversation.", "התחבר כדי לפתוח את השיחה הזו."), action: "sign-in" };
+    }
+    return Object.hasOwn(PUBLIC_STATE_NOTICES, ui.publicState) ? PUBLIC_STATE_NOTICES[ui.publicState]() : null;
+}
+
+// The panel's title: the conversation's, else the question of the answer on
+// screen, else what a public link is, else a fresh-conversation prompt.
+function panelTitle(state, answerView, hasMessages) {
+    const question = answerView ? (state.answerView.title || state.messages.find((m) => m.role === "user")?.content) : "";
+    let publicTitle = "";
+    if (ui.publicState) {
+        // An /answer/<id> link: loading until it is fetched -- with the
+        // account's token, or the device cookie when signed out -- then, if
+        // neither holds the answer, a prompt to sign in in its place (audit L-5).
+        const savedLink = String(ui.publicState).startsWith("saved");
+        publicTitle = savedLink ? tr("Saved answer", "תשובה שמורה") : tr("Shared answer", "תשובה משותפת");
+    }
+    return state.conversation?.title
+        || question
+        || publicTitle
+        || (hasMessages ? tr("New conversation", "שיחה חדשה") : tr("Ask Sh'elah", "שאל את ש׳אלה"));
+}
+
+function renderHeader(state, { l, name, title, options }) {
+    const conversation = state.conversation;
+    if (!els.title.querySelector("input")) els.title.textContent = title;
+    els.subtitle.textContent = ui.layout === "mobile" ? tr(`${name} practice`, `מנהג ${name}`) : "";
+    els.chipLabel.textContent = name;
+    els.menuBtn.dataset.locked = state.minhagLocked ? "true" : "false";
+    const settingsLabel = state.minhagLocked
+        ? tr(`Conversation settings. Community: ${name}, locked for this conversation`, `הגדרות שיחה. קהילה: ${name}, נעולה לשיחה זו`)
+        : tr(`Conversation settings. Community: ${name}`, `הגדרות שיחה. קהילה: ${name}`);
+    els.menuBtn.setAttribute("aria-label", settingsLabel);
+    els.menuBtn.title = settingsLabel;
+
+    els.lockLine.textContent = state.minhagLocked
+        ? lockLine(conversation?.minhag, l, options)
+        : "";
+}
+
+function renderMenu(state, { l, name, options }) {
+    const conversation = state.conversation;
+    els.menuLocked.textContent = state.minhagLocked
+        ? tr(`${name} — locked for this conversation. Start a new conversation to change it.`,
+            `${name} — נעולה לשיחה זו. התחל שיחה חדשה כדי לשנות.`)
+        : "";
+    els.menuDraft.classList.toggle("hidden", state.minhagLocked);
+    if (!state.minhagLocked) syncMinhagSelect(options, state.draftMinhag, l);
+    els.menu.querySelectorAll("[data-conv-mode]").forEach((btn) => {
+        btn.setAttribute("aria-checked", btn.dataset.convMode === currentMode() ? "true" : "false");
+    });
+    els.pinLabel.textContent = conversation?.pinnedAt ? tr("Unpin", "בטל הצמדה") : tr("Pin", "הצמד");
+    syncShare(conversation);
+}
+
+// Body: loading / empty / transcript. Returns the live progress, if any.
+function renderBody(state, l, hasMessages) {
+    const loading = state.loadStatus === "loading" || (ui.awaitingOpenId && !ui.authResolved) || ui.publicState === "loading"
+        || ui.publicState === "saved";
+    els.loading.classList.toggle("hidden", !loading);
+    els.empty.classList.toggle("hidden", loading || hasMessages || state.loadStatus === "error");
+    els.signedOutHint.classList.toggle("hidden", !clerkConfigured() || ui.signedIn || !ui.authResolved);
+    els.scroller.setAttribute("aria-busy", loading ? "true" : "false");
+    renderTurns(state, l);
+    return state.sending ? renderStatus(state, l) : null;
+}
+
+function composerPlaceholder(hasMessages, continues) {
+    if (!hasMessages) return tr("Ask a question…", "שאל שאלה…");
+    return continues ? tr("Ask a follow-up…", "שאל שאלת המשך…") : tr("Ask a new question…", "שאל שאלה חדשה…");
+}
+
+function renderComposer(state, l, { answerView, hasMessages }) {
+    // A signed-out visitor follows up on the answers on screen too, up to the
+    // guest limits (backend/guest_cap.py); a shared answer or one that was
+    // never saved starts a new question.
+    const continues = !answerView
+        || (ui.signedIn && Boolean(state.answerView?.historyId))
+        || (!ui.signedIn && store.canContinueAsGuest());
+    els.input.placeholder = composerPlaceholder(hasMessages, continues);
+    // As the guest allowance runs low it says so, above the box.
+    const guestNote = !ui.signedIn && !state.conversation ? guestBannerText(state.guestUsage, l) : null;
+    els.guestBanner?.classList.toggle("hidden", !guestNote);
+    if (guestNote && els.guestBannerText) els.guestBannerText.textContent = guestNote;
+    syncSendDisabled();
+}
+
 function render() {
     if (!els || !store) return;
     const state = store.getState();
@@ -342,106 +460,14 @@ function render() {
     els.panel.dataset.sending = state.sending ? "true" : "false";
     els.pip.dataset.sending = state.sending ? "true" : "false";
 
-    // An /answer/<id> link: loading until it is fetched -- with the account's
-    // token, or the device cookie when signed out -- then, if neither holds
-    // the answer, a prompt to sign in in its place (audit L-5).
-    const savedLink = String(ui.publicState || "").startsWith("saved");
-
-    // Header.
-    const question = answerView ? (state.answerView.title || state.messages.find((m) => m.role === "user")?.content) : "";
-    let publicTitle = "";
-    if (ui.publicState) publicTitle = savedLink ? tr("Saved answer", "תשובה שמורה") : tr("Shared answer", "תשובה משותפת");
-    const title = conversation?.title
-        || question
-        || publicTitle
-        || (hasMessages ? tr("New conversation", "שיחה חדשה") : tr("Ask Sh'elah", "שאל את ש׳אלה"));
-    if (!els.title.querySelector("input")) els.title.textContent = title;
-    els.subtitle.textContent = ui.layout === "mobile" ? tr(`${name} practice`, `מנהג ${name}`) : "";
-    els.chipLabel.textContent = name;
-    els.menuBtn.dataset.locked = state.minhagLocked ? "true" : "false";
-    const settingsLabel = state.minhagLocked
-        ? tr(`Conversation settings. Community: ${name}, locked for this conversation`, `הגדרות שיחה. קהילה: ${name}, נעולה לשיחה זו`)
-        : tr(`Conversation settings. Community: ${name}`, `הגדרות שיחה. קהילה: ${name}`);
-    els.menuBtn.setAttribute("aria-label", settingsLabel);
-    els.menuBtn.title = settingsLabel;
-
-    els.lockLine.textContent = state.minhagLocked
-        ? lockLine(conversation?.minhag, l, options)
-        : "";
-
-    // Menu.
-    els.menuLocked.textContent = state.minhagLocked
-        ? tr(`${name} — locked for this conversation. Start a new conversation to change it.`,
-            `${name} — נעולה לשיחה זו. התחל שיחה חדשה כדי לשנות.`)
-        : "";
-    els.menuDraft.classList.toggle("hidden", state.minhagLocked);
-    if (!state.minhagLocked) syncMinhagSelect(options, state.draftMinhag, l);
-    els.menu.querySelectorAll("[data-conv-mode]").forEach((btn) => {
-        btn.setAttribute("aria-checked", btn.dataset.convMode === currentMode() ? "true" : "false");
-    });
-    els.pinLabel.textContent = conversation?.pinnedAt ? tr("Unpin", "בטל הצמדה") : tr("Pin", "הצמד");
-    syncShare(conversation);
-
-    // Body: loading / empty / transcript.
-    const loading = state.loadStatus === "loading" || (ui.awaitingOpenId && !ui.authResolved) || ui.publicState === "loading"
-        || ui.publicState === "saved";
-    els.loading.classList.toggle("hidden", !loading);
-    els.empty.classList.toggle("hidden", loading || hasMessages || state.loadStatus === "error");
-    els.signedOutHint.classList.toggle("hidden", !clerkConfigured() || ui.signedIn || !ui.authResolved);
-    els.scroller.setAttribute("aria-busy", loading ? "true" : "false");
-    renderTurns(state, l);
-    const progress = state.sending ? renderStatus(state, l) : null;
-
-    // Notice: load error > send error > awaiting sign-in. A passing
-    // confirmation is not one of these: it is the toast, drawn apart below.
-    let notice = null;
-    if (state.loadStatus === "error") {
-        notice = noticeFor(state.loadError, l);
-        if (notice && !notice.action) notice.action = "retry-open";
-    } else if (state.lastError) notice = noticeFor(state.lastError, l);
-    else if (ui.awaitingOpenId && ui.authResolved && !ui.signedIn && clerkConfigured()) {
-        notice = { tone: "info", text: tr("Sign in to open this conversation.", "התחבר כדי לפתוח את השיחה הזו."), action: "sign-in" };
-    } else if (ui.publicState === "saved-signin") {
-        notice = { tone: "info", text: tr(
-            "Sign in to see this saved answer, or open the link on the device that saved it.",
-            "התחבר כדי לראות את התשובה השמורה, או פתח את הקישור במכשיר שבו נשמרה."), action: "sign-in" };
-    } else if (ui.publicState === "saved-gone") {
-        notice = { tone: "info", text: tr(
-            "This saved answer isn't available. It may have been deleted, or saved under another account or device.",
-            "התשובה השמורה אינה זמינה. ייתכן שנמחקה, או שנשמרה בחשבון או במכשיר אחר.") };
-    } else if (ui.publicState === "saved-error") {
-        notice = { tone: "warn", text: tr(
-            "Couldn't load this saved answer. Check your connection and reload the page to try again.",
-            "לא ניתן היה לטעון את התשובה השמורה. בדוק/י את החיבור וטען/י מחדש את הדף.") };
-    } else if (ui.publicState === "gone") {
-        notice = { tone: "info", text: tr(
-            "This shared answer isn't available. The link may have been turned off, or the answer was deleted. You can still ask your own question.",
-            "התשובה המשותפת אינה זמינה. ייתכן שהקישור בוטל או שהתשובה נמחקה. עדיין אפשר לשאול שאלה משלך.") };
-    } else if (ui.publicState === "error") {
-        notice = { tone: "warn", text: tr(
-            "Couldn't load this shared answer. Check your connection and reload the page to try again.",
-            "לא ניתן היה לטעון את התשובה המשותפת. בדוק/י את החיבור וטען/י מחדש את הדף.") };
-    }
-    renderNotice(notice);
+    const title = panelTitle(state, answerView, hasMessages);
+    renderHeader(state, { l, name, title, options });
+    renderMenu(state, { l, name, options });
+    const progress = renderBody(state, l, hasMessages);
+    renderNotice(currentNotice(state, l));
     renderToast();
     syncThemeBtn();
-
-
-    // Composer.
-    // A signed-out visitor follows up on the answers on screen too, up to the
-    // guest limits (backend/guest_cap.py); a shared answer or one that was
-    // never saved starts a new question.
-    const continues = !answerView
-        || (ui.signedIn && Boolean(state.answerView?.historyId))
-        || (!ui.signedIn && store.canContinueAsGuest());
-    let placeholder = tr("Ask a question…", "שאל שאלה…");
-    if (hasMessages) placeholder = continues ? tr("Ask a follow-up…", "שאל שאלת המשך…") : tr("Ask a new question…", "שאל שאלה חדשה…");
-    els.input.placeholder = placeholder;
-    // As the guest allowance runs low it says so, above the box.
-    const guestNote = !ui.signedIn && !conversation ? guestBannerText(state.guestUsage, l) : null;
-    els.guestBanner?.classList.toggle("hidden", !guestNote);
-    if (guestNote && els.guestBannerText) els.guestBannerText.textContent = guestNote;
-    syncSendDisabled();
+    renderComposer(state, l, { answerView, hasMessages });
 
     // Minimised bar.
     els.pipTitle.textContent = title;
@@ -810,6 +836,70 @@ function parkAnswerLink() {
     }
 }
 
+// A saved turn replacing its optimistic placeholder (local id -> server id)
+// takes over the placeholder's row, so it doesn't animate in twice.
+function takePlaceholderEntry(key, previous, nextKeys) {
+    const inPlace = previous ? previous.nextSibling : els.messages.firstChild;
+    const placeholderKey = inPlace?.dataset?.turnKey;
+    if (!placeholderKey || nextKeys.has(placeholderKey) || !ui.turns.has(placeholderKey)) return null;
+    const entry = ui.turns.get(placeholderKey);
+    ui.turns.delete(placeholderKey);
+    ui.turns.set(key, entry);
+    entry.li.dataset.turnKey = key;
+    return entry;
+}
+
+function createTurnEntry(key) {
+    const li = document.createElement("li");
+    li.dataset.turnKey = key;
+    const entry = { li, sig: null };
+    ui.turns.set(key, entry);
+    if (ui.animateInserts && !reducedMotion()) {
+        li.classList.add("conv-turn--enter");
+        li.addEventListener("animationend", () => li.classList.remove("conv-turn--enter"), { once: true });
+    }
+    return entry;
+}
+
+// An answer arriving in place of its skeleton reveals block by block
+// (conversation.css .conv-turn--reveal); a timer, not animationend, since
+// the staggered children each fire one.
+function revealArrivedAnswer(entry, message) {
+    if (entry.status !== MESSAGE_STATUS.PENDING || message.status !== MESSAGE_STATUS.COMPLETE
+        || message.role !== "assistant" || reducedMotion()) return;
+    entry.li.classList.add("conv-turn--reveal");
+    clearTimeout(entry.revealTimer);
+    entry.revealTimer = setTimeout(() => entry.li.classList.remove("conv-turn--reveal"), 900);
+}
+
+function redrawTurn(entry, message, index, messages, l) {
+    const li = entry.li;
+    li.className = `conv-turn conv-turn--${message.role}${message.status === MESSAGE_STATUS.FAILED ? " conv-turn--failed" : ""}${li.classList.contains("conv-turn--enter") ? " conv-turn--enter" : ""}`;
+    li.setAttribute("aria-busy", message.status === MESSAGE_STATUS.PENDING ? "true" : "false");
+    if (els.answerLink && li.contains(els.answerLink)) parkAnswerLink();
+    li.innerHTML = turnInnerHtml(message, index, messages, l);
+    if (message.answer && message.status === MESSAGE_STATUS.COMPLETE) {
+        decorateAnswerTurn(li, message, messages[index - 1]?.content);
+    }
+    if (message.citations?.length) hydrateCitations(li);
+    if (citePop?.anchor() && !citePop.anchor().isConnected) citePop.close();
+    revealArrivedAnswer(entry, message);
+    entry.status = message.status;
+}
+
+// Drops the turns that are no longer in the thread; true when any went.
+function removeGoneTurns(seen) {
+    let removed = false;
+    for (const [key, entry] of ui.turns) {
+        if (seen.has(key)) continue;
+        removed = true;
+        if (els.answerLink && entry.li.contains(els.answerLink)) parkAnswerLink();
+        entry.li.remove();
+        ui.turns.delete(key);
+    }
+    return removed;
+}
+
 function renderTurns(state, l) {
     const threadKey = `${state.conversation?.id || "draft"}:${l}`;
     const scroller = els.scroller;
@@ -841,64 +931,21 @@ function renderTurns(state, l) {
         // Last-ness only changes an error turn (its Retry); keeping it out
         // of other turns' signatures keeps a rated answer rated.
         const sig = `${turnSignature(message)}:${message.answer ? "a" : ""}:${message.status === MESSAGE_STATUS.ERROR && index === state.messages.length - 1}`;
-        let entry = ui.turns.get(key);
-        // A saved turn replacing its optimistic placeholder (local id -> server
-        // id) takes over the placeholder's row, so it doesn't animate in twice.
-        const inPlace = previous ? previous.nextSibling : els.messages.firstChild;
-        const placeholderKey = inPlace?.dataset?.turnKey;
-        if (!entry && placeholderKey && !nextKeys.has(placeholderKey) && ui.turns.has(placeholderKey)) {
-            entry = ui.turns.get(placeholderKey);
-            ui.turns.delete(placeholderKey);
-            ui.turns.set(key, entry);
-            entry.li.dataset.turnKey = key;
-        }
+        let entry = ui.turns.get(key) || takePlaceholderEntry(key, previous, nextKeys);
         if (!entry) {
             turnsChanged = true;
-            const li = document.createElement("li");
-            li.dataset.turnKey = key;
-            entry = { li, sig: null };
-            ui.turns.set(key, entry);
-            if (ui.animateInserts && !reducedMotion()) {
-                li.classList.add("conv-turn--enter");
-                li.addEventListener("animationend", () => li.classList.remove("conv-turn--enter"), { once: true });
-            }
+            entry = createTurnEntry(key);
         }
         if (entry.sig !== sig) {
             turnsChanged = true;
-            const li = entry.li;
-            li.className = `conv-turn conv-turn--${message.role}${message.status === MESSAGE_STATUS.FAILED ? " conv-turn--failed" : ""}${li.classList.contains("conv-turn--enter") ? " conv-turn--enter" : ""}`;
-            li.setAttribute("aria-busy", message.status === MESSAGE_STATUS.PENDING ? "true" : "false");
-            if (els.answerLink && li.contains(els.answerLink)) parkAnswerLink();
-            li.innerHTML = turnInnerHtml(message, index, state.messages, l);
-            if (message.answer && message.status === MESSAGE_STATUS.COMPLETE) {
-                decorateAnswerTurn(li, message, state.messages[index - 1]?.content);
-            }
-            if (message.citations?.length) hydrateCitations(li);
-            if (citePop?.anchor() && !citePop.anchor().isConnected) citePop.close();
-            // An answer arriving in place of its skeleton reveals block by
-            // block (conversation.css .conv-turn--reveal); a timer, not
-            // animationend, since the staggered children each fire one.
-            if (entry.status === MESSAGE_STATUS.PENDING && message.status === MESSAGE_STATUS.COMPLETE
-                && message.role === "assistant" && !reducedMotion()) {
-                li.classList.add("conv-turn--reveal");
-                clearTimeout(entry.revealTimer);
-                entry.revealTimer = setTimeout(() => li.classList.remove("conv-turn--reveal"), 900);
-            }
-            entry.status = message.status;
+            redrawTurn(entry, message, index, state.messages, l);
             entry.sig = sig;
         }
         const expectedPosition = previous ? previous.nextSibling : els.messages.firstChild;
         if (entry.li !== expectedPosition) els.messages.insertBefore(entry.li, expectedPosition);
         previous = entry.li;
     });
-    for (const [key, entry] of ui.turns) {
-        if (!seen.has(key)) {
-            turnsChanged = true;
-            if (els.answerLink && entry.li.contains(els.answerLink)) parkAnswerLink();
-            entry.li.remove();
-            ui.turns.delete(key);
-        }
-    }
+    if (removeGoneTurns(seen)) turnsChanged = true;
     if (els.answerLink?.parentElement === els.answerLinkPark) window.ShelahAnswerLink?.panel?.hide();
     // Only turns that arrive after a thread is on screen animate in; a
     // thread being (re)loaded renders all at once.
@@ -1146,6 +1193,22 @@ function flipResize(mutate) {
     else clearFlip(el);
 }
 
+function applyPanelVisibility(wantPanel, { previousSize, origin, opening }) {
+    if (!wantPanel) {
+        hide(els.panel, ui.layout === "mobile" ? "drawer" : panelPreset());
+        return;
+    }
+    const panelHidden = els.panel.classList.contains("hidden") || els.panel.classList.contains("is-hiding");
+    if (opening || panelHidden) {
+        applyAttributes();
+        show(els.panel, panelPreset(), origin);
+    } else if (previousSize && previousSize !== ui.size) {
+        flipResize(applyAttributes);
+    } else {
+        applyAttributes();
+    }
+}
+
 function applyVisibility({ previousSize = null, origin = null, opening = false } = {}) {
     const mobileMini = ui.layout === "mobile" && ui.size === "mini";
     const wantScrim = ui.open && ui.size === "overlay";
@@ -1155,17 +1218,7 @@ function applyVisibility({ previousSize = null, origin = null, opening = false }
     if (wantScrim) show(els.scrim, "fade");
     else hide(els.scrim, "fade");
 
-    const panelHidden = els.panel.classList.contains("hidden") || els.panel.classList.contains("is-hiding");
-    if (wantPanel && (opening || panelHidden)) {
-        applyAttributes();
-        show(els.panel, panelPreset(), origin);
-    } else if (wantPanel && previousSize && previousSize !== ui.size) {
-        flipResize(applyAttributes);
-    } else if (wantPanel) {
-        applyAttributes();
-    } else {
-        hide(els.panel, ui.layout === "mobile" ? "drawer" : panelPreset());
-    }
+    applyPanelVisibility(wantPanel, { previousSize, origin, opening });
 
     if (wantPip) show(els.pip, "drawer");
     else hide(els.pip, ui.open ? "fade" : "drawer");
@@ -2082,39 +2135,32 @@ function focusables(root) {
         .filter((el) => el.offsetParent !== null || el === document.activeElement);
 }
 
-function onKeydown(event) {
-    if (!els) return;
-    // The sign-in dialog is a native modal: it closes itself on Escape and
-    // keeps focus inside, so the panel behind it stays out of both.
-    if (els.guestCap?.open) return;
-    if (event.key === "Escape") {
-        if (citePop?.isOpen()) {
-            event.preventDefault();
-            citePop.close({ restoreFocus: true });
-            return;
-        }
-        if (!els.pop.classList.contains("hidden")) {
-            event.preventDefault();
-            closeHistoryPop({ restoreFocus: true });
-            return;
-        }
-        if (ui.menuOpen) {
-            event.preventDefault();
-            closeMenu({ restoreFocus: true });
-            return;
-        }
-        if (ui.sharePopOpen) {
-            event.preventDefault();
-            closeSharePop({ restoreFocus: true });
-            return;
-        }
-        if (ui.open && isModalSize(ui.size) && !(ui.layout === "mobile" && ui.size === "mini")) {
-            event.preventDefault();
-            closePanel();
-        }
-        return;
+function isMobileMini() {
+    return ui.layout === "mobile" && ui.size === "mini";
+}
+
+// What Escape closes, innermost first, before it closes the panel itself.
+const ESCAPE_LAYERS = [
+    [() => citePop?.isOpen(), () => citePop.close({ restoreFocus: true })],
+    [() => !els.pop.classList.contains("hidden"), () => closeHistoryPop({ restoreFocus: true })],
+    [() => ui.menuOpen, () => closeMenu({ restoreFocus: true })],
+    [() => ui.sharePopOpen, () => closeSharePop({ restoreFocus: true })],
+];
+
+function onEscape(event) {
+    const layer = ESCAPE_LAYERS.find(([isOpen]) => isOpen());
+    if (layer) {
+        event.preventDefault();
+        layer[1]();
+    } else if (ui.open && isModalSize(ui.size) && !isMobileMini()) {
+        event.preventDefault();
+        closePanel();
     }
-    if (event.key !== "Tab" || !ui.open || !isModalSize(ui.size) || (ui.layout === "mobile" && ui.size === "mini")) return;
+}
+
+// Tab stays inside a modal panel.
+function trapTab(event) {
+    if (!ui.open || !isModalSize(ui.size) || isMobileMini()) return;
     if (!els.pop.classList.contains("hidden")) return; // popover owns focus
     const items = focusables(els.panel);
     if (!items.length) return;
@@ -2128,6 +2174,106 @@ function onKeydown(event) {
         last.focus();
     }
 }
+
+function onKeydown(event) {
+    if (!els) return;
+    // The sign-in dialog is a native modal: it closes itself on Escape and
+    // keeps focus inside, so the panel behind it stays out of both.
+    if (els.guestCap?.open) return;
+    if (event.key === "Escape") onEscape(event);
+    else if (event.key === "Tab") trapTab(event);
+}
+
+// Outside clicks close the popover / menu.
+function closePopoversOutside(target) {
+    if (!els.pop.classList.contains("hidden") && !els.pop.contains(target) && !target.closest(".conv-history-trigger")) {
+        closeHistoryPop();
+    }
+    if (ui.menuOpen && !els.menu.contains(target) && !target.closest("#convMenuBtn")) {
+        closeMenu();
+    }
+    if (ui.sharePopOpen && !els.sharePop.contains(target) && !target.closest("#convShareBtn")) {
+        closeSharePop();
+    }
+}
+
+// The click handlers below each return true when the click was theirs.
+
+// A suggested question fills the box and leaves the sending to the visitor.
+function clickSuggestion(target) {
+    const suggest = target.closest("[data-conv-suggest]");
+    if (!suggest || !els.panel.contains(suggest)) return false;
+    els.input.value = suggest.textContent.trim();
+    els.input.focus();
+    autosize();
+    return true;
+}
+
+function clickHistoryTrigger(target, event) {
+    const trigger = target.closest(".conv-history-trigger");
+    if (!trigger) return false;
+    event.preventDefault();
+    openHistoryPop(trigger);
+    return true;
+}
+
+function clickOpenConversation(target) {
+    const openBtn = target.closest("[data-conv-open]");
+    if (!openBtn) return false;
+    const id = openBtn.dataset.convOpen;
+    const fromPop = els.pop.contains(openBtn);
+    closeHistoryPop();
+    if (fromPop && document.body.classList.contains("mobile-search-open")) window.setMobileSearchExpanded?.(false);
+    void openConversation({ id, trigger: fromPop ? ui.popTrigger : openBtn });
+    return true;
+}
+
+function clickSize(target) {
+    const sizeBtn = target.closest("[data-conv-size]");
+    if (!sizeBtn || !(els.panel.contains(sizeBtn) || els.pip.contains(sizeBtn))) return false;
+    const wanted = sizeBtn.dataset.convSize;
+    setSize(wanted === "expand" ? expandedSize(ui.size) : wanted);
+    return true;
+}
+
+function clickAction(target) {
+    const actionBtn = target.closest("[data-conv-action]");
+    if (!actionBtn) return false;
+    handleAction(actionBtn.dataset.convAction, actionBtn);
+    return true;
+}
+
+function clickMode(target) {
+    const modeBtn = target.closest("[data-conv-mode]");
+    if (!modeBtn || !els.menu.contains(modeBtn)) return false;
+    ui.mode = modeBtn.dataset.convMode;
+    savePref("mode", ui.mode);
+    render();
+    return true;
+}
+
+function clickTurnAction(target) {
+    const turnBtn = target.closest("[data-turn-action]");
+    if (!turnBtn || !els.messages.contains(turnBtn)) return false;
+    if (turnBtn.dataset.turnAction === "check") void store.refresh();
+    else void store.retry(turnBtn.dataset.messageId, { mode: currentMode(), language: lang() });
+    return true;
+}
+
+function clickCitation(target, event) {
+    const cite = target.closest("[data-cite-ref]");
+    if (!cite || !els.messages.contains(cite)) return false;
+    // Modified clicks keep the browser's own behaviour (new tab on /text/<ref>).
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return true;
+    event.preventDefault();
+    openCitation(cite.dataset.citeRef);
+    return true;
+}
+
+const CLICK_HANDLERS = [
+    clickSuggestion, clickHistoryTrigger, clickOpenConversation, clickSize,
+    clickAction, clickMode, clickTurnAction, clickCitation,
+];
 
 function onDocumentClick(event) {
     const target = event.target;
@@ -2143,78 +2289,8 @@ function onDocumentClick(event) {
     }
     if (citePop.isOpen() && !citePop.contains(target)) citePop.close();
 
-    // Outside clicks close the popover / menu.
-    if (!els.pop.classList.contains("hidden") && !els.pop.contains(target) && !target.closest(".conv-history-trigger")) {
-        closeHistoryPop();
-    }
-    if (ui.menuOpen && !els.menu.contains(target) && !target.closest("#convMenuBtn")) {
-        closeMenu();
-    }
-    if (ui.sharePopOpen && !els.sharePop.contains(target) && !target.closest("#convShareBtn")) {
-        closeSharePop();
-    }
-
-    // A suggested question fills the box and leaves the sending to the visitor.
-    const suggest = target.closest("[data-conv-suggest]");
-    if (suggest && els.panel.contains(suggest)) {
-        els.input.value = suggest.textContent.trim();
-        els.input.focus();
-        autosize();
-        return;
-    }
-
-    const trigger = target.closest(".conv-history-trigger");
-    if (trigger) {
-        event.preventDefault();
-        openHistoryPop(trigger);
-        return;
-    }
-
-    const openBtn = target.closest("[data-conv-open]");
-    if (openBtn) {
-        const id = openBtn.dataset.convOpen;
-        const fromPop = els.pop.contains(openBtn);
-        closeHistoryPop();
-        if (fromPop && document.body.classList.contains("mobile-search-open")) window.setMobileSearchExpanded?.(false);
-        void openConversation({ id, trigger: fromPop ? ui.popTrigger : openBtn });
-        return;
-    }
-
-    const sizeBtn = target.closest("[data-conv-size]");
-    if (sizeBtn && (els.panel.contains(sizeBtn) || els.pip.contains(sizeBtn))) {
-        const wanted = sizeBtn.dataset.convSize;
-        setSize(wanted === "expand" ? expandedSize(ui.size) : wanted);
-        return;
-    }
-
-    const actionBtn = target.closest("[data-conv-action]");
-    if (actionBtn) {
-        handleAction(actionBtn.dataset.convAction, actionBtn);
-        return;
-    }
-
-    const modeBtn = target.closest("[data-conv-mode]");
-    if (modeBtn && els.menu.contains(modeBtn)) {
-        ui.mode = modeBtn.dataset.convMode;
-        savePref("mode", ui.mode);
-        render();
-        return;
-    }
-
-    const turnBtn = target.closest("[data-turn-action]");
-    if (turnBtn && els.messages.contains(turnBtn)) {
-        if (turnBtn.dataset.turnAction === "check") void store.refresh();
-        else void store.retry(turnBtn.dataset.messageId, { mode: currentMode(), language: lang() });
-        return;
-    }
-
-    const cite = target.closest("[data-cite-ref]");
-    if (cite && els.messages.contains(cite)) {
-        // Modified clicks keep the browser's own behaviour (new tab on /text/<ref>).
-        if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
-        event.preventDefault();
-        openCitation(cite.dataset.citeRef);
-    }
+    closePopoversOutside(target);
+    CLICK_HANDLERS.some((handle) => handle(target, event));
 }
 
 function handleAction(action, button) {
