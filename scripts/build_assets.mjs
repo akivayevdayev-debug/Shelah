@@ -85,17 +85,10 @@ function warnings(label, list) {
     }
 }
 
-/** @returns {Promise<{files: Map<string, Buffer>, manifest: object}>} */
-export async function compute(previousManifest = null) {
-    const files = new Map();
-    const manifest = {
-        version: 1,
-        esbuild: esbuildVersion,
-        css: { sources: {}, sourcesHash: "", bundle: "css/app.css", critical: {} },
-        js: { classic: {}, modules: { entries: {}, sources: {}, outputs: {} } },
-    };
+const MINIFY = { minify: true, charset: "utf8", legalComments: "none" };
 
-    // ── CSS ────────────────────────────────────────────────────────────────
+/** Every page stylesheet as css/app.css, in the cascade order. */
+async function buildCss(manifest, files, previousManifest) {
     const parts = [];
     const plainSources = {};
     for (const rel of CSS_ORDER) {
@@ -106,19 +99,16 @@ export async function compute(previousManifest = null) {
     }
     // Over the bare digests, so it names the same stylesheets as it always has.
     manifest.css.sourcesHash = sha256(JSON.stringify(plainSources));
-    const css = await transform(parts.join("\n"), {
-        loader: "css",
-        minify: true,
-        charset: "utf8",
-        legalComments: "none",
-    });
+    const css = await transform(parts.join("\n"), { loader: "css", ...MINIFY });
     warnings("app.css", css.warnings);
     if (/<\/style/i.test(css.code)) throw new Error("app.css contains '</style' and could not be inlined");
     files.set("css/app.css", Buffer.from(css.code));
     // The critical-CSS entries belong to build_critical_css.mjs; carry them over.
     if (previousManifest?.css?.critical) manifest.css.critical = previousManifest.css.critical;
+}
 
-    // ── classic scripts and module graph inputs ────────────────────────────
+/** The classic scripts, each minified on its own; returns the ES modules. */
+async function buildClassic(manifest, files) {
     const classic = [];
     const modules = [];
     for (const name of listJs()) {
@@ -126,15 +116,7 @@ export async function compute(previousManifest = null) {
         (ES_MODULE.test(data.toString("utf8")) ? modules : classic).push([name, data]);
     }
     const minified = await Promise.all(
-        classic.map(([, data]) =>
-            transform(data.toString("utf8"), {
-                loader: "js",
-                minify: true,
-                target: JS_TARGET,
-                charset: "utf8",
-                legalComments: "none",
-            }),
-        ),
+        classic.map(([, data]) => transform(data.toString("utf8"), { loader: "js", target: JS_TARGET, ...MINIFY })),
     );
     for (const [index, [name, data]] of classic.entries()) {
         const out = minified[index];
@@ -143,8 +125,11 @@ export async function compute(previousManifest = null) {
         manifest.js.classic[name] = { source: tagged(data) };
     }
     for (const [name, data] of modules) manifest.js.modules.sources[name] = tagged(data);
+    return modules;
+}
 
-    // ── module entries (bundled, shared code split into content-hashed chunks)
+/** The module entries, bundled with shared code split into content-hashed chunks. */
+async function buildModules(manifest, files, modules) {
     const result = await build({
         entryPoints: MODULE_ENTRIES.map((name) => path.join(STATIC, "js", name)),
         outdir: path.join(MIN, "js"),
@@ -153,13 +138,11 @@ export async function compute(previousManifest = null) {
         bundle: true,
         splitting: true,
         format: "esm",
-        minify: true,
         target: JS_TARGET,
-        charset: "utf8",
-        legalComments: "none",
         write: false,
         metafile: true,
         logLevel: "silent",
+        ...MINIFY,
     });
     warnings("modules", result.warnings);
     for (const file of result.outputFiles) {
@@ -181,6 +164,20 @@ export async function compute(previousManifest = null) {
     manifest.js.modules.outputs = Object.fromEntries(
         Object.entries(manifest.js.modules.outputs).sort(([a], [b]) => Number(a > b) - Number(a < b)),
     );
+}
+
+/** @returns {Promise<{files: Map<string, Buffer>, manifest: object}>} */
+export async function compute(previousManifest = null) {
+    const files = new Map();
+    const manifest = {
+        version: 1,
+        esbuild: esbuildVersion,
+        css: { sources: {}, sourcesHash: "", bundle: "css/app.css", critical: {} },
+        js: { classic: {}, modules: { entries: {}, sources: {}, outputs: {} } },
+    };
+    await buildCss(manifest, files, previousManifest);
+    const modules = await buildClassic(manifest, files);
+    await buildModules(manifest, files, modules);
     return { files, manifest };
 }
 
@@ -204,57 +201,66 @@ function ownedFiles(manifest) {
     return owned;
 }
 
-async function main() {
-    const checkOnly = process.argv.includes("--check");
-    const previous = readPreviousManifest();
-    const { files, manifest } = await compute(previous);
-    const text = serialize(manifest);
+/** Every file under static/min/, as forward-slash paths relative to it. */
+function listMinFiles(dir = MIN) {
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const full = path.join(dir, entry.name);
+        return entry.isDirectory() ? listMinFiles(full) : [path.relative(MIN, full).split(path.sep).join("/")];
+    });
+}
 
-    if (checkOnly) {
-        const stale = [];
-        const expected = ownedFiles(manifest);
-        for (const [rel, data] of files) {
-            const target = path.join(MIN, rel);
-            if (!fs.existsSync(target) || !fs.readFileSync(target).equals(data)) stale.push(rel);
-        }
-        if (!fs.existsSync(path.join(MIN, "manifest.json")) || fs.readFileSync(path.join(MIN, "manifest.json"), "utf8") !== text) {
-            stale.push("manifest.json");
-        }
-        const present = [];
-        const walk = (dir) => {
-            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-                const full = path.join(dir, entry.name);
-                if (entry.isDirectory()) walk(full);
-                else present.push(path.relative(MIN, full).split(path.sep).join("/"));
-            }
-        };
-        if (fs.existsSync(MIN)) walk(MIN);
-        // critical-*.css belong to build_critical_css.mjs, not to this script.
-        const extra = present.filter((rel) => !expected.has(rel) && !/^css\/critical-[\w-]+\.css$/.test(rel));
-        if (stale.length || extra.length) {
-            console.error("static/min/ does not match the sources. Run: npm run build:assets");
-            for (const rel of stale) console.error(`  stale or missing: ${rel}`);
-            for (const rel of extra) console.error(`  not produced by the build: ${rel}`);
-            process.exit(1);
-        }
-        console.log(`static/min/ is up to date (${files.size} files).`);
-        return;
-    }
+const differs = (target, data) => !fs.existsSync(target) || !fs.readFileSync(target).equals(data);
 
+/** How static/min/ differs from a build: files stale or missing, and files the build does not produce. */
+export function findDrift(files, manifest, text) {
+    const expected = ownedFiles(manifest);
+    const stale = [...files].filter(([rel, data]) => differs(path.join(MIN, rel), data)).map(([rel]) => rel);
+    if (differs(path.join(MIN, "manifest.json"), Buffer.from(text))) stale.push("manifest.json");
+    // critical-*.css belong to build_critical_css.mjs, not to this script.
+    const extra = listMinFiles().filter((rel) => !expected.has(rel) && !/^css\/critical-[\w-]+\.css$/.test(rel));
+    return { stale, extra };
+}
+
+/** Writes the build to static/min/ and removes files the previous manifest listed that it no longer produces. */
+function writeOutputs(files, manifest, text, previous) {
     const owned = ownedFiles(manifest);
     for (const [rel, data] of files) {
         const target = path.join(MIN, rel);
         fs.mkdirSync(path.dirname(target), { recursive: true });
-        if (!fs.existsSync(target) || !fs.readFileSync(target).equals(data)) fs.writeFileSync(target, data);
+        if (differs(target, data)) fs.writeFileSync(target, data);
     }
     fs.writeFileSync(path.join(MIN, "manifest.json"), text);
     // Chunks are named by content: a rebuilt one leaves its old file behind.
-    // Remove only files the previous manifest listed that this build no longer produces.
     if (previous) {
         for (const rel of ownedFiles(previous)) {
             if (!owned.has(rel)) fs.rmSync(path.join(MIN, rel), { force: true });
         }
     }
+}
+
+function checkOutputs(files, manifest, text) {
+    const { stale, extra } = findDrift(files, manifest, text);
+    if (stale.length || extra.length) {
+        console.error("static/min/ does not match the sources. Run: npm run build:assets");
+        for (const rel of stale) console.error(`  stale or missing: ${rel}`);
+        for (const rel of extra) console.error(`  not produced by the build: ${rel}`);
+        process.exit(1);
+    }
+    console.log(`static/min/ is up to date (${files.size} files).`);
+}
+
+async function main() {
+    const previous = readPreviousManifest();
+    const { files, manifest } = await compute(previous);
+    const text = serialize(manifest);
+
+    if (process.argv.includes("--check")) {
+        checkOutputs(files, manifest, text);
+        return;
+    }
+
+    writeOutputs(files, manifest, text, previous);
     const total = [...files.values()].reduce((sum, data) => sum + data.length, 0);
     console.log(`static/min/: ${files.size} files, ${(total / 1024).toFixed(0)} KB (css ${(files.get("css/app.css").length / 1024).toFixed(0)} KB)`);
     if (manifest.js.modules.unreached.length) {

@@ -264,6 +264,13 @@ function pageKeepRules() {
 // ── in-page: serialize the kept rules, sheet by sheet, in document order ──────
 function pageSerialize(keepByHref) {
     const keyframes = [];
+    // The at-rule head a grouping rule is written with; any other keeps just its body.
+    const heads = {
+        CSSMediaRule: (rule) => `@media ${rule.conditionText}`,
+        CSSSupportsRule: (rule) => `@supports ${rule.conditionText}`,
+        CSSLayerBlockRule: (rule) => `@layer ${rule.name}`,
+        CSSContainerRule: (rule) => `@container ${rule.containerName} ${rule.containerQuery}`,
+    };
     const ser = (rules, base, set) => {
         let out = "";
         for (let i = 0; i < rules.length; i += 1) {
@@ -277,11 +284,7 @@ function pageSerialize(keepByHref) {
             if (!set.has(here)) continue;
             if (rule.cssRules && name !== "CSSStyleRule") {
                 const inner = ser(rule.cssRules, here, set);
-                if (name === "CSSMediaRule") out += `@media ${rule.conditionText}{${inner}}`;
-                else if (name === "CSSSupportsRule") out += `@supports ${rule.conditionText}{${inner}}`;
-                else if (name === "CSSLayerBlockRule") out += `@layer ${rule.name}{${inner}}`;
-                else if (name === "CSSContainerRule") out += `@container ${rule.containerName} ${rule.containerQuery}{${inner}}`;
-                else out += inner;
+                out += heads[name] ? `${heads[name](rule)}{${inner}}` : inner;
             } else out += rule.cssText;
         }
         return out;
@@ -289,8 +292,7 @@ function pageSerialize(keepByHref) {
     let text = "";
     const order = [];
     for (const sheet of document.styleSheets) {
-        if (!sheet.href) continue;
-        const key = new URL(sheet.href).pathname;
+        const key = sheet.href ? new URL(sheet.href).pathname : "";
         if (!keepByHref[key]) continue;
         order.push(key);
         let rules;
@@ -304,9 +306,9 @@ function pageSerialize(keepByHref) {
     return { text, keyframes, order };
 }
 
-async function extractKind(browser, base, kind) {
+// The rule paths each stylesheet keeps, over every route and matrix cell of a kind.
+async function collectKept(browser, base, kind) {
     const union = {}; // href -> Set(rule paths)
-    let order = [];
     for (const [route, matrix] of KINDS[kind]) {
         const cells = cellsFor(matrix);
         const results = await pool(
@@ -325,12 +327,11 @@ async function extractKind(browser, base, kind) {
             }
         }
     }
-    const { page, close } = await openPage(browser, base, KINDS[kind][0][0], { w: 1280, theme: "light", lang: "en", auth: false }, { blockScripts: true });
-    const keepObj = Object.fromEntries(Object.entries(union).map(([k, v]) => [k, [...v]]));
-    const { text, keyframes, order: sheetOrder } = await page.evaluate(pageSerialize, keepObj);
-    order = sheetOrder;
-    await close();
-    // A keyframes block is kept when something kept names it.
+    return union;
+}
+
+// A keyframes block is kept when something kept names it.
+function withKeyframes(text, keyframes) {
     let css = text;
     const seen = new Set();
     for (const [name, body] of keyframes) {
@@ -339,7 +340,16 @@ async function extractKind(browser, base, kind) {
             css += body;
         }
     }
-    const min = await transform(css, { loader: "css", minify: true, charset: "utf8", legalComments: "none" });
+    return css;
+}
+
+async function extractKind(browser, base, kind) {
+    const union = await collectKept(browser, base, kind);
+    const { page, close } = await openPage(browser, base, KINDS[kind][0][0], { w: 1280, theme: "light", lang: "en", auth: false }, { blockScripts: true });
+    const keepObj = Object.fromEntries(Object.entries(union).map(([k, v]) => [k, [...v]]));
+    const { text, keyframes, order } = await page.evaluate(pageSerialize, keepObj);
+    await close();
+    const min = await transform(withKeyframes(text, keyframes), { loader: "css", minify: true, charset: "utf8", legalComments: "none" });
     if (/<\/style/i.test(min.code)) throw new Error("critical CSS contains '</style'");
     return { code: min.code, order, routes: KINDS[kind].map(([route]) => route) };
 }
