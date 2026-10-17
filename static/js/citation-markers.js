@@ -59,8 +59,10 @@ export function splitMarkers(text) {
 
 // A sentence boundary inside a span: terminal punctuation (plus closing quotes
 // or brackets), whitespace, then more text. Initials and common abbreviations
-// ("R. Yochanan", "Dr. Smith") end in a period but not a sentence.
-const BOUNDARY = /[.!?\u2026\u05c3]+["'\u201d\u2019)\]]*\s+(?=\S)/g;
+// ("R. Yochanan", "Dr. Smith") end in a period but not a sentence. A run of
+// punctuation is only tried from its first character, so a long "......" that
+// is not followed by a space is not rescanned from each of its characters.
+const BOUNDARY = /(?<![.!?\u2026\u05c3])[.!?\u2026\u05c3]+["'\u201d\u2019)\]]*\s+(?=\S)/g;
 const ABBREVIATIONS = new Set([
     "r", "rabbi", "rav", "dr", "mr", "mrs", "st", "vs", "cf", "etc", "ibid", "e.g", "i.e",
     "b", "bar", "ben", "no", "vol", "ch", "chap", "sec", "par", "ex", "lev", "num", "deut", "gen",
@@ -68,13 +70,31 @@ const ABBREVIATIONS = new Set([
 // Markers separated only by spaces ("[1] [2]") belong to one sentence too.
 const SPACED_RUN = new RegExp(String.raw`([ \t]*)((?:${ONE})(?:[ \t]*(?:${ONE}))*)`, "g");
 
+const BLANK = /\s/;
+const WRAPPERS = new Set(["(", "[", '"', "'", "\u201c"]);
+
+// The last run of non-blank characters of `text` before `end` ("" when it ends in blank space).
+function lastWordBefore(text, end) {
+    let start = end;
+    while (start > 0 && !BLANK.test(text[start - 1])) start -= 1;
+    return text.slice(start, end);
+}
+
+// `word` without the opening brackets and quotes at its start or end.
+function stripWrappers(word) {
+    let start = 0;
+    let end = word.length;
+    while (start < end && WRAPPERS.has(word[start])) start += 1;
+    while (end > start && WRAPPERS.has(word[end - 1])) end -= 1;
+    return word.slice(start, end);
+}
+
 function sentenceCount(span) {
     const text = span.trim();
     if (!text) return 0;
     let count = 1;
     for (const match of text.matchAll(BOUNDARY)) {
-        const word = /(\S+)$/.exec(text.slice(0, match.index));
-        const previous = word ? word[1].replace(/^[(["'\u201c]+|[(["'\u201c]+$/g, "").toLowerCase() : "";
+        const previous = stripWrappers(lastWordBefore(text, match.index)).toLowerCase();
         if (ABBREVIATIONS.has(previous) || /^[a-z]$/.test(previous)) continue;
         count += 1;
     }
@@ -147,8 +167,11 @@ export function stripSourcesBlock(markdown) {
 const SKIP_TAGS = new Set(["a", "code", "pre", "button", "script", "style", "textarea"]);
 // A comment, or a tag with its quoted attribute values kept whole (an
 // attribute may contain ">"): linear, since each branch consumes a distinct
-// kind of character.
-const TAG = /<!--[\s\S]*?-->|<\/?[A-Za-z][^\s>/]*(?:"[^"]*"|'[^']*'|[^'">])*>/g;
+// kind of character. (Built from its two halves: one literal is more
+// alternation than the complexity limit for a pattern allows.)
+const COMMENT = String.raw`<!--[\s\S]*?-->`;
+const ELEMENT_TAG = String.raw`<\/?[A-Za-z](?:"[^"]*"|'[^']*'|[^'">])*>`;
+const TAG = new RegExp(`${COMMENT}|${ELEMENT_TAG}`, "g");
 const TAG_NAME = /^<(\/?)([A-Za-z][^\s>/]*)/;
 
 function chipHtml(number, citation, idPrefix, label) {

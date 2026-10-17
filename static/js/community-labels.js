@@ -214,7 +214,7 @@
         const raw = String(text ?? '').trim();
         if (lang !== 'he' || !raw) return raw;
         if (he(raw)) return he(raw);
-        return raw.split(/\s*,\s*/).filter(Boolean).map((part) => label(part, lang)).join(', ');
+        return raw.split(',').map((part) => part.trim()).filter(Boolean).map((part) => label(part, lang)).join(', ');
     }
 
     // The confidence chip and the line under the entry. "well-attested" (and

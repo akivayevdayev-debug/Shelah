@@ -9,8 +9,24 @@
 
 import { icon } from "./icons.js";
 
-const TANAKH = /^(Genesis|Exodus|Leviticus|Numbers|Deuteronomy|Joshua|Judges|(?:[12]|I{1,2})?\s*Samuel|(?:[12]|I{1,2})?\s*Kings|Isaiah|Jeremiah|Ezekiel|Hosea|Joel|Amos|Obadiah|Jonah|Micah|Nahum|Habakkuk|Zephaniah|Haggai|Zechariah|Malachi|Psalms|Proverbs|Job|Song of Songs|Ruth|Lamentations|Ecclesiastes|Esther|Daniel|Ezra|Nehemiah|(?:[12]|I{1,2})?\s*Chronicles)\b/i;
-const TALMUD = /^(Berachot|Shabbat|Eruvin|Pesachim|Shekalim|Yoma|Sukkah|Beitzah|Rosh Hashanah|Taanit|Megillah|Moed Katan|Chagigah|Yevamot|Ketubot|Nedarim|Nazir|Sotah|Gittin|Kiddushin|Bava Kamma|Bava Metzia|Bava Batra|Sanhedrin|Makkot|Shevuot|Avodah Zarah|Horayot|Zevachim|Menachot|Chullin|Bechorot|Arachin|Temurah|Keritot|Niddah|Talmud\b)\b/i;
+// "Samuel", "I Samuel", "2 Kings": the books that come in numbered pairs. (These two
+// lists are joined into one pattern each, since one literal this long is more
+// alternation than the complexity limit for a pattern allows.)
+const NUMBERED = String.raw`(?:[12]|I{1,2})?\s*`;
+const TANAKH_BOOKS = [
+    "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua", "Judges", `${NUMBERED}Samuel`,
+    `${NUMBERED}Kings`, "Isaiah", "Jeremiah", "Ezekiel", "Hosea", "Joel", "Amos", "Obadiah", "Jonah", "Micah",
+    "Nahum", "Habakkuk", "Zephaniah", "Haggai", "Zechariah", "Malachi", "Psalms", "Proverbs", "Job", "Song of Songs",
+    "Ruth", "Lamentations", "Ecclesiastes", "Esther", "Daniel", "Ezra", "Nehemiah", `${NUMBERED}Chronicles`,
+];
+const TANAKH = new RegExp(String.raw`^(${TANAKH_BOOKS.join("|")})\b`, "i");
+const TALMUD_TRACTATES = [
+    "Berachot", "Shabbat", "Eruvin", "Pesachim", "Shekalim", "Yoma", "Sukkah", "Beitzah", "Rosh Hashanah", "Taanit",
+    "Megillah", "Moed Katan", "Chagigah", "Yevamot", "Ketubot", "Nedarim", "Nazir", "Sotah", "Gittin", "Kiddushin",
+    "Bava Kamma", "Bava Metzia", "Bava Batra", "Sanhedrin", "Makkot", "Shevuot", "Avodah Zarah", "Horayot",
+    "Zevachim", "Menachot", "Chullin", "Bechorot", "Arachin", "Temurah", "Keritot", "Niddah", String.raw`Talmud\b`,
+];
+const TALMUD = new RegExp(String.raw`^(${TALMUD_TRACTATES.join("|")})\b`, "i");
 const HALACHA = /^(Shulchan Aruch|Mishnah Berurah|Kitzur Shulchan Aruch|Aruch HaShulchan|Ben Ish Hai|Mishneh Torah|Rambam|Tur\b|Sefer HaMitzvot|Sefer HaChinuch)\b/i;
 const RESPONSA = /^(Igrot Moshe|Yabia Omer|Tzitz Eliezer|Chazon Ish|Minchat Yitzchak|Chelkat Yaakov|Piskei Teshuvot|Noda BiYehudah|Chatam Sofer|Responsa|Maharsha|Maharam|She'elot)\b/i;
 const MISHNAH = /^(Mishnah\b|Pirkei Avot|Avot)\b/i;
@@ -75,7 +91,8 @@ export function sourceBadgeHtml(ref, lang = "en") {
 // A chapter or verse ref -- "Genesis 1:1", "Exodus 20:8-11", "Psalms 23" --
 // as book, chapter and the optional verse range, on the ref's original
 // spelling (the kh/ch normalisation above is for classifying, not for URLs).
-const TANAKH_REF = /^(.+?)\s+(\d+)(?::(\d+)(?:\s*[-\u2013]\s*(\d+))?)?\s*$/;
+const VERSE_RANGE = String.raw`(?::(\d+)(?:\s*[-\u2013]\s*(\d+))?)?`;
+const TANAKH_REF = new RegExp(String.raw`^(\S+(?:\s+\S+)*?)\s+(\d+)${VERSE_RANGE}\s*$`);
 
 // AlHaTorah's pages, which show a passage with its commentaries beside it.
 // The site split by corpus: Tanakh lives on mg.alhatorah.org, the Talmud on

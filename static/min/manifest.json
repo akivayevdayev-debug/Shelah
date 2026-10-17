@@ -60,7 +60,7 @@
         "source": "sha256:f1c54b0760a5e4d05486d65a5802453bbdfcd6e9026ac25c640e69d17179b25d"
       },
       "community-labels.js": {
-        "source": "sha256:59399796d2270d577791b002accffcd7f2e17c910fb08741e8964e1f552e2e6a"
+        "source": "sha256:585382fbd366bc7e90c46d1ce91c0d44330efd939c7cc290c121cb48de01836b"
       },
       "hebrew-ref.js": {
         "source": "sha256:16c827eb03412cf6796baaa5cd9aabc512effe3e97e46b40120c4e6b036236c2"
@@ -91,7 +91,7 @@
         "ask-history.js": "sha256:fe28ba5343b9134744d6203d93a3725361d214b40a21927b62b2d1b428ffc352",
         "ask-progress.js": "sha256:c34ffdcc1ba97c79c2b09b9c7ddba6b774da9a564e7becea4609a4b562b90f1d",
         "calendar-detail.js": "sha256:c387bbef34e9aadd7ef5bae9c92600cb986a3652ac923967da6c45023921831d",
-        "citation-markers.js": "sha256:c94b4384898a504d502d116595714104a5a9e0f8074892a70571cd2b881f6da5",
+        "citation-markers.js": "sha256:4a6039289400517dfa19bb0fff4aa4971c3e1191371ecd20b814f98e90693e6e",
         "citation-popover.js": "sha256:2452698153bb4f782f2787f88ec31a17633c5004c2a7627d8038de30491586e5",
         "commentary-preload.js": "sha256:4c616d94e2898761172ecedf51b9c2019f6fbeeb10fca6d033af4976248683f7",
         "conversation-api.js": "sha256:5952fd3e37a3004dbfdb4e5a15e81158fb32da3bd4985cf03b93f899d7844eed",
@@ -109,7 +109,7 @@
         "siddur-day.js": "sha256:c8c6dade0de211346d6fbed5afa0ae5e33cb1aa863d600b5a67ae86569f84a12",
         "siddur-reader.js": "sha256:ad0b53625bec6ed7f5dfa7f73e30b35d54ecdfc96fc2cf2f30b6e6e24eec440d",
         "siddur.js": "sha256:ccf437ee7a22e2cb174bc6743919d4d48ce9d3dcf9e9d5435b7499bc0f642ba9",
-        "source-cards.js": "sha256:897ca074f01cf10f20ff2bd828267e832b2525ffbd8fc9b953c557f50efeb10a",
+        "source-cards.js": "sha256:f4106bf2c8d0c40465a459bdfd22de91d6547b0fcde43e846436e2a0687757cd",
         "state.js": "sha256:b86bf404aa0c9be5be88039297c6c1138a90e322035c3daf19c7a583cc18405c",
         "zmanim.js": "sha256:1179f537a443f7903e9b85c3853d873ba0fe50d27f3e42699300e796c74f84f4"
       },
@@ -119,10 +119,10 @@
         "js/chunks/chunk-GI7XZAIM.js": "7f7dabe88234",
         "js/chunks/chunk-YO7W2DAE.js": "e561d70f6820",
         "js/clerk-appearance.js": "9a44f13bc69b",
-        "js/community-labels.js": "8a6529f6c365",
+        "js/community-labels.js": "87dfbcba156b",
         "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/load-region.js": "2833ed602bea",
-        "js/main.js": "7221a49fda68",
+        "js/main.js": "ffec558b64bb",
         "js/motion.js": "9714dc88530d",
         "js/sentry-init.js": "5f32eede1174",
         "js/shell.js": "37117ec75670",
