@@ -2799,6 +2799,8 @@ html.rtl .home-main-layout #popularTextsGrid {
         border-radius: var(--radius-md);
         min-width: 0;
         min-height: var(--hit-min);
+        position: relative;
+        z-index: 1;
     }
 
     .mobile-tab-btn__icon {
@@ -2912,11 +2914,6 @@ html.rtl .home-main-layout #popularTextsGrid {
     .mobile-bottom-tabs.has-indicator .mobile-tab-btn.mobile-tab-active {
         background: transparent;
         box-shadow: none;
-    }
-
-    .mobile-tab-btn {
-        position: relative;
-        z-index: 1;
     }
 
     .mobile-tab-btn:active {

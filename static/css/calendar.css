@@ -385,6 +385,10 @@ body.theme-dark {
 .fc-daygrid-event {
     white-space: nowrap;
     overflow: hidden;
+    /* Hover shade (below): isolation keeps its z-index:-1 layer above the chip's own fill. */
+    isolation: isolate;
+    transition: transform var(--motion-dur-fast) var(--motion-ease-out),
+        scale var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 .fc-daygrid-event .fc-event-title {
@@ -626,13 +630,7 @@ html.rtl .fc .fc-daygrid-day {
 
 /* Hover darkens a chip instead of fading it (fading washed the white label
    toward the cell and lowered its contrast). The shade is a black overlay
-   behind the label -- isolation keeps the z-index:-1 layer above the chip's
-   own fill but under its text -- so only its opacity animates. */
-.fc-daygrid-event {
-    isolation: isolate;
-    transition: transform var(--motion-dur-fast) var(--motion-ease-out),
-        scale var(--motion-dur-fast) var(--motion-ease-out);
-}
+   behind the label, so only its opacity animates. */
 .fc-daygrid-event::after {
     content: '';
     position: absolute;
