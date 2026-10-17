@@ -277,6 +277,28 @@ def render_fragment(fragment: str) -> str:
     return _render(_parse(fragment).children)
 
 
+def _segment_text(segments: list, index: int) -> str:
+    value = segments[index] if index < len(segments) else ""
+    return value if isinstance(value, str) else ""
+
+
+def _typed_line(he_raw: str, en_raw: str) -> dict | None:
+    """One Hebrew/English pair as a typed line, or None when both are empty."""
+    line = classify(he_raw)
+    en_html = render_fragment(en_raw)
+    if line is None:
+        if not en_html:
+            return None
+        line = {"t": "prayer", "he": ""}
+    if en_html:
+        line["en"] = escape(plain_text(en_raw), quote=False) if line["t"] == "heading" else en_html
+    if line["t"] in ("instruction", "conditional"):
+        tags = when_tags(line.get("label") or plain_text(line["he"]))
+        if tags:
+            line["when"] = tags
+    return line
+
+
 def build_lines(he_segments: list, en_segments: list | None = None) -> list[dict]:
     """Typed lines for one section.
 
@@ -286,24 +308,10 @@ def build_lines(he_segments: list, en_segments: list | None = None) -> list[dict
     en_segments = en_segments or []
     lines = []
     for index in range(max(len(he_segments), len(en_segments))):
-        he_raw = he_segments[index] if index < len(he_segments) else ""
-        en_raw = en_segments[index] if index < len(en_segments) else ""
-        he_raw = he_raw if isinstance(he_raw, str) else ""
-        en_raw = en_raw if isinstance(en_raw, str) else ""
-        line = classify(he_raw)
-        en_html = render_fragment(en_raw)
-        if line is None:
-            if not en_html:
-                continue
-            line = {"t": "prayer", "he": ""}
-        if en_html:
-            line["en"] = escape(plain_text(en_raw), quote=False) if line["t"] == "heading" else en_html
-        if line["t"] in ("instruction", "conditional"):
-            tags = when_tags(line.get("label") or plain_text(line["he"]))
-            if tags:
-                line["when"] = tags
-        line["n"] = index + 1
-        lines.append(line)
+        line = _typed_line(_segment_text(he_segments, index), _segment_text(en_segments, index))
+        if line is not None:
+            line["n"] = index + 1
+            lines.append(line)
     return lines
 
 

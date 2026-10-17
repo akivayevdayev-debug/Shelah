@@ -165,59 +165,94 @@ def check_license(version: dict, lang: str) -> dict:
     }
 
 
-def build(sources: dict) -> tuple[dict, dict]:
-    """Returns (toc, {service_slug: service_payload})."""
-    schema = sources["schema"]["schema"]
-    he_text = sources["he"]["text"]
-    en_text = sources["en"]["text"]
-    top = {node["key"]: node for node in schema["nodes"]}
-
+def _check_curation(top: dict) -> None:
+    """The curated OCCASIONS must name exactly the top-level nodes Sefaria has."""
     curated = [key for _, _, services in OCCASIONS for key, *_ in services]
     missing = sorted(set(top) - set(curated))
     unknown = sorted(set(curated) - set(top))
     if missing or unknown:
         raise SystemExit(f"curation out of sync with Sefaria: uncurated={missing} unknown={unknown}")
 
+
+def _build_section(key: str, slug: str, node: dict, child: dict | None, he_text: dict, en_text: dict) -> tuple[dict, dict]:
+    """One section of a service (or the whole service when it has no child
+    nodes) as its toc entry and its payload."""
+    sec_node = child or node
+    sec_key = sec_node["key"]
+    he_segments = he_text.get(key, {}).get(sec_key, []) if child else he_text.get(key, [])
+    en_segments = en_text.get(key, {}).get(sec_key, []) if child else en_text.get(key, [])
+    sec_slug = slug if child is None else SECTION_SLUGS.get(sec_key.strip(), slugify(sec_key))
+    aligned = english_is_aligned(he_segments, en_segments)
+    lines = build_lines(he_segments, en_segments if aligned else [])
+    ref = f"{INDEX_TITLE}, {key}" + (f", {sec_key.strip()}" if child else "")
+    entry = {
+        "slug": sec_slug,
+        "title": {"en": _node_title(sec_node, "en"), "he": _node_title(sec_node, "he")},
+        "ref": ref,
+        "lines": len(lines),
+        "english": sum(1 for line in lines if line.get("en")),
+        **({} if aligned else {"englishOmitted": "misaligned"}),
+    }
+    return entry, {"slug": sec_slug, "ref": ref, "lines": lines}
+
+
+def _check_slugs(key: str, slug: str, sections: list, seen: set) -> None:
+    """URL slugs must be well-formed, not read by the client router as
+    something else, and unique; records the service's slug in ``seen``."""
+    for sec in sections:
+        for word in (slug, sec["slug"]):
+            if not SLUG_RE.match(word) or word in RESERVED_SLUGS:
+                raise SystemExit(f"bad slug {word!r} in {key}")
+    sec_slugs = [s["slug"] for s in sections]
+    if len(set(sec_slugs)) != len(sec_slugs) or slug in seen:
+        raise SystemExit(f"duplicate slug in {key}: {slug} {sec_slugs}")
+    seen.add(slug)
+
+
+def _build_service(service: tuple, top: dict, he_text: dict, en_text: dict, seen: set) -> tuple[dict, dict]:
+    """One curated service as its toc entry and its payload."""
+    key, slug, name, gloss = service
+    node = top[key]
+    sections, payload_sections = [], []
+    for child in node.get("nodes") or [None]:
+        entry, payload = _build_section(key, slug, node, child, he_text, en_text)
+        sections.append(entry)
+        payload_sections.append(payload)
+    _check_slugs(key, slug, sections, seen)
+    toc_service = {
+        "slug": slug,
+        "title": {"en": name, "he": _node_title(node, "he")},
+        "gloss": gloss,
+        "sections": sections,
+    }
+    return toc_service, {"rite": RITE["slug"], "service": slug, "sections": payload_sections}
+
+
+def _content_version(toc: dict, services_out: dict) -> str:
+    """A short digest of everything the build wrote, so a change in any text
+    changes the version clients cache by."""
+    digest = hashlib.sha256()
+    for slug in sorted(services_out):
+        digest.update(json.dumps(services_out[slug], ensure_ascii=False, sort_keys=True).encode("utf-8"))
+    digest.update(json.dumps(toc, ensure_ascii=False, sort_keys=True).encode("utf-8"))
+    return digest.hexdigest()[:12]
+
+
+def build(sources: dict) -> tuple[dict, dict]:
+    """Returns (toc, {service_slug: service_payload})."""
+    schema = sources["schema"]["schema"]
+    he_text = sources["he"]["text"]
+    en_text = sources["en"]["text"]
+    top = {node["key"]: node for node in schema["nodes"]}
+    _check_curation(top)
+
     toc_occasions, services_out, seen = [], {}, set()
     for occ_slug, occ_title, services in OCCASIONS:
         toc_services = []
-        for key, slug, name, gloss in services:
-            node = top[key]
-            children = node.get("nodes") or [None]
-            sections, payload_sections = [], []
-            for child in children:
-                sec_node = child or node
-                sec_key = sec_node["key"]
-                he_segments = he_text.get(key, {}).get(sec_key, []) if child else he_text.get(key, [])
-                en_segments = en_text.get(key, {}).get(sec_key, []) if child else en_text.get(key, [])
-                sec_slug = slug if child is None else SECTION_SLUGS.get(sec_key.strip(), slugify(sec_key))
-                aligned = english_is_aligned(he_segments, en_segments)
-                lines = build_lines(he_segments, en_segments if aligned else [])
-                ref = f"{INDEX_TITLE}, {key}" + (f", {sec_key.strip()}" if child else "")
-                sections.append({
-                    "slug": sec_slug,
-                    "title": {"en": _node_title(sec_node, "en"), "he": _node_title(sec_node, "he")},
-                    "ref": ref,
-                    "lines": len(lines),
-                    "english": sum(1 for line in lines if line.get("en")),
-                    **({} if aligned else {"englishOmitted": "misaligned"}),
-                })
-                payload_sections.append({"slug": sec_slug, "ref": ref, "lines": lines})
-            for sec in sections:
-                for word in (slug, sec["slug"]):
-                    if not SLUG_RE.match(word) or word in RESERVED_SLUGS:
-                        raise SystemExit(f"bad slug {word!r} in {key}")
-            sec_slugs = [s["slug"] for s in sections]
-            if len(set(sec_slugs)) != len(sec_slugs) or slug in seen:
-                raise SystemExit(f"duplicate slug in {key}: {slug} {sec_slugs}")
-            seen.add(slug)
-            toc_services.append({
-                "slug": slug,
-                "title": {"en": name, "he": _node_title(node, "he")},
-                "gloss": gloss,
-                "sections": sections,
-            })
-            services_out[slug] = {"rite": RITE["slug"], "service": slug, "sections": payload_sections}
+        for service in services:
+            toc_service, payload = _build_service(service, top, he_text, en_text, seen)
+            toc_services.append(toc_service)
+            services_out[service[1]] = payload
         toc_occasions.append({"slug": occ_slug, "title": occ_title, "services": toc_services})
 
     toc = {
@@ -231,11 +266,7 @@ def build(sources: dict) -> tuple[dict, dict]:
         },
         "occasions": toc_occasions,
     }
-    digest = hashlib.sha256()
-    for slug in sorted(services_out):
-        digest.update(json.dumps(services_out[slug], ensure_ascii=False, sort_keys=True).encode("utf-8"))
-    digest.update(json.dumps(toc, ensure_ascii=False, sort_keys=True).encode("utf-8"))
-    toc["version"] = digest.hexdigest()[:12]
+    toc["version"] = _content_version(toc, services_out)
     for payload in services_out.values():
         payload["version"] = toc["version"]
     return toc, services_out

@@ -71,29 +71,27 @@ def _is_purim_adar(jc: JewishCalendar) -> bool:
     return jc.jewish_month == (ADAR_II if jc.is_jewish_leap_year() else ADAR)
 
 
+# The days of each Hebrew month with no Tachanun (Sephardic list; see the module docstring).
+_NO_TACHANUN_DAYS = {
+    NISAN: range(1, 31),
+    IYAR: (14, 18),  # Pesach Sheni, Lag BaOmer
+    SIVAN: range(1, 13),
+    AV: (15,),
+    ELUL: (29,),
+    TISHREI: (1, 2, *range(9, 31)),  # RH, Erev YK onward to month's end
+    CHESHVAN: (1, 2),
+    SHEVAT: (15,),
+    ADAR: (14, 15),
+    ADAR_II: (14, 15),
+}
+
+
 def _no_tachanun_day(jc: JewishCalendar, *, count_shabbat: bool = True) -> bool:
-    m, d = jc.jewish_month, jc.jewish_day
     if (count_shabbat and jc.day_of_week == 7) or jc.is_rosh_chodesh() or jc.is_chanukah():
         return True
-    if m == NISAN:
+    if jc.significant_day() == "tisha_beav":
         return True
-    if m == IYAR and d in (14, 18):  # Pesach Sheni, Lag BaOmer
-        return True
-    if m == SIVAN and d <= 12:
-        return True
-    if jc.significant_day() == "tisha_beav" or (m == AV and d == 15):
-        return True
-    if m == ELUL and d == 29:
-        return True
-    if m == TISHREI and (d <= 2 or d >= 9):  # RH, Erev YK onward to month's end
-        return True
-    if m == CHESHVAN and d <= 2:
-        return True
-    if m == SHEVAT and d == 15:
-        return True
-    if m in (ADAR, ADAR_II) and d in (14, 15):
-        return True
-    return False
+    return jc.jewish_day in _NO_TACHANUN_DAYS.get(jc.jewish_month, ())
 
 
 def _mincha_tachanun(today: JewishCalendar, tomorrow: JewishCalendar, *, count_shabbat: bool = True) -> bool:
@@ -183,44 +181,59 @@ def birkat_hashanim(date: dt.date, jc: JewishCalendar, il: bool) -> str:
     return "barech-alenu"
 
 
+def _shabbat_occasions(jc: JewishCalendar, m: int, d: int) -> list[str]:
+    if jc.day_of_week != 7:
+        return []
+    return ["shabbat", "shabbat-shuva"] if m == TISHREI and 3 <= d <= 9 else ["shabbat"]
+
+
+def _pesach_occasions(m: int, d: int, il: bool) -> list[str]:
+    if m != NISAN or not 15 <= d <= (21 if il else 22):
+        return []
+    return ["pesach", "chol-hamoed-pesach"] if 17 <= d <= 20 or (il and d == 16) else ["pesach"]
+
+
+def _sukkot_occasions(d: int, il: bool) -> list[str]:
+    if not 15 <= d <= 21:
+        return []
+    return ["sukkot", "chol-hamoed-sukkot"] if 17 <= d <= 21 or (il and d == 16) else ["sukkot"]
+
+
+def _tishrei_occasions(m: int, d: int, il: bool) -> list[str]:
+    if m != TISHREI:
+        return []
+    active = ["rosh-hashana"] if d in (1, 2) else []
+    if d <= 10:
+        active.append("aseret-yemei-teshuva")
+    if d == 10:
+        active.append("yom-kippur")
+    active += _sukkot_occasions(d, il)
+    if d == 22 or (d == 23 and not il):
+        active.append("shemini-atzeret")
+    return active
+
+
+def _purim_occasions(jc: JewishCalendar, d: int) -> list[str]:
+    if not _is_purim_adar(jc):
+        return []
+    return {14: ["purim"], 15: ["shushan-purim"]}.get(d, [])
+
+
 def occasions(jc: JewishCalendar, il: bool) -> list[str]:
     """Keys matching the siddur's day tags (backend/siddur_lines.WHEN_KEYS),
     plus a few the Today card uses on its own."""
     m, d = jc.jewish_month, jc.jewish_day
-    sd = jc.significant_day()
-    active = []
-    if jc.day_of_week == 7:
-        active.append("shabbat")
-        if m == TISHREI and 3 <= d <= 9:
-            active.append("shabbat-shuva")
+    active = _shabbat_occasions(jc, m, d)
     if jc.is_rosh_chodesh():
         active.append("rosh-chodesh")
-    if m == NISAN and 15 <= d <= (21 if il else 22):
-        active.append("pesach")
-        if 17 <= d <= 20 or (il and d == 16):
-            active.append("chol-hamoed-pesach")
+    active += _pesach_occasions(m, d, il)
     if m == SIVAN and (d == 6 or (d == 7 and not il)):
         active.append("shavuot")
-    if m == TISHREI:
-        if d in (1, 2):
-            active.append("rosh-hashana")
-        if d <= 10:
-            active.append("aseret-yemei-teshuva")
-        if d == 10:
-            active.append("yom-kippur")
-        if 15 <= d <= 21:
-            active.append("sukkot")
-            if 17 <= d <= 21 or (il and d == 16):
-                active.append("chol-hamoed-sukkot")
-        if d == 22 or (d == 23 and not il):
-            active.append("shemini-atzeret")
+    active += _tishrei_occasions(m, d, il)
     if jc.is_chanukah():
         active.append("chanukah")
-    if _is_purim_adar(jc) and d == 14:
-        active.append("purim")
-    if _is_purim_adar(jc) and d == 15:
-        active.append("shushan-purim")
-    if sd in _PUBLIC_FASTS:
+    active += _purim_occasions(jc, d)
+    if jc.significant_day() in _PUBLIC_FASTS:
         active.append("fast")
     return active
 
