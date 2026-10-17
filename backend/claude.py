@@ -1275,6 +1275,22 @@ def _decode_json_string(body: str) -> str:
         return body.replace("\\n", "\n").replace('\\"', '"').replace("\\\\", "\\")
 
 
+def _finished_json_strings(raw: str, position: int) -> List[str]:
+    """The strings of a JSON array, from ``position`` on, that were written out
+    in full: reading stops at the closing bracket or at the first cut-off one."""
+    items: List[str] = []
+    while True:
+        quote = raw.find('"', position)
+        bracket = raw.find("]", position)
+        if quote < 0 or (0 <= bracket < quote):
+            break
+        item, item_closed, position = _read_json_string(raw, quote + 1)
+        if not item_closed:
+            break
+        items.append(item)
+    return items
+
+
 def _salvage_truncated_payload(raw_text: str) -> Optional[Dict[str, Any]]:
     """The answer from model output that was cut off (or otherwise not valid JSON)
     partway through: the ``ruling`` string up to its last complete sentence and
@@ -1295,18 +1311,7 @@ def _salvage_truncated_payload(raw_text: str) -> Optional[Dict[str, Any]]:
     payload: Dict[str, Any] = {"ruling": ruling.strip()}
     listing = _SOURCES_KEY_RE.search(raw, after)
     if listing:
-        items: List[str] = []
-        position = listing.end()
-        while True:
-            quote = raw.find('"', position)
-            bracket = raw.find("]", position)
-            if quote < 0 or (0 <= bracket < quote):
-                break
-            item, item_closed, position = _read_json_string(raw, quote + 1)
-            if not item_closed:
-                break
-            items.append(item)
-        payload["sources"] = items
+        payload["sources"] = _finished_json_strings(raw, listing.end())
     return payload
 
 
@@ -1833,34 +1838,33 @@ CUSTOMS_ROW_MAX_CHARS = 600
 DYNAMIC_CONTEXT_MAX_CHARS = 4200
 
 
+def _customs_row_line(c, max_chars):
+    """One community-knowledge row as a prompt line, or "" when the row is
+    withheld as a suspected injection."""
+    community = str(c.get("community") or c.get(
+        "community_name") or "").strip()
+    topic = str(c.get("topic") or "").strip()
+    source = str(c.get("source") or c.get("halakhic_source") or "").strip()
+    ruling = re.sub(r"\s+", " ", str(c.get("ruling")
+                    or c.get("content") or "").strip())
+    if len(ruling) > max_chars:
+        ruling = f"{ruling[:max_chars].rstrip()}..."
+    # community_knowledge rows are community-submitted free text, the same
+    # untrusted-channel shape as retrieved web text (AI_SECURITY_REVIEW
+    # M2/E): screen exactly what would reach the prompt and drop a
+    # flagged row whole rather than the whole batch. Only the label +
+    # marker count is logged, never the row's own text.
+    if withhold_injected([community, topic, source, ruling],
+                          source="community_knowledge_supabase") is None:
+        return ""
+    label = f"{community or 'Community'} | {topic}" if topic else (community or "Community")
+    cited = f" ({source})" if source else ""
+    return f"\n[{label}]{cited} {ruling}\n"
+
+
 def format_customs(customs, max_items=5, max_chars=CUSTOMS_ROW_MAX_CHARS):
     """Format community knowledge snippets from Supabase rows."""
-    output = ""
-    for c in (customs or [])[:max_items]:
-        community = str(c.get("community") or c.get(
-            "community_name") or "").strip()
-        topic = str(c.get("topic") or "").strip()
-        source = str(c.get("source") or c.get("halakhic_source") or "").strip()
-        ruling = re.sub(r"\s+", " ", str(c.get("ruling")
-                        or c.get("content") or "").strip())
-        if len(ruling) > max_chars:
-            ruling = f"{ruling[:max_chars].rstrip()}..."
-        # community_knowledge rows are community-submitted free text, the same
-        # untrusted-channel shape as retrieved web text (AI_SECURITY_REVIEW
-        # M2/E): screen exactly what would reach the prompt and drop a
-        # flagged row whole rather than the whole batch. Only the label +
-        # marker count is logged, never the row's own text.
-        if withhold_injected([community, topic, source, ruling],
-                              source="community_knowledge_supabase") is None:
-            continue
-        label = community or "Community"
-        if topic:
-            label = f"{label} | {topic}"
-        if source:
-            output += f"\n[{label}] ({source}) {ruling}\n"
-        else:
-            output += f"\n[{label}] {ruling}\n"
-    return output
+    return "".join(_customs_row_line(c, max_chars) for c in (customs or [])[:max_items])
 
 
 def format_user_memories(user_memories, max_items=2, max_chars=220):
@@ -2045,6 +2049,20 @@ _CITED_SOURCES_MAX = 4
 _CITED_SOURCE_CHARS = 70
 
 
+def _read_sources_line(stripped: str, cited: List[str]) -> bool:
+    """Take one line of a rendered Sources list: a bullet adds its reference to
+    ``cited`` (up to the cap), a blank line is skipped. False once the line is
+    not part of the list, i.e. the answer text resumes."""
+    if not stripped:
+        return True
+    if stripped[0] not in "-*•":
+        return False
+    ref = note_head(re.sub(r"^[-*•]\s*", "", stripped)).strip()
+    if ref and len(cited) < _CITED_SOURCES_MAX:
+        cited.append(ref[:_CITED_SOURCE_CHARS])
+    return True
+
+
 def _condense_assistant_answer(raw: Any) -> Tuple[str, List[str]]:
     """Strip the rendered-answer scaffolding (section headers, bold markers
     and the trailing Sources list) from a stored assistant reply.
@@ -2066,17 +2084,37 @@ def _condense_assistant_answer(raw: Any) -> Tuple[str, List[str]]:
         stripped = line.strip()
         if stripped.replace("**", "") in (RABBI_FINAL_RULING_FOOTER, *_WEB_WARNING_PLAIN_FORMS):
             continue
-        if in_sources:
-            if not stripped:
-                continue
-            if stripped[0] in "-*•":
-                ref = note_head(re.sub(r"^[-*•]\s*", "", stripped)).strip()
-                if ref and len(cited) < _CITED_SOURCES_MAX:
-                    cited.append(ref[:_CITED_SOURCE_CHARS])
-                continue
-            in_sources = False
+        if in_sources and _read_sources_line(stripped, cited):
+            continue
+        in_sources = False
         body.append(strip_markers(line.replace("**", "")))
     return "\n".join(body), cited
+
+
+def _turn_parts(turn: Dict[str, Any]) -> Tuple[bool, str, List[str]]:
+    """``(is_user, text, cited)`` for one thread turn: its content, and for an
+    assistant reply that content without the rendered scaffolding plus the
+    sources it cited (see _condense_assistant_answer)."""
+    is_user = turn.get("role") == "user"
+    raw = str(turn.get("content") or "")
+    if is_user:
+        return True, raw, []
+    text, cited = _condense_assistant_answer(raw)
+    return False, text, cited
+
+
+def _history_line(turn: Dict[str, Any], limit: int) -> str:
+    """One turn as a ``Role: text`` line cut to ``limit`` characters, or "" for
+    a turn with no text."""
+    is_user, raw, cited = _turn_parts(turn)
+    text = re.sub(r"\s+", " ", raw).strip()
+    if not text:
+        return ""
+    if len(text) > limit:
+        text = f"{text[:limit].rstrip()}..."
+    if cited:
+        text = f"{text} [sources cited: {'; '.join(cited)}]"
+    return f"{'User' if is_user else 'Assistant'}: {text}"
 
 
 def _format_conversation_history(
@@ -2104,19 +2142,10 @@ def _format_conversation_history(
         (i for i, t in enumerate(turns) if t.get("role") != "user"), default=-1)
     lines = []
     for index, turn in enumerate(turns):
-        is_user = turn.get("role") == "user"
-        raw, cited = str(turn.get("content") or ""), []
-        if not is_user:
-            raw, cited = _condense_assistant_answer(raw)
-        text = re.sub(r"\s+", " ", raw).strip()
-        if not text:
-            continue
         limit = max(recent_assistant_chars, max_chars_per_turn) if index == newest_assistant else max_chars_per_turn
-        if len(text) > limit:
-            text = f"{text[:limit].rstrip()}..."
-        if cited:
-            text = f"{text} [sources cited: {'; '.join(cited)}]"
-        lines.append(f"{'User' if is_user else 'Assistant'}: {text}")
+        line = _history_line(turn, limit)
+        if line:
+            lines.append(line)
 
     kept: List[str] = []
     total = 0
@@ -2158,6 +2187,35 @@ def _clip_at_boundary(text: str, limit: int) -> str:
     return window.rstrip(" ,;:-\u2013\u2014") + "\u2026"
 
 
+def _history_turn(turn: Dict[str, Any], user_chars: int, assistant_chars: int) -> Optional[Tuple[str, str]]:
+    """``(role, text)`` for one earlier turn as the model should see it, or None
+    when it has no text. An assistant turn is wrapped as the JSON object the
+    model is told to answer in."""
+    is_user, raw, cited = _turn_parts(turn)
+    text = re.sub(r"\s+", " ", HIDDEN_UNICODE_RE.sub("", raw)).strip()
+    if not text:
+        return None
+    text = _clip_at_boundary(text, user_chars if is_user else assistant_chars)
+    if is_user:
+        return "user", text
+    payload: Dict[str, Any] = {"ruling": text}
+    if cited:
+        payload["sources"] = cited
+    return "assistant", json.dumps(payload, ensure_ascii=False)
+
+
+def _trim_history_turns(turns: List[Dict[str, str]], max_total_chars: int) -> List[Dict[str, str]]:
+    """Open the thread with a user turn, end it with an assistant turn, and
+    drop the oldest pairs while it is longer than ``max_total_chars``."""
+    while turns and turns[0]["role"] != "user":
+        turns.pop(0)
+    while turns and turns[-1]["role"] != "assistant":
+        turns.pop()
+    while len(turns) > 2 and sum(len(t["text"]) for t in turns) > max_total_chars:
+        turns = turns[2:]
+    return turns
+
+
 def build_history_turns(conversation_history, *, max_turns=HISTORY_MAX_TURNS,
                         user_chars=HISTORY_USER_TURN_CHARS,
                         assistant_chars=HISTORY_ASSISTANT_TURN_CHARS,
@@ -2175,32 +2233,15 @@ def build_history_turns(conversation_history, *, max_turns=HISTORY_MAX_TURNS,
     first when the thread is longer than ``max_total_chars``."""
     turns: List[Dict[str, str]] = []
     for turn in [t for t in (conversation_history or []) if isinstance(t, dict)][-max_turns:]:
-        is_user = turn.get("role") == "user"
-        raw, cited = str(turn.get("content") or ""), []
-        if not is_user:
-            raw, cited = _condense_assistant_answer(raw)
-        text = re.sub(r"\s+", " ", HIDDEN_UNICODE_RE.sub("", raw)).strip()
-        if not text:
+        parsed = _history_turn(turn, user_chars, assistant_chars)
+        if parsed is None:
             continue
-        text = _clip_at_boundary(text, user_chars if is_user else assistant_chars)
-        if not is_user:
-            payload: Dict[str, Any] = {"ruling": text}
-            if cited:
-                payload["sources"] = cited
-            text = json.dumps(payload, ensure_ascii=False)
-        role = "user" if is_user else "assistant"
+        role, text = parsed
         if turns and turns[-1]["role"] == role:
             turns[-1]["text"] = f"{turns[-1]['text']}\n{text}"
         else:
             turns.append({"role": role, "text": text})
-
-    while turns and turns[0]["role"] != "user":
-        turns.pop(0)
-    while turns and turns[-1]["role"] != "assistant":
-        turns.pop()
-    while len(turns) > 2 and sum(len(t["text"]) for t in turns) > max_total_chars:
-        turns = turns[2:]
-    return turns
+    return _trim_history_turns(turns, max_total_chars)
 
 
 # Phrases that mark a request for a learning guide, a walk-through of a parsha, sugya
@@ -3179,6 +3220,47 @@ async def _call_anthropic_agentic_turn(
         return _error_result(f"anthropic_sdk_error: {exc}")
 
 
+def _gemini_failure(model_name: str, error: str) -> Dict[str, Any]:
+    """The result of an async Gemini primary call that produced no answer;
+    ask_ai_async() falls back to Claude on it."""
+    return {
+        "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
+        "confidence": 0,
+        "error": error,
+        "is_fallback": False,
+        "model": model_name,
+    }
+
+
+async def _gemini_answer(response: Any, model_name: str, is_simple: bool) -> Dict[str, Any]:
+    """The result of a Gemini reply: its usage logged, its text parsed and
+    rendered. Raises when the reply has no text."""
+    usage = getattr(response, "usage_metadata", None)
+    _log_gemini_usage(usage, model_name)
+    await record_llm_call(
+        provider="gemini",
+        model=model_name,
+        input_tokens=getattr(usage, "prompt_token_count", 0) or 0,
+        output_tokens=getattr(usage, "candidates_token_count", 0) or 0,
+        route="/ask",
+        request_id=get_request_id(),
+    )
+
+    response_text = (response.text or "").strip()
+    if not response_text:
+        raise RuntimeError("empty_response")
+
+    structured = parse_structured_model_output(response_text)
+    health.record_success("gemini")
+    return {
+        "answer": render_structured_markdown(structured, is_simple=is_simple),
+        "structured": structured,
+        "confidence": 0.75,
+        "is_fallback": False,
+        "model": model_name,
+    }
+
+
 async def _call_gemini_httpx_model(
     prompt: str,
     dynamic_system_context: str = "",
@@ -3189,9 +3271,7 @@ async def _call_gemini_httpx_model(
     """Async Gemini primary call using google-genai SDK (replaces hand-rolled httpx)."""
     global _cached_gemini_client
 
-    model_name = (os.environ.get("GEMINI_MODEL") or _DEFAULT_GEMINI_MODEL).strip()
-    if not model_name:
-        model_name = _DEFAULT_GEMINI_MODEL
+    model_name = (os.environ.get("GEMINI_MODEL") or _DEFAULT_GEMINI_MODEL).strip() or _DEFAULT_GEMINI_MODEL
 
     # Circuit-broken like the sync primary; off-loop for the
     # same half-open-reprobe reason as _call_anthropic_httpx_model's gate.
@@ -3201,34 +3281,16 @@ async def _call_gemini_httpx_model(
         logger.warning(
             "Gemini circuit is open — skipping the async primary call and "
             "falling through to the Claude fallback.")
-        return {
-            "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
-            "confidence": 0,
-            "error": "gemini_circuit_open",
-            "is_fallback": False,
-            "model": model_name,
-        }
+        return _gemini_failure(model_name, "gemini_circuit_open")
 
     config_error = _configure_gemini_client()
     if config_error or _cached_gemini_client is None:
         health.release_probe("gemini")
-        return {
-            "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
-            "confidence": 0,
-            "error": config_error or "gemini_client_missing",
-            "is_fallback": False,
-            "model": model_name,
-        }
+        return _gemini_failure(model_name, config_error or "gemini_client_missing")
 
     if not genai_types:
         health.release_probe("gemini")
-        return {
-            "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
-            "confidence": 0,
-            "error": "gemini_sdk_missing",
-            "is_fallback": False,
-            "model": model_name,
-        }
+        return _gemini_failure(model_name, "gemini_sdk_missing")
 
     base_prompt = SIMPLE_SYSTEM_PROMPT if is_simple else CORE_SYSTEM_PROMPT
     system_text = (
@@ -3253,50 +3315,15 @@ async def _call_gemini_httpx_model(
         # Off-loop: the error that opens the cooldown also publishes it to the
         # shared Redis tier, a blocking write.
         await asyncio.to_thread(_record_gemini_error, exc)
-        return {
-            "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
-            "confidence": 0,
-            "error": f"gemini_sdk_error: {exc}",
-            "is_fallback": False,
-            "model": model_name,
-        }
+        return _gemini_failure(model_name, f"gemini_sdk_error: {exc}")
 
     try:
-        usage = getattr(response, "usage_metadata", None)
-        _log_gemini_usage(usage, model_name)
-        await record_llm_call(
-            provider="gemini",
-            model=model_name,
-            input_tokens=getattr(usage, "prompt_token_count", 0) or 0,
-            output_tokens=getattr(usage, "candidates_token_count", 0) or 0,
-            route="/ask",
-            request_id=get_request_id(),
-        )
-
-        response_text = (response.text or "").strip()
-        if not response_text:
-            raise RuntimeError("empty_response")
-
-        structured = parse_structured_model_output(response_text)
-        health.record_success("gemini")
-        return {
-            "answer": render_structured_markdown(structured, is_simple=is_simple),
-            "structured": structured,
-            "confidence": 0.75,
-            "is_fallback": False,
-            "model": model_name,
-        }
+        return await _gemini_answer(response, model_name, is_simple)
     except Exception as exc:
         # Gemini answered, so whatever went wrong here (an empty body, an
         # unparsable one) is not an outage and does not count toward the cooldown.
         health.release_probe("gemini")
-        return {
-            "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
-            "confidence": 0,
-            "error": f"gemini_sdk_error: {exc}",
-            "is_fallback": False,
-            "model": model_name,
-        }
+        return _gemini_failure(model_name, f"gemini_sdk_error: {exc}")
 
 
 def _model_call_extras(history_turns: List[Dict[str, str]], max_tokens: int) -> Dict[str, Any]:

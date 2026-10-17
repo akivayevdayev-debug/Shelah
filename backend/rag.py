@@ -307,6 +307,28 @@ def _run_community_knowledge_query(
     return result.data if isinstance(result.data, list) else []
 
 
+def _keyword_score(row, score, community_filter):
+    """``score`` less the 8-point bonus for a row of the named community, so
+    what is left is what the question's keywords earned. A community-only
+    match (no topic/content hit) would score exactly 8 with none of it."""
+    community_name_lower = str(row.get("community_name") or "").lower()
+    has_community_bonus = bool(
+        community_filter
+        and community_filter.lower().strip() in community_name_lower
+    )
+    return score - (8 if has_community_bonus else 0)
+
+
+def _row_speaks_to_question(row, keywords):
+    """True when the row is about the question, not just sharing a broad word
+    with it ("shabbat") or speaking to one word of a longer question or
+    only citing it."""
+    topic = str(row.get("topic") or "").lower()
+    source = str(row.get("halakhic_source") or "").lower()
+    content = _substantive_content(row.get("content")).lower()
+    return _is_on_topic(keywords, topic, source, content) and _covers_the_question(keywords, topic, content)
+
+
 def _rank_community_knowledge_rows(rows, keywords, community_filter, canonical_lens):
     """Score raw community-knowledge rows and drop keyword-irrelevant ones.
     Split out of _retrieve_community_knowledge() to keep this loop out of
@@ -323,26 +345,11 @@ def _rank_community_knowledge_rows(rows, keywords, community_filter, canonical_l
             community_filter or canonical_lens,
         )
 
-        # Always require keyword relevance — community-only matches (no topic/content hit)
-        # would score exactly 8 from the community bonus but have zero keyword_score.
-        community_name_lower = str(row.get("community_name") or "").lower()
-        has_community_bonus = bool(
-            community_filter
-            and community_filter.lower().strip() in community_name_lower
-        )
-        keyword_score = score - (8 if has_community_bonus else 0)
-        if keyword_score <= 0:
-            continue  # off-topic for this question; skip regardless of community match
-
-        topic = str(row.get("topic") or "").lower()
-        source = str(row.get("halakhic_source") or "").lower()
-        content = _substantive_content(row.get("content")).lower()
-        if not _is_on_topic(keywords, topic, source, content):
-            continue  # shares only a broad word ("shabbat") with the question
-        if not _covers_the_question(keywords, topic, content):
-            continue  # speaks to one word of a longer question, or only cites it
-
-        ranked.append((score, row))
+        # Always require keyword relevance, whatever the community match.
+        if _keyword_score(row, score, community_filter) <= 0:
+            continue
+        if _row_speaks_to_question(row, keywords):
+            ranked.append((score, row))
     return ranked
 
 

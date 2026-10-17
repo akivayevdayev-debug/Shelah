@@ -442,6 +442,16 @@ async def _h_get_community_profile(arguments: dict, context: dict) -> dict:
     return profile
 
 
+def _timeline_line(entry: dict) -> str:
+    """One timeline entry as "period: event (halachic impact)", or "" when it
+    has neither a period nor an event."""
+    period = str(entry.get("period") or "").strip()
+    event = str(entry.get("event") or "").strip()
+    impact = str(entry.get("halachic_impact") or "").strip()
+    line = f"{period}: {event}" if period and event else (period or event)
+    return f"{line} ({impact})" if line and impact else line
+
+
 def _history_text(background: Any) -> Any:
     """A readable form of a community's historical_background: one line per
     timeline entry ("period: event (halachic impact)"). Anything else is
@@ -449,18 +459,8 @@ def _history_text(background: Any) -> Any:
     timeline = background.get("timeline") if isinstance(background, dict) else None
     if not isinstance(timeline, list) or not timeline:
         return background
-    lines = []
-    for entry in timeline:
-        if not isinstance(entry, dict):
-            continue
-        period = str(entry.get("period") or "").strip()
-        event = str(entry.get("event") or "").strip()
-        impact = str(entry.get("halachic_impact") or "").strip()
-        line = f"{period}: {event}" if period and event else (period or event)
-        if line and impact:
-            line += f" ({impact})"
-        if line:
-            lines.append(line)
+    lines = [_timeline_line(entry) for entry in timeline if isinstance(entry, dict)]
+    lines = [line for line in lines if line]
     return "\n".join(lines) if lines else background
 
 

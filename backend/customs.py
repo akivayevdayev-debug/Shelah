@@ -306,6 +306,32 @@ _RUNTIME_CACHE: dict = {
 }
 
 
+def _runtime_entry(filepath):
+    """``(lens_key.lower(), entry)`` for one customs file that declares
+    runtime.lens_key, else None (not a community file, unreadable, or no key)."""
+    if os.path.basename(filepath).lower() in _NON_COMMUNITY_FILES:
+        return None
+    try:
+        with open(filepath, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except Exception:
+        logger.exception("[Customs Runtime Error] %s", filepath)
+        return None
+    runtime = data.get("runtime") if isinstance(data, dict) else None
+    if not isinstance(runtime, dict):
+        return None
+    lens_key = str(runtime.get("lens_key") or "").strip()
+    if not lens_key:
+        return None
+    parameters = runtime.get("parameters")
+    return lens_key.lower(), {
+        "name": str(data.get("name") or lens_key),
+        "lens_key": lens_key,
+        "practice_baseline": str(runtime.get("practice_baseline") or "").strip(),
+        "parameters": parameters if isinstance(parameters, list) else [],
+    }
+
+
 def runtime_config():
     """Per-community values the code reads from the customs files instead of
     hard-coding them: {lens_key.lower(): {"name", "lens_key", "practice_baseline",
@@ -318,25 +344,9 @@ def runtime_config():
 
     config = {}
     for filepath in files:
-        if os.path.basename(filepath).lower() in _NON_COMMUNITY_FILES:
-            continue
-        try:
-            with open(filepath, "r", encoding="utf-8") as fh:
-                data = json.load(fh)
-        except Exception:
-            logger.exception("[Customs Runtime Error] %s", filepath)
-            continue
-        runtime = data.get("runtime") if isinstance(data, dict) else None
-        lens_key = str((runtime or {}).get("lens_key") or "").strip() if isinstance(runtime, dict) else ""
-        if not lens_key:
-            continue
-        parameters = runtime.get("parameters")
-        config[lens_key.lower()] = {
-            "name": str(data.get("name") or lens_key),
-            "lens_key": lens_key,
-            "practice_baseline": str(runtime.get("practice_baseline") or "").strip(),
-            "parameters": parameters if isinstance(parameters, list) else [],
-        }
+        entry = _runtime_entry(filepath)
+        if entry is not None:
+            config[entry[0]] = entry[1]
 
     _RUNTIME_CACHE["signature"] = signature
     _RUNTIME_CACHE["data"] = config
