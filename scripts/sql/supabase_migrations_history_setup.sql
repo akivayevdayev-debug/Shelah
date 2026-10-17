@@ -2,8 +2,8 @@
 -- Run this once in the Supabase SQL Editor.
 --
 -- Why: the Supabase dashboard's Database > Migrations page and the Supabase
--- CLI (`supabase migration list`, `db push`, `db pull`) read
---   SELECT version FROM supabase_migrations.schema_migrations ORDER BY version
+-- CLI (`supabase migration list`, `db push`, `db pull`) read the version
+-- column of supabase_migrations.schema_migrations, in version order.
 -- This project applies its schema by hand in the SQL Editor (docs/DATABASE.md
 -- "Migrations"), so that table was never created and every such read logged
 -- `relation "supabase_migrations.schema_migrations" does not exist` (42P01)
