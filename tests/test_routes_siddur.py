@@ -68,7 +68,8 @@ class TestDay:
         # 7 Cheshvan 5787: Barech Alenu starts in Israel, not yet outside it.
         outside = test_client.get("/api/siddur/v2/day?date=2026-10-18&il=0").get_json()
         israel = test_client.get("/api/siddur/v2/day?date=2026-10-18&il=1").get_json()
-        assert (outside["birkatHashanim"], israel["birkatHashanim"]) == ("barchenu", "barech-alenu")
+        blessings = [outside["birkatHashanim"], israel["birkatHashanim"]]
+        assert blessings == ["barchenu", "barech-alenu"]
 
     def test_il_defaults_to_diaspora(self, test_client):
         assert test_client.get("/api/siddur/v2/day?date=2026-10-18").get_json()["il"] is False
@@ -114,7 +115,8 @@ class TestSiddurData:
 
     def test_find_by_ref_accepts_a_segment_ref(self):
         service, section = siddur_data.find_by_ref("Siddur Edot HaMizrach, Weekday Mincha, Amida 12")
-        assert (service["slug"], section["slug"]) == ("mincha", "amida")
+        found = (service["slug"], section["slug"])
+        assert found == ("mincha", "amida")
         assert siddur_data.find_by_ref("Siddur Edot HaMizrach, Weekday Mincha, Amidah") is None
 
     @pytest.mark.parametrize("query, expected", [
@@ -137,7 +139,8 @@ class TestSiddurData:
     ])
     def test_search_services(self, query, expected):
         service, section = siddur_data.search_services(query)
-        assert (service["slug"], section["slug"] if section else None) == expected
+        found = (service["slug"], section["slug"] if section else None)
+        assert found == expected
 
     def test_search_misses(self):
         assert siddur_data.search_services("") is None

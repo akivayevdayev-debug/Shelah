@@ -181,7 +181,7 @@ def test_jwt_forgeries_rejected(monkeypatch, variant):
         body = b64(json.dumps(claims).encode())
         sig = b64(hmac.new(pub, head + b"." + body, hashlib.sha256).digest())
         token = (head + b"." + body + b"." + sig).decode()
-    with pytest.raises(Exception):
+    with pytest.raises(jwt.PyJWTError):
         auth_module._verify_clerk_token(token)
 
 
