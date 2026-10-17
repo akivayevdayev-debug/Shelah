@@ -882,7 +882,11 @@ html[dir="rtl"] #searchInput {
     background: #efe3d0;
     border-color: #a59072;
     color: #16324f !important;
-    transform: translateY(-1px);
+}
+
+/* The lift is a mouse gesture: a tap on a touch screen would leave it stuck. */
+@media (hover: hover) and (pointer: fine) {
+    .menu-parasha-quick-link:hover { transform: translateY(-1px); }
 }
 
 .segment-row {
@@ -1687,7 +1691,7 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
     /* The press-grow is a scale (audit M-9): tweening width, height and
        margin-top re-laid the thumb out every frame. */
     transform: scale(var(--range-thumb-scale));
-    transition: transform var(--motion-dur-fast, 150ms) ease-out;
+    transition: transform var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 .reader-range-slider::-moz-range-track {
@@ -1713,7 +1717,7 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
     box-shadow: 0 1px 3px rgba(31, 63, 99, 0.26), 0 0 1px rgba(31, 63, 99, 0.4);
     cursor: pointer;
     transform: scale(var(--range-thumb-scale));
-    transition: transform var(--motion-dur-fast, 150ms) ease-out;
+    transition: transform var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 .reader-range-slider:focus-visible::-webkit-slider-thumb {
@@ -2581,8 +2585,11 @@ html.rtl .home-main-layout #popularTextsGrid {
 .home-calendar-btn:hover {
     background: linear-gradient(135deg, #fff5e0 0%, #f2e8c8 100%);
     border-color: #b09050;
-    /* The raised shadow is a fading layer (ai.css, audit M-9). */
-    transform: translateY(-1px);
+}
+
+/* The raised shadow is a fading layer (ai.css, audit M-9). */
+@media (hover: hover) and (pointer: fine) {
+    .home-calendar-btn:hover { transform: translateY(-1px); }
 }
 
 .home-daily-entry {
@@ -4884,7 +4891,7 @@ html[data-consent-set] #analyticsConsentBanner {
     font-size: var(--text-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 200ms ease-out, scale var(--motion-dur-fast) var(--motion-ease-out);
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out), scale var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 #analyticsConsentAccept {

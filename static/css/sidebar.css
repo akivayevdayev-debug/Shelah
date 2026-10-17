@@ -54,7 +54,7 @@
 
 /* Details/summary expand animation for library sidebar items */
 details[open]>summary~* {
-    animation: shelah-slide-down-fade 0.18s ease both;
+    animation: shelah-slide-down-fade var(--motion-dur-fast) var(--motion-ease-out) both;
 }
 
 details>summary .group-open\:rotate-90 {

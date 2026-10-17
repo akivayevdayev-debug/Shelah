@@ -248,8 +248,10 @@ body.theme-dark {
     max-width: 100%;
 }
 
-.fc-event:hover {
-    transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+    .fc-event:hover {
+        transform: translateY(-1px);
+    }
 }
 
 /* Classes are assigned per-event from the backend's `category` field via
