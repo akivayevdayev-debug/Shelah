@@ -689,6 +689,99 @@ body.search-loading .search-ai-sparkle {
     animation: shelah-warm-pulse 1.6s ease-in-out infinite;
 }
 
+/* Loading halo: a soft gold-and-blue gradient orbiting the bar for as long as
+   the question is loading. It comes on once when loading starts and goes off
+   once when it ends (the opacity transition below) and never pulses in between;
+   the only motion is the gradient turning (shelah-halo-orbit in tokens.css). It
+   is a cue that the question was heard, so it stays quiet: low opacity, one slow
+   turn every --motion-dur-orbit. The answer panel opens at once and carries the
+   live progress line; this only keeps the bar itself from looking idle. */
+#searchForm {
+    isolation: isolate;
+}
+
+body.search-loading .search-liftoff-underlay {
+    opacity: 0.6;
+}
+
+/* The orbit is declared on the base ::before rule but held paused, and only
+   let run here. When loading ends the gradient therefore freezes where it is
+   while the halo fades out (dropping the animation instead would snap it back
+   to angle 0 mid-fade), and the next request resumes from that angle. */
+body.search-loading .search-liftoff-underlay::before {
+    animation-play-state: running;
+}
+
+/* Fixed stadium-shaped mask: border-radius + overflow:hidden keep the visible
+   silhouette a stable pill at every frame, however its ::before gradient turns
+   underneath (the rotation can't live on this element: turning a wide, short
+   box would swing it into a tall diagonal streak over the neighbouring topbar
+   content). It sits one step outside the input and is blurred, so only a soft
+   halo shows past the input's edge; the input and icons paint above it
+   (z-index -1 inside the form's isolation). */
+.search-liftoff-underlay {
+    position: absolute;
+    /* One --sp-2 step, not more: on mobile the topbar pads the form by exactly
+       that much, so this layout box (the blur doesn't count toward scrollable
+       overflow) stops at the viewport edge instead of adding 2px of
+       horizontal overflow at 320px. */
+    inset: calc(-1 * var(--sp-2));
+    z-index: -1;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    filter: blur(9px);
+    transition: opacity var(--motion-dur-base) var(--motion-ease-out);
+}
+
+/* The rotating gradient: one side of the halo is always gold, the opposite
+   side always blue, and the whole thing turns so the two swap sides. It is a
+   square turned around its own centre and clipped back to the stadium shape
+   by the mask every frame.
+
+   scale(2.2, 1) stretches it horizontally to the bar's wide shape. A conic
+   gradient lays its colours out by angle from the centre, so on a bar ~15x
+   wider than tall the long edges would sit almost entirely near +/-90deg: one
+   colour at a time, flipping in unison, which reads as pulsing, not turning.
+   Stretched, the colours spread along the edges roughly in proportion to
+   distance and the two halves genuinely travel around the bar. They are
+   mirror images, so total brightness stays within a few percent at every angle
+   and nothing dips or vanishes. --accent-gold and --accent-primary resolve per
+   theme. The first background is the sRGB fallback; `in oklab` (second) blends
+   gold into blue cleanly instead of muddy. */
+.search-liftoff-underlay::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 70%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%) scale(2.2, 1);
+    background: conic-gradient(from 0deg,
+        var(--accent-gold) 0%,
+        var(--accent-gold) 12%,
+        var(--accent-primary) 38%,
+        var(--accent-primary) 62%,
+        var(--accent-gold) 88%,
+        var(--accent-gold) 100%);
+    background: conic-gradient(in oklab from 0deg,
+        var(--accent-gold) 0%,
+        var(--accent-gold) 12%,
+        var(--accent-primary) 38%,
+        var(--accent-primary) 62%,
+        var(--accent-gold) 88%,
+        var(--accent-gold) 100%);
+    animation: shelah-halo-orbit var(--motion-dur-orbit) linear infinite paused;
+}
+
+/* Reduced motion: no turning. The halo is a still soft ring that fades in and
+   out over 120ms (gentler, not none), like the other fades. */
+@media (prefers-reduced-motion: reduce) {
+    .search-liftoff-underlay { transition: opacity 120ms linear !important; }
+    .search-liftoff-underlay::before { animation: none !important; }
+}
+
 /* .search-ai-sparkle's always-on ambient pulse lives in static/style.css
    (shelah-warm-pulse 3.4s infinite) -- this compound selector's higher
    specificity takes over for the liftoff window only, without editing that

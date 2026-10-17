@@ -201,6 +201,8 @@
     --motion-dur-fast:   150ms;
     --motion-dur-base:   220ms;
     --motion-dur-slow:   400ms;
+    /* One turn of the search bar's loading halo (shelah-halo-orbit). */
+    --motion-dur-orbit:  3s;
     --motion-ease-out:   cubic-bezier(0.25, 0, 0.3, 1);
     --motion-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     /* Deceleration curve for card/scale-in transform reveals — no overshoot,
@@ -396,6 +398,18 @@
 @keyframes shelah-warm-pulse {
     0%, 100% { opacity: 0.7; transform: scale(0.97); }
     50%      { opacity: 1;   transform: scale(1.04); }
+}
+
+/* The search bar's loading halo (ai.css .search-liftoff-underlay): its
+   gold-and-blue conic gradient turns steadily around the bar while an AI
+   question loads. Transform only. Both keyframes repeat the SAME transform
+   list as the element's base transform (translate, scale, then rotate), so
+   each term interpolates on its own and the turn is pure rotation; a bare
+   rotate() against that base would matrix-interpolate and drag the square off
+   centre each cycle. The 2.2 stretch must match ai.css. */
+@keyframes shelah-halo-orbit {
+    from { transform: translate(-50%, -50%) scale(2.2, 1) rotate(0deg); }
+    to   { transform: translate(-50%, -50%) scale(2.2, 1) rotate(360deg); }
 }
 
 /* View transitions (::view-transition-*(root), below). Forward comes in

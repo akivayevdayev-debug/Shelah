@@ -1795,6 +1795,38 @@ body.conv-modal-open {
     color: color-mix(in srgb, var(--ink-secondary) 72%, var(--conv-panel-bg));
 }
 
+/* Halo behind the composer while an answer is in flight: the same gold and blue
+   gradient that orbits the search bar (.search-liftoff-underlay in ai.css, same
+   mask and the same shelah-halo-orbit keyframe), so the question visibly carries
+   over into the panel. The panel's scrim covers the search bar, so this is the
+   bar the reader is looking at while they wait. Steady opacity, only the
+   gradient turns; it freezes where it is when the answer lands, then fades. */
+.conv-halo {
+    position: absolute;
+    inset: calc(-1 * var(--sp-2));
+    z-index: -1;
+    border-radius: 32px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    filter: blur(8px);
+    transition: opacity var(--motion-dur-base) var(--motion-ease-out);
+}
+.conv-halo::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 70%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%) scale(2.2, 1);
+    background: conic-gradient(from 0deg, var(--accent-gold) 0%, var(--accent-gold) 12%, var(--accent-primary) 38%, var(--accent-primary) 62%, var(--accent-gold) 88%, var(--accent-gold) 100%);
+    background: conic-gradient(in oklab from 0deg, var(--accent-gold) 0%, var(--accent-gold) 12%, var(--accent-primary) 38%, var(--accent-primary) 62%, var(--accent-gold) 88%, var(--accent-gold) 100%);
+    animation: shelah-halo-orbit var(--motion-dur-orbit) linear infinite paused;
+}
+.conv-panel[data-sending="true"] .conv-halo { opacity: 0.6; }
+.conv-panel[data-sending="true"] .conv-halo::before { animation-play-state: running; }
+
 .conv-disclaimer {
     margin: 0;
     font-size: var(--text-xs);
@@ -2238,9 +2270,12 @@ body.theme-dark .topbar-ask-btn {
     .ai-attention::after,
     .conv-notice,
     .conv-cite::before,
+    .conv-halo::before,
     .conv-jump {
         animation: none !important;
     }
+    /* The halo stays as a still ring that fades over 120ms, like the arrivals below. */
+    .conv-panel .conv-halo { transition: opacity 120ms linear !important; }
     /* What arrives on screen still arrives, as a short fade with no travel and
        no stagger: reduced motion means gentler, not none. */
     .conv-turn--enter,
