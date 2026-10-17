@@ -648,9 +648,11 @@ test('getSunset: the location\'s sunset once zmanim load, null before and for a 
 
 test('the countdown redraws only when its text changes, and ticks slowly while the tab is hidden', async () => {
     const nowMs = Date.now();
+    // Thirty seconds past the hour, so the "3h 0m" label holds for the whole test instead of
+    // flipping to "2h 59m" if a millisecond passes between the first draw and the second.
     const data = {
         zmanim: { Sunset: '7:45 PM' },
-        metadata: { zmanim_iso: { Sunset: new Date(nowMs + 3 * 3600 * 1000).toISOString() } },
+        metadata: { zmanim_iso: { Sunset: new Date(nowMs + 3 * 3600 * 1000 + 30 * 1000).toISOString() } },
     };
     const fetchFn = makeSequenceFetch([makeJsonResponse(data)]);
     const { mod, document, timer } = await loadZmanim({ fetch: fetchFn });

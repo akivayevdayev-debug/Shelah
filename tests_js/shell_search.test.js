@@ -16,6 +16,8 @@ const plain = (value) => JSON.parse(JSON.stringify(value));
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const MOBILE = '(max-width: 1023px)';
 
+const BACKGROUND_REQUEST = /^\/api\/(library\/popular|daily-study|parasha)(\?|$)/;
+
 /** A page with the Reliability log captured, and the search stand-ins installed. */
 async function openPage(options = {}) {
     const reliability = [];
@@ -27,6 +29,9 @@ async function openPage(options = {}) {
         },
     });
     page.reliability = reliability;
+    // The home page's own lists arrive in the background, at any moment; they are not what search asked for.
+    const takeEverything = page.takeCalls.bind(page);
+    page.takeCalls = () => takeEverything().filter((request) => !BACKGROUND_REQUEST.test(request.url));
     return page;
 }
 
@@ -311,10 +316,10 @@ test('typing asks the server once the typing has paused', async () => {
         page.type('#searchInput', 'ge');
         page.type('#searchInput', 'gen');
         page.type('#searchInput', 'gene');
-        assert.deepEqual(page.takeCalls(), [], 'nothing yet while the keys are still going');
+        assert.deepEqual(searchRequests(page), [], 'nothing yet while the keys are still going');
         await sleep(260);
         await page.settle();
-        const asked = page.takeCalls().map((request) => new URL(request.url, 'https://shelah.org').searchParams.get('q'));
+        const asked = searchRequests(page).map((request) => new URL(request.url, 'https://shelah.org').searchParams.get('q'));
         assert.deepEqual(asked, ['gene'], 'one request, for the final text');
         assert.equal(listVisible(page), true);
     } finally {
