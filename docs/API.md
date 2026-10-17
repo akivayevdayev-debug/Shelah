@@ -31,7 +31,7 @@ Every route is served from one Vercel deployment. The base URL in production is 
 | Group | Routes |
 |---|---|
 | [Pages](#pages) | `/`, `/settings`, `/profile`, `/terms`, `/privacy`, `/accessibility`, `/about`, `/help`, `/glossary`, `/ai-disclosure`, `/acceptable-use`, `/dmca`, `/licenses`, `/robots.txt`, `/sitemap.xml`, `/llms.txt`, `/manifest.webmanifest`, `/favicon.ico`, `/service-worker.js` |
-| [Deep-link paths](#deep-link-paths) | `/text/…`, `/prayer/…`, `/siddur[/…]`, `/community/…`, `/calendar/…`, `/answer/…`, `/a/…`, `/chat/…`, `/history[/…]`, `/signin` |
+| [Deep-link paths](#deep-link-paths) | `/text/…`, `/prayer/…`, `/siddur[/…]`, `/community/…`, `/calendar/…`, `/answer/…`, `/a/…`, `/chat/…`, `/history[/…]`, `/signin`, `/signup` |
 | [Ask](#ask-pipeline) | `POST /ask` |
 | [Conversations](#conversations) | `/api/conversations` (+ `/<id>`, `/<id>/messages`, `/<id>/restore`, `/<id>/ask`, `/<id>/share`) |
 | [History and sharing](#answer-history-and-sharing) | `/api/user/history` (+ `/<id>`, `/<id>/share`), `/api/public/answer/<token>`; [conversation sharing](#conversation-sharing) and [device identity](#device-identity) |
@@ -91,7 +91,9 @@ Plain text. Allows `/`, disallows `/api/` and `/devtools/`, and points crawlers 
 | `/a/<token>` | A publicly shared answer (loaded through `GET /api/public/answer/<token>`). |
 | `/chat/<id>` | A conversation. |
 | `/history`, `/history/<rest>` | The answer history. |
-| `/signin` | The sign-in overlay (`/profile` and `/settings` are served by `app.py`, above). |
+| `/signin`, `/signup` | The sign-in / sign-up overlay (`/profile` and `/settings` are served by `app.py`, above). |
+| `/sign-in`, `/sign-up`, `/unauthorized-sign-in` | `308` to `/signin`, `/signup`, `/signin`: Clerk Account Portal names, so the same words work on this domain. The destination never carries the request's query. |
+| `/admin/feedback` | The feedback digest as a page. Holds no data: its script signs in with Clerk and calls `/api/devtools/feedback-digest` with a Bearer header (operator only, `ADMIN_USER_IDS`). `noindex`, `no-store`. |
 
 After the view comes an optional **tail** of overlay and AI keys, all path segments: `chat/<id>`, a community slug, an answer mode (`balanced`, `practical`, `sources`, `strict`), `mini` / `overlay` / `full`, `calendar/<day>`, and `signin` / `profile` / `settings`. Examples: `/chat/new/sefardic/strict`, `/text/Genesis.1/chat/<id>/mini`. The server checks the tail against the router's own grammar, so a segment that fits nowhere is a real `404` rather than a soft-404 shell. The view value itself is not validated, with one exception: a text the reader has already found does not exist (`sefaria_library.is_known_missing_text`, never a Sefaria request here) is served with a real `404` status and kept out of search results.
 

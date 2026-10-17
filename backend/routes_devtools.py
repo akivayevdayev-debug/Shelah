@@ -15,7 +15,7 @@ import time
 from functools import wraps
 from typing import Any
 
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, jsonify, make_response, render_template, request, g
 
 from backend import cost_meter, rate_limit
 from backend.auth import CLERK_ENFORCE_AUTH, maybe_require_clerk_auth, require_clerk_auth
@@ -142,6 +142,17 @@ def _feedback_digest_limit(raw):
     if requested < 1:
         return _FEEDBACK_DIGEST_DEFAULT_LIMIT
     return min(requested, _FEEDBACK_DIGEST_MAX_LIMIT)
+
+
+@routes_devtools.route("/admin/feedback", methods=["GET"])
+def admin_feedback_page():
+    """The feedback digest as a page. It holds no data itself: its script signs
+    in with Clerk and calls the API with a Bearer header (a browser address-bar
+    visit to the API cannot send one). Access is decided by the API, not here."""
+    response = make_response(render_template("admin_feedback.html", clerk_publishable_key=CLERK_PUBLISHABLE_KEY))
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @routes_devtools.route("/api/devtools/feedback-digest", methods=["GET"])

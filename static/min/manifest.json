@@ -72,7 +72,7 @@
         "source": "sha256:4e5e1c00b67e3ee511f7776e5d3933a6295816e39b77fcfd1c7f428f55601679"
       },
       "shell.js": {
-        "source": "sha256:fff01d401b1c6dd427d22ee04ce25f928f1f6fcc48fb8a5559cb44c175707083"
+        "source": "sha256:c1ae369a2f994340184a5bef1feb52bb5f7132dd51dd90abeb8f8436812cf56a"
       },
       "topbar_shared.js": {
         "source": "sha256:65384daf7b59b10d4f48c0ac6fc81df153f099f6c6d9d716b8b544dd3c82fd8c"
@@ -105,7 +105,7 @@
         "main.js": "sha256:f2f8344c40e23c295f9b9211f253a6e8aae7b45356af70a8bfc6445a7b48ef91",
         "motion.js": "sha256:1fa83dc0ea0edf2898b9ee83d487f2c908f913b92ce5175c2b262317b248fc8d",
         "reader-ui.js": "sha256:1b444e7d533c721b8ff4db5c0d8e16215872b039c196b9088222dd27cfc11dcb",
-        "router.js": "sha256:373c95ea551957b4af883a6524ef030a9e8ad212a6d9eceda94be5d70ca4ad28",
+        "router.js": "sha256:7f97069cf5b66a1376f3898ee862e25d46289798cc99a3f8b7dec0583208de63",
         "siddur-day.js": "sha256:b1e21fff08e090efef2da707449b93e33df4fefd2252914e4820fff661e7ff2b",
         "siddur-reader.js": "sha256:9dc2fc71c770d9fe0466f1b46bdc4678429b061b346a99874b0f8a86667ec826",
         "siddur.js": "sha256:5c7c99c0bed9ec2b0141e0b199f28e6819560d43653fb083397c69c9dd543616",
@@ -122,10 +122,10 @@
         "js/community-labels.js": "8a6529f6c365",
         "js/hebrew-ref.js": "ca943945d5f1",
         "js/load-region.js": "2833ed602bea",
-        "js/main.js": "118cb6cf9434",
+        "js/main.js": "1f28a481e874",
         "js/motion.js": "b05b24502966",
         "js/sentry-init.js": "715c0413cb78",
-        "js/shell.js": "8b6f3b55e57c",
+        "js/shell.js": "c3a2fca334a3",
         "js/topbar_shared.js": "51f0e772633b"
       },
       "unreached": []

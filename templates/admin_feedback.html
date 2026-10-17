@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Feedback digest | Sh'elah</title>
+    <style>
+        :root { --bg: #fbf8f1; --fg: #1d2433; --muted: #566175; --line: #ddd5c4; --accent: #1f3f63; }
+        @media (prefers-color-scheme: dark) {
+            :root { --bg: #14171f; --fg: #e8e4da; --muted: #a3acbd; --line: #2c3342; --accent: #8fb4e6; }
+        }
+        body { margin: 0; padding: clamp(16px, 4vw, 40px); background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
+        h1 { font-size: clamp(1.25rem, 3vw, 1.75rem); margin: 0 0 8px; }
+        p { color: var(--muted); margin: 0 0 16px; }
+        a { color: var(--accent); }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { text-align: start; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+        th { color: var(--muted); font-weight: 600; }
+        .wrap { overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Feedback digest</h1>
+    <p id="status" role="status">Checking your session…</p>
+    <div class="wrap"><table id="rows" hidden></table></div>
+    {# Same pinned Clerk build as index.html's loader (SRI hash included). The page
+       sends the session token as a Bearer header: a plain address-bar visit to
+       /api/devtools/feedback-digest cannot, which is why that URL alone says
+       "Authentication required". No identity is ever put in the URL. #}
+    <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5.127.0/dist/clerk.browser.js"
+            integrity="sha384-9BfgqxUZJLeppMqmDGDPFU1zC63bMyEwEXG8xMcQwhDz5qU3WUR4PwpVcZ4fKU8D"
+            crossorigin="anonymous" data-clerk-publishable-key="{{ clerk_publishable_key }}"></script>
+    <script>
+        (async function () {
+            const status = document.getElementById('status');
+            const table = document.getElementById('rows');
+            const say = (text) => { status.textContent = text; };
+            try {
+                if (!window.Clerk) { say('Sign-in is unavailable right now.'); return; }
+                await window.Clerk.load();
+                if (!window.Clerk.session) {
+                    status.textContent = '';
+                    const link = document.createElement('a');
+                    link.href = '/signin';
+                    link.textContent = 'Sign in';
+                    status.append(link, ' with the operator account, then reload this page.');
+                    return;
+                }
+                const token = await window.Clerk.session.getToken();
+                const response = await fetch('/api/devtools/feedback-digest?limit=200', {
+                    headers: { Authorization: 'Bearer ' + token },
+                    cache: 'no-store',
+                });
+                if (response.status === 403) { say('This account is not on the operator list (ADMIN_USER_IDS).'); return; }
+                if (!response.ok) { say('The digest could not be loaded (HTTP ' + response.status + ').'); return; }
+                const data = await response.json();
+                const columns = [];
+                data.rows.forEach((row) => Object.keys(row).forEach((key) => { if (!columns.includes(key)) columns.push(key); }));
+                const head = table.createTHead().insertRow();
+                columns.forEach((key) => { const th = document.createElement('th'); th.textContent = key; head.append(th); });
+                const body = table.createTBody();
+                data.rows.forEach((row) => {
+                    const tr = body.insertRow();
+                    columns.forEach((key) => { tr.insertCell().textContent = row[key] == null ? '' : String(row[key]); });
+                });
+                table.hidden = false;
+                say(data.count + ' rows: ' + data.helpful + ' helpful, ' + data.not_helpful + ' not helpful.');
+            } catch (error) {
+                say('The digest could not be loaded.');
+            }
+        })();
+    </script>
+</body>
+</html>

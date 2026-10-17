@@ -2642,7 +2642,19 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                     return;
                 }
 
-                await window.Clerk.load({ publishableKey, appearance: window.ShelahClerkAppearance?.() });
+                await window.Clerk.load({
+                    publishableKey,
+                    appearance: window.ShelahClerkAppearance?.(),
+                    // Where Clerk sends someone it cannot place from a redirect_url
+                    // (the same fields as the Dashboard's "after sign-in/up fallback").
+                    signInFallbackRedirectUrl: `${window.location.origin}/`,
+                    signUpFallbackRedirectUrl: `${window.location.origin}/`,
+                    // Without these Clerk finishes a sign-in with a full page load of
+                    // the URL it was given, which raced the in-page close below and
+                    // left the signed-in UI stale until a manual reload.
+                    routerPush: (to) => clerkNavigate(to),
+                    routerReplace: (to) => clerkNavigate(to, { replace: true }),
+                });
                 settleClerkLoaded(true);
                 window.Clerk.addListener(async () => {
                     await refreshAuthUi();
@@ -2689,7 +2701,8 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // leaving the DOM is the signal.
         const CLERK_MODAL_SELECTOR = '.cl-modalBackdrop';
         const CLERK_MODAL_WAIT_MS = 10000;
-        let authModal = null; // { page, kind: 'signin' | 'profile', observer, timer }
+        const WINDOW_PAGES = new Set(['signin', 'signup']); // the pages that are a sign-in/up window itself
+        let authModal = null; // { page, kind: 'signin' | 'signup' | 'profile', observer, timer }
         let authLeaving = false;
 
         // A legal page's Sign In (legal_scripts.html) goes to /signin with its
@@ -2713,6 +2726,40 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 return null;
             }
         })();
+
+        // The page as it is under the account overlay: where Clerk sends the user
+        // once signed in (never the /signin URL itself, which is only a window).
+        function authRedirectUrl() {
+            if (authReturnPath) return `${window.location.origin}${authReturnPath}`;
+            const router = window.ShelahRouter;
+            if (!router) return `${window.location.origin}/`;
+            const route = { ...router.readRoute() };
+            delete route.auth;
+            return `${window.location.origin}${router.routeUrl(route, window.location.pathname)}`;
+        }
+
+        // Clerk's own navigation (after sign-in, sign-up or sign-out) stays in the
+        // page: the app's router when it owns the path, a normal load otherwise.
+        function isModifiedClick(event) {
+            return event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+        }
+
+        function clerkNavigate(to, { replace = false } = {}) {
+            const target = new URL(to, window.location.origin);
+            if (target.origin === window.location.origin) {
+                const path = `${target.pathname}${target.search}`;
+                const under = new URL(authRedirectUrl());
+                // Already the page under the overlay: step back to it rather than
+                // stacking a duplicate entry on top of the /signin one.
+                if (currentAuthPage() && path === `${under.pathname}${under.search}`) {
+                    leaveAuthRoute();
+                    return;
+                }
+                if (window.ShelahRouter?.pushPath(`${path}${target.hash}`, { replace })) return;
+            }
+            if (replace) window.location.replace(target.href);
+            else window.location.assign(target.href);
+        }
 
         function stopWatchingAuthModal() {
             if (!authModal) return;
@@ -2745,7 +2792,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             stopWatchingAuthModal();
             // /profile asked for a sign-in first: once signed in, the profile
             // it named opens in its place.
-            if (watch.kind === 'signin' && watch.page !== 'signin' && window.Clerk?.user && currentAuthPage() === watch.page) {
+            if (watch.kind !== 'profile' && !WINDOW_PAGES.has(watch.page) && window.Clerk?.user && currentAuthPage() === watch.page) {
                 void showAuthModal(watch.page);
                 return;
             }
@@ -2778,6 +2825,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             stopWatchingAuthModal();
             try {
                 if (kind === 'signin') window.Clerk?.closeSignIn?.();
+                else if (kind === 'signup') window.Clerk?.closeSignUp?.();
                 else if (kind === 'profile') window.Clerk?.closeUserProfile?.();
             } catch (_) {
                 // Clerk already closed it.
@@ -2788,9 +2836,10 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         // hydrateRoute both call it, and an open modal stays as it is.
         async function showAuthModal(page) {
             if (!window.Clerk) return;
-            const kind = page === 'signin' || !window.Clerk.user ? 'signin' : 'profile';
+            const signedOutKind = page === 'signup' ? 'signup' : 'signin';
+            const kind = WINDOW_PAGES.has(page) || !window.Clerk.user ? signedOutKind : 'profile';
             if (authModal?.page === page && authModal.kind === kind) return;
-            if (page === 'signin' && window.Clerk.user) {
+            if (WINDOW_PAGES.has(page) && window.Clerk.user) {
                 // Already signed in (a sign-in just finished, or a stale
                 // /signin link): there is nothing to show.
                 closeAuthModal();
@@ -2803,12 +2852,14 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
             // meantime sees this modal as open instead of opening another.
             watchAuthModal(page, kind);
             try {
-                if (kind === 'signin') {
-                    // Back to this same URL after a redirect sign-in (OAuth):
-                    // handleAuthRouteIntent then finds the user signed in and
-                    // takes /signin off, or opens the /profile it named.
-                    await window.Clerk.openSignIn({
-                        fallbackRedirectUrl: window.location.href,
+                if (kind === 'signin' || kind === 'signup') {
+                    // Back to the page under the overlay after a sign-in, in place
+                    // or through a redirect (OAuth). A /profile that asked for a
+                    // sign-in first keeps its own URL so it opens afterwards.
+                    const returnTo = WINDOW_PAGES.has(page) ? authRedirectUrl() : window.location.href;
+                    const open = kind === 'signup' ? window.Clerk.openSignUp : window.Clerk.openSignIn;
+                    await open.call(window.Clerk, {
+                        fallbackRedirectUrl: returnTo,
                         appearance: window.ShelahClerkAppearance?.(),
                     });
                 } else {
@@ -2859,10 +2910,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
                 return;
             }
             try {
-                await window.Clerk.openSignUp({
-                    fallbackRedirectUrl: window.location.href,
-                    appearance: window.ShelahClerkAppearance?.(),
-                });
+                await openAuthRoute('signup');
             } catch (error) {
                 console.warn('Unable to open the Clerk sign-up modal:', error);
                 await handleSignIn();
@@ -10931,7 +10979,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         else toggleLanguage(savedLang, { auto: true });
 
         if (signInBtn) {
-            signInBtn.addEventListener('click', () => {
+            // A real link (/signin works in a new tab or without scripts); a plain
+            // click opens the window in place instead.
+            signInBtn.addEventListener('click', (event) => {
+                if (isModifiedClick(event)) return;
+                event.preventDefault();
                 void handleSignIn();
             });
         }

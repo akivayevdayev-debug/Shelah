@@ -117,6 +117,6 @@ def _private_default(path: str) -> str | None:
     """Fail-safe default: every /api/* route plus the two historical
     always-private aliases get an explicit no-store; anything else is left
     for the caller's own (unchanged) static/HTML branch."""
-    if path.startswith("/api/") or path in {"/ask", "/set_location"}:
+    if path.startswith("/api/") or path in {"/ask", "/set_location", "/admin/feedback"}:
         return CACHE_TIER_PRIVATE
     return None

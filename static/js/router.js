@@ -54,7 +54,7 @@
 //          <community> <mode>     the AI keys, e.g. `sefardic/strict`
 //          full | mini            the conversation's size (overlay is implicit)
 //          calendar/<YYYY-MM-DD>  the calendar day
-//          signin | profile | settings   the account modal (`auth`)
+//          signin | signup | profile | settings   the account modal (`auth`)
 //
 // e.g. `/chat/new/all/balanced`, `/answer/<uuid>/sefardic/strict`,
 // `/text/Genesis.1/chat/<uuid>/ashkenaz/sources/mini`,
@@ -69,7 +69,7 @@
 // `/answer/<id>?minhag=...`) still read the same; installRouter() rewrites
 // them to their path once, with replaceState.
 //
-// `auth` (signin | profile | settings) is an overlay like the calendar: the
+// `auth` (signin | signup | profile | settings) is an overlay like the calendar: the
 // Clerk modal it names opens over whatever view is under it
 // (`/text/Genesis.1/signin`), and closing the modal steps back off it
 // (closeOverlay). A push that opens no view on a page the router doesn't own
@@ -101,7 +101,7 @@ const CONVERSATION_SIZES = Object.freeze(["mini", "overlay", "full"]);
 const DEFAULT_CONVERSATION_SIZE = "overlay";
 const AI_MODES = Object.freeze(["balanced", "practical", "sources", "strict"]);
 const MINHAG_RE = /^[A-Za-z][A-Za-z-]{0,39}$/;
-const AUTH_PAGES = Object.freeze(["signin", "profile", "settings"]);
+const AUTH_PAGES = Object.freeze(["signin", "signup", "profile", "settings"]);
 // Bare tail words -> the key they set. A community is any other plain word.
 const TAIL_WORDS = Object.freeze({
     ...Object.fromEntries(CONVERSATION_SIZES.map((size) => [size, "cv"])),

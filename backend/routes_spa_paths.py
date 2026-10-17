@@ -62,7 +62,7 @@ _TAIL_PAIRS = {"chat": "conversation", "calendar": "date"}
 _TAIL_WORDS = {
     **dict.fromkeys(("mini", "overlay", "full"), "cv"),
     **dict.fromkeys(("balanced", "practical", "sources", "strict"), "mode"),
-    **dict.fromkeys(("signin", "profile", "settings"), "auth"),
+    **dict.fromkeys(("signin", "signup", "profile", "settings"), "auth"),
 }
 _MINHAG_RE = re.compile(r"^[A-Za-z][A-Za-z-]{0,39}$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -279,3 +279,30 @@ def history_path(rest=""):
 @routes_spa_paths.route("/signin", methods=["GET"])
 def signin_path():
     return _noindex_shell()
+
+
+@routes_spa_paths.route("/signup", methods=["GET"])
+def signup_path():
+    return _noindex_shell()
+
+
+# Clerk's Account Portal names (accounts.shelah.org/sign-in, /sign-up,
+# /unauthorized-sign-in). Set the Clerk Dashboard's Paths to these app URLs and
+# the same words also work on this domain. 308 keeps a ?redirect_url=.. out of
+# the way: the destination carries no query, so nothing user-supplied is ever
+# reflected into the Location header.
+_ACCOUNT_PORTAL_ALIASES = {
+    "/sign-in": "/signin",
+    "/sign-up": "/signup",
+    "/unauthorized-sign-in": "/signin",
+}
+
+
+def _account_alias_redirect():
+    return redirect(_ACCOUNT_PORTAL_ALIASES[request.path], code=308)
+
+
+for _alias in _ACCOUNT_PORTAL_ALIASES:
+    routes_spa_paths.add_url_rule(
+        _alias, endpoint=f"account_alias{_alias.replace('-', '_').replace('/', '_')}",
+        view_func=_account_alias_redirect, methods=["GET"])

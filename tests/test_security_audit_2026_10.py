@@ -229,3 +229,36 @@ async def test_f5_bearer_verification_runs_off_the_event_loop(fastapi_client, mo
         headers={"Authorization": "Bearer fake", "X-Vercel-Forwarded-For": "203.0.113.78"})
     assert seen, "the verifier was never called"
     assert all(t != loop_thread for t in seen)
+
+
+# ── Account links, sign-in redirect and the admin page ───────────────────────
+
+@pytest.mark.parametrize("alias,target", [
+    ("/sign-in", "/signin"), ("/sign-up", "/signup"), ("/unauthorized-sign-in", "/signin"),
+])
+def test_clerk_account_portal_paths_redirect_into_the_app(test_client, alias, target):
+    response = test_client.get(f"{alias}?redirect_url=https://evil.example/x")
+    assert response.status_code == 308
+    assert response.headers["Location"].endswith(target)
+    assert "evil.example" not in response.headers["Location"]
+
+
+def test_signup_path_serves_the_noindex_shell(test_client):
+    response = test_client.get("/signup")
+    assert response.status_code == 200
+    assert "noindex" in response.headers["X-Robots-Tag"]
+
+
+def test_admin_feedback_page_carries_no_data_and_is_not_cached(test_client):
+    response = test_client.get("/admin/feedback")
+    assert response.status_code == 200
+    assert "noindex" in response.headers["X-Robots-Tag"]
+    assert "no-store" in response.headers["Cache-Control"]
+    assert "Authorization: 'Bearer '" in response.get_data(as_text=True)
+
+
+def test_sign_in_finishes_in_page_on_the_page_under_the_overlay():
+    src = (ROOT / "static/js/shell.js").read_text()
+    assert "routerPush: (to) => clerkNavigate(to)" in src
+    assert "fallbackRedirectUrl: returnTo" in src
+    assert "fallbackRedirectUrl: window.location.href" not in src
