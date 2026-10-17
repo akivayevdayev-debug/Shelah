@@ -1074,12 +1074,19 @@ test('the tip steps aside for an open menu and returns when it closes', async ()
     }
 });
 
-test('a menu that is open when the tip is due keeps it from showing, and so does an open search', async () => {
+test('a menu that is open when the tip is due holds it back until the menu closes, and an open search keeps it away', async () => {
     const page = await openConversationPage();
     try {
-        page.document.getElementById('userProfileMenu').classList.remove('hidden');
+        const menu = page.document.getElementById('userProfileMenu');
+        menu.classList.remove('hidden');
         await page.tick(1700);
         assert.equal(page.hidden('#aiDiscoveryTip'), true);
+
+        // The timer already fired and gave up for now; closing the menu brings the tip back.
+        menu.classList.add('hidden');
+        await page.flush();
+        await page.tick(1700);
+        assert.equal(page.hidden('#aiDiscoveryTip'), false);
     } finally {
         page.close();
     }

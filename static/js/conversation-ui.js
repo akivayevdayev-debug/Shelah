@@ -1821,8 +1821,12 @@ function maybeShowTip() {
     window.clearTimeout(ui.tipTimer);
     ui.tipTimer = window.setTimeout(() => {
         // Only on a calm screen: never over an open panel, modal, search or reader.
+        const menuOpen = openTipBlockingMenu();
+        // A menu open now is not "never": watchTipBlockingMenus brings the tip back
+        // once the last menu closes (it only does so for a tip it knows is waiting).
+        if (menuOpen) ui.tipDeferred = true;
         const busy = ui.open
-            || openTipBlockingMenu()
+            || menuOpen
             || document.body.classList.contains("mobile-search-open")
             || document.body.classList.contains("conv-modal-open");
         const anchor = tipAnchor();
