@@ -229,7 +229,7 @@ h6 {
     box-shadow: 0 2px 8px rgba(78, 64, 45, 0.06);
     position: sticky;
     top: 0;
-    z-index: 200 !important;
+    z-index: 200;
     overflow: visible;
     min-height: 0;
 }
@@ -238,7 +238,7 @@ h6 {
 .topbar-flat-btn {
     background: transparent !important;
     border: none !important;
-    box-shadow: none !important;
+    box-shadow: none;
     padding: 0.2rem 0.32rem;
     border-radius: 0.35rem;
     color: #5a4f3e;
@@ -276,8 +276,8 @@ h6 {
     opacity: 0.85;
     color: var(--text-navy, #002147);
     border: 1px solid transparent !important;
-    border-radius: 0.4rem !important;
-    padding: 0.22rem 0.6rem !important;
+    border-radius: 0.4rem;
+    padding: 0.22rem 0.6rem;
     gap: 0.35rem;
     transition: opacity var(--motion-dur-fast) var(--motion-ease-out), background var(--motion-dur-fast) var(--motion-ease-out), border-color var(--motion-dur-fast) var(--motion-ease-out);
 }
@@ -427,7 +427,7 @@ h6 {
     align-items: center;
     justify-content: center;
     position: relative; /* anchors the ::after touch-target hit-slop below */
-    border-radius: 0.35rem !important;
+    border-radius: 0.35rem;
     transition: background var(--motion-dur-fast) var(--motion-ease-out), border-color var(--motion-dur-fast) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out);
 }
 
@@ -531,7 +531,7 @@ h6 {
 
 html.rtl #hebrewDateDisplay {
     direction: rtl;
-    unicode-bidi: plaintext !important;
+    unicode-bidi: plaintext;
     text-align: right;
 }
 
@@ -567,7 +567,7 @@ html.rtl #hebrewDateDisplay {
 #userProfileMenu {
     background: #fffaf3;
     border-color: #ddd4c3;
-    z-index: 9999 !important;
+    z-index: 9999;
     position: absolute;
     top: 100%;
     inset-inline-end: 0;
@@ -583,16 +583,16 @@ html.rtl #hebrewDateDisplay {
 .topbar-user-menu-item {
     font-family: Georgia, "Times New Roman", serif;
     line-height: 1.25;
-    color: #334155 !important;
+    color: #334155;
     display: flex !important;
     align-items: center;
     min-height: 1.5rem;
     padding: var(--sp-1) var(--sp-3) !important;
     border-radius: var(--radius-sm);
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    background: transparent !important;
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    background: transparent;
     text-decoration: none;
 }
 
@@ -603,7 +603,7 @@ html.rtl #hebrewDateDisplay {
 .topbar-user-menu-item:hover,
 .topbar-user-menu-item:focus-visible {
     background: #f4eee2 !important;
-    color: #223e5a !important;
+    color: #223e5a;
 }
 
 :is([data-theme="dark"], body.theme-dark) #userProfileMenu {
@@ -612,7 +612,7 @@ html.rtl #hebrewDateDisplay {
 }
 
 :is([data-theme="dark"], body.theme-dark) .topbar-user-menu-item {
-    color: var(--accent-cream) !important;
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) .topbar-user-menu-item:hover,
@@ -623,13 +623,13 @@ html.rtl #hebrewDateDisplay {
 
 /* Settings Panel & General Button Styling for Tailwind Compatibility */
 #settingsPanel button {
-    color: #334155 !important;
-    display: inline-block !important;
-    visibility: visible !important;
-    border-radius: 0.6rem !important;
-    padding: 0.42rem 0.62rem !important;
-    font-size: 0.72rem !important;
-    line-height: 1.6 !important;
+    color: #334155;
+    display: inline-block;
+    visibility: visible;
+    border-radius: 0.6rem;
+    padding: 0.42rem 0.62rem;
+    font-size: 0.72rem;
+    line-height: 1.6;
 }
 
 /* #settingsPanel button's !important display:inline-block above outranks
@@ -639,12 +639,12 @@ html.rtl #hebrewDateDisplay {
    can still be toggled off outside text pages. */
 #settingsPanel button.hidden,
 #settingsPanel .export-text-only.hidden {
-    display: none !important;
+    display: none;
 }
 
 /* Quick Settings' "AI settings" row: icon, two-line label, caret. */
 #settingsPanel #openAiSettingsBtn {
-    display: flex !important;
+    display: flex;
     align-items: center;
     gap: var(--sp-2);
     min-height: 44px;
@@ -664,7 +664,7 @@ html.rtl #hebrewDateDisplay {
 }
 
 #semanticBookmarkBtn {
-    border-color: #dacdb8 !important;
+    border-color: #dacdb8;
 }
 
 /* #searchIcon's `top-2` utility (templates/index.html) is a fixed 8px
@@ -755,7 +755,7 @@ html[dir="rtl"] #searchInput {
        reset, which otherwise outranks this plain class selector on
        specificity and leaves the icon inheriting its container's color
        instead of showing gold. */
-    color: var(--accent-gold) !important;
+    color: var(--accent-gold);
     opacity: 0.85;
 }
 
@@ -774,8 +774,8 @@ html[dir="rtl"] #searchInput {
 }
 
 #searchInput {
-    background: #fbf8f1 !important;
-    border-color: #d8d0c2 !important;
+    background: #fbf8f1;
+    border-color: #d8d0c2;
     /* The placeholder is longer than the field on a phone; the default `clip`
        cut it off mid-letter under the search/AI icons. */
     text-overflow: ellipsis;
@@ -791,7 +791,7 @@ html[dir="rtl"] #searchInput {
 
 #searchInput:focus {
     border-color: #b8aa90 !important;
-    box-shadow: 0 0 0 2px rgba(217, 205, 184, 0.78) !important;
+    box-shadow: 0 0 0 2px rgba(217, 205, 184, 0.78);
 }
 
 #searchSuggestions {
@@ -1362,14 +1362,14 @@ html.theme-dark::-webkit-scrollbar,
 html.theme-dark::-webkit-scrollbar-track,
 :is([data-theme="dark"], body.theme-dark)::-webkit-scrollbar-track,
 :is([data-theme="dark"], body.theme-dark) ::-webkit-scrollbar-track {
-    background: var(--surface-subtle) !important;
+    background: var(--surface-subtle);
     border-radius: 10px;
 }
 
 html.theme-dark::-webkit-scrollbar-thumb,
 :is([data-theme="dark"], body.theme-dark)::-webkit-scrollbar-thumb,
 :is([data-theme="dark"], body.theme-dark) ::-webkit-scrollbar-thumb {
-    background: var(--control-border) !important;
+    background: var(--control-border);
     border-radius: 10px;
     border: 2px solid var(--surface-subtle);
 }
@@ -1389,13 +1389,13 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar::-webkit-scrollbar-track,
 :is([data-theme="dark"], body.theme-dark) #rightSidebar::-webkit-scrollbar-track {
-    background: transparent !important;
+    background: transparent;
     border-radius: 10px;
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar::-webkit-scrollbar-thumb,
 :is([data-theme="dark"], body.theme-dark) #rightSidebar::-webkit-scrollbar-thumb {
-    background: var(--control-border) !important;
+    background: var(--control-border);
     border-radius: 10px;
 }
 
@@ -4486,12 +4486,12 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .custom-scrollbar::-webkit-scrollbar-track {
-    background: var(--surface-subtle) !important;
+    background: var(--surface-subtle);
     border-radius: 10px;
 }
 
 :is([data-theme="dark"], body.theme-dark) .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: var(--control-border) !important;
+    background: var(--control-border);
     border-radius: 10px;
 }
 
