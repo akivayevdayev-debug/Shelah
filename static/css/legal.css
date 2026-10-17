@@ -442,9 +442,9 @@ html.rtl .info-box {
    belong. Reset it back to a flat control on every page outside the main
    app shell (body.library-shell is index.html only). */
 body:not(.library-shell) #themeToggleBtn {
-    background: transparent !important;
+    background: transparent;
     border-color: transparent !important;
-    color: var(--ink-primary) !important;
+    color: var(--ink-primary);
 }
 
 /* .topbar-flat-btn's shared padding renders this icon-only button at
@@ -467,9 +467,9 @@ body:not(.library-shell) #themeToggleBtn::before {
 }
 
 body:not(.library-shell) #themeToggleBtn:hover {
-    background: var(--surface-1) !important;
+    background: var(--surface-1);
     border-color: var(--surface-border) !important;
-    color: var(--ink-primary) !important;
+    color: var(--ink-primary);
 }
 
 .lang-btn-active {
