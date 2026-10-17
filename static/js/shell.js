@@ -155,8 +155,11 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
         let _viewNavDirection = 'forward';
         function swapView(swap, { transition = true } = {}) {
             const direction = _viewNavDirection;
-            const vt = transition && direction
-                ? window.ShelahMotion?.transitionView?.(swap, { direction })
+            // motion.js not there yet (a click before the module has run) or
+            // blocked: no transition to swap inside, so the swap runs at once.
+            const motion = transition && direction ? window.ShelahMotion : null;
+            const vt = motion?.transitionView
+                ? motion.transitionView(swap, { direction })
                 : (swap(), null);
             if (!vt) return Promise.resolve();
             vt.updateCallbackDone.catch((err) => window.reportError?.(err));
