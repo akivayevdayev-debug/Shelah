@@ -207,6 +207,11 @@
                     <div class="w-full min-w-0">
                         <!-- Search Form -->
                         <form id="searchForm" role="search" aria-label="Search texts" class="w-full relative min-w-0">
+                            <!-- Decorative loading halo: a gold-and-blue gradient that orbits
+                                 the bar while body.search-loading is set (static/css/ai.css).
+                                 Absolutely positioned with a negative z-index, so it never
+                                 affects layout or covers the input text or the suggestions. -->
+                            <div class="search-liftoff-underlay" aria-hidden="true"></div>
                             <input type="text" id="searchInput"
                                 aria-label="Ask Sh'elah about any topic, halachah, or custom"
                                 placeholder="Ask Sh'elah about any topic, halachah, or custom..."
@@ -1926,6 +1931,7 @@
                     <button type="button" class="conv-signin-follow__btn" data-conv-action="sign-in" data-en="Sign in" data-he="התחברות">Sign in</button>
                 </p>
                 <form id="convComposer" class="conv-composer" novalidate>
+                    <div class="conv-halo" aria-hidden="true"></div>
                     <div class="conv-composer__fill">
                         <label for="convInput" class="sr-only" data-en="Ask a question" data-he="שאל שאלה">Ask a question</label>
                         <textarea id="convInput" rows="1" dir="auto" maxlength="2000" autocomplete="off"></textarea>
