@@ -1438,7 +1438,7 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
 }
 
 .fc-day-today {
-    background: #F0F9FF !important;
+    background: #F0F9FF;
 }
 
 /* ═══════════════════════════════════════════════════════════════════ */
@@ -1577,8 +1577,8 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
     #rightSidebar {
         width: 16rem !important;
         min-width: 16rem !important;
-        padding-inline-start: 0.9rem !important;
-        padding-inline-end: 0.9rem !important;
+        padding-inline-start: 0.9rem;
+        padding-inline-end: 0.9rem;
     }
 }
 
@@ -1603,8 +1603,8 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
        w-[min(92vw,24rem)] on the element. */
     --reader-settings-w: min(92vw, 24rem);
     width: var(--reader-settings-w);
-    left: calc(50% - var(--reader-settings-w) / 2) !important;
-    right: auto !important;
+    left: calc(50% - var(--reader-settings-w) / 2);
+    right: auto;
     background: var(--surface-elevated);
     border: 1px solid var(--surface-border);
     box-shadow: 0 14px 32px color-mix(in srgb, var(--surface-base) 35%, transparent);
@@ -1778,32 +1778,32 @@ html.rtl #leftSidebar summary,
 html.rtl #leftSidebar button,
 html.rtl #leftSidebar h3,
 html.rtl #leftSidebar p {
-    text-align: right !important;
+    text-align: right;
 }
 
 html.rtl #leftSidebar .border-l-2 {
-    border-left-width: 0 !important;
-    border-right-width: 2px !important;
-    padding-inline-start: 0 !important;
-    padding-inline-end: 0.75rem !important;
+    border-left-width: 0;
+    border-right-width: 2px;
+    padding-inline-start: 0;
+    padding-inline-end: 0.75rem;
 }
 
 html.rtl #leftSidebar .pl-3 {
-    padding-inline-start: 0 !important;
-    padding-inline-end: 0.75rem !important;
+    padding-inline-start: 0;
+    padding-inline-end: 0.75rem;
 }
 
 html.rtl #leftSidebar .ml-2,
 html.rtl #leftSidebar .ml-3 {
-    margin-inline-start: 0 !important;
+    margin-inline-start: 0;
 }
 
 html.rtl #leftSidebar .ml-2 {
-    margin-inline-end: 0.5rem !important;
+    margin-inline-end: 0.5rem;
 }
 
 html.rtl #leftSidebar .ml-3 {
-    margin-inline-end: 0.75rem !important;
+    margin-inline-end: 0.75rem;
 }
 
 html.rtl #leftSidebar .library-sidebar-header {
@@ -1821,7 +1821,7 @@ html.rtl #leftSidebar .library-sidebar-header button {
 html.rtl #personalShelf button,
 html.rtl #searchSuggestions .suggestion-item,
 html.rtl #popularTextsGrid button {
-    text-align: right !important;
+    text-align: right;
 }
 
 html.rtl #searchSuggestions .suggestion-item .flex {
@@ -1871,7 +1871,7 @@ html.rtl #readerTopBar .reader-topbar-settings-label {
 
 #reader .source-grid.layout-reverse .source-he:not(.reader-text-he) {
     order: 2;
-    border-inline-end: 0 !important;
+    border-inline-end: 0;
     border-inline-start: 1px solid #e2e8f0;
 }
 
@@ -1889,25 +1889,25 @@ html.rtl #readerTopBar .reader-topbar-settings-label {
        entirely: the row below now naturally starts flush under the main
        topbar with no margin hack needed. #mainContainer's padding-top makes
        up the space this bar now occupies over the reader column only. */
-    position: absolute !important;
+    position: absolute;
     top: var(--reader-topbar-offset, 4.35rem) !important;
-    border-top: 1px solid #d8cfbe !important;
-    border-bottom: 1px solid #d8cfbe !important;
+    border-top: 1px solid #d8cfbe;
+    border-bottom: 1px solid #d8cfbe;
     border-inline-start: 0 !important;
     border-inline-end: 0 !important;
     /* Very subtle translucency: the reader column scrolls underneath this
        bar (#mainContainer's padding-top sits under it), so a ~93% surface
        mix plus a soft blur lets the text shadow through without costing
        legibility. Dark mode uses the same mix (reader.css). */
-    background: color-mix(in srgb, var(--surface-topbar) 93%, transparent) !important;
+    background: color-mix(in srgb, var(--surface-topbar) 93%, transparent);
     /* Slim bar: no vertical padding (overrides the py-1 utility); the track
        sets the visual height and the buttons keep a 44px hit area. */
     padding-block: 0;
     margin-top: 0;
     margin-bottom: 0;
-    border-radius: 0 !important;
+    border-radius: 0;
     box-shadow: none;
-    z-index: 55 !important;
+    z-index: 55;
     box-sizing: border-box;
     /* --reader-topbar-left-gap/--reader-topbar-right-gap are the live widths
        of any anchored left/right sidebar (measured in syncReaderTopBarOffset()
@@ -1992,7 +1992,7 @@ html.rtl #readerTopBar .reader-topbar-settings-label {
 /* Keep hidden prev/next visible in layout so the track doesn't shift */
 #readerPrevTopBarBtn.hidden,
 #readerNextTopBarBtn.hidden {
-    display: flex !important;
+    display: flex;
     visibility: hidden;
     pointer-events: none;
 }
@@ -2015,7 +2015,7 @@ html.rtl #readerTopBar .reader-topbar-settings-label {
     justify-content: center;
     padding: 0.25rem 0.4rem;
     cursor: pointer;
-    transition: none !important;
+    transition: none;
 }
 
 .reader-topbar-icon-btn:hover,
@@ -2026,7 +2026,7 @@ html.rtl #readerTopBar .reader-topbar-settings-label {
 }
 
 .reader-topbar-icon-btn:active {
-    transform: none !important;
+    transform: none;
 }
 
 .reader-topbar-icon-btn:focus-visible {
@@ -2116,23 +2116,23 @@ html.rtl #readerTopBar .reader-topbar-settings-label {
 .library-shell .reader-topbar-icon-btn,
 .library-shell #readerPrevTopBarBtn,
 .library-shell #readerNextTopBarBtn {
-    border: none !important;
-    background: transparent !important;
+    border: none;
+    background: transparent;
     /* Was #8b7868 (3.84:1 against the reader topbar's light bg #f9f4ea) —
        fails the 4.5:1 AA text threshold (these render text labels like
        "Reader Settings", not just icons). Darkened within the same warm
        brown family, kept clear of the :hover/:focus-visible #5a4a3a
        (7.74:1) so the two states stay visually distinct. New value: 5.02:1. */
-    color: #786650 !important;
+    color: #786650;
 }
 
 .library-shell .reader-topbar-icon-btn:hover,
 .library-shell .reader-topbar-icon-btn:focus-visible,
 .library-shell #readerPrevTopBarBtn:hover,
 .library-shell #readerNextTopBarBtn:hover {
-    background: transparent !important;
-    border: none !important;
-    color: #5a4a3a !important;
+    background: transparent;
+    border: none;
+    color: #5a4a3a;
 }
 
 .library-shell .reader-topbar-shell #readerSettingsBtn {
@@ -2610,7 +2610,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 }
 
 #nextZmanBadge span span {
-    color: var(--accent-primary) !important;
+    color: var(--accent-primary);
 }
 
 .home-daily-link {
@@ -2640,14 +2640,14 @@ html.rtl .home-main-layout #popularTextsGrid {
 }
 
 .today-zmanim-list [data-zman-row] {
-    background: transparent !important;
+    background: transparent;
     border-radius: 0 !important;
     padding-inline-start: 0;
     padding-inline-end: 0;
 }
 
 .today-zmanim-list [data-zman-row].zman-next-highlight {
-    background: #f2eadb !important;
+    background: #f2eadb;
     border: 1px solid #d7c7ae;
     border-radius: 0.45rem !important;
     padding-inline-start: 0.45rem;
@@ -2745,7 +2745,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 
     body.mobile-search-open .topbar-brand,
     body.mobile-search-open #topbarControls {
-        display: none !important;
+        display: none;
     }
 
     /* The body is a full-height flex column (top bar / content row / this
@@ -2925,12 +2925,12 @@ html.rtl .home-main-layout #popularTextsGrid {
        pads itself down to clear it -- neither applies here), so the
        scroll pane starts below it and needs no top offset. */
     #readerTopBar {
-        position: relative !important;
+        position: relative;
         top: auto !important;
         flex: 0 0 auto;
-        width: 100% !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
     }
 
     /* The Reader Settings dropdown is anchored to the whole bar, not to its
@@ -2946,8 +2946,8 @@ html.rtl .home-main-layout #popularTextsGrid {
     }
 
     html #readerTopBar #readerSettingsPanel.reader-settings-dropdown {
-        left: var(--sp-2) !important;
-        right: var(--sp-2) !important;
+        left: var(--sp-2);
+        right: var(--sp-2);
         width: auto;
         max-width: 24rem;
         margin-inline: auto;
