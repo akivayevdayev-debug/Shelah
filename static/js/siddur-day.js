@@ -148,23 +148,23 @@ function gevurotText(gevurot, kind, t) {
 // screen's own table of contents. A target the toc doesn't have is dropped,
 // so a rite without (say) a Chanukah service just shows the reminder.
 
+function sectionPage(service, serviceSlug, sectionSlug) {
+    const section = sectionSlug ? service.sections.find((s) => s.slug === sectionSlug) : null;
+    if (sectionSlug && !section) return null;
+    const entry = section || service;
+    return {
+        service: serviceSlug,
+        section: section ? sectionSlug : null,
+        title: entry.title,
+        // A service with one section has no section pages of its own.
+        single: service.sections.length === 1,
+    };
+}
+
 function tocPage(toc, serviceSlug, sectionSlug = null) {
-    for (const occasion of toc?.occasions || []) {
-        for (const service of occasion.services) {
-            if (service.slug !== serviceSlug) continue;
-            const section = sectionSlug ? service.sections.find((s) => s.slug === sectionSlug) : null;
-            if (sectionSlug && !section) return null;
-            const entry = section || service;
-            return {
-                service: serviceSlug,
-                section: section ? sectionSlug : null,
-                title: entry.title,
-                // A service with one section has no section pages of its own.
-                single: service.sections.length === 1,
-            };
-        }
-    }
-    return null;
+    const services = (toc?.occasions || []).flatMap((occasion) => occasion.services);
+    const service = services.find((candidate) => candidate.slug === serviceSlug);
+    return service ? sectionPage(service, serviceSlug, sectionSlug) : null;
 }
 
 const FESTIVAL_SONG = Object.freeze({
@@ -176,31 +176,34 @@ const FESTIVAL_SONG = Object.freeze({
 
 const FESTIVALS = Object.freeze(Object.keys(FESTIVAL_SONG));
 
-// The page a reminder points at, as [service, section] candidates in order
+// What each reminder points at, as [service, section] candidates in order
 // of preference (the first the toc has wins).
-function targetsFor(key, day, active) {
-    const festival = FESTIVALS.some((k) => active.has(k));
-    switch (key) {
-    case "hallel":
-        return [["rosh-chodesh", "hallel"]];
-    case "yaaleh":
+const TARGETS = {
+    hallel: () => [["rosh-chodesh", "hallel"]],
+    yaaleh: ({ active, festival }) => {
         if (festival) return [["shalosh-regalim", "amidah"]];
         return active.has("rosh-chodesh") ? [["rosh-chodesh", "rosh-hodesh"]] : [];
-    case "al-hanissim":
+    },
+    "al-hanissim": ({ active }) => {
         if (active.has("chanukah")) return [["chanukah", "shacharit"]];
         return active.has("purim") || active.has("shushan-purim") ? [["purim", "purim-day"]] : [];
-    case "aneinu":
+    },
+    aneinu: ({ day }) => {
         if (day.fastDay === "tisha-beav") return [["taaniyot", "mourning"]];
         return day.fastDay ? [["taaniyot", day.fastDay]] : [];
-    case "musaf":
+    },
+    musaf: ({ active, festival }) => {
         if (active.has("shabbat")) return [["musaf-shabbat", null]];
         if (festival) return [["shalosh-regalim", "mussaf"]];
         return active.has("rosh-chodesh") ? [["rosh-chodesh", "mussaf"]] : [];
-    case "omer":
-        return [["sefirat-haomer", null]];
-    default:
-        return [];
-    }
+    },
+    omer: () => [["sefirat-haomer", null]],
+};
+
+function targetsFor(key, day, active) {
+    if (!Object.hasOwn(TARGETS, key)) return [];
+    const festival = FESTIVALS.some((k) => active.has(k));
+    return TARGETS[key]({ day, active, festival });
 }
 
 function resolved(toc, candidates) {
@@ -252,64 +255,69 @@ export function extraPages(day, toc) {
     return pages;
 }
 
+const reminder = (key, text) => ({ key, text });
+
+function tachanunText(day, active, kind, t) {
+    const says = t("Tachanun is said", "אומרים תחנון");
+    const none = t("No Tachanun today", "אין אומרים תחנון");
+    if (active.has("shabbat")) {
+        if (kind === "shacharit") return null;
+        return day.tachanun.tzidkatcha ? t("Tzidkatcha at Mincha", "צדקתך במנחה") : t("No Tzidkatcha at Mincha", "אין אומרים צדקתך במנחה");
+    }
+    if (kind) return day.tachanun[kind] ? says : none;
+    if (day.tachanun.shacharit === day.tachanun.mincha) return day.tachanun.shacharit ? says : none;
+    return day.tachanun.shacharit
+        ? t("Tachanun at Shacharit, not at Mincha", "תחנון בשחרית, לא במנחה")
+        : t("No Tachanun at Shacharit; said at Mincha", "אין תחנון בשחרית; אומרים במנחה");
+}
+
+// One function per reminder line: the entry, or null when the day has none.
+const REMINDER_LINES = [
+    ({ day, kind, t }) => (day.aseretYemeiTeshuva && kind !== "musaf"
+        ? reminder("ayt", t(
+            "Ten Days of Repentance: HaMelech HaKadosh, Zochrenu and the other Amidah changes",
+            "עשרת ימי תשובה: המלך הקדוש, זכרנו ושאר השינויים בעמידה",
+        ))
+        : null),
+    ({ day, kind, t }) => {
+        if (day.hallel?.kind === "none" || !(kind === null || kind === "shacharit")) return null;
+        return reminder("hallel", day.hallel.kind === "full"
+            ? t("Full Hallel, with a beracha", "הלל שלם בברכה")
+            : t("Half Hallel, without a beracha (Sephardic custom)", "חצי הלל, בלא ברכה (מנהג הספרדים)"));
+    },
+    ({ day, t }) => (day.yaalehVeyavo ? reminder("yaaleh", t("Ya'aleh VeYavo in the Amidah and Birkat Hamazon", "יעלה ויבוא בעמידה ובברכת המזון")) : null),
+    ({ day, t }) => (day.alHanissim ? reminder("al-hanissim", t("Al HaNissim in the Amidah and Birkat Hamazon", "על הניסים בעמידה ובברכת המזון")) : null),
+    ({ day, t }) => (day.alHanissimJerusalem ? reminder("al-hanissim", t("In Jerusalem: Al HaNissim (Shushan Purim)", "בירושלים: על הניסים (שושן פורים)")) : null),
+    ({ day, kind, t }) => (day.gevurot ? reminder("gevurot", gevurotText(day.gevurot, kind, t)) : null),
+    ({ day, kind, t, weekdayAmidah }) => {
+        if (!weekdayAmidah || kind === "musaf" || !day.birkatHashanim) return null;
+        return reminder("birkat-hashanim", day.birkatHashanim === "barech-alenu"
+            ? t("Barech Alenu (the winter blessing for rain)", "ברך עלינו (נוסח החורף)")
+            : t("Barechenu (the summer blessing)", "ברכנו (נוסח הקיץ)"));
+    },
+    ({ day, kind, t, active }) => {
+        if (!day.tachanun || !(kind === null || kind === "shacharit" || kind === "mincha")) return null;
+        const text = tachanunText(day, active, kind, t);
+        return text === null ? null : reminder("tachanun", text);
+    },
+    ({ day, kind, t }) => (day.aneinu && kind !== "musaf" ? reminder("aneinu", t("Fast day: Aneinu", "תענית: עננו")) : null),
+    ({ day, kind, t }) => (day.musaf && kind === null ? reminder("musaf", t("Musaf is said today", "אומרים מוסף")) : null),
+    ({ day, kind, t, afterSunset }) => {
+        const omer = afterSunset ? day.omer?.today : day.omer?.tonight;
+        if (!omer || !(kind === null || kind === "arbit")) return null;
+        return reminder("omer", afterSunset
+            ? t(`Tonight: day ${omer} of the Omer`, `הלילה: יום ${omer} לעומר`)
+            : t(`Tonight after nightfall: day ${omer} of the Omer`, `הלילה אחר צאת הכוכבים: יום ${omer} לעומר`));
+    },
+];
+
 // [{ key, text }] for the Today card, most consequential first. `kind`
 // narrows it to one service (serviceKind); null lists everything.
 export function reminders(day, { kind = null, afterSunset = null, t }) {
     if (!day) return [];
     const active = new Set(day.occasions || []);
-    const weekdayAmidah = !active.has("shabbat") && !isYomTov(active);
-    const items = [];
-    const add = (key, text) => items.push({ key, text });
-
-    if (day.aseretYemeiTeshuva && kind !== "musaf") {
-        add("ayt", t(
-            "Ten Days of Repentance: HaMelech HaKadosh, Zochrenu and the other Amidah changes",
-            "עשרת ימי תשובה: המלך הקדוש, זכרנו ושאר השינויים בעמידה",
-        ));
-    }
-    if (day.hallel?.kind !== "none" && (kind === null || kind === "shacharit")) {
-        add("hallel", day.hallel.kind === "full"
-            ? t("Full Hallel, with a beracha", "הלל שלם בברכה")
-            : t("Half Hallel, without a beracha (Sephardic custom)", "חצי הלל, בלא ברכה (מנהג הספרדים)"));
-    }
-    if (day.yaalehVeyavo) add("yaaleh", t("Ya'aleh VeYavo in the Amidah and Birkat Hamazon", "יעלה ויבוא בעמידה ובברכת המזון"));
-    if (day.alHanissim) add("al-hanissim", t("Al HaNissim in the Amidah and Birkat Hamazon", "על הניסים בעמידה ובברכת המזון"));
-    if (day.alHanissimJerusalem) add("al-hanissim", t("In Jerusalem: Al HaNissim (Shushan Purim)", "בירושלים: על הניסים (שושן פורים)"));
-    if (day.gevurot) add("gevurot", gevurotText(day.gevurot, kind, t));
-    if (weekdayAmidah && kind !== "musaf" && day.birkatHashanim) {
-        add("birkat-hashanim", day.birkatHashanim === "barech-alenu"
-            ? t("Barech Alenu (the winter blessing for rain)", "ברך עלינו (נוסח החורף)")
-            : t("Barechenu (the summer blessing)", "ברכנו (נוסח הקיץ)"));
-    }
-    if (day.tachanun && (kind === null || kind === "shacharit" || kind === "mincha")) {
-        if (active.has("shabbat")) {
-            if (kind !== "shacharit") {
-                add("tachanun", day.tachanun.tzidkatcha
-                    ? t("Tzidkatcha at Mincha", "צדקתך במנחה")
-                    : t("No Tzidkatcha at Mincha", "אין אומרים צדקתך במנחה"));
-            }
-        } else {
-            const says = kind ? day.tachanun[kind] : null;
-            if (kind) {
-                add("tachanun", says ? t("Tachanun is said", "אומרים תחנון") : t("No Tachanun today", "אין אומרים תחנון"));
-            } else if (day.tachanun.shacharit === day.tachanun.mincha) {
-                add("tachanun", day.tachanun.shacharit ? t("Tachanun is said", "אומרים תחנון") : t("No Tachanun today", "אין אומרים תחנון"));
-            } else {
-                add("tachanun", day.tachanun.shacharit
-                    ? t("Tachanun at Shacharit, not at Mincha", "תחנון בשחרית, לא במנחה")
-                    : t("No Tachanun at Shacharit; said at Mincha", "אין תחנון בשחרית; אומרים במנחה"));
-            }
-        }
-    }
-    if (day.aneinu && kind !== "musaf") add("aneinu", t("Fast day: Aneinu", "תענית: עננו"));
-    if (day.musaf && kind === null) add("musaf", t("Musaf is said today", "אומרים מוסף"));
-    const omer = afterSunset ? day.omer?.today : day.omer?.tonight;
-    if (omer && (kind === null || kind === "arbit")) {
-        add("omer", afterSunset
-            ? t(`Tonight: day ${omer} of the Omer`, `הלילה: יום ${omer} לעומר`)
-            : t(`Tonight after nightfall: day ${omer} of the Omer`, `הלילה אחר צאת הכוכבים: יום ${omer} לעומר`));
-    }
-    return items;
+    const context = { day, kind, afterSunset, t, active, weekdayAmidah: !active.has("shabbat") && !isYomTov(active) };
+    return REMINDER_LINES.map((line) => line(context)).filter(Boolean);
 }
 
 export function hebrewDateText(day, isHebrew) {

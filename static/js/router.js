@@ -145,14 +145,14 @@ const DISPLAY_VALIDATORS = {
     size: (v) => /^\d{2}$/.test(v) && Number(v) >= FONT_SIZE_RANGE.min && Number(v) <= FONT_SIZE_RANGE.max,
 };
 
-function normalizeRoute(route) {
-    if ("a" in route && !SHARE_TOKEN_RE.test(route.a)) delete route.a;
-    if ("siddur" in route && !SIDDUR_VALUE_RE.test(route.siddur)) delete route.siddur;
-    if ("q" in route) {
-        const q = route.history ? String(route.q).replace(/\s+/g, " ").trim().slice(0, MAX_HISTORY_QUERY_CHARS) : "";
-        if (q) route.q = q;
-        else delete route.q;
-    }
+function normalizeQuery(route) {
+    if (!("q" in route)) return;
+    const q = route.history ? String(route.q).replace(/\s+/g, " ").trim().slice(0, MAX_HISTORY_QUERY_CHARS) : "";
+    if (q) route.q = q;
+    else delete route.q;
+}
+
+function normalizeChatKeys(route) {
     if (!route.conversation) {
         delete route.cv;
     } else if (!CONVERSATION_SIZES.includes(route.cv)) {
@@ -167,6 +167,13 @@ function normalizeRoute(route) {
         else delete route.minhag;
     }
     if ("mode" in route && !AI_MODES.includes(route.mode)) delete route.mode;
+}
+
+function normalizeRoute(route) {
+    if ("a" in route && !SHARE_TOKEN_RE.test(route.a)) delete route.a;
+    if ("siddur" in route && !SIDDUR_VALUE_RE.test(route.siddur)) delete route.siddur;
+    normalizeQuery(route);
+    normalizeChatKeys(route);
     if ("auth" in route && !AUTH_PAGES.includes(route.auth)) delete route.auth;
     for (const key of DISPLAY_KEYS) {
         if (key in route && !DISPLAY_VALIDATORS[key](route[key])) delete route[key];
@@ -221,6 +228,51 @@ const PATH_SLUGS = Object.freeze({
     community: NAME_SLUG,
 });
 
+// `/siddur/<rite>/<service>/<section>`: up to three slugs, none meaning the default rite.
+function parseSiddurSegments(parts) {
+    const slugs = [];
+    let next = 1;
+    while (next < parts.length && slugs.length < 3) {
+        const word = decodeSegment(parts[next]);
+        if (!SIDDUR_SLUG_RE.test(word) || RESERVED_WORDS.has(word)) break;
+        slugs.push(word);
+        next += 1;
+    }
+    return { value: slugs.length ? slugs.join("/") : DEFAULT_SIDDUR_RITE, next };
+}
+
+// The view a path opens and how many segments it used, or null for a bad one.
+function parseViewHead(parts) {
+    const view = Object.hasOwn(SEGMENT_KEYS, parts[0]) ? SEGMENT_KEYS[parts[0]] : null;
+    if (view === "history") return { route: { history: "1" }, next: 1 };
+    if (view === "siddur") {
+        const head = parseSiddurSegments(parts);
+        return { route: { siddur: head.value }, next: head.next };
+    }
+    if (!view) return { route: {}, next: 0 };
+    const raw = parts[1] === undefined ? "" : decodeSegment(parts[1]);
+    if (!raw) return null;
+    // A `+` in a path is a literal plus (we never write one), but people
+    // and other sites type `/text/Genesis+1` meaning a space. No ref or
+    // prayer name contains a plus, so it reads as one.
+    return { route: { [view]: PATH_SLUGS[view] ? PATH_SLUGS[view].read(raw.replaceAll("+", " ")) : raw }, next: 2 };
+}
+
+// One piece of the tail: a `key/value` pair, a mode word or a community name.
+function parseTailStep(parts, i) {
+    const word = decodeSegment(parts[i]);
+    const lower = word.toLowerCase();
+    if (Object.hasOwn(TAIL_PAIRS, word)) {
+        const key = TAIL_PAIRS[word];
+        const value = parts[i + 1] === undefined ? "" : decodeSegment(parts[i + 1]);
+        if (!value || (key === "date" && !DATE_RE.test(value))) return null;
+        return { key, value, next: i + 2 };
+    }
+    if (Object.hasOwn(TAIL_WORDS, lower)) return { key: TAIL_WORDS[lower], value: lower, next: i + 1 };
+    if (MINHAG_RE.test(word)) return { key: "minhag", value: minhagName(word), next: i + 1 };
+    return null;
+}
+
 // `/text/Genesis.1` -> { text: "Genesis 1" },
 // `/chat/new/sefardic/strict` -> { conversation: "new", minhag: "Sefardic",
 // mode: "strict" }. Anything the router doesn't own (`/`, `/about`, `/text`
@@ -232,53 +284,15 @@ function parsePath(pathname) {
     while (bare.endsWith("/")) bare = bare.slice(0, -1);
     const parts = bare.split("/");
     if (parts.length === 1 && !parts[0]) return {};
-    const route = {};
-    let i = 0;
-    const view = Object.hasOwn(SEGMENT_KEYS, parts[0]) ? SEGMENT_KEYS[parts[0]] : null;
-    if (view === "history") {
-        route.history = "1";
-        i = 1;
-    } else if (view === "siddur") {
-        const slugs = [];
-        i = 1;
-        while (i < parts.length && slugs.length < 3) {
-            const word = decodeSegment(parts[i]);
-            if (!SIDDUR_SLUG_RE.test(word) || RESERVED_WORDS.has(word)) break;
-            slugs.push(word);
-            i += 1;
-        }
-        route.siddur = slugs.length ? slugs.join("/") : DEFAULT_SIDDUR_RITE;
-    } else if (view) {
-        const raw = parts[1] === undefined ? "" : decodeSegment(parts[1]);
-        if (!raw) return {};
-        // A `+` in a path is a literal plus (we never write one), but people
-        // and other sites type `/text/Genesis+1` meaning a space. No ref or
-        // prayer name contains a plus, so it reads as one.
-        route[view] = PATH_SLUGS[view] ? PATH_SLUGS[view].read(raw.replaceAll("+", " ")) : raw;
-        i = 2;
-    }
+    const head = parseViewHead(parts);
+    if (!head) return {};
+    const route = head.route;
+    let i = head.next;
     while (i < parts.length) {
-        const word = decodeSegment(parts[i]);
-        let key;
-        let value;
-        if (Object.hasOwn(TAIL_PAIRS, word)) {
-            key = TAIL_PAIRS[word];
-            value = parts[i + 1] === undefined ? "" : decodeSegment(parts[i + 1]);
-            if (!value || (key === "date" && !DATE_RE.test(value))) return {};
-            i += 2;
-        } else if (Object.hasOwn(TAIL_WORDS, word.toLowerCase())) {
-            key = TAIL_WORDS[word.toLowerCase()];
-            value = word.toLowerCase();
-            i += 1;
-        } else if (MINHAG_RE.test(word)) {
-            key = "minhag";
-            value = minhagName(word);
-            i += 1;
-        } else {
-            return {};
-        }
-        if (key in route) return {};
-        route[key] = value;
+        const step = parseTailStep(parts, i);
+        if (!step || step.key in route) return {};
+        route[step.key] = step.value;
+        i = step.next;
     }
     if ("cv" in route && !route.conversation) return {};
     if (("minhag" in route || "mode" in route) && !route.conversation && !route.chat && !route.a) return {};
@@ -309,6 +323,18 @@ function readRoute() {
     return routeFrom(window.location.pathname, window.location.search);
 }
 
+// The conversation's part of the tail: its id, community, mode and size.
+function chatTail(route) {
+    const parts = [];
+    if (route.conversation) parts.push("chat", encodeSegment(route.conversation));
+    if (route.conversation || route.chat || route.a) {
+        if (route.minhag && MINHAG_RE.test(route.minhag) && !RESERVED_WORDS.has(route.minhag.toLowerCase())) parts.push(route.minhag.toLowerCase());
+        if (AI_MODES.includes(route.mode)) parts.push(route.mode);
+    }
+    if (route.conversation && CONVERSATION_SIZES.includes(route.cv) && route.cv !== DEFAULT_CONVERSATION_SIZE) parts.push(route.cv);
+    return parts;
+}
+
 // The path for a route: its first path-able view, then the tail in a fixed
 // order (conversation, community, mode, size, calendar day, account modal),
 // else `/` (or the current page, when that's one the router doesn't own).
@@ -318,12 +344,7 @@ function pathFor(route, currentPath = "/") {
     if (key === "history") parts.push("history");
     else if (key === "siddur") parts.push("siddur", ...route.siddur.split("/"));
     else if (key) parts.push(PATH_SEGMENTS[key], encodeSegment(PATH_SLUGS[key] ? PATH_SLUGS[key].write(route[key]) : route[key]));
-    if (route.conversation) parts.push("chat", encodeSegment(route.conversation));
-    if (route.conversation || route.chat || route.a) {
-        if (route.minhag && MINHAG_RE.test(route.minhag) && !RESERVED_WORDS.has(route.minhag.toLowerCase())) parts.push(route.minhag.toLowerCase());
-        if (AI_MODES.includes(route.mode)) parts.push(route.mode);
-    }
-    if (route.conversation && CONVERSATION_SIZES.includes(route.cv) && route.cv !== DEFAULT_CONVERSATION_SIZE) parts.push(route.cv);
+    parts.push(...chatTail(route));
     if (route.date && DATE_RE.test(route.date)) parts.push("calendar", route.date);
     if (AUTH_PAGES.includes(route.auth)) parts.push(route.auth);
     if (parts.length) return `/${parts.join("/")}`;
