@@ -105,7 +105,7 @@ body.theme-dark .reader-topbar-library-track:focus-visible {
 
 body.theme-dark #readerTopBar {
     background: color-mix(in srgb, var(--surface-topbar) 93%, transparent);
-    border-color: var(--surface-border) !important;
+    border-color: var(--surface-border);
 }
 
 #reader>header {

@@ -2163,7 +2163,7 @@ body.conv-modal-open {
 }
 @media (min-width: 1024px) {
     .mobile-search-tray,
-    .conv-pip { display: none !important; }
+    .conv-pip { display: none; }
 }
 
 /* ── Topbar "Ask AI" (desktop, beside the search bar) ─────────────── */

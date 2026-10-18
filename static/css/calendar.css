@@ -276,7 +276,7 @@ body.theme-dark {
 
 .fc-event.cal-cat-minor {
     background: var(--cal-event-minor);
-    border-color: transparent !important;
+    border-color: transparent;
 }
 
 .fc-event.cal-cat-modern {
@@ -286,13 +286,13 @@ body.theme-dark {
 
 .fc-event.cal-cat-fast {
     background: var(--cal-event-fast);
-    border-color: transparent !important;
+    border-color: transparent;
 }
 
 .fc-event.cal-cat-special,
 .fc-event.cal-cat-default {
     background: var(--cal-event-special);
-    border-color: transparent !important;
+    border-color: transparent;
 }
 
 /* ═══════════════════════════════════════════════════════ */
@@ -532,7 +532,7 @@ body.theme-dark #calendarModal>div>div:first-child {
 
 /* Calendar icon circle */
 body.theme-dark #calendarModal .rounded-full.bg-\[#1f3f63\] {
-    background: var(--cal-icon-bg) !important;
+    background: var(--cal-icon-bg);
 }
 
 /* Modal title */
@@ -543,7 +543,7 @@ body.theme-dark #calendarModalTitle {
 /* Legend and subtitle text */
 body.theme-dark #calendarModal .text-xs.text-\[#566175\],
 body.theme-dark #calendarModal p.text-xs {
-    color: var(--text-muted, #a09688) !important;
+    color: var(--text-muted, #a09688);
 }
 
 /* Legend colour swatches — keep as-is (coloured), no override needed */

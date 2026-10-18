@@ -36,7 +36,7 @@
 @media (min-width: 1024px) {
     .mobile-drawer {
         transform: none !important;
-        transition: none !important;
+        transition: none;
         /* #readerSettingsPanel uses an unconditional z-[80] (Tailwind utility,
            not viewport-scoped) for its dropdown. On mobile the sidebars win
            via the z-index:95 rule above, but on desktop they had no explicit
