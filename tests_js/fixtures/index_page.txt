@@ -241,6 +241,13 @@
                             <!-- "Searching…" when suggestions are slow, then how many came
                                  (fetchOmniboxSuggestions). -->
                             <p id="searchSuggestStatus" class="sr-only" role="status"></p>
+                            <!-- What Sh'elah is doing while a question asked from this bar
+                                 loads (conversation-ui.js renderBarStatus): the running step
+                                 and the finished ones, the same two rows as the panel's
+                                 status. The panel stays shut until the answer lands, so this
+                                 and the halo above are the only loading cues. -->
+                            <div id="searchLiveStatus" class="search-live" data-active="false"
+                                role="status" aria-live="polite"></div>
                         </form>
                     </div>
                     <!-- Ask Sh'elah, right beside the search bar (desktop): opens the
@@ -1697,7 +1704,7 @@
     <div id="convScrim" class="conv-scrim hidden" aria-hidden="true"></div>
     <section id="convPanel" class="conv-panel hidden" data-size="overlay" data-layout="desktop"
         role="dialog" aria-modal="true" aria-labelledby="convTitle" tabindex="-1">
-        <aside class="conv-sidebar" aria-labelledby="convSidebarHeading">
+        <aside id="convSidebar" class="conv-sidebar" aria-labelledby="convSidebarHeading">
             <!-- The homepage lockup (same classes as #brandHomeBtn in the top bar),
                  so the full page reads as part of the same site. -->
             <button type="button" class="topbar-brand conv-sidebar__brand flex items-center gap-1.5 shrink-0"
@@ -2000,6 +2007,21 @@
                 <span class="answer-link-status" role="status" aria-live="polite"></span>
             </div>
         </div>
+        <!-- Desktop mini widget only (static/js/conversation-mini.js): resize from
+             the free corner (arrow keys work; Home restores the size) or either
+             free edge. Hidden everywhere else by conversation.css. -->
+        <span class="conv-resize conv-resize--x" data-resize-axis="x" aria-hidden="true"></span>
+        <span class="conv-resize conv-resize--y" data-resize-axis="y" aria-hidden="true"></span>
+        <button type="button" id="convResizeBtn" class="conv-resize conv-resize--corner"
+            aria-label="Resize the floating chat" title="Resize the floating chat"
+            aria-describedby="convResizeHint"
+            data-aria-en="Resize the floating chat" data-aria-he="שינוי גודל החלון הצף">
+            <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false">
+                <path d="M1.5 10.5 10.5 1.5M1.5 6 6 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+        </button>
+        <span id="convResizeHint" class="sr-only"
+            data-en="Arrow keys resize the chat. Home restores the default size." data-he="מקשי החצים משנים את הגודל. מקש Home מחזיר לגודל המקורי.">Arrow keys resize the chat. Home restores the default size.</span>
     </section>
 
     <!-- Phone "minimized" state: a now-playing style bar above the tab bar. -->
