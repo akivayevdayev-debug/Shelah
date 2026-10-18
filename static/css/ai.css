@@ -551,13 +551,18 @@
     transform: scale(0.97);
 }
 
-.topbar-flat-btn {
+/* `#authControls > .topbar-flat-btn` is the Sign In button: style.css fades
+   every direct child of the auth slot with an ID rule (#authControls > *), and
+   that opacity fade is only meant for the pages that never load this file
+   (the legal pages), so it must not win here. */
+.topbar-flat-btn,
+#authControls > .topbar-flat-btn {
     transition: background-color var(--motion-dur-fast) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out), border-color var(--motion-dur-fast) var(--motion-ease-out),
-        transform var(--motion-dur-fast) var(--motion-ease-out) !important;
+        transform var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 .topbar-flat-btn:active {
-    transform: scale(0.94) !important;
+    transform: scale(0.94);
 }
 
 /* Touch: the home "this week's parasha" link and the search field are a

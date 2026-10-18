@@ -447,7 +447,6 @@ h6 {
     justify-content: center;
     position: relative; /* anchors the ::after touch-target hit-slop below */
     border-radius: 0.35rem;
-    transition: background var(--motion-dur-fast) var(--motion-ease-out), border-color var(--motion-dur-fast) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 /* 2026-09 revision: the translucent warm-stone chip this rule used to draw
