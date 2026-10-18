@@ -845,7 +845,7 @@ body.search-loading .search-liftoff-underlay::before {
 /* ── Library sidebar tab ─────────────────────────────────── */
 .sidebar-show-tab {
     transition: opacity var(--motion-dur-base) var(--motion-ease-out), transform var(--motion-dur-base) var(--motion-ease-decel),
-        background var(--motion-dur-fast) var(--motion-ease-out) !important;
+        background var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {

@@ -1471,7 +1471,7 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
 .fc-col-header-cell-cushion,
 .fc-daygrid-day-number {
     color: #475569;
-    text-decoration: none !important;
+    text-decoration: none;
 }
 
 .fc-day-today {
@@ -4216,7 +4216,7 @@ html.theme-dark,
 
 :is([data-theme="dark"], body.theme-dark) .today-zmanim-list [data-zman-row].zman-next-highlight {
     background: rgba(63, 57, 47, 0.46);
-    border-color: var(--control-border);
+    border-color: var(--control-border) !important;
     border-radius: 0.45rem;
     padding-inline-start: 0.45rem;
     padding-inline-end: 0.45rem;

@@ -57,7 +57,13 @@ body.theme-dark {
     align-items: center;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--cal-border);
-    margin-bottom: 0.75rem !important;
+}
+
+/* FullCalendar's own `.fc .fc-toolbar.fc-header-toolbar` margin is more
+   specific than the class rules here, so this one is scoped by the modal's
+   id (as are the button, today and day-number rules below). */
+#calendarModal .fc .fc-toolbar {
+    margin-bottom: 0.75rem;
 }
 
 .fc .fc-toolbar-title {
@@ -70,38 +76,52 @@ body.theme-dark {
 
 /* Toolbar buttons */
 .fc .fc-button-primary {
-    background: var(--cal-toolbar-btn-bg) !important;
-    border: 1px solid var(--cal-toolbar-btn-border) !important;
-    color: var(--cal-toolbar-btn-color) !important;
     font-size: 0.8rem;
     font-weight: 600;
     padding: 0.3rem 0.7rem;
-    border-radius: 0.4rem !important;
     box-shadow: 0 1px 2px rgba(78, 64, 30, 0.1);
     transition: background var(--motion-dur-fast) var(--motion-ease-out), border-color var(--motion-dur-fast) var(--motion-ease-out);
 }
 
+#calendarModal .fc .fc-button-primary {
+    background: var(--cal-toolbar-btn-bg);
+    border: 1px solid var(--cal-toolbar-btn-border);
+    color: var(--cal-toolbar-btn-color);
+    border-radius: 0.4rem;
+}
+
 .fc .fc-button-primary:hover,
 .fc .fc-button-primary:focus:not(:focus-visible) {
-    background: var(--cal-toolbar-btn-hover) !important;
-    border-color: #a09060 !important;
-    outline: none !important;
     box-shadow: 0 2px 5px rgba(78, 64, 30, 0.15);
 }
 
+#calendarModal .fc .fc-button-primary:hover,
+#calendarModal .fc .fc-button-primary:focus:not(:focus-visible) {
+    background: var(--cal-toolbar-btn-hover);
+    border-color: #a09060;
+    outline: none;
+}
+
 .fc .fc-button-primary:focus-visible {
-    background: var(--cal-toolbar-btn-hover) !important;
-    border-color: #a09060 !important;
-    outline: 2px solid var(--accent-primary) !important;
     outline-offset: 2px;
     box-shadow: 0 2px 5px rgba(78, 64, 30, 0.15);
 }
 
+#calendarModal .fc .fc-button-primary:focus-visible {
+    background: var(--cal-toolbar-btn-hover);
+    border-color: #a09060;
+    outline: 2px solid rgba(176, 154, 116, 0.65);
+}
+
 .fc .fc-button-primary:not(:disabled):active,
 .fc .fc-button-primary.fc-button-active {
-    background: color-mix(in srgb, var(--cal-toolbar-btn-bg) 82%, var(--gold) 18%) !important;
     border-color: #907860;
     box-shadow: inset 0 1px 3px rgba(78, 64, 30, 0.18);
+}
+
+#calendarModal .fc .fc-button-primary:not(:disabled):active,
+#calendarModal .fc .fc-button-primary.fc-button-active {
+    background: color-mix(in srgb, var(--cal-toolbar-btn-bg) 82%, var(--gold) 18%);
 }
 
 /* Keep month-navigation chevrons crisp and centered */
@@ -139,8 +159,11 @@ body.theme-dark {
 }
 
 .fc .fc-daygrid-day.fc-day-today {
-    background: var(--cal-today-bg) !important;
     box-shadow: inset 0 0 0 2px var(--cal-today-border);
+}
+
+#calendarModal .fc .fc-daygrid-day.fc-day-today {
+    background: var(--cal-today-bg);
 }
 
 .fc .fc-daygrid-day-number {
@@ -151,8 +174,11 @@ body.theme-dark {
 }
 
 .fc-day-today .fc-daygrid-day-number {
-    color: var(--cal-header-color) !important;
     font-weight: 700;
+}
+
+#calendarModal .fc-day-today .fc-daygrid-day-number {
+    color: var(--cal-header-color);
 }
 
 /* Shabbat / parashah days (green) and holidays (red). Classes come from
@@ -207,8 +233,8 @@ body.theme-dark {
     background: color-mix(in srgb, var(--cal-day-holiday-fg) 9%, var(--surface-base));
 }
 
-:is([data-theme="dark"], body.theme-dark) .fc .cal-day-shabbat .fc-daygrid-day-number {
-    color: var(--cal-day-shabbat-fg) !important;
+:is([data-theme="dark"], body.theme-dark) #calendarModal .fc .cal-day-shabbat .fc-daygrid-day-number {
+    color: var(--cal-day-shabbat-fg);
 }
 
 :is([data-theme="dark"], body.theme-dark) .fc .cal-day-holiday .fc-daygrid-day-number {
@@ -311,9 +337,9 @@ body.theme-dark {
         text-align: center;
     }
 
-    .fc-daygrid-day-number {
-        font-size: 0.7rem !important;
-        padding: 0.2rem !important;
+    #calendarModal .fc-daygrid-day-number {
+        font-size: 0.7rem;
+        padding: 0.2rem;
     }
 
     .fc .fc-daygrid-day {
@@ -351,9 +377,9 @@ body.theme-dark {
         min-height: 5.5rem;
     }
 
-    .fc-daygrid-day-number {
-        font-size: 0.85rem !important;
-        padding: 0.4rem 0.5rem !important;
+    #calendarModal .fc-daygrid-day-number {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.5rem;
     }
 
     .fc-event {
@@ -379,7 +405,10 @@ body.theme-dark {
 
 .fc .fc-daygrid-day.cal-day-selected .fc-daygrid-day-number {
     font-weight: 800;
-    text-decoration: underline;
+    /* No `text-decoration: underline` here: style.css gives every
+       .fc-daygrid-day-number `text-decoration: none`, and the underline this
+       rule used to ask for never showed. The offset is kept so the day is
+       ready for an underline if one is ever wanted. */
     text-underline-offset: 0.2em;
 }
 
