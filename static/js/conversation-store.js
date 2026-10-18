@@ -121,6 +121,11 @@ function initialThreadState(draftMinhag) {
         loadStatus: "ready",
         loadError: null,
         sending: false,
+        // Where the question was asked, and so where its loading cues belong:
+        // "bar" (the search bar; the panel stays shut until the answer lands)
+        // or "panel" (this panel's own composer). Only meaningful while
+        // `sending`; askSearch is the one entry that takes it from the caller.
+        surface: "panel",
         // Live steps of the answer being prepared (ask-progress.js); reset on
         // every send and only meaningful while `sending`.
         progress: createProgress(),
@@ -365,7 +370,8 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
     // ask_history, works signed out). Resolves the payload, or null when the
     // user moved on meanwhile; rethrows a failure for the caller's side
     // effects (Turnstile reset, logging) after showing it as a FAILED turn.
-    async function askSearch(question, request = {}) {
+    // `surface` names where it was asked ("bar" or "panel", see initialThreadState).
+    async function askSearch(question, request = {}, { surface = "panel" } = {}) {
         const text = String(question || "").trim();
         if (!text || typeof askAnswer !== "function") return null;
         const myGeneration = ++generation;
@@ -374,6 +380,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
             ...initialThreadState(getPrefs()?.community),
             answerView: { historyId: null, isPublic: false, request },
             sending: true,
+            surface: surface === "bar" ? "bar" : "panel",
             messages: [
                 { ...normalizeMessage({ role: "user", content: text }), id: ids[0], status: MESSAGE_STATUS.PENDING },
                 { ...normalizeMessage({ role: "assistant" }), id: ids[1], status: MESSAGE_STATUS.PENDING },
@@ -402,6 +409,13 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
             });
             throw error;
         }
+    }
+
+    // The panel took over an answer the search bar was waiting for (it was
+    // opened, or the bar went away): its cues move here and the bar's stop.
+    function setSurface(surface) {
+        const next = surface === "bar" ? "bar" : "panel";
+        if (state.surface !== next) setState({ surface: next });
     }
 
     // ── signed-out follow-ups ───────────────────────────────────────────
@@ -450,6 +464,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
         const historyIds = guestHistoryIds();
         setState({
             sending: true,
+            surface: "panel",
             progress: createProgress(),
             lastError: null,
             messages: [
@@ -589,6 +604,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
 
         setState({
             sending: true,
+            surface: "panel",
             progress: createProgress(),
             lastError: null,
             messages: [
@@ -667,6 +683,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
         const pending = { ...normalizeMessage({ role: "assistant" }), id: answerLocalId, status: MESSAGE_STATUS.PENDING };
         setState({
             sending: true,
+            surface: "panel",
             progress: createProgress(),
             lastError: null,
             messages: state.messages.map((m) => (m.id === target.id ? pending : m)),
@@ -841,6 +858,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
         showSharedConversation,
         askSearch,
         askGuestFollowUp,
+        setSurface,
         canContinueAsGuest,
         guestCapReached,
         guestHistoryIds,

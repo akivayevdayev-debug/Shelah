@@ -694,8 +694,10 @@ body.search-loading .search-ai-sparkle {
    once when it ends (the opacity transition below) and never pulses in between;
    the only motion is the gradient turning (shelah-halo-orbit in tokens.css). It
    is a cue that the question was heard, so it stays quiet: low opacity, one slow
-   turn every --motion-dur-orbit. The answer panel opens at once and carries the
-   live progress line; this only keeps the bar itself from looking idle. */
+   turn every --motion-dur-orbit. It belongs to a question asked from the bar:
+   conversation-ui.js sets body.search-loading only for those, and the answer
+   panel stays shut until the answer lands. A question asked in the panel gets
+   the panel's own halo (.conv-halo) instead, never both. */
 #searchForm {
     isolation: isolate;
 }
@@ -775,11 +777,55 @@ body.search-loading .search-liftoff-underlay::before {
     animation: shelah-halo-orbit var(--motion-dur-orbit) linear infinite paused;
 }
 
+/* The status line under the bar while a question asked from it loads: one card
+   that holds the running step ("Searching the sources...", or what the AI is
+   looking up) over the finished ones. It overlays the page like the suggestion
+   list does, so it never moves the layout, and sits one step below the halo's
+   blur. The panel stays shut until the answer lands, so this is the one place
+   the wait is spelled out. The rows are the panel's own (.conv-status__now and
+   .conv-status__done in conversation.css, which also keep the blink AA). */
+.search-live {
+    position: absolute;
+    inset-inline: 0;
+    top: calc(100% + var(--sp-3));
+    z-index: 80;
+    display: grid;
+    gap: var(--sp-1);
+    padding: var(--sp-2) var(--sp-4);
+    border: 1px solid var(--ctrl-border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+    box-shadow: var(--shadow-md);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(calc(-1 * var(--sp-1)));
+    pointer-events: none;
+    transition:
+        opacity var(--motion-dur-base) var(--motion-ease-out),
+        transform var(--motion-dur-base) var(--motion-ease-out),
+        visibility 0s linear var(--motion-dur-base);
+}
+.search-live[data-active="true"] {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition-delay: 0s;
+}
+.search-live .conv-status__done[data-empty="true"] { display: none; }
+
 /* Reduced motion: no turning. The halo is a still soft ring that fades in and
-   out over 120ms (gentler, not none), like the other fades. */
+   out over 120ms (gentler, not none), like the other fades. The status card
+   just fades, without the slide. */
 @media (prefers-reduced-motion: reduce) {
     .search-liftoff-underlay { transition: opacity 120ms linear !important; }
     .search-liftoff-underlay::before { animation: none !important; }
+    .search-live {
+        transform: none !important;
+        transition: opacity 120ms linear, visibility 0s linear 120ms !important;
+    }
+    .search-live[data-active="true"] { transition-delay: 0s !important; }
 }
 
 /* .search-ai-sparkle's always-on ambient pulse lives in static/style.css

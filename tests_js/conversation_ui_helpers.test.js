@@ -133,3 +133,92 @@ test('mostlyHebrew tells a Hebrew answer from an English one, with a few source 
     assert.equal(h.mostlyHebrew(''), false);
     assert.equal(h.mostlyHebrew(undefined), false);
 });
+
+// --- mini widget size ----------------------------------------------------------
+
+const DESKTOP = { width: 1440, height: 900 };
+
+test('clampMiniSize keeps the width and height inside the bounds and the window', async () => {
+    const h = await load();
+    assert.deepEqual({ ...h.clampMiniSize({ w: 100, h: 100 }, DESKTOP) }, { w: 300, h: 320 });
+    assert.deepEqual({ ...h.clampMiniSize({ w: 9999, h: 9999 }, DESKTOP) }, { w: 520, h: 720 });
+    assert.deepEqual({ ...h.clampMiniSize({ w: 400.4, h: 500.6 }, DESKTOP) }, { w: 400, h: 501 });
+    // A still-automatic height stays automatic.
+    assert.equal(h.clampMiniSize({ w: 400 }, DESKTOP).h, null);
+    assert.equal(h.clampMiniSize({ w: 400, h: null }, DESKTOP).h, null);
+    // A short, narrow window wins over the ceiling: 32px of gutter, 120px for the top bar.
+    assert.deepEqual({ ...h.clampMiniSize({ w: 520, h: 720 }, { width: 400, height: 600 }) }, { w: 368, h: 480 });
+    // ...but never below the floor, even in a window smaller than it.
+    assert.deepEqual({ ...h.clampMiniSize({ w: 520, h: 720 }, { width: 320, height: 400 }) }, { w: 300, h: 320 });
+});
+
+test('clampMiniSize leaves room for the history column when it is open', async () => {
+    const h = await load();
+    // The chat and a column 0.6 as wide must fit in the window less its gutters.
+    const window700 = { width: 700, height: 800 };
+    assert.equal(h.clampMiniSize({ w: 520 }, window700).w, 520);
+    const open = h.clampMiniSize({ w: 520 }, window700, { historyOpen: true });
+    assert.equal(open.w, Math.round((700 - 32) / 1.6));
+    assert.ok(open.w * 1.6 <= 700 - 32 + 1);
+    // A 1024px window has room for the widest chat and its column.
+    assert.equal(h.clampMiniSize({ w: 520 }, { width: 1024, height: 800 }, { historyOpen: true }).w, 520);
+});
+
+test('parseMiniSize reads a saved size and rejects anything else', async () => {
+    const h = await load();
+    assert.deepEqual({ ...h.parseMiniSize('{"w":400,"h":500}') }, { w: 400, h: 500 });
+    assert.deepEqual({ ...h.parseMiniSize('{"w":400}') }, { w: 400, h: null });
+    assert.deepEqual({ ...h.parseMiniSize('{"w":400,"h":"tall"}') }, { w: 400, h: null });
+    // Stale or hand-edited values are pulled inside the bounds.
+    assert.deepEqual({ ...h.parseMiniSize('{"w":5000,"h":5}') }, { w: 520, h: 320 });
+    for (const raw of [null, undefined, '', 'nope', '[]', '42', 'null', '{"h":400}', '{"w":"wide"}', '{"w":null}']) {
+        assert.equal(h.parseMiniSize(raw), null, String(raw));
+    }
+});
+
+test('dragMiniSize grows the widget away from the corner it sits in', async () => {
+    const h = await load();
+    const start = { w: 340, h: 400 };
+    const drag = (dx, dy, extra) => ({ ...h.dragMiniSize({ start, dx, dy, ...extra }, DESKTOP) });
+    // Bottom-right corner: a leftward, upward pull grows it.
+    assert.deepEqual(drag(-60, -40, { anchor: { right: true, bottom: true } }), { w: 400, h: 440 });
+    assert.deepEqual(drag(60, 40, { anchor: { right: true, bottom: true } }), { w: 300, h: 360 });
+    // Top-left corner: the other way round.
+    assert.deepEqual(drag(60, 40, { anchor: { right: false, bottom: false } }), { w: 400, h: 440 });
+    // Mixed corners flip one axis each.
+    assert.deepEqual(drag(60, 40, { anchor: { right: false, bottom: true } }), { w: 400, h: 360 });
+    assert.deepEqual(drag(-60, -40, { anchor: { right: true, bottom: false } }), { w: 400, h: 360 });
+});
+
+test('dragMiniSize moves only the axes its handle owns', async () => {
+    const h = await load();
+    const start = { w: 340, h: 400 };
+    const anchor = { right: true, bottom: true };
+    assert.deepEqual({ ...h.dragMiniSize({ start, dx: -60, dy: -40, anchor, axes: 'x' }, DESKTOP) }, { w: 400, h: 400 });
+    assert.deepEqual({ ...h.dragMiniSize({ start, dx: -60, dy: -40, anchor, axes: 'y' }, DESKTOP) }, { w: 340, h: 440 });
+    // An automatic height is left alone by a horizontal drag, and starts from 0 on a vertical one.
+    assert.equal(h.dragMiniSize({ start: { w: 340, h: null }, dx: -60, dy: 0, anchor, axes: 'x' }, DESKTOP).h, null);
+    assert.equal(h.dragMiniSize({ start: { w: 340, h: null }, dx: 0, dy: -500, anchor, axes: 'y' }, DESKTOP).h, 500);
+});
+
+test('dragMiniSize spreads a horizontal drag over the chat and its history column', async () => {
+    const h = await load();
+    const start = { w: 340, h: 400 };
+    const anchor = { right: true, bottom: true };
+    // 80px of pointer travel is 80/1.6 = 50px of chat width when the column is open.
+    assert.equal(h.dragMiniSize({ start, dx: -80, dy: 0, anchor, axes: 'x', historyOpen: true }, DESKTOP).w, 390);
+    assert.equal(h.dragMiniSize({ start, dx: -80, dy: 0, anchor, axes: 'x' }, DESKTOP).w, 420);
+    // And it stops where the pair would leave the window.
+    const narrow = { width: 700, height: 800 };
+    assert.equal(h.dragMiniSize({ start, dx: -900, dy: 0, anchor, axes: 'x', historyOpen: true }, narrow).w, Math.round((700 - 32) / 1.6));
+});
+
+test('miniKeyDelta turns the arrow keys into one step in that screen direction', async () => {
+    const h = await load();
+    assert.equal(h.MINI_STEP_PX, 24);
+    assert.deepEqual({ ...h.miniKeyDelta('ArrowLeft') }, { dx: -24, dy: 0 });
+    assert.deepEqual({ ...h.miniKeyDelta('ArrowRight') }, { dx: 24, dy: 0 });
+    assert.deepEqual({ ...h.miniKeyDelta('ArrowUp') }, { dx: 0, dy: -24 });
+    assert.deepEqual({ ...h.miniKeyDelta('ArrowDown') }, { dx: 0, dy: 24 });
+    for (const key of ['Home', 'Enter', 'a', ' ']) assert.equal(h.miniKeyDelta(key), null, key);
+});

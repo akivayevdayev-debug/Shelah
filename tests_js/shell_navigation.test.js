@@ -615,12 +615,12 @@ test('a saved question the history cannot place is asked again', async () => {
     `);
     try {
         await page.eval(`openShelfItem('ask', 'old text', 'May I carry?')`);
-        assert.deepEqual(logOf(page), [['handleAiSearch', 'May I carry?']]);
+        assert.deepEqual(logOf(page), [['handleAiSearch', 'May I carry?', { origin: 'panel' }]]);
 
         // Nothing to re-ask: an empty question, not a crash.
         page.eval(`window.__log.length = 0; window.ShelahAskHistory = { resolveShelfAsk: async () => ({}) }`);
         await page.eval(`openShelfItem('ask', '', '')`);
-        assert.deepEqual(logOf(page), [['handleAiSearch', '']]);
+        assert.deepEqual(logOf(page), [['handleAiSearch', '', { origin: 'panel' }]]);
     } finally {
         page.close();
     }
@@ -633,9 +633,9 @@ test('without the history module a saved question is asked again from its value,
         await page.eval(`openShelfItem('ask', '', 'by label')`);
         await page.eval(`openShelfItem('ask', '', '')`);
         assert.deepEqual(logOf(page), [
-            ['handleAiSearch', 'by value'],
-            ['handleAiSearch', 'by label'],
-            ['handleAiSearch', ''],
+            ['handleAiSearch', 'by value', { origin: 'panel' }],
+            ['handleAiSearch', 'by label', { origin: 'panel' }],
+            ['handleAiSearch', '', { origin: 'panel' }],
         ]);
     } finally {
         page.close();

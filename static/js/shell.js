@@ -3877,10 +3877,18 @@ function hasParenthetical(text) {
             });
         }
 
+        // True while a question asked from the search bar is loading there. The
+        // phone's search is then kept open to show it, so closing it mid-question
+        // (setMobileSearchExpanded) hands the wait to the panel.
+        let barAskLoading = false;
+
         function setMobileSearchExpanded(expanded) {
             const shouldExpand = Boolean(expanded) && isMobileViewport();
             const wasOpen = document.body.classList.contains('mobile-search-open');
             const activeTab = () => mobileBottomTabs?.querySelector('.mobile-tab-active')?.dataset.mobileTab;
+            // Closed by the reader while their question was still loading in it:
+            // nothing on the page shows the wait any more, so the panel does.
+            if (wasOpen && !shouldExpand && barAskLoading) window.ShelahConversationUI?.showPendingAnswer?.();
             document.body.classList.toggle('mobile-search-open', shouldExpand);
             if (wasOpen !== shouldExpand) fadeTopbarSwap(shouldExpand);
             if (shouldExpand) {
@@ -7518,7 +7526,8 @@ function hasParenthetical(text) {
                     openStoredAskAnswer(result.item);
                     return;
                 }
-                await handleAiSearch(result.reask || '');
+                // Asked from the shelf, not the search bar: the panel carries the wait.
+                await handleAiSearch(result.reask || '', { origin: 'panel' });
             }
         }
 
@@ -9726,8 +9735,6 @@ function hasParenthetical(text) {
         // -- this used to be an inline
         // askWithRetry() duplicating that module. See ai-service.js's module
         // docstring for the ported behavior and the return contract.
-        // `followUp`: a signed-out visitor's follow-up on the answers on screen
-        // (conversation-ui.js), not a fresh question from the search bar.
         // Brief "liftoff" glow pulse on the search bar itself, fired in the
         // same tick as the panel opening -- a handoff moment, not a
         // sustained loader. Self-cleaning via setTimeout so the class never
@@ -9797,16 +9804,30 @@ function hasParenthetical(text) {
             }
         }
 
-        async function handleAiSearch(question, { followUp = false } = {}) {
+        // `origin` says where the question was asked: 'bar' (the search bar, the
+        // default) or 'panel' (the conversation panel's own composer, or the
+        // shelf). The loading cues -- the bar's halo and status line, or the
+        // panel's -- belong to that one surface only (conversation-ui.js
+        // askSurface). `followUp`: a signed-out visitor's follow-up on the
+        // answers on screen, not a fresh question.
+        async function handleAiSearch(question, { followUp = false, origin = 'bar' } = {}) {
             const sanitizedQuestion = sanitizeQuestionInput(question);
             if (!sanitizedQuestion) return;
             question = sanitizedQuestion;
+
+            // Modules load deferred, but this only runs from a user
+            // interaction, well after they have; assert rather than assume.
+            const panel = window.ShelahConversationUI;
+            const surface = panel?.askSurface?.({ origin, followUp }) || 'panel';
+            const onBar = surface === 'bar';
 
             // Kill the suggestion dropdown immediately -- it must not persist
             // while the answer is on screen.
             suppressSuggestionMenu = true;
             hideSearchSuggestions();
-            setMobileSearchExpanded(false);
+            // A question asked from the phone's search bar loads there, so the
+            // search stays open until the answer lands (the finally below).
+            if (!onBar) setMobileSearchExpanded(false);
             // A leftover chapter-grid modal (z-[110]) sits above the panel and
             // would silently block it from view if left open -- close it first.
             closeChapterGrid();
@@ -9819,31 +9840,36 @@ function hasParenthetical(text) {
             // bookmark button); closing the panel restores the page's
             // (restoreShownView).
             setCurrentView('ask', question, question);
-            document.body.classList.add('search-loading');
-            pulseSearchLiftoff();
+            if (onBar) {
+                barAskLoading = true;
+                pulseSearchLiftoff();
+            }
 
             try {
-                // The conversation panel shows the question and a pending
-                // answer at once, then the answer as the thread's first turn
-                // (conversation-ui.js askFromSearch -> ai-service.js askAi).
-                // Modules load deferred, but this only runs from a user
-                // interaction, well after they have; assert rather than assume.
-                const panel = window.ShelahConversationUI;
+                // From the bar the panel opens when the answer is ready; from the
+                // panel it shows the question and a pending answer at once. Either
+                // way the answer is the thread's first turn (conversation-ui.js
+                // askFromSearch -> ai-service.js askAi). The loading cues
+                // (body.search-loading, the status line) are conversation-ui's:
+                // it turns them on with the pending turn and off with the answer.
                 if (!panel?.askFromSearch) throw new Error('AI module unavailable');
 
                 const data = await panel.askFromSearch(question, {
                     mode: appState.prefs.mode,
                     community: appState.prefs.community,
                     language: isHebrewMode() ? 'he' : 'en',
-                }, { followUp });
+                }, { followUp, surface });
                 // Another question or answer replaced this one meanwhile.
                 if (!data) return;
                 noteAiAnswer(panel, data, question);
             } catch (error) {
                 noteAiSearchFailure(error);
             } finally {
-                document.body.classList.remove('search-loading');
                 suppressSuggestionMenu = false;
+                if (onBar) {
+                    barAskLoading = false;
+                    setMobileSearchExpanded(false);
+                }
             }
         }
 
@@ -11854,7 +11880,9 @@ function hasParenthetical(text) {
                 searchInput.value = question;
             }
 
-            setMobileSearchExpanded(false);
+            // The phone's search closes with the navigation it leads to, or stays
+            // open to show a question loading (handleAiSearch closes it at the end).
+            searchInput.blur();
 
             if (appState.activeSuggestionIndex >= 0 && appState.suggestionItems[appState.activeSuggestionIndex]) {
                 await openSearchTarget(appState.suggestionItems[appState.activeSuggestionIndex], question);

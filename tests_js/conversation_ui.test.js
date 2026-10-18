@@ -69,7 +69,7 @@ test('signed out, a question goes to the one-shot search instead of the conversa
         // No Clerk on the deployment (local dev): the panel does not wait for sign-in.
         await page.ui.open({ question: '  What is Shabbat?  ' });
         await page.flush();
-        assert.deepEqual(asked, [['What is Shabbat?', { followUp: false }]]);
+        assert.deepEqual(asked, [['What is Shabbat?', { followUp: false, origin: 'panel' }]]);
 
         // The composer does the same from inside the panel.
         await page.ui.open({ fresh: true });
@@ -1593,6 +1593,163 @@ test('without speech recognition the microphone button stays hidden', async () =
     const page = await openAsk();
     try {
         assert.equal(page.$('#convMicBtn').classList.contains('hidden'), true);
+    } finally {
+        page.close();
+    }
+});
+
+// --- the mini widget's history column and size ----------------------------------
+
+const historyListApi = {
+    listConversations: async () => LIST,
+    getConversation: async (id) => ({ id, title: 'Shabbat candles', minhag: 'Sefardic', messages: [] }),
+};
+
+async function openMini(options = {}) {
+    const page = await openConversationPage({ signedIn: true, api: historyListApi, ...options });
+    page.ui.open({ size: 'mini' });
+    await page.flush();
+    return page;
+}
+
+test('in the mini widget the history button opens a column beside the chat, not the popover', async () => {
+    const page = await openMini();
+    try {
+        const button = page.$('#convHistoryBtn');
+        assert.equal(button.getAttribute('aria-controls'), 'convSidebar');
+        page.click(button);
+        await page.flush();
+        assert.equal(panel(page).dataset.history, 'open');
+        assert.equal(button.getAttribute('aria-expanded'), 'true');
+        assert.equal(page.hidden('#convHistoryPop'), true);
+        const items = page.$$('#convSidebar .conv-list__item');
+        assert.equal(items.length, 3);
+        assert.match(items[0].textContent, /Pinned question/);
+        // Focus lands on the list so the keyboard can carry on from the button.
+        assert.ok(page.$('#convSidebar').contains(page.document.activeElement));
+
+        page.click(button);
+        await page.flush();
+        assert.equal('history' in panel(page).dataset, false);
+        assert.equal(button.getAttribute('aria-expanded'), 'false');
+    } finally {
+        page.close();
+    }
+});
+
+test('picking a conversation from the column opens it and leaves the column open', async () => {
+    const page = await openMini();
+    try {
+        page.click('#convHistoryBtn');
+        await page.flush();
+        page.click(page.$('#convSidebar [data-conv-open="c1"]'));
+        await page.flush();
+        assert.equal(page.store.getState().conversation.id, 'c1');
+        assert.equal(panel(page).dataset.size, 'mini');
+        assert.equal(panel(page).dataset.history, 'open');
+        assert.match(route(page), /^\/chat\/c1/);
+    } finally {
+        page.close();
+    }
+});
+
+test('Escape inside the widget folds the column away first and keeps the widget', async () => {
+    const page = await openMini();
+    try {
+        page.click('#convHistoryBtn');
+        await page.flush();
+        const event = page.key('Escape');
+        assert.equal(event.defaultPrevented, true);
+        assert.equal('history' in panel(page).dataset, false);
+        assert.equal(page.document.activeElement.id, 'convHistoryBtn');
+        assert.equal(page.hidden('#convPanel'), false);
+        assert.equal(panel(page).dataset.size, 'mini');
+    } finally {
+        page.close();
+    }
+});
+
+test('the column is a mini-widget thing: the centred overlay keeps its popover', async () => {
+    const page = await openMini();
+    try {
+        page.click('#convHistoryBtn');
+        await page.flush();
+        assert.equal(panel(page).dataset.history, 'open');
+        // Growing to the overlay folds the column away and hands the button back to the popover.
+        page.ui.setSize('overlay');
+        await page.flush();
+        assert.equal('history' in panel(page).dataset, false);
+        assert.equal(page.$('#convHistoryBtn').getAttribute('aria-controls'), 'convHistoryPop');
+        assert.equal(page.$('#convHistoryBtn').getAttribute('aria-haspopup'), 'dialog');
+
+        page.click('#convHistoryBtn');
+        await page.flush();
+        assert.equal(page.hidden('#convHistoryPop'), false);
+        assert.equal('history' in panel(page).dataset, false);
+    } finally {
+        page.close();
+    }
+});
+
+test('closing the panel folds the column away', async () => {
+    const page = await openMini();
+    try {
+        page.click('#convHistoryBtn');
+        await page.flush();
+        page.ui.close();
+        await page.flush();
+        assert.equal('history' in panel(page).dataset, false);
+        // Reopening starts with the column shut.
+        page.ui.open({ size: 'mini' });
+        await page.flush();
+        assert.equal('history' in panel(page).dataset, false);
+        assert.equal(page.$('#convHistoryBtn').getAttribute('aria-expanded'), 'false');
+    } finally {
+        page.close();
+    }
+});
+
+test('on a phone the history button still opens the popover', async () => {
+    const page = await openConversationPage({ signedIn: true, mobile: true, api: historyListApi });
+    try {
+        page.ui.open({ size: 'overlay' });
+        await page.flush();
+        page.click('#convHistoryBtn');
+        await page.flush();
+        assert.equal(page.hidden('#convHistoryPop'), false);
+        assert.equal('history' in panel(page).dataset, false);
+        assert.equal(page.$('#convHistoryBtn').getAttribute('aria-haspopup'), 'dialog');
+    } finally {
+        page.close();
+    }
+});
+
+test('the widget comes back at the size it was left at', async () => {
+    const page = await openConversationPage({ storage: { 'shelah.conv.miniSize': JSON.stringify({ w: 440, h: 520 }) } });
+    try {
+        page.ui.open({ size: 'mini' });
+        await page.flush();
+        assert.equal(panel(page).style.getPropertyValue('--conv-mini-w'), '440px');
+        assert.equal(panel(page).style.getPropertyValue('--conv-mini-h'), '520px');
+        assert.equal(panel(page).dataset.miniH, 'fixed');
+    } finally {
+        page.close();
+    }
+});
+
+test('dragging the corner handle of the real widget resizes it and keeps the size', async () => {
+    const page = await openMini();
+    try {
+        // jsdom has no layout: the widget sits in the bottom-right corner, 340 by 400.
+        panel(page).getBoundingClientRect = () => ({ left: 700, top: 300, width: 340, height: 400, right: 1040, bottom: 700 });
+        const handle = page.$('#convResizeBtn');
+        page.pointer(handle, 'pointerdown', { clientX: 700, clientY: 300 });
+        page.pointer(handle, 'pointermove', { clientX: 650, clientY: 280 });
+        page.pointer(handle, 'pointerup', { clientX: 650, clientY: 280 });
+        assert.equal(panel(page).style.getPropertyValue('--conv-mini-w'), '390px');
+        assert.equal(panel(page).style.getPropertyValue('--conv-mini-h'), '420px');
+        assert.deepEqual(JSON.parse(page.window.localStorage.getItem('shelah.conv.miniSize')), { w: 390, h: 420 });
+        assert.deepEqual(page.errors, []);
     } finally {
         page.close();
     }

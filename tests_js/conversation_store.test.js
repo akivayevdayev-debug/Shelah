@@ -980,7 +980,7 @@ test('send: the server\'s steps land in state.progress, starting fresh for every
 
     const sending = store.send('Q?');
     await new Promise((r) => setImmediate(r));
-    assert.deepEqual(store.getState().progress, { order: [], status: {} });
+    assert.deepEqual(store.getState().progress, { order: [], status: {}, details: {} });
 
     sink(stage('sources', 'start'));
     sink(stage('sources', 'done'));
@@ -989,6 +989,7 @@ test('send: the server\'s steps land in state.progress, starting fresh for every
     assert.deepEqual(store.getState().progress, {
         order: ['sources', 'thinking'],
         status: { sources: 'done', thinking: 'active' },
+        details: {},
     });
 
     gate.resolve();
@@ -998,7 +999,7 @@ test('send: the server\'s steps land in state.progress, starting fresh for every
     // The next send does not inherit the previous answer's steps.
     const second = store.send('again');
     await new Promise((r) => setImmediate(r));
-    assert.deepEqual(store.getState().progress, { order: [], status: {} });
+    assert.deepEqual(store.getState().progress, { order: [], status: {}, details: {} });
     gate.resolve();
     await second;
 });
@@ -1052,7 +1053,7 @@ test('steps from an answer the user has since left are dropped', async () => {
     store.startNew({ minhag: 'Persian' });
     sink(stage('sources', 'start'));
 
-    assert.deepEqual(store.getState().progress, { order: [], status: {} });
+    assert.deepEqual(store.getState().progress, { order: [], status: {}, details: {} });
     gate.resolve();
     await sending;
 });
@@ -1102,4 +1103,72 @@ test('retrying a stored error turn also reports live steps', async () => {
     assert.deepEqual(store.getState().progress.status, { times: 'active' });
     gate.resolve();
     await retrying;
+});
+
+// --- where a question was asked ---------------------------------------------------
+
+test('a question says where it was asked: the panel unless the search bar did', async () => {
+    const { createConversationStore } = await loadStore();
+    const pending = deferred();
+    const store = createConversationStore({ api: makeApi(), askAnswer: () => pending.promise });
+    assert.equal(store.getState().surface, 'panel');
+
+    const bar = store.askSearch('Q?', {}, { surface: 'bar' });
+    assert.equal(store.getState().surface, 'bar');
+    pending.resolve(askPayload());
+    await bar;
+
+    const panel = store.askSearch('Q?', {}, { surface: 'anywhere else' });
+    assert.equal(store.getState().surface, 'panel', 'only "bar" is the bar');
+    pending.resolve(askPayload());
+    await panel;
+
+    const plain = store.askSearch('Q?');
+    assert.equal(store.getState().surface, 'panel');
+    pending.resolve(askPayload());
+    await plain;
+});
+
+test('setSurface hands a waiting question from the bar to the panel, and only changes what differs', async () => {
+    const { createConversationStore } = await loadStore();
+    const pending = deferred();
+    const store = createConversationStore({ api: makeApi(), askAnswer: () => pending.promise });
+    const result = store.askSearch('Q?', {}, { surface: 'bar' });
+    let changes = 0;
+    store.subscribe(() => { changes += 1; });
+
+    store.setSurface('panel');
+    assert.equal(store.getState().surface, 'panel');
+    assert.equal(changes, 1);
+    store.setSurface('panel');
+    store.setSurface('whatever');
+    assert.equal(changes, 1, 'nothing to tell anyone when it is already there');
+
+    store.setSurface('bar');
+    assert.equal(store.getState().surface, 'bar');
+    pending.resolve(askPayload());
+    await result;
+});
+
+test('a signed-out follow-up and a send are asked in the panel, whatever the thread was waiting on', async () => {
+    const { createConversationStore } = await loadStore();
+    const first = deferred();
+    const store = createConversationStore({ api: makeApi(), askAnswer: () => first.promise });
+    const barQuestion = store.askSearch('First?', {}, { surface: 'bar' });
+    first.resolve(askPayload());
+    await barQuestion;
+
+    const next = deferred();
+    const follow = createConversationStore({ api: makeApi(), askAnswer: () => next.promise });
+    follow.setSurface('bar');
+    const following = follow.askGuestFollowUp('And?', {});
+    assert.equal(follow.getState().surface, 'panel');
+    next.resolve(askPayload());
+    await following;
+
+    const sender = createConversationStore({ api: makeApi() });
+    sender.setSurface('bar');
+    const sending = sender.send('Q?');
+    assert.equal(sender.getState().surface, 'panel');
+    await sending;
 });

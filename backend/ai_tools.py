@@ -41,7 +41,7 @@ from dataclasses import dataclass
 from datetime import date as date_lib
 from typing import Any, Awaitable, Callable, Optional
 
-from backend import calendar_service, customs, sefaria, sefaria_library, siddur_data, zmanim_engine
+from backend import ask_progress, calendar_service, customs, sefaria, sefaria_library, siddur_data, zmanim_engine
 from backend.data_service import ShelahEngine
 from backend.health_check import health
 from backend.helpers import (
@@ -1114,6 +1114,15 @@ def get_tool_schemas(*, include_web_search: bool = False) -> list[dict]:
     ]
 
 
+def _progress_ref(name: str, arguments: Any) -> str | None:
+    """The text a get_text_by_ref call reads, for the progress line (the only
+    argument it names; every other tool is shown by its name alone)."""
+    if name != "get_text_by_ref" or not isinstance(arguments, dict):
+        return None
+    ref = str(arguments.get("ref") or "").strip()
+    return ref[:80] or None
+
+
 async def execute_tool(name: str, arguments: dict, *, context: Optional[dict] = None) -> dict:
     """Run one tool call: timeout + narrow exception catch + health
     record_success/record_failure, fail-open. Never
@@ -1129,9 +1138,15 @@ async def execute_tool(name: str, arguments: dict, *, context: Optional[dict] = 
         return {"error": f"{name} is temporarily unavailable (circuit open for {spec.service})"}
 
     try:
-        result = await asyncio.wait_for(
-            spec.handler(arguments or {}, context), timeout=spec.timeout_seconds,
-        )
+        # Tells the live progress line exactly which tool the model is using
+        # (a no-op when no stream is bound); clears when the call is over.
+        with ask_progress.detail_scope(
+            ask_progress.STAGE_THINKING, ask_progress.DETAIL_TOOL,
+            tool=name, ref=_progress_ref(name, arguments),
+        ):
+            result = await asyncio.wait_for(
+                spec.handler(arguments or {}, context), timeout=spec.timeout_seconds,
+            )
     except asyncio.TimeoutError:
         if spec.service:
             health.record_failure(spec.service)

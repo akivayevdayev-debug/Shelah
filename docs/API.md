@@ -192,18 +192,20 @@ The question is sanitised before use (hidden and control characters removed, whi
 
 When the primary provider (Gemini) fails the answer comes from the Claude fallback and `meta.fallback` is `true`. When both providers fail the answer is built from the retrieved sources alone, without a model summary.
 
-**Live progress stream (opt-in).** A client that sends `Accept: application/x-ndjson` gets the same answer preceded by one line per pipeline step, so the UI can say what is happening while it waits. `POST /api/conversations/<id>/ask` behaves identically. Any other `Accept` header gets the single JSON response above, unchanged. Implementation: `backend/ask_progress.py` (server), `static/js/ask-progress.js` (client).
+**Live progress stream (opt-in).** A client that sends `Accept: application/x-ndjson` gets the same answer preceded by one line per pipeline step, so the UI can say what is happening while it waits. `POST /api/conversations/<id>/ask` behaves identically. Any other `Accept` header gets the single JSON response above, unchanged. Implementation: `backend/ask_progress.py` (server), `static/js/ask-progress.js` (client). Both ask routes (`asgi.py` and the Flask `app.py`) emit the same events (`tests/test_ask_progress.py`).
 
 The body is newline-delimited JSON, one object per line:
 
 ```json
 {"type":"stage","stage":"sources","state":"start"}
+{"type":"detail","stage":"sources","detail":{"kind":"refs","refs":["Berakhot 2a"],"count":4}}
 {"type":"stage","stage":"sources","state":"done"}
 {"type":"ping"}
 {"type":"result","payload":{ ...the JSON body above... }}
 ```
 
 - `stage` is one of `sources`, `commentary`, `customs`, `times`, `thinking`; `state` is `start` or `done`. Steps overlap, and a step that fans out into several lookups reports one `start` and one `done`.
+- `detail` says what a running step is doing right now, so the status line can be specific ("Reading Berakhot 2a and 3 more", "Checking sunset and nightfall for Shabbat times") instead of only naming the step. `detail` is `null` when that work ends, and a step that finishes drops its detail. It is data, never prose: `kind` is one of `refs` (`refs`: up to three references, `count`: how many in all), `community` (`community`: the reader's lens), `times` (`topic`: `shabbat`, `zmanim`, `omer`, `parasha` or `holiday`) or `tool` (`tool`: the AI tool being run, plus `ref` for a text it opens). The client owns the English and Hebrew wording (`static/js/ask-progress.js`), so a detail can never carry markup or the wrong language; a kind or value it has no words for is ignored and the line keeps naming the step. Overlapping lookups never stack: the model's own tool calls report through a counted scope and the line returns to the step's name when the last one ends.
 - `ping` is a keep-alive sent after 10 s of silence; clients ignore it.
 - The last line is always a terminal `result` (the normal response body in `payload`; the conversation route sends `status` and `body`) or `error` (`status` plus `detail`). A stream that ends without one was interrupted.
 - The HTTP status stays real. Streaming starts only after the pre-flight checks (validation, auth, Turnstile, budget) pass, so a refusal is still an ordinary `400`/`401`/`402`/`403`/`429`; an answer that never reports a step (the prayer shortcut) comes back as plain JSON. After streaming starts, failures arrive as an `error` line.

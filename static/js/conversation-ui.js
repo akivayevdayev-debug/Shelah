@@ -49,12 +49,13 @@ import { createConversationStore, MESSAGE_STATUS } from "./conversation-store.js
 import { isSignedIn } from "./conversation-entry.js";
 import { closeOverlay, pushRoute, readRoute, routeUrl } from "./router.js";
 import { icon as phosphorIcon } from "./icons.js";
-import { activeLabel, createProgress, doneLabel, progressView } from "./ask-progress.js";
+import { activeLabel, createProgress, doneLabel, progressView, viewKey } from "./ask-progress.js";
 import { sourceBadgeHtml, externalLinksHtml, previewHtml, hebrewRefName, readerRef } from "./source-cards.js";
 import { citeIdPrefix, injectMarkers, placeMarkers, stripSourcesBlock } from "./citation-markers.js";
 import { createCitationPopover } from "./citation-popover.js";
 import { createConversationShare } from "./conversation-share.js";
 import { createVoiceInput } from "./conversation-voice.js";
+import { createMiniWidget } from "./conversation-mini.js";
 import {
     normalizeSize,
     expandedSize,
@@ -137,6 +138,7 @@ const ui = {
 let store = null;
 let shareControl = null;
 let voice = null;
+let mini = null;
 let els = null;
 // The card a numbered source chip opens (citation-popover.js); made in bindEvents.
 let citePop = null;
@@ -262,6 +264,10 @@ function collectElements() {
         title: $("convTitle"),
         subtitle: $("convSubtitle"),
         historyBtn: $("convHistoryBtn"),
+        sidebar: $("convSidebar"),
+        main: panel.querySelector(".conv-main"),
+        resizeCorner: $("convResizeBtn"),
+        resizeEdges: [...panel.querySelectorAll(".conv-resize[data-resize-axis]")],
         chipLabel: $("convMinhagChipLabel"),
         menuBtn: $("convMenuBtn"),
         menu: $("convMenu"),
@@ -295,6 +301,7 @@ function collectElements() {
         pipOpen: $("convPipOpen"),
         pipTitle: $("convPipTitle"),
         pipStatus: $("convPipStatus"),
+        barStatus: $("searchLiveStatus"),
         pop: $("convHistoryPop"),
         popSignedOut: document.querySelector("#convHistoryPop .conv-pop__signed-out"),
         tray: $("mobileSearchTray"),
@@ -461,8 +468,13 @@ function render() {
     const answerView = Boolean(state.answerView) && !conversation;
     els.panel.dataset.hasThread = conversation ? "true" : "false";
     els.panel.dataset.answerView = answerView || ui.publicState ? "true" : "false";
-    els.panel.dataset.sending = state.sending ? "true" : "false";
-    els.pip.dataset.sending = state.sending ? "true" : "false";
+    // A question asked from the search bar loads there (halo and status line)
+    // and nowhere else; the panel's composer halo is for questions asked in it.
+    const barLoading = state.sending && state.surface === "bar";
+    const panelLoading = state.sending && !barLoading;
+    els.panel.dataset.sending = panelLoading ? "true" : "false";
+    els.pip.dataset.sending = panelLoading ? "true" : "false";
+    renderBarStatus(barLoading, state, l);
 
     const title = panelTitle(state, answerView, hasMessages);
     renderHeader(state, { l, name, title, options });
@@ -475,7 +487,7 @@ function render() {
 
     // Minimised bar.
     els.pipTitle.textContent = title;
-    els.pipStatus.textContent = progress ? `${activeLabel(progress.active, l)}…` : "";
+    els.pipStatus.textContent = progress ? statusLine(progress, l) : "";
     els.pipOpen.setAttribute("aria-label", tr(`Open conversation: ${title}`, `פתח שיחה: ${title}`));
 
     syncAskExpanded();
@@ -718,9 +730,16 @@ function statusHtml() {
         + '</div>';
 }
 
+// The line naming what is happening now. References stay in the form the
+// server sent them; communities are named the way the rest of the page does.
+function statusLine(view, l) {
+    const names = { community: (community) => communityDisplayName(community, l) };
+    return `${activeLabel(view.active, l, view.detail, names)}…`;
+}
+
 function applyStatus(host, view, l) {
     clearTimeout(host._statusTimer);
-    const wanted = view.active || "";
+    const wanted = viewKey(view);
     const shown = host.dataset.stage;
     const heldFor = performance.now() - (host._stageShownAt || 0);
     if (shown !== undefined && shown !== wanted && heldFor < STATUS_MIN_DWELL_MS) {
@@ -729,7 +748,7 @@ function applyStatus(host, view, l) {
         }, STATUS_MIN_DWELL_MS - heldFor);
     } else if (shown !== wanted || host.dataset.lang !== l) {
         const nowEl = host.querySelector("[data-status-now]");
-        nowEl.textContent = `${activeLabel(wanted, l)}…`;
+        nowEl.textContent = statusLine(view, l);
         // The line changing under the reader's eyes settles in; the first line
         // (nothing shown yet) is part of the turn's own entrance.
         if (shown !== undefined) motion()?.settleIn?.(nowEl);
@@ -752,6 +771,30 @@ function renderStatus(state, l) {
     const host = els.messages.querySelector("[data-conv-status]");
     if (host) applyStatus(host, view, l);
     return view;
+}
+
+// The same two rows under the search bar for a question asked from it (the
+// panel stays shut until the answer lands). The rows are built when a question
+// starts and left in place while the line fades out, so it never empties first.
+function renderBarStatus(active, state, l) {
+    const host = els.barStatus;
+    document.body.classList.toggle("search-loading", active);
+    if (!host) return;
+    const shown = host.dataset.active === "true";
+    if (!active) {
+        if (shown) host.dataset.active = "false";
+        return;
+    }
+    if (!shown) {
+        clearTimeout(host._statusTimer);
+        host.innerHTML = '<span class="conv-status__now" data-status-now dir="auto"></span>'
+            + '<span class="conv-status__done" data-status-done dir="auto" data-empty="true"></span>';
+        delete host.dataset.stage;
+        delete host.dataset.lang;
+        host._stageShownAt = 0;
+        host.dataset.active = "true";
+    }
+    applyStatus(host, progressView(state.progress || createProgress()), l);
 }
 
 function turnInnerHtml(message, index, messages, l) {
@@ -814,18 +857,21 @@ function threadReplyActionsHtml(message) {
     return '<div class="conv-turn__actions" data-answer-actions><div class="conv-turn__feedback"></div></div>';
 }
 
+// A community the way the rest of the page names it.
+function communityDisplayName(community, l) {
+    try {
+        if (typeof window.getCommunityDisplayName === "function") return window.getCommunityDisplayName(community);
+    } catch { /* fall through */ }
+    return communityName(community, l, communityOptions());
+}
+
 // The answer's per-community customs, as a compact list under it.
 function customsHtml(data, l) {
     const customs = (Array.isArray(data?.customs) ? data.customs : [])
         .map((c) => ({ community: c?.community, text: String(c?.ruling || c?.notes || "").trim() }))
         .filter((c) => c.text);
     if (!customs.length) return "";
-    const name = (community) => {
-        try {
-            if (typeof window.getCommunityDisplayName === "function") return window.getCommunityDisplayName(community);
-        } catch { /* fall through */ }
-        return communityName(community, l, communityOptions());
-    };
+    const name = (community) => communityDisplayName(community, l);
     return `<section class="conv-customs" aria-label="${escapeText(tr("Community customs", "מנהגי קהילות"))}">`
         + `<h3 class="conv-customs__title">${escapeText(tr("Community customs", "מנהגי קהילות"))}</h3><ul>`
         + customs.map((c) => `<li class="conv-custom"><span class="conv-custom__name">${escapeText(name(c.community))}</span>`
@@ -1183,6 +1229,7 @@ function applyAttributes() {
         els.expandBtn.setAttribute("aria-label", label);
         els.expandBtn.title = label;
     }
+    mini?.sync();
 }
 
 function show(el, preset, origin = null) {
@@ -1317,6 +1364,9 @@ function openPanel({ size = null, origin = null, fromRoute = false, routeId = nu
     ui.layout = effectiveLayout();
     ui.size = nextSize;
     markAiUsed();
+    // Opening the panel while the search bar waits for an answer hands the
+    // wait to the panel: its status line and halo take over from the bar's.
+    store?.setSurface("panel");
     if (!wasOpen) {
         ui.open = true;
         ui.returnFocus = origin || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
@@ -1351,6 +1401,7 @@ function closePanel({ fromRoute = false } = {}) {
     closeMenu();
     closeSharePop();
     closeHistoryPop();
+    mini?.closeHistory({ immediate: true });
     voice?.abort();
     citePop?.close();
     hide(els.panel, panelPreset());
@@ -1383,6 +1434,7 @@ function setSize(size, { fromRoute = false } = {}) {
     const previousSize = ui.size;
     ui.size = next;
     closeMenu();
+    closeHistoryPop(); // its anchor moved: the sidebar, popover or column takes over
     citePop?.close();
     applyVisibility({ previousSize });
     if (!fromRoute) pushRoute({ cv: next }, { replace: true });
@@ -1409,19 +1461,47 @@ function presentAnswer() {
     openPanel({ size: ui.open && ui.size === "full" ? "full" : "overlay", fromRoute: true });
 }
 
+// Where a question's loading cues belong: "bar" for a fresh question typed in
+// the search bar while the panel is shut (the panel stays shut until the answer
+// lands, so the bar carries every cue), "panel" for everything else -- a
+// question asked in the panel's own composer, a follow-up, a re-ask from the
+// shelf, or a bar question while the panel is already open on screen.
+function askSurface({ origin = "bar", followUp = false } = {}) {
+    return origin === "bar" && !followUp && !ui.open && Boolean(els?.barStatus) ? "bar" : "panel";
+}
+
 // handleAiSearch: ask through /ask and show it here. Resolves the payload,
 // or null when another question or answer replaced it meanwhile; rejects
 // (after showing the failure on the turn) for the caller's side effects.
-function askFromSearch(question, request = {}, { followUp = false } = {}) {
+// `surface` is askSurface()'s answer: "bar" holds the panel back until the
+// answer (or its failure) is ready to show.
+function askFromSearch(question, request = {}, { followUp = false, surface = "panel" } = {}) {
     ui.publicState = null;
     // Follow-ups (and the URL) use the settings this answer was asked with:
     // the search bar asks with the visitor's own community.
     if (request.mode) ui.mode = request.mode;
     ui.routeMinhag = null;
-    const pending = followUp
+    const fromBar = surface === "bar" && !followUp;
+    const asked = followUp
         ? store.askGuestFollowUp(question, request)
-        : store.askSearch(question, request);
-    presentAnswer();
+        : store.askSearch(question, request, { surface: fromBar ? "bar" : "panel" });
+    let pending = asked;
+    if (fromBar) {
+        // Unless the reader opened the panel meanwhile (which took the cues
+        // over), it opens now on the answer or on the failure with its Retry.
+        pending = asked.then(
+            (data) => {
+                if (data && !ui.open) presentAnswer();
+                return data;
+            },
+            (error) => {
+                if (!ui.open) presentAnswer();
+                throw error;
+            },
+        );
+    } else {
+        presentAnswer();
+    }
     pending.catch((error) => {
         if (error?.code === "guest_cap_reached") onGuestCapRefused(error, question, followUp);
     });
@@ -1512,7 +1592,7 @@ function showSavedUnavailable(gone, { signIn = false } = {}) {
 // Signed out, a question is a one-shot /ask (Decision A1); `followUp` names the
 // answers on screen as the conversation it continues (guest limits apply).
 function askOneShot(question, { followUp = false } = {}) {
-    if (typeof window.handleAiSearch === "function") void window.handleAiSearch(question, { followUp });
+    if (typeof window.handleAiSearch === "function") void window.handleAiSearch(question, { followUp, origin: "panel" });
 }
 
 // Open (or resume) the conversation UI. `fresh` starts a new thread first;
@@ -1605,8 +1685,31 @@ function setTriggerExpanded(trigger, expanded) {
     });
 }
 
+// The mini widget's history: a column that grows out of its free side
+// (conversation-mini.js). Pressing the button again folds it away; picking a
+// conversation leaves it open, so a few can be looked through in a row.
+function toggleHistoryColumn() {
+    if (mini.isHistoryOpen()) {
+        mini.closeHistory();
+        return;
+    }
+    closeMenu();
+    closeSharePop();
+    maybeLoadList();
+    render();
+    mini.openHistory();
+    requestAnimationFrame(() => {
+        const first = els.sidebar.querySelector("[aria-current='true'], .conv-list__item, .conv-new-btn");
+        first?.focus({ preventScroll: true });
+    });
+}
+
 function openHistoryPop(trigger) {
     if (!trigger) return;
+    if (mini && isDesktopMini() && trigger === els.historyBtn) {
+        toggleHistoryColumn();
+        return;
+    }
     if (!els.pop.classList.contains("hidden") && ui.popTrigger === trigger) {
         closeHistoryPop();
         return;
@@ -2215,12 +2318,23 @@ function isMobileMini() {
     return ui.layout === "mobile" && ui.size === "mini";
 }
 
+// The floating corner widget on a desktop-sized window: the one place the
+// history opens as a column beside the chat rather than as a popover.
+function isDesktopMini() {
+    return ui.layout === "desktop" && ui.size === "mini";
+}
+
 // What Escape closes, innermost first, before it closes the panel itself.
 const ESCAPE_LAYERS = [
     [() => citePop?.isOpen(), () => citePop.close({ restoreFocus: true })],
     [() => !els.pop.classList.contains("hidden"), () => closeHistoryPop({ restoreFocus: true })],
     [() => ui.menuOpen, () => closeMenu({ restoreFocus: true })],
     [() => ui.sharePopOpen, () => closeSharePop({ restoreFocus: true })],
+    // The mini widget's history column, while focus is in the widget.
+    [() => mini?.isHistoryOpen() && els.panel.contains(document.activeElement), () => {
+        mini.closeHistory();
+        els.historyBtn.focus({ preventScroll: true });
+    }],
 ];
 
 function onEscape(event) {
@@ -2653,6 +2767,19 @@ export function installConversationUI({ storeFactory = createConversationStore }
     els = collectElements();
     if (!els) return null;
     ui.installed = true;
+    mini = els.sidebar && els.main
+        ? createMiniWidget({
+            panel: els.panel,
+            sidebar: els.sidebar,
+            main: els.main,
+            historyBtn: els.historyBtn,
+            corner: els.resizeCorner,
+            edges: els.resizeEdges,
+            isActive: isDesktopMini,
+            reducedMotion,
+        })
+        : null;
+    mini?.restoreSize();
 
     try {
         iconPaths = JSON.parse(document.getElementById("convIconPaths")?.textContent || "{}");
@@ -2700,6 +2827,12 @@ export function installConversationUI({ storeFactory = createConversationStore }
         getStore: () => store,
         markAiUsed,
         askFromSearch,
+        askSurface,
+        // The search bar can no longer show the wait (the phone's search was
+        // closed mid-question): open the panel on the pending answer.
+        showPendingAnswer() {
+            if (!ui.open && store.getState().sending) presentAnswer();
+        },
         showAnswer: showStoredAnswer,
         showPublicConversation,
         showPublicLoading,

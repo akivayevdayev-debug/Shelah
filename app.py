@@ -1566,9 +1566,12 @@ def _collect_primary_sources_sync(question, engine, context=()):
     `context`: a conversation's earlier questions, newest first (see
     sefaria.find_refs_for_question).
     """
+    refs = list(_primary_ref_candidates(question, context))
+    ask_progress.detail(
+        ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs[:3], count=len(refs))
     source_futures = [
         submit_with_context(_THREAD_POOL, engine.get_library_text, ref)
-        for ref in _primary_ref_candidates(question, context)
+        for ref in refs
     ]
     primary_sources = []
     for future in source_futures:
@@ -1636,6 +1639,8 @@ def _submit_ask_question_context_futures(question, canonical_lens, user_id, engi
     submitting them afterwards made every follow-up pay the primary-source
     stage and then the slowest secondary lookup back to back.
     """
+    if canonical_lens and canonical_lens != "All":
+        ask_progress.detail(ask_progress.STAGE_CUSTOMS, ask_progress.DETAIL_COMMUNITY, community=canonical_lens)
     return (
         submit_with_context(
             _THREAD_POOL,
@@ -1880,10 +1885,11 @@ def _security_blocked_ask_payload(
     }
 
 
-def _tracked_ask_tool_context(engine):
+def _tracked_ask_tool_context(engine, question=None):
     """The zmanim / Hebrew-date / parasha lookup behind every answer's tool
-    context, reported as the "times" progress step."""
-    with ask_progress.stage(ask_progress.STAGE_TIMES):
+    context, reported as the "times" progress step when `question` is about a
+    time (every answer still gets the context)."""
+    with ask_progress.times_stage(question):
         return _build_ask_tool_context(engine)
 
 
@@ -1924,7 +1930,7 @@ def _dispatch_ask_ai_synthesis_call(question, mode, canonical_lens, answer_langu
         "mode": mode,
         "community_lens": canonical_lens,
         "answer_language": answer_language,
-        "tool_context": _tracked_ask_tool_context(engine),
+        "tool_context": _tracked_ask_tool_context(engine, question),
         "conversation_history": conversation_history,
     }
 

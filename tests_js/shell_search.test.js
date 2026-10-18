@@ -872,13 +872,72 @@ test('an AI search shows the question on the page, asks the panel, and files the
     try {
         await page.call('handleAiSearch', '  Why   do we fast?  ');
         const [asked] = page.ui.calls;
-        assert.deepEqual(plain(asked), ['askFromSearch', 'Why do we fast?', { mode: page.eval('appState.prefs.mode'), community: page.eval('appState.prefs.community'), language: 'en' }, { followUp: false }]);
+        assert.deepEqual(plain(asked), ['askFromSearch', 'Why do we fast?', { mode: page.eval('appState.prefs.mode'), community: page.eval('appState.prefs.community'), language: 'en' }, { followUp: false, surface: 'bar' }]);
         assert.equal(page.$('#searchInput').value, 'Why do we fast?');
         assert.equal(page.document.body.classList.contains('search-loading'), false, 'the loading state ends with the answer');
         assert.equal(page.eval('suppressSuggestionMenu'), false);
         const pushed = page.router.calls.find(([name, patch]) => name === 'pushRoute' && patch.chat);
         assert.deepEqual(plain(pushed.slice(1)), [{ chat: 'h-1', mode: 'balanced' }, { exclusive: true, overlay: 'answer' }]);
         assert.deepEqual(page.reliability, []);
+    } finally {
+        page.close();
+    }
+});
+
+test('a question asked from the bar loads in the bar; one asked in the panel, or a follow-up, loads in the panel', async () => {
+    const page = await openAiPage();
+    try {
+        const form = page.$('#searchForm');
+        await page.call('handleAiSearch', 'Why do we fast?');
+        assert.equal(plain(page.ui.calls.at(-1))[3].surface, 'bar');
+        assert.equal(form.classList.contains('search-liftoff'), true, 'the bar acknowledges its question');
+
+        form.classList.remove('search-liftoff');
+        await page.call('handleAiSearch', 'And on Tisha B\'Av?', { origin: 'panel' });
+        assert.equal(plain(page.ui.calls.at(-1))[3].surface, 'panel');
+        await page.call('handleAiSearch', 'And on Yom Kippur?', { followUp: true });
+        assert.equal(plain(page.ui.calls.at(-1))[3].surface, 'panel');
+        assert.equal(form.classList.contains('search-liftoff'), false, 'the bar stays still for questions asked elsewhere');
+    } finally {
+        page.close();
+    }
+});
+
+test('the loading class is the conversation module\'s to set: the page leaves it alone while a question loads', async () => {
+    let seen = null;
+    const page = await openAiPage();
+    page.ui.askFromSearch = async () => {
+        seen = page.document.body.classList.contains('search-loading');
+        return { answer: 'A', meta: {} };
+    };
+    try {
+        await page.call('handleAiSearch', 'Why do we fast?');
+        assert.equal(seen, false);
+    } finally {
+        page.close();
+    }
+});
+
+test('closing the phone search while its question loads hands the wait to the panel', async () => {
+    let release;
+    const ui = fakeConversationUI({
+        askFromSearch: () => new Promise((resolve) => { release = () => resolve({ answer: 'A', meta: {} }); }),
+    });
+    const page = await openAiPage({ ui });
+    try {
+        const asking = page.call('handleAiSearch', 'Why do we fast?');
+        await page.settle(20);
+        // The reader taps away while the question is still loading in the bar.
+        page.document.body.classList.add('mobile-search-open');
+        page.call('setMobileSearchExpanded', false);
+        assert.deepEqual(page.ui.calls.filter(([name]) => name === 'showPendingAnswer').length, 1);
+
+        // Once the question is over, closing the search no longer calls the panel.
+        release();
+        await asking;
+        page.document.body.classList.add('mobile-search-open');
+        page.call('setMobileSearchExpanded', false);
+        assert.equal(page.ui.calls.filter(([name]) => name === 'showPendingAnswer').length, 1);
     } finally {
         page.close();
     }
@@ -891,7 +950,7 @@ test('an AI search asks in Hebrew when the page is Hebrew, and a follow-up says 
         await page.call('handleAiSearch', 'למה צמים?', { followUp: true });
         const [, , options, extra] = page.ui.calls[0];
         assert.equal(options.language, 'he');
-        assert.deepEqual(plain(extra), { followUp: true });
+        assert.deepEqual(plain(extra), { followUp: true, surface: 'panel' });
     } finally {
         page.close();
     }

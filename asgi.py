@@ -139,6 +139,8 @@ async def _collect_primary_sources(
         *((question, context) if context else (question,)),
     )
     refs = primary_refs if isinstance(primary_refs, list) else []
+    ask_progress.detail(
+        ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs[:3], count=len(refs))
 
     async def _load_one(ref: str) -> dict[str, Any] | None:
         engine = ShelahEngine()
@@ -359,6 +361,9 @@ async def _collect_ask_async_context(
     # Earlier questions go in only when a guest follow-up has some, so every
     # other call is exactly what it was before they existed.
     primary_args = (question, retrieval_context) if retrieval_context else (question,)
+    # Which community's customs are being read, said as that step starts.
+    if canonical_lens and canonical_lens != "All":
+        ask_progress.detail(ask_progress.STAGE_CUSTOMS, ask_progress.DETAIL_COMMUNITY, community=canonical_lens)
     primary_task = asyncio.create_task(ask_progress.track(
         ask_progress.STAGE_SOURCES,
         _within("primary", _collect_primary_sources(*primary_args), ([], []))))
@@ -384,8 +389,10 @@ async def _collect_ask_async_context(
             RAG_MEMORY_ROWS,
             bearer_token,
         ), [])))
-    tool_context_task = asyncio.create_task(ask_progress.track(
-        ask_progress.STAGE_TIMES,
+    # Reported (with its topic) only when the question is about a time; every
+    # answer still gets the date and zmanim, the step is just not announced.
+    tool_context_task = asyncio.create_task(ask_progress.track_times(
+        question,
         _within("tool_context", _build_tool_context(), {"route": "/ask", "async": True})))
 
     (_, primary_sources), halachipedia_info, wiki_info, knowledge_rows, user_memory_summaries, tool_context = await asyncio.gather(

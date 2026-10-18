@@ -1351,3 +1351,261 @@ test('the page\'s Markdown renderer draws the answer, and one that throws falls 
         page.close();
     }
 });
+
+// --- where a question's loading cues belong -------------------------------------
+
+const barLine = (page) => page.text('#searchLiveStatus [data-status-now]');
+const shown = (page) => page.$('#searchLiveStatus').dataset.active;
+const loadingClass = (page) => page.document.body.classList.contains('search-loading');
+const stageEvent = (stage, state) => ({ type: 'stage', stage, state });
+const detailEvent = (stage, detail) => ({ type: 'detail', stage, detail });
+
+/** A bar question that waits until the test lets it go; `emit` feeds it progress events. */
+async function askFromBar(page, question = 'When does Shabbat end?', request = {}) {
+    let release;
+    let fail;
+    let emit = () => {};
+    page.setAsk((q, opts) => new Promise((resolve, reject) => {
+        release = resolve;
+        fail = reject;
+        emit = (event) => opts.onProgress?.(event);
+    }));
+    const pending = page.ui.askFromSearch(question, request, { surface: page.ui.askSurface() });
+    await page.flush();
+    return { pending, release: (data) => release(data ?? answerData()), fail: (error) => fail(error), emit: async (event) => { emit(event); await page.flush(); } };
+}
+
+test('askSurface sends a fresh bar question to the bar, and everything else to the panel', async () => {
+    const page = await openAnswerPage();
+    try {
+        assert.equal(page.ui.askSurface(), 'bar');
+        assert.equal(page.ui.askSurface({ origin: 'bar' }), 'bar');
+        assert.equal(page.ui.askSurface({ origin: 'panel' }), 'panel');
+        assert.equal(page.ui.askSurface({ followUp: true }), 'panel');
+        await page.ui.open();
+        await page.flush();
+        assert.equal(page.ui.askSurface(), 'panel', 'with the panel on screen the answer loads there');
+    } finally {
+        page.close();
+    }
+});
+
+test('a page without the bar\'s status line sends every question to the panel', async () => {
+    const page = await openAnswerPage({ before: (window) => window.document.getElementById('searchLiveStatus').remove() });
+    try {
+        assert.equal(page.ui.askSurface(), 'panel');
+        assert.equal(loadingClass(page), false);
+    } finally {
+        page.close();
+    }
+});
+
+test('a question asked from the bar loads in the bar and the panel stays shut until the answer lands', async () => {
+    const page = await openAnswerPage();
+    try {
+        const ask = await askFromBar(page);
+        assert.equal(page.store.getState().surface, 'bar');
+        assert.equal(page.hidden('#convPanel'), true);
+        assert.equal(page.ui.isShowingAnswer(), false);
+        assert.equal(loadingClass(page), true);
+        assert.equal(shown(page), 'true');
+        assert.equal(barLine(page), 'Getting started…');
+        // None of the panel's own cues run for it.
+        assert.equal(page.$('#convPanel').dataset.sending, 'false');
+        assert.equal(page.$('#convPip').dataset.sending, 'false');
+
+        ask.release();
+        await ask.pending;
+        await page.flush();
+        assert.equal(page.hidden('#convPanel'), false);
+        assert.equal(page.$('#convPanel').dataset.size, 'overlay');
+        assert.equal(loadingClass(page), false);
+        assert.equal(shown(page), 'false');
+        assert.match(page.text('#convMessages'), /Light before sunset/);
+    } finally {
+        page.close();
+    }
+});
+
+test('the bar says what the AI is doing, as the server reports it', async () => {
+    const page = await openAnswerPage();
+    try {
+        const ask = await askFromBar(page);
+        await ask.emit(stageEvent('sources', 'start'));
+        // "Getting started" has only just appeared: the first real step waits its turn.
+        assert.equal(barLine(page), 'Getting started…');
+        await page.tick(800);
+        assert.equal(barLine(page), 'Searching the sources…');
+
+        await ask.emit(detailEvent('sources', { kind: 'refs', refs: ['Berakhot 2a', 'Shabbat 31a'], count: 2 }));
+        await page.tick(800);
+        assert.equal(barLine(page), 'Reading Berakhot 2a and Shabbat 31a…');
+
+        await ask.emit(stageEvent('sources', 'done'));
+        await ask.emit(stageEvent('times', 'start'));
+        await ask.emit(detailEvent('times', { kind: 'times', topic: 'shabbat' }));
+        await page.tick(800);
+        assert.equal(barLine(page), 'Checking sunset and nightfall for Shabbat times…');
+        // What has finished is listed beside it.
+        assert.match(page.text('#searchLiveStatus [data-status-done]'), /Sources/);
+
+        await ask.emit(stageEvent('times', 'done'));
+        await ask.emit(stageEvent('thinking', 'start'));
+        await ask.emit(detailEvent('thinking', { kind: 'tool', tool: 'get_omer' }));
+        await page.tick(800);
+        assert.equal(barLine(page), 'Checking today\'s Omer count…');
+
+        ask.release();
+        await ask.pending;
+    } finally {
+        page.close();
+    }
+});
+
+test('a line that changes right after another waits out the minimum time the first was on screen', async () => {
+    const page = await openAnswerPage();
+    try {
+        const ask = await askFromBar(page);
+        await ask.emit(stageEvent('sources', 'start'));
+        await page.tick(700);
+        assert.equal(barLine(page), 'Searching the sources…');
+        await ask.emit(stageEvent('sources', 'done'));
+        await ask.emit(stageEvent('times', 'start'));
+        // The first line is still being read, so the next one is held back.
+        assert.equal(barLine(page), 'Searching the sources…');
+        await page.tick(700);
+        assert.equal(barLine(page), 'Looking up today\'s zmanim and dates…');
+        ask.release();
+        await ask.pending;
+    } finally {
+        page.close();
+    }
+});
+
+test('the bar speaks Hebrew on a Hebrew page', async () => {
+    const page = await openAnswerPage({ lang: 'he' });
+    try {
+        const ask = await askFromBar(page, 'מתי יוצאת שבת?');
+        await ask.emit(stageEvent('times', 'start'));
+        await ask.emit(detailEvent('times', { kind: 'times', topic: 'shabbat' }));
+        await page.tick(800);
+        assert.equal(barLine(page), 'בודקים שקיעה וצאת הכוכבים לזמני שבת…');
+        ask.release();
+        await ask.pending;
+    } finally {
+        page.close();
+    }
+});
+
+test('a bar question that fails opens the panel on the failed turn, with its Retry', async () => {
+    const page = await openAnswerPage();
+    try {
+        const ask = await askFromBar(page);
+        assert.equal(page.hidden('#convPanel'), true);
+        ask.fail(failure('network'));
+        await assert.rejects(ask.pending, { code: 'network' });
+        await page.flush();
+        assert.equal(page.hidden('#convPanel'), false);
+        assert.equal(loadingClass(page), false);
+        assert.equal(shown(page), 'false');
+        assert.match(turns(page)[0].textContent, /Not sent\./);
+        assert.ok(page.$('[data-turn-action="retry"]'));
+    } finally {
+        page.close();
+    }
+});
+
+test('opening the panel while the bar waits moves the loading cues to the panel', async () => {
+    const page = await openAnswerPage();
+    try {
+        const ask = await askFromBar(page);
+        assert.equal(loadingClass(page), true);
+
+        await page.ui.open();
+        await page.flush();
+        assert.equal(page.store.getState().surface, 'panel');
+        assert.equal(loadingClass(page), false);
+        assert.equal(page.$('#convPanel').dataset.sending, 'true');
+        assert.ok(page.$('[data-conv-status]'), 'the pending turn carries its own status line now');
+
+        ask.release();
+        await ask.pending;
+        await page.flush();
+        // It was already on screen, so the answer is not presented a second time.
+        assert.equal(page.hidden('#convPanel'), false);
+        assert.match(page.text('#convMessages'), /Light before sunset/);
+        assert.equal(page.$('#convPanel').dataset.sending, 'false');
+    } finally {
+        page.close();
+    }
+});
+
+test('showPendingAnswer opens the panel on a question the bar can no longer show', async () => {
+    const page = await openAnswerPage();
+    try {
+        // Nothing is waiting: it does nothing.
+        page.ui.showPendingAnswer();
+        await page.flush();
+        assert.equal(page.hidden('#convPanel'), true);
+
+        const ask = await askFromBar(page);
+        page.ui.showPendingAnswer();
+        await page.flush();
+        assert.equal(page.hidden('#convPanel'), false);
+        assert.equal(page.$('#convPanel').dataset.sending, 'true');
+        assert.equal(loadingClass(page), false);
+        assert.equal(page.store.getState().surface, 'panel');
+
+        ask.release();
+        await ask.pending;
+    } finally {
+        page.close();
+    }
+});
+
+test('a follow-up from the bar loads in the panel even though it was typed in the bar', async () => {
+    const page = await openAnswerPage();
+    try {
+        await page.ui.askFromSearch('First question');
+        await page.flush();
+        await page.ui.close();
+        await page.flush();
+        let release;
+        page.setAsk(() => new Promise((resolve) => { release = resolve; }));
+        const pending = page.ui.askFromSearch('And then?', {}, { followUp: true, surface: 'bar' });
+        await page.flush();
+        assert.equal(page.hidden('#convPanel'), false);
+        assert.equal(loadingClass(page), false);
+        assert.equal(page.$('#convPanel').dataset.sending, 'true');
+        release(answerData());
+        await pending;
+    } finally {
+        page.close();
+    }
+});
+
+test('a question asked in the panel never lights the bar', async () => {
+    const page = await openAnswerPage({ signedIn: true });
+    try {
+        await page.ui.open({ fresh: true });
+        await page.flush();
+        let release;
+        page.api.askInConversation = async (id, { question }) => {
+            await new Promise((resolve) => { release = resolve; });
+            return {
+                user_message: { id: 'u1', role: 'user', content: question, status: 'complete' },
+                assistant_message: { id: 'a1', role: 'assistant', content: 'Done.', status: 'complete', citations: [] },
+                conversation: { id, title: question, minhag: 'All' },
+            };
+        };
+        const sending = page.ask('In the panel');
+        await page.flush();
+        assert.equal(page.$('#convPanel').dataset.sending, 'true');
+        assert.equal(loadingClass(page), false);
+        assert.equal(shown(page), 'false');
+        release();
+        await sending;
+    } finally {
+        page.close();
+    }
+});

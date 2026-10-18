@@ -130,10 +130,17 @@ body.conv-modal-open {
     background: var(--surface-0);
 }
 
-/* Mini widget (desktop): non-modal, snapped to a corner. */
+/* Mini widget (desktop): non-modal, snapped to a corner. Its size is two custom
+   properties, which the resize handles overwrite inline (conversation-mini.js,
+   bounds in MINI_BOUNDS): the chat's width, and a fixed height once the widget
+   has been made taller or shorter (data-mini-h). The history column that opens
+   beside it adds 60% of the chat's width (MINI_HISTORY_RATIO), so a wider
+   widget gets a wider list. */
 .conv-panel[data-layout="desktop"][data-size="mini"] {
+    --conv-mini-w: 340px;
+    --conv-hist-w: calc(var(--conv-mini-w) * 0.6);
     z-index: var(--conv-z-mini);
-    width: min(340px, calc(100vw - 2 * var(--sp-4)));
+    width: min(var(--conv-mini-w), calc(100vw - 2 * var(--sp-4)));
     max-height: min(480px, calc(100dvh - 2 * var(--sp-8)));
     border-radius: var(--radius-lg);
     inset-block-end: var(--sp-6);
@@ -147,11 +154,21 @@ body.conv-modal-open {
     inset-block-start: calc(var(--topbar-height, 3.5rem) + var(--sp-4));
     inset-inline-start: var(--sp-6);
 }
-.conv-panel.is-dragging {
+.conv-panel[data-layout="desktop"][data-size="mini"][data-history="open"] {
+    width: min(calc(var(--conv-mini-w) + var(--conv-hist-w)), calc(100vw - 2 * var(--sp-4)));
+    /* Room for a list; a short empty chat would otherwise leave a stub of one. */
+    min-height: min(360px, calc(100dvh - 2 * var(--sp-8)));
+}
+.conv-panel[data-layout="desktop"][data-size="mini"][data-mini-h="fixed"] {
+    height: min(var(--conv-mini-h), calc(100dvh - 2 * var(--sp-8)));
+    max-height: none;
+}
+.conv-panel.is-dragging,
+.conv-panel.is-resizing {
     transition: none !important;
-    cursor: grabbing;
     user-select: none;
 }
+.conv-panel.is-dragging { cursor: grabbing; }
 
 /* Mobile sheet. */
 .conv-panel[data-layout="mobile"][data-size="overlay"] {
@@ -183,6 +200,33 @@ body.conv-modal-open {
     overflow-y: auto;
     overscroll-behavior: contain;
 }
+/* Mini widget (desktop): the history opens as a column on the widget's free
+   side, the side away from its screen corner, so the chat does not move when
+   it opens (conversation-mini.js wipes it in). Same list, heading and New
+   button as the full page's sidebar, minus its lockup. */
+.conv-panel[data-layout="desktop"][data-size="mini"][data-history="open"] .conv-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    flex: 0 0 var(--conv-hist-w);
+    min-width: 0;
+    /* Sized by the chat beside it, never by the list: a long list scrolls in the
+       column instead of making the widget taller. */
+    contain: size;
+    padding: var(--sp-3) var(--sp-2) var(--sp-2);
+    border-inline-end: 1px solid var(--conv-hairline);
+    background: var(--conv-sidebar-bg);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+/* Anchored on the start side the widget grows toward the end, and the column goes there. */
+.conv-panel[data-size="mini"][data-corner$="l"] .conv-sidebar {
+    order: 2;
+    border-inline-end: 0;
+    border-inline-start: 1px solid var(--conv-hairline);
+}
+.conv-panel[data-size="mini"] .conv-sidebar__brand { display: none; }
+
 /* The homepage lockup (index.html #brandHomeBtn): the hebrew letter, the name
    and "Torah Encyclopedia" come from the same utility classes, so only the
    placement is set here. */
@@ -1795,12 +1839,13 @@ body.conv-modal-open {
     color: color-mix(in srgb, var(--ink-secondary) 72%, var(--conv-panel-bg));
 }
 
-/* Halo behind the composer while an answer is in flight: the same gold and blue
-   gradient that orbits the search bar (.search-liftoff-underlay in ai.css, same
-   mask and the same shelah-halo-orbit keyframe), so the question visibly carries
-   over into the panel. The panel's scrim covers the search bar, so this is the
-   bar the reader is looking at while they wait. Steady opacity, only the
-   gradient turns; it freezes where it is when the answer lands, then fades. */
+/* Halo behind the composer while an answer asked IN THE PANEL is in flight: the
+   same gold and blue gradient that orbits the search bar (.search-liftoff-underlay
+   in ai.css, same mask and the same shelah-halo-orbit keyframe). A question asked
+   from the search bar loads there instead (conversation-ui.js render keeps
+   data-sending off for it), so a question only ever carries one halo. Steady
+   opacity, only the gradient turns; it freezes where it is when the answer
+   lands, then fades. */
 .conv-halo {
     position: absolute;
     inset: calc(-1 * var(--sp-2));
@@ -2249,6 +2294,73 @@ body.theme-dark .topbar-ask-btn {
 }
 :is(.conv-send, .conv-signin-follow__btn, .mobile-search-tray__ask, .ai-tip__try):hover:not(:disabled)::before {
     opacity: 1;
+}
+
+/* ── Resize handles (desktop mini widget; conversation-mini.js) ───── */
+/* The free corner (keyboard-operable) and the two free edges. The widget is
+   pinned to its screen corner, so the handles sit on the opposite sides. */
+.conv-resize { display: none; }
+.conv-panel[data-layout="desktop"][data-size="mini"] .conv-resize {
+    position: absolute;
+    z-index: 3;
+    display: block;
+    touch-action: none;
+}
+.conv-resize--x {
+    inset-block: 16px;
+    inset-inline-start: 0;
+    width: 6px;
+    cursor: ew-resize;
+}
+.conv-resize--y {
+    inset-inline: 16px;
+    inset-block-start: 0;
+    height: 6px;
+    cursor: ns-resize;
+}
+.conv-resize--corner {
+    --corner-flip-x: 1;
+    --corner-flip-y: 1;
+    --corner-flip-dir: 1;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: 16px;
+    height: 16px;
+    padding: 2px;
+    border: 0;
+    background: transparent;
+    color: var(--ink-secondary);
+    cursor: nwse-resize;
+    transition: color var(--motion-dur-fast) var(--motion-ease-out);
+}
+.conv-resize--corner svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transform: scale(calc(var(--corner-flip-x) * var(--corner-flip-dir)), var(--corner-flip-y));
+}
+.conv-panel[data-corner$="l"] :is(.conv-resize--x, .conv-resize--corner) {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+}
+.conv-panel[data-corner^="t"] :is(.conv-resize--y, .conv-resize--corner) {
+    inset-block-start: auto;
+    inset-block-end: 0;
+}
+.conv-panel[data-corner$="l"] .conv-resize--corner { --corner-flip-x: -1; }
+.conv-panel[data-corner^="t"] .conv-resize--corner { --corner-flip-y: -1; }
+:root[dir="rtl"] .conv-resize--corner { --corner-flip-dir: -1; }
+.conv-resize--corner:hover,
+.conv-resize--corner:focus-visible,
+.conv-panel.is-resizing .conv-resize--corner { color: var(--accent-primary); }
+.conv-resize--corner:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+}
+/* A touch screen drags the widget by its header; a 16px corner is not a touch
+   target (and there is no pointer to aim it), so it is left out there. */
+@media (pointer: coarse) {
+    .conv-panel[data-layout="desktop"][data-size="mini"] .conv-resize { display: none; }
 }
 
 /* ── Reduced motion ──────────────────────────────────────────────── */
