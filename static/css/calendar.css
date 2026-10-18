@@ -510,7 +510,6 @@ html.rtl .fc-daygrid-event {
 .today-zmanim-list [data-zman-row]:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 1px;
-    border-radius: 0.44rem;
 }
 
 /* ═══════════════════════════════════════════════════════ */

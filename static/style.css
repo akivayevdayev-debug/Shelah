@@ -557,8 +557,6 @@ html.rtl #hebrewDateDisplay {
 .topbar-user-menu-btn {
     font-family: Georgia, "Times New Roman", serif;
     color: var(--control-text-strong);
-    border-color: var(--control-border);
-    background: #fff;
 }
 
 /* Same 18px line box as the other top-bar buttons (Tailwind's text-xs,
@@ -571,7 +569,6 @@ html.rtl #hebrewDateDisplay {
 
 .topbar-user-menu-btn:hover,
 .topbar-user-menu-btn:focus-visible {
-    background: var(--control-bg-hover);
     color: var(--control-text-strong);
 }
 
@@ -603,10 +600,8 @@ html.rtl #hebrewDateDisplay {
     font-family: Georgia, "Times New Roman", serif;
     line-height: 1.25;
     color: #334155;
-    display: flex !important;
     align-items: center;
     min-height: 1.5rem;
-    padding: var(--sp-1) var(--sp-3) !important;
     border-radius: var(--radius-sm);
     visibility: visible;
     opacity: 1;
@@ -615,14 +610,29 @@ html.rtl #hebrewDateDisplay {
     text-decoration: none;
 }
 
+/* Layout and hover fill are qualified by the element type: the rows also
+   carry the block / px-3 / py-1.5 / hover:bg-slate-100 utilities, which load
+   after this sheet and would win a tie with the bare class. */
+a.topbar-user-menu-item,
+button.topbar-user-menu-item {
+    display: flex;
+    padding: var(--sp-1) var(--sp-3);
+}
+
 @media (pointer: coarse) {
     .topbar-user-menu-item { min-height: var(--hit-min); }
 }
 
 .topbar-user-menu-item:hover,
 .topbar-user-menu-item:focus-visible {
-    background: #f4eee2 !important;
     color: #223e5a;
+}
+
+a.topbar-user-menu-item:hover,
+a.topbar-user-menu-item:focus-visible,
+button.topbar-user-menu-item:hover,
+button.topbar-user-menu-item:focus-visible {
+    background: #f4eee2;
 }
 
 :is([data-theme="dark"], body.theme-dark) #userProfileMenu {
@@ -864,24 +874,34 @@ html[dir="rtl"] #searchInput {
 .menu-parasha-quick-link {
     border: 1px solid #c8b79d;
     background: linear-gradient(180deg, #fffaf1 0%, #f4ebdb 100%);
-    color: #1f3f63 !important;
     border-radius: 0.55rem;
-    padding: 0.28rem 0.55rem !important;
     font-weight: 700;
     letter-spacing: 0.01em;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+/* Colour and padding sit one id higher than the class above: the link also
+   carries the text-[#1f3f63] / hover:text-[#102b45] / py-0.5 utilities, which
+   load after this sheet and would otherwise win the tie. */
+#leftSidebar .menu-parasha-quick-link {
+    color: #1f3f63;
+    padding: 0.28rem 0.55rem;
 }
 
 .menu-parasha-quick-link:hover,
 .menu-parasha-quick-link:focus-visible {
     background: #efe3d0;
     border-color: #a59072;
-    color: #16324f !important;
 }
 
 /* The lift is a mouse gesture: a tap on a touch screen would leave it stuck. */
 @media (hover: hover) and (pointer: fine) {
     .menu-parasha-quick-link:hover { transform: translateY(-1px); }
+}
+
+#leftSidebar .menu-parasha-quick-link:hover,
+#leftSidebar .menu-parasha-quick-link:focus-visible {
+    color: #16324f;
 }
 
 .segment-row {
@@ -2662,7 +2682,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 
 .today-zmanim-list [data-zman-row] {
     background: transparent;
-    border-radius: 0 !important;
+    border-radius: 0;
     padding-inline-start: 0;
     padding-inline-end: 0;
 }
@@ -2670,7 +2690,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 .today-zmanim-list [data-zman-row].zman-next-highlight {
     background: #f2eadb;
     border: 1px solid #d7c7ae;
-    border-radius: 0.45rem !important;
+    border-radius: 0.45rem;
     padding-inline-start: 0.45rem;
     padding-inline-end: 0.45rem;
 }
@@ -2697,12 +2717,12 @@ html.rtl .home-main-layout #popularTextsGrid {
         padding-inline-end: max(0.5rem, env(safe-area-inset-right));
     }
 
-    .topbar-search-wrap {
-        display: none !important;
+    .topbar .topbar-search-wrap {
+        display: none;
     }
 
-    body.mobile-search-open .topbar-search-wrap {
-        display: flex !important;
+    body.mobile-search-open .topbar .topbar-search-wrap {
+        display: flex;
         grid-column: 1 / -1;
         order: 5;
         margin-top: 0.35rem;
@@ -3943,13 +3963,6 @@ html.theme-dark,
     color: var(--text-muted);
 }
 
-:is([data-theme="dark"], body.theme-dark) .menu-parasha-quick-link:hover,
-:is([data-theme="dark"], body.theme-dark) .menu-parasha-quick-link:focus-visible {
-    background: var(--control-strong-bg);
-    border-color: color-mix(in srgb, var(--gold) 50%, var(--control-border));
-    color: var(--control-text-strong);
-}
-
 :is([data-theme="dark"], body.theme-dark) .chapter-grid-group-label {
     color: var(--text-muted);
 }
@@ -4674,8 +4687,8 @@ html.rtl #readerTopBar #readerLibraryTopBarBtn {
 
 /* dark mode - menu parasha quick link fix */
 :is([data-theme="dark"], body.theme-dark) .menu-parasha-quick-link {
-    background: linear-gradient(180deg, var(--surface-elevated) 0%, var(--surface-pill) 100%) !important;
-    border-color: var(--control-border) !important;
+    background: linear-gradient(180deg, var(--surface-elevated) 0%, var(--surface-pill) 100%);
+    border-color: var(--control-border);
     color: var(--accent-cream);
     box-shadow: inset 0 0 0 1px rgba(201, 168, 78, 0.18);
 }
