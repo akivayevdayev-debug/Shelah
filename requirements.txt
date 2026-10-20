@@ -15,6 +15,11 @@
 # on the JWKS fetch) loads the Clerk JWKS directly. urllib3 (transitive, via
 # requests) 2.7.0 -> 2.8.0 for PYSEC-2026-4175/4176/4177, in both lock files
 # only.
+# Sync status (2026-10-20, pip-audit): two transitive bumps, lock files only.
+# certifi (via httpx/requests/sentry-sdk) 2026.7.22 -> 2026.10.19 for
+# PYSEC-2026-4320, in both locks; pillow (via reportlab, PDF export) 12.3.0 ->
+# 13.0.0, the first release without the eight 2026 CVEs. reportlab 4.2.2 has
+# no upper bound on pillow, and the full pytest suite passes on 13.0.0.
 flask==3.1.3
 fastapi==0.141.1
 starlette==1.3.1
