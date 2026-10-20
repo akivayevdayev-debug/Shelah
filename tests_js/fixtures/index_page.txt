@@ -298,7 +298,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="14" height="14" fill="currentColor" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"><path d="M128,20 Q128,128 236,128 Q128,128 128,236 Q128,128 20,128 Q128,128 128,20 Z"/></svg>
                                 <span class="flex-1">
                                     <span class="block" data-en="AI settings" data-he="הגדרות בינה מלאכותית">AI settings</span>
-                                    <span class="block font-normal text-[11px] text-slate-600" data-en="Community and answer mode, in the chat" data-he="קהילה ומצב תשובה, בצ׳אט">Community and answer mode, in the chat</span>
+                                    <span class="block font-normal text-[11px] text-slate-600" data-en="Community, answer mode and web search, in the chat" data-he="קהילה, מצב תשובה וחיפוש ברשת, בצ׳אט">Community, answer mode and web search, in the chat</span>
                                 </span>
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="12" height="12" fill="currentColor" class="h-3 w-3 shrink-0 ai-settings-caret" aria-hidden="true"><path d="M184.49,136.49l-80,80a12,12,0,0,1-17-17L159,128,87.51,56.49a12,12,0,1,1,17-17l80,80A12,12,0,0,1,184.49,136.49Z"/></svg>
                             </button>
@@ -1796,6 +1796,18 @@
                                 <button type="button" role="radio" aria-checked="false" class="conv-mode-opt" data-conv-mode="strict" data-en="Strict Sources" data-he="מקורות בלבד">Strict Sources</button>
                             </div>
                             <div class="conv-menu__rule" aria-hidden="true"></div>
+                            <p class="conv-eyebrow" id="convWebSearchHeading" data-en="Web search" data-he="חיפוש ברשת">Web search</p>
+                            <!-- The reader's switch for the AI's last-resort web lookup
+                                 (backend/web_lookup.py): on by default, saved with the
+                                 other AI defaults, sent as web_search only when off. -->
+                            <button type="button" role="switch" aria-checked="true" id="convWebSearchSwitch"
+                                class="conv-web-opt" data-conv-websearch aria-labelledby="convWebSearchHeading"
+                                aria-describedby="convWebSearchHint">
+                                <span class="conv-web-opt__label" data-en="Let the AI check the web" data-he="לאפשר לבינה המלאכותית לבדוק ברשת">Let the AI check the web</span>
+                                <span class="conv-web-opt__state" id="convWebSearchState" aria-hidden="true">On</span>
+                            </button>
+                            <p id="convWebSearchHint" class="conv-menu__note conv-menu__note--hint" data-en="Only as a last resort, for a fact no source covers, such as whether a product is kosher. Answers then say they used the web." data-he="רק כמוצא אחרון, לעובדה שאף מקור אינו מכסה, כמו אם מוצר מסוים כשר. התשובה תציין שנעשה שימוש ברשת.">Only as a last resort, for a fact no source covers, such as whether a product is kosher. Answers then say they used the web.</p>
+                            <div class="conv-menu__rule" aria-hidden="true"></div>
                             <div class="conv-menu__actions">
                                 <button type="button" class="conv-menu__item" data-conv-action="new">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="14" height="14" fill="currentColor" class="h-3.5 w-3.5" aria-hidden="true"><path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"/></svg>
@@ -2101,6 +2113,7 @@
         "trash": "M216,48H180V36A28,28,0,0,0,152,8H104A28,28,0,0,0,76,36V48H40a12,12,0,0,0,0,24h4V208a20,20,0,0,0,20,20H192a20,20,0,0,0,20-20V72h4a12,12,0,0,0,0-24ZM100,36a4,4,0,0,1,4-4h48a4,4,0,0,1,4,4V48H100Zm88,168H68V72H188ZM116,104v64a12,12,0,0,1-24,0V104a12,12,0,0,1,24,0Zm48,0v64a12,12,0,0,1-24,0V104a12,12,0,0,1,24,0Z",
         "thumbs-up": "M237,77.47A28,28,0,0,0,216,68H164V56a44.05,44.05,0,0,0-44-44,12,12,0,0,0-10.73,6.63L72.58,92H32a20,20,0,0,0-20,20v88a20,20,0,0,0,20,20H204a28,28,0,0,0,27.78-24.53l12-96A28,28,0,0,0,237,77.47ZM36,116H68v80H36ZM220,96.5l-12,96a4,4,0,0,1-4,3.5H92V106.83L126.82,37.2A20,20,0,0,1,140,56V80a12,12,0,0,0,12,12h64a4,4,0,0,1,4,4.5Z",
         "thumbs-down": "M243.78,156.53l-12-96A28,28,0,0,0,204,36H32A20,20,0,0,0,12,56v88a20,20,0,0,0,20,20H72.58l36.69,73.37A12,12,0,0,0,120,244a44.05,44.05,0,0,0,44-44V188h52a28,28,0,0,0,27.78-31.47ZM68,140H36V60H68Zm151,22.65a4,4,0,0,1-3,1.35H152a12,12,0,0,0-12,12v24a20,20,0,0,1-13.18,18.8L92,149.17V60H204a4,4,0,0,1,4,3.5l12,96A4,4,0,0,1,219,162.65Z",
+        "chat-text": "M216,44H40A20,20,0,0,0,20,64V224A19.82,19.82,0,0,0,31.56,242.1a20.14,20.14,0,0,0,8.49,1.9,19.91,19.91,0,0,0,12.82-4.72l.12-.11L84.47,212H216a20,20,0,0,0,20-20V64A20,20,0,0,0,216,44Zm-4,144H80a11.93,11.93,0,0,0-7.84,2.92L44,215.23V68H212ZM84,108A12,12,0,0,1,96,96h64a12,12,0,1,1,0,24H96A12,12,0,0,1,84,108Zm0,40a12,12,0,0,1,12-12h64a12,12,0,0,1,0,24H96A12,12,0,0,1,84,148Z",
         "check-circle": "M176.49,95.51a12,12,0,0,1,0,17l-56,56a12,12,0,0,1-17,0l-24-24a12,12,0,1,1,17-17L112,143l47.51-47.52A12,12,0,0,1,176.49,95.51ZM236,128A108,108,0,1,1,128,20,108.12,108.12,0,0,1,236,128Zm-24,0a84,84,0,1,0-84,84A84.09,84.09,0,0,0,212,128Z",
         "warning-circle": "M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm0,192a84,84,0,1,1,84-84A84.09,84.09,0,0,1,128,212Zm-12-80V80a12,12,0,0,1,24,0v52a12,12,0,0,1-24,0Zm28,40a16,16,0,1,1-16-16A16,16,0,0,1,144,172Z",
         "x": "M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z",
