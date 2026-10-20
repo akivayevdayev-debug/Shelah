@@ -24,7 +24,10 @@
     const CLERK_WAIT_MS = 10000;
     const ENTER_MS = 800; // how long data-enter stays on: the longest entrance in admin.css plus a margin
 
-    const VERDICT_LABEL = { helpful: 'Helpful', not_helpful: 'Not helpful', unknown: 'Unrated' };
+    // "comment" is a reader's note with no rating; "ai_note" is the server's own
+    // one-line note on an answer (backend/ai_notes.py), never a reader's verdict.
+    const VERDICT_LABEL = { helpful: 'Helpful', not_helpful: 'Not helpful', comment: 'Comment only', ai_note: 'AI note', unknown: 'Unrated' };
+    const RATING_VERDICTS = ['helpful', 'not_helpful', 'comment'];
 
     // ── Rows ─────────────────────────────────────────────────────────────
 
@@ -51,11 +54,16 @@
             .map((entry, index) => {
                 const row = entry && typeof entry === 'object' ? entry : {};
                 const ts = toMillis(row.created_at);
+                const fromAi = row.source === 'ai' || row.verdict === 'ai_note';
+                let verdict = 'unknown';
+                if (fromAi) verdict = 'ai_note';
+                else if (RATING_VERDICTS.includes(row.verdict)) verdict = row.verdict;
                 return {
                     index,
                     ts,
                     iso: ts == null ? '' : new Date(ts).toISOString(),
-                    verdict: row.verdict === 'helpful' || row.verdict === 'not_helpful' ? row.verdict : 'unknown',
+                    source: fromAi ? 'ai' : 'reader',
+                    verdict,
                     comment: text(row.comment).trim(),
                     mode: text(row.mode),
                     language: text(row.language).toLowerCase(),
@@ -68,29 +76,46 @@
             .sort(byNewest);
     }
 
+    /** Everything a reader submitted: the AI's own notes are not feedback and
+     *  stay out of the counts and charts. */
+    function readerRows(rows) {
+        return rows.filter((row) => row.source !== 'ai');
+    }
+
     function summarize(rows) {
         let helpful = 0;
         let notHelpful = 0;
         let withComment = 0;
+        let aiNotes = 0;
+        let total = 0;
         for (const row of rows) {
+            if (row.source === 'ai') {
+                aiNotes += 1;
+                continue;
+            }
+            total += 1;
             if (row.verdict === 'helpful') helpful += 1;
             else if (row.verdict === 'not_helpful') notHelpful += 1;
             if (row.comment) withComment += 1;
         }
         const rated = helpful + notHelpful;
         return {
-            total: rows.length,
+            total,
             helpful,
             notHelpful,
             withComment,
+            aiNotes,
             helpfulPct: rated ? (helpful / rated) * 100 : null,
         };
     }
 
-    function filterRows(rows, { verdict = 'all', query = '' } = {}) {
+    /** `source`: 'all' | 'reader' | 'ai'. The verdict filter does not apply to the
+     *  AI's notes (they carry no rating). */
+    function filterRows(rows, { verdict = 'all', query = '', source = 'all' } = {}) {
         const needle = query.trim().toLowerCase();
         return rows.filter((row) => {
-            if (verdict !== 'all' && row.verdict !== verdict) return false;
+            if (source !== 'all' && row.source !== source) return false;
+            if (verdict !== 'all' && row.source !== 'ai' && row.verdict !== verdict) return false;
             return !needle || row.comment.toLowerCase().includes(needle);
         });
     }
@@ -187,6 +212,7 @@
 
     const CSV_COLUMNS = [
         ['Date (UTC)', (row) => row.iso],
+        ['Source', (row) => (row.source === 'ai' ? 'AI' : 'reader')],
         ['Verdict', (row) => row.verdict],
         ['Comment', (row) => row.comment],
         ['Mode', (row) => row.mode],
@@ -226,7 +252,7 @@
 
     function verdictPill(doc, verdict) {
         const pill = make(doc, 'span', `admin-pill admin-pill--${verdict.replace('_', '-')}`);
-        pill.append(make(doc, 'span', 'admin-ico'), doc.createTextNode(VERDICT_LABEL[verdict]));
+        pill.append(make(doc, 'span', 'admin-ico'), doc.createTextNode(VERDICT_LABEL[verdict] || VERDICT_LABEL.unknown));
         pill.firstChild.setAttribute('aria-hidden', 'true');
         return pill;
     }
@@ -234,7 +260,8 @@
     function chipList(doc, row) {
         const wrap = make(doc, 'div', 'admin-chips');
         const add = (label) => wrap.append(make(doc, 'span', 'admin-chip', label));
-        add(row.signedIn ? 'Signed in' : 'Guest');
+        if (row.source === 'ai') add('Written by the AI');
+        else add(row.signedIn ? 'Signed in' : 'Guest');
         if (row.language) add(row.language.toUpperCase());
         if (row.mode) add(row.mode);
         if (row.fallback) add('Source fallback');
@@ -520,6 +547,7 @@
                 trendTable: $('trendTableBody'),
             },
             controls: $('adminControls'),
+            verdictGroup: $('adminVerdictGroup'),
             tbody: $('adminRows'),
             count: $('adminCount'),
             more: $('adminMore'),
@@ -534,6 +562,7 @@
         const ui = {
             all: [],
             verdict: 'all',
+            source: 'reader',
             query: '',
             order: 'newest',
             pageSize: DEFAULT_PAGE_SIZE,
@@ -584,7 +613,7 @@
                 forbidden: ['lock', 'This account is not on the operator list', 'You are signed in, but this account cannot read feedback. Use the profile menu to sign out and try the operator account. Operator accounts are listed in the ADMIN_USER_IDS setting.'],
                 unavailable: ['warning', 'Sign-in is unavailable right now', 'The sign-in service did not load, so the page cannot check who you are. Check your connection and try again.'],
                 error: ['warning', 'The digest did not load', detail || 'The request failed. Check your connection and try again.'],
-                empty: ['chat', 'No feedback yet', 'When readers tap the thumbs up or thumbs down under an AI answer, their rating and comment will show up here.'],
+                empty: ['chat', 'No feedback yet', 'When readers rate or comment under an AI answer, it will show up here, along with the AI’s own short note on each answer.'],
             }[kind];
             refs.stateIcon.className = `admin-state-icon admin-state-icon--${copy[0]}`;
             refs.stateTitle.textContent = copy[1];
@@ -692,7 +721,8 @@
                 refs.download.disabled = false;
                 ui.loadedLabel = new Intl.DateTimeFormat('en', { timeStyle: 'short' }).format(clock);
                 refs.loadedAt.textContent = `Loaded ${ui.loadedLabel}`;
-                say(`Loaded ${ui.all.length} ratings.`);
+                const loaded = summarize(ui.all);
+                say(`Loaded ${loaded.total} from readers and ${loaded.aiNotes} AI notes.`);
                 if (restoreFocus) refs.content.focus({ preventScroll: true });
             } catch (error) {
                 fail('error', error && error.name === 'AbortError' ? 'The request took too long.' : undefined);
@@ -711,7 +741,8 @@
                 pair[0].textContent = value;
                 pair[1].textContent = note;
             };
-            set(refs.tiles.total, formatCount(summary.total), `${formatCount(summary.withComment)} with a comment`);
+            const aiNote = summary.aiNotes ? ` · ${formatCount(summary.aiNotes)} AI ${summary.aiNotes === 1 ? 'note' : 'notes'}` : '';
+            set(refs.tiles.total, formatCount(summary.total), `${formatCount(summary.withComment)} with a comment${aiNote}`);
             set(refs.tiles.helpful, formatCount(summary.helpful), 'thumbs up');
             set(refs.tiles.notHelpful, formatCount(summary.notHelpful), 'thumbs down');
             set(
@@ -722,15 +753,17 @@
         }
 
         function renderCharts() {
-            renderSplit(refs.split, summarize(ui.all));
-            const buckets = dailyBuckets(ui.all, ui.days, clock);
+            const readers = readerRows(ui.all);
+            renderSplit(refs.split, summarize(readers));
+            const buckets = dailyBuckets(readers, ui.days, clock);
             ui.buckets = buckets;
-            renderTrend(refs.trend, buckets, truncationNote(ui.all, buckets, LIMIT));
+            renderTrend(refs.trend, buckets, truncationNote(readers, buckets, LIMIT));
             setActiveDay(-1);
         }
 
         function renderTable(options) {
-            ui.filtered = sortRows(filterRows(ui.all, { verdict: ui.verdict, query: ui.query }), ui.order);
+            refs.verdictGroup.disabled = ui.source === 'ai';
+            ui.filtered = sortRows(filterRows(ui.all, { verdict: ui.verdict, query: ui.query, source: ui.source }), ui.order);
             const shown = ui.filtered.slice(0, ui.visible);
             renderRows(refs.tbody, shown, clock);
             // A different set of rows (a new verdict, sort or page size) settles in;
@@ -740,7 +773,7 @@
             refs.tableEmpty.hidden = total > 0;
             refs.count.textContent = total
                 ? `Showing ${formatCount(shown.length)} of ${formatCount(total)}${total === ui.all.length ? '' : ` matching (${formatCount(ui.all.length)} loaded)`}`
-                : `No ratings match (${formatCount(ui.all.length)} loaded)`;
+                : `Nothing matches (${formatCount(ui.all.length)} loaded)`;
             const rest = total - shown.length;
             refs.more.hidden = rest <= 0;
             refs.more.textContent = `Show ${formatCount(Math.min(rest, ui.pageSize))} more`;
@@ -760,8 +793,14 @@
         }
 
         function renderFilterCounts(summary) {
-            const counts = { all: summary.total, helpful: summary.helpful, not_helpful: summary.notHelpful };
-            for (const input of doc.querySelectorAll('input[name="adminVerdict"]')) {
+            const counts = {
+                all: summary.total,
+                helpful: summary.helpful,
+                not_helpful: summary.notHelpful,
+                reader: summary.total,
+                ai: summary.aiNotes,
+            };
+            for (const input of doc.querySelectorAll('input[name="adminVerdict"], input[name="adminSource"]')) {
                 const badge = input.parentElement.querySelector('.admin-seg-count');
                 if (badge) badge.textContent = formatCount(counts[input.value] || 0);
             }
@@ -862,6 +901,14 @@
                 renderTable({ settle: true });
             });
         }
+        for (const radio of doc.querySelectorAll('input[name="adminSource"]')) {
+            radio.addEventListener('change', () => {
+                if (!radio.checked) return;
+                ui.source = radio.value;
+                ui.visible = ui.pageSize;
+                renderTable({ settle: true });
+            });
+        }
         let searchTimer = 0;
         refs.search.addEventListener('input', () => {
             clearTimeout(searchTimer);
@@ -920,6 +967,7 @@
         normalizeRows,
         summarize,
         filterRows,
+        readerRows,
         sortRows,
         dailyBuckets,
         niceScale,

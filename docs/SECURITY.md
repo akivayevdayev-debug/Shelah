@@ -405,8 +405,9 @@ pre-fetch sections via `build_prompt()`, and the agentic `web_search` /
   found 0 false positives.
 - The pre-fetch sections are wrapped in `<retrieved_context>` tags that both
   system prompts name as data, never instructions (emitted only for non-empty
-  sections; `PROMPT_VERSION` is `2026-10-09-answer-shapes-v6` and the wrapper
-  is unchanged in it).
+  sections; `PROMPT_VERSION` is `2026-10-18-web-lookup-v7`; the wrapper is unchanged
+  in it, and a web lookup's findings arrive in the same wrapper as
+  `source="web_lookup_last_resort"`, screened by `withhold_injected` first).
 
 It is a conservative phrase heuristic — bare "you are now" and "ignore any
 instructions from his doctor" (or a bare "the owner"/"the Creator") are

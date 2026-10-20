@@ -379,6 +379,36 @@ class TestDispatchAskAiSynthesisCall:
         assert seen["kwargs"] == self._expected_kwargs()
 
 
+    def test_the_readers_web_search_setting_reaches_ask_claude_only_when_they_sent_one(self, monkeypatch):
+        seen = []
+        monkeypatch.setattr(app.claude, "AI_AGENTIC_TOOLS", False)
+        monkeypatch.setattr(app.claude, "ask_claude", lambda **kw: seen.append(kw) or {"answer": "plain"})
+        monkeypatch.setattr(app, "_build_ask_tool_context", lambda engine: {})
+
+        app._dispatch_ask_ai_synthesis_call(
+            "May I?", "practical", "All", "en", {**self.CTX, "web_search": False}, object())
+        app._dispatch_ask_ai_synthesis_call(
+            "May I?", "practical", "All", "en", {**self.CTX, "web_search": None}, object())
+
+        assert seen[0]["web_search"] is False
+        assert "web_search" not in seen[1]
+
+
+class TestAskRequestWebSearch:
+    def _parse(self, monkeypatch, **body):
+        monkeypatch.setattr(app, "_get_request_user_id", lambda: "user-1")
+        return app._parse_and_validate_ask_question_request({"question": "May I?", **body})
+
+    def test_a_reader_who_switched_it_off_gets_their_own_cache_entry(self, monkeypatch):
+        default = self._parse(monkeypatch)
+        off = self._parse(monkeypatch, web_search=False)
+        on = self._parse(monkeypatch, web_search=True)
+
+        assert (default["web_search"], on["web_search"], off["web_search"]) == (None, True, False)
+        assert off["ask_cache_key"] == default["ask_cache_key"] + "|noweb"
+        assert on["ask_cache_key"] == default["ask_cache_key"]
+
+
 # ─── _extract_raw_ai_answer ─────────────────────────────────────────────────
 
 class TestExtractRawAiAnswer:

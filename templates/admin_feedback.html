@@ -70,7 +70,7 @@
                     <h2 id="summaryTitle" class="visually-hidden">Summary</h2>
                     <dl class="admin-tiles">
                         <div class="admin-tile">
-                            <dt>Ratings</dt>
+                            <dt>From readers</dt>
                             <dd id="tileTotal" class="admin-tile-value"></dd>
                             <dd id="tileTotalNote" class="admin-tile-note"></dd>
                         </div>
@@ -181,14 +181,29 @@
                 <section class="admin-card admin-section" aria-labelledby="tableTitle">
                     <div class="admin-card-head">
                         <div>
-                            <h2 id="tableTitle" class="admin-card-title">All ratings</h2>
-                            <p class="admin-card-sub">The filters change this table and the CSV. The numbers and charts above always cover everything loaded.</p>
+                            <h2 id="tableTitle" class="admin-card-title">Feedback</h2>
+                            <p class="admin-card-sub">What readers rated or wrote, and the short note the AI leaves on each answer it gives. The filters change this table and the CSV. The numbers and charts above always count readers only, never the AI’s notes.</p>
                         </div>
                     </div>
 
                     <fieldset id="adminControls" class="admin-controls" disabled>
                         <legend class="visually-hidden">Filter the ratings table</legend>
                         <fieldset class="admin-seg">
+                            <legend class="visually-hidden">Who wrote it</legend>
+                            <label class="admin-seg-opt">
+                                <input type="radio" name="adminSource" value="reader" checked>
+                                <span>Readers</span><span class="admin-seg-count"></span>
+                            </label>
+                            <label class="admin-seg-opt">
+                                <input type="radio" name="adminSource" value="ai">
+                                <span>AI notes</span><span class="admin-seg-count"></span>
+                            </label>
+                            <label class="admin-seg-opt">
+                                <input type="radio" name="adminSource" value="all">
+                                <span>Both</span>
+                            </label>
+                        </fieldset>
+                        <fieldset id="adminVerdictGroup" class="admin-seg">
                             <legend class="visually-hidden">Verdict</legend>
                             <label class="admin-seg-opt">
                                 <input type="radio" name="adminVerdict" value="all" checked>
@@ -247,7 +262,7 @@
                                 {% endfor %}
                             </tbody>
                         </table>
-                        <p id="adminTableEmpty" class="admin-table-empty" hidden>No ratings match. Try another word or choose All.</p>
+                        <p id="adminTableEmpty" class="admin-table-empty" hidden>Nothing matches. Try another word or choose All.</p>
                     </div>
 
                     <div class="admin-table-foot">

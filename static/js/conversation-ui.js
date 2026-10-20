@@ -194,6 +194,11 @@ function communityOptions() {
     return [...list.content.querySelectorAll("option")].map((o) => ({ value: o.value, en: o.dataset.en || o.value, he: o.dataset.he || o.value }));
 }
 
+// The "Web search" switch in the chat menu; on unless the reader turned it off.
+function webSearchOn() {
+    return window.appState?.prefs?.webSearch !== false;
+}
+
 function currentMode() {
     if (!ui.mode) ui.mode = window.appState?.prefs?.mode || "balanced";
     return ui.mode;
@@ -275,6 +280,8 @@ function collectElements() {
         menuDraft: $("convMenuMinhagDraft"),
         minhagSelect: $("convMinhagSelect"),
         pinLabel: $("convPinLabel"),
+        webSearchSwitch: $("convWebSearchSwitch"),
+        webSearchState: $("convWebSearchState"),
         shareBtn: $("convShareBtn"),
         sharePop: $("convSharePop"),
         themeBtn: $("convThemeBtn"),
@@ -419,6 +426,9 @@ function renderMenu(state, { l, name, options }) {
     els.menu.querySelectorAll("[data-conv-mode]").forEach((btn) => {
         btn.setAttribute("aria-checked", btn.dataset.convMode === currentMode() ? "true" : "false");
     });
+    const webOn = webSearchOn();
+    els.webSearchSwitch?.setAttribute("aria-checked", webOn ? "true" : "false");
+    if (els.webSearchState) els.webSearchState.textContent = webOn ? tr("On", "פועל") : tr("Off", "כבוי");
     els.pinLabel.textContent = conversation?.pinnedAt ? tr("Unpin", "בטל הצמדה") : tr("Pin", "הצמד");
     syncShare(conversation);
 }
@@ -2442,6 +2452,14 @@ function clickMode(target) {
     return true;
 }
 
+function clickWebSearch(target) {
+    const toggle = target.closest("[data-conv-websearch]");
+    if (!toggle || !els.menu.contains(toggle)) return false;
+    window.ShelahPrefs?.set("webSearch", !webSearchOn());
+    render();
+    return true;
+}
+
 function clickTurnAction(target) {
     const turnBtn = target.closest("[data-turn-action]");
     if (!turnBtn || !els.messages.contains(turnBtn)) return false;
@@ -2462,7 +2480,7 @@ function clickCitation(target, event) {
 
 const CLICK_HANDLERS = [
     clickSuggestion, clickHistoryTrigger, clickOpenConversation, clickSize,
-    clickAction, clickMode, clickTurnAction, clickCitation,
+    clickAction, clickMode, clickWebSearch, clickTurnAction, clickCitation,
 ];
 
 function onDocumentClick(event) {

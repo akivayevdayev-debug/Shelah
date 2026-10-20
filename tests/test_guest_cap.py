@@ -330,7 +330,9 @@ class TestAskRoute:
         assert [t["content"] for t in sent] == [
             "Question 1?", "First answer.", "Question 2?", "Second answer."]
         # The answer is saved under the device, so the next follow-up can name it.
-        assert history[-1]["user_id"] == OWNER
+        # (The AI's own feedback note lands in the same fake table; skip it.)
+        saved = [row for row in history if row.get("verdict") != "ai_note"]
+        assert saved[-1]["user_id"] == OWNER
 
     async def test_another_devices_answers_are_not_shown_to_the_model(self, fastapi_client, history, model):
         history.extend([_row(1, owner=OTHER, answer="Someone else's.")])

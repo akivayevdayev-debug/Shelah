@@ -297,3 +297,54 @@ class TestFeedbackMetadataFieldCaps:
         assert "<" not in record["language"]
         assert ">" not in record["language"]
         assert record["safety_class"] == "ok"
+
+
+class TestCommentOnlyFeedback:
+    """The "Add a comment" control: a comment with no rating (verdict "comment"),
+    and the server's own AI notes, which a reader can never write."""
+
+    def _post(self, test_client, **overrides):
+        payload = {"question": "What is Shabbat?", "verdict": "comment", **overrides}
+        return test_client.post(
+            "/api/feedback", json=payload, content_type="application/json",
+            environ_base={"REMOTE_ADDR": "10.0.1.30"},
+        )
+
+    def test_a_comment_without_a_rating_is_stored_with_its_text(self, test_client, monkeypatch):
+        import backend.routes_feedback as routes_feedback_module
+
+        client = _RecordingFeedbackClient()
+        monkeypatch.setattr(routes_feedback_module, "_get_supabase_client", lambda: client)
+
+        response = self._post(test_client, comment="Please add the Mishnah Berurah.")
+
+        assert response.status_code == 200
+        [record] = client.inserted
+        assert (record["verdict"], record["comment"]) == ("comment", "Please add the Mishnah Berurah.")
+        # The reader never chooses the source: the column default ('reader') applies.
+        assert "source" not in record
+
+    def test_a_comment_with_nothing_in_it_is_refused(self, test_client, monkeypatch):
+        import backend.routes_feedback as routes_feedback_module
+
+        client = _RecordingFeedbackClient()
+        monkeypatch.setattr(routes_feedback_module, "_get_supabase_client", lambda: client)
+
+        for blank in ("", "   ", "<<>>\x00"):
+            response = self._post(test_client, comment=blank)
+            assert response.status_code == 400
+            assert response.get_json() == {"error": "comment is required"}
+        assert client.inserted == []
+
+    def test_a_reader_cannot_write_the_ai_note_verdict_or_a_source(self, test_client, monkeypatch):
+        import backend.routes_feedback as routes_feedback_module
+
+        client = _RecordingFeedbackClient()
+        monkeypatch.setattr(routes_feedback_module, "_get_supabase_client", lambda: client)
+
+        assert self._post(test_client, verdict="ai_note", comment="Answered from 3 sources.").status_code == 400
+
+        response = self._post(test_client, verdict="helpful", comment="Great", source="ai")
+        assert response.status_code == 200
+        [record] = client.inserted
+        assert "source" not in record

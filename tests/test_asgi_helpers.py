@@ -222,6 +222,28 @@ async def test_dispatch_ask_async_ai_synthesis_call_uses_plain_path_by_default(m
     assert captured["tool_context"]["async"] is True
 
 
+async def test_dispatch_ask_async_ai_synthesis_call_passes_the_web_search_setting_only_when_sent(monkeypatch):
+    monkeypatch.setattr(claude_module, "AI_AGENTIC_TOOLS", False)
+    monkeypatch.setattr(claude_module, "AI_TOTAL_BUDGET_SECONDS", 5)
+    seen = []
+
+    async def _fake_ask_ai_async(**kwargs):
+        seen.append(kwargs)
+        return {"answer": "ok"}
+
+    monkeypatch.setattr(claude_module, "ask_ai_async", _fake_ask_ai_async)
+    base = {
+        "tool_context": {"route": "/ask"}, "flat_sources_for_ai": [], "customs_info": [],
+        "user_memory_summaries": [], "wiki_context_for_ai": [], "halachipedia_list": [],
+    }
+
+    await _dispatch_ask_async_ai_synthesis_call("Q?", "standard", "All", "en", {**base, "web_search": False})
+    await _dispatch_ask_async_ai_synthesis_call("Q?", "standard", "All", "en", {**base, "web_search": None})
+
+    assert seen[0]["web_search"] is False
+    assert "web_search" not in seen[1]
+
+
 async def test_dispatch_ask_async_ai_synthesis_call_uses_agentic_path_when_enabled(monkeypatch):
     monkeypatch.setattr(claude_module, "AI_AGENTIC_TOOLS", True)
     monkeypatch.setattr(claude_module, "AI_TOTAL_BUDGET_SECONDS", 5)

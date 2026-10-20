@@ -1223,6 +1223,7 @@ function hasParenthetical(text) {
             prefs: {
                 mode: 'balanced',
                 community: 'All',
+                webSearch: true,
                 readerLayout: regionalDefaults.readerLayout,
                 fontSize: 18,
                 lineHeight: 1.8,
@@ -7462,6 +7463,7 @@ function hasParenthetical(text) {
                 appState.prefs.readerLayout = 'hebrew';
             }
 
+            appState.prefs.webSearch = appState.prefs.webSearch !== false;
             appState.prefs.transliteration = Boolean(appState.prefs.transliteration);
             appState.prefs.showVowels = appState.prefs.showVowels !== false;
             appState.prefs.showCantillation = appState.prefs.showCantillation !== false;
@@ -7531,11 +7533,12 @@ function hasParenthetical(text) {
             }
         }
 
-        // The AI mode and community are picked in the chat's settings menu
-        // (conversation-ui.js), which saves them here as the defaults.
+        // The AI mode, community and web-search switch are picked in the chat's
+        // settings menu (conversation-ui.js), which saves them here as the defaults.
         window.ShelahPrefs = {
             set(key, value) {
-                if (!['mode', 'community'].includes(key) || appState.prefs[key] === value) return;
+                const valid = key === 'webSearch' ? typeof value === 'boolean' : ['mode', 'community'].includes(key);
+                if (!valid || appState.prefs[key] === value) return;
                 appState.prefs[key] = value;
                 savePrefs();
             },
@@ -11917,6 +11920,7 @@ function hasParenthetical(text) {
         const _ANSWER_FEEDBACK_ICONS = {
             up: phosphorPathMarkup('thumbs-up'),
             down: phosphorPathMarkup('thumbs-down'),
+            comment: phosphorPathMarkup('chat-text'),
         };
 
         // Which stored answer a rating is about: the owner's ask_history id,
@@ -11929,6 +11933,14 @@ function hasParenthetical(text) {
             return window.ShelahAskHistory?.isHistoryId(id) ? { history_id: id } : {};
         }
 
+        // The quiet "Add a comment" control that sits beside the thumbs: a reader
+        // can say something without rating (verdict "comment"), or add to a rating.
+        function feedbackCommentButtonHtml() {
+            return `<button type="button" class="answer-feedback-comment-btn" aria-expanded="false">
+                <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${_ANSWER_FEEDBACK_ICONS.comment}</svg>
+                <span>${t('Add a comment', 'הוספת הערה')}</span></button>`;
+        }
+
         function renderFeedbackWidget(container, data, queryTitle) {
             if (!container) return;
             const answerLink = feedbackAnswerLink(data);
@@ -11939,15 +11951,19 @@ function hasParenthetical(text) {
                         aria-label="${t('Helpful', 'מועיל')}"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${_ANSWER_FEEDBACK_ICONS.up}</svg></button>
                     <button type="button" class="answer-feedback-btn" data-verdict="not_helpful" aria-pressed="false"
                         aria-label="${t('Not helpful', 'לא מועיל')}"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${_ANSWER_FEEDBACK_ICONS.down}</svg></button>
+                    ${feedbackCommentButtonHtml()}
                 </div>
             `;
             const root = container.querySelector('.answer-feedback');
             const buttons = Array.from(root.querySelectorAll('.answer-feedback-btn'));
+            let rated = ''; // 'helpful' | 'not_helpful' once a thumb was pressed
 
+            // True when the server took it. A rating is best-effort (a reader is
+            // never told it was lost); a typed comment is not, so it reports back.
             async function submitFeedback(verdict, comment) {
                 try {
                     const headers = await authHeaders({ 'Content-Type': 'application/json' });
-                    await fetch('/api/feedback', {
+                    const response = await fetch('/api/feedback', {
                         method: 'POST',
                         headers,
                         body: JSON.stringify({
@@ -11961,20 +11977,115 @@ function hasParenthetical(text) {
                             ...answerLink,
                         }),
                     });
+                    return response?.ok !== false;
                 } catch {
-                    // Best-effort — feedback loss isn't worth surfacing an error to the reader.
+                    return false;
                 }
             }
 
-            function showThanks() {
-                root.dataset.feedbackState = 'done';
-                root.innerHTML = `<span class="answer-feedback-thanks">${t('Thank you for your feedback!', 'תודה על המשוב!')}</span>`;
+            function commentButton() {
+                return root.querySelector('.answer-feedback-comment-btn');
             }
+
+            function closeCommentRow({ refocus = false } = {}) {
+                root.querySelector('.answer-feedback-comment-row')?.remove();
+                const toggle = commentButton();
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', 'false');
+                    if (refocus) toggle.focus();
+                }
+                if (root.dataset.feedbackState === 'commenting' && !rated) root.dataset.feedbackState = 'idle';
+            }
+
+            // `withComment` keeps the comment control after a thumbs-up so the
+            // reader can still add words; the final thanks removes it.
+            function showThanks(withComment) {
+                root.dataset.feedbackState = 'done';
+                root.innerHTML = `<span class="answer-feedback-thanks" role="status">${t('Thank you for your feedback!', 'תודה על המשוב!')}</span>${withComment ? feedbackCommentButtonHtml() : ''}`;
+                bindCommentButton();
+            }
+
+            // The comment is a row of its own when the reader has not rated, and
+            // after a thumbs-up. After a thumbs-down it travels with that verdict
+            // (the original contract, so it still saves before the AI-notes
+            // migration has run).
+            async function sendComment(row) {
+                const field = row.querySelector('textarea');
+                const text = field.value.trim();
+                if (!text) {
+                    if (rated) showThanks(false);
+                    else field.focus();
+                    return;
+                }
+                const send = row.querySelector('.answer-feedback-submit');
+                const problem = row.querySelector('.answer-feedback-error');
+                send.disabled = true;
+                problem.hidden = true;
+                const saved = await submitFeedback(rated === 'not_helpful' ? 'not_helpful' : 'comment', text);
+                if (saved) {
+                    showThanks(false);
+                    return;
+                }
+                send.disabled = false;
+                problem.hidden = false;
+                field.focus();
+            }
+
+            function openCommentRow() {
+                let row = root.querySelector('.answer-feedback-comment-row');
+                if (!row) {
+                    row = document.createElement('div');
+                    row.className = 'answer-feedback-comment-row';
+                    row.innerHTML = `
+                        <textarea maxlength="500" dir="auto"></textarea>
+                        <p class="answer-feedback-error" role="alert" hidden>${t('Could not send that. Please try again.', 'לא הצלחנו לשלוח. אפשר לנסות שוב.')}</p>
+                        <button type="button" class="answer-feedback-submit"></button>
+                    `;
+                    root.appendChild(row);
+                    row.querySelector('.answer-feedback-submit').addEventListener('click', () => { void sendComment(row); });
+                    row.querySelector('textarea').addEventListener('keydown', (event) => {
+                        if (event.key === 'Escape' && !rated) {
+                            event.preventDefault();
+                            closeCommentRow({ refocus: true });
+                        } else if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                            event.preventDefault();
+                            void sendComment(row);
+                        }
+                    });
+                }
+                const field = row.querySelector('textarea');
+                const prompt = rated === 'not_helpful'
+                    ? t('What went wrong? (optional)', 'מה השתבש? (אופציונלי)')
+                    : t('Add a comment', 'הוספת הערה');
+                field.placeholder = prompt;
+                field.setAttribute('aria-label', prompt);
+                row.querySelector('.answer-feedback-submit').textContent = rated === 'not_helpful'
+                    ? t('Send feedback', 'שלח משוב')
+                    : t('Send comment', 'שליחת הערה');
+                const toggle = commentButton();
+                if (toggle) toggle.setAttribute('aria-expanded', 'true');
+                return field;
+            }
+
+            function bindCommentButton() {
+                const toggle = commentButton();
+                if (!toggle) return;
+                toggle.addEventListener('click', () => {
+                    if (root.querySelector('.answer-feedback-comment-row')) {
+                        closeCommentRow({ refocus: true });
+                        return;
+                    }
+                    if (root.dataset.feedbackState === 'idle') root.dataset.feedbackState = 'commenting';
+                    openCommentRow().focus();
+                });
+            }
+            bindCommentButton();
 
             buttons.forEach((btn) => {
                 btn.addEventListener('click', () => {
-                    if (root.dataset.feedbackState !== 'idle') return;
+                    if (rated) return;
                     const verdict = btn.dataset.verdict;
+                    rated = verdict;
                     buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
                     buttons.forEach((b) => { b.disabled = true; });
 
@@ -11984,22 +12095,18 @@ function hasParenthetical(text) {
                     // verdict entirely to abandonment.
                     void submitFeedback(verdict, '');
 
+                    const writing = root.querySelector('.answer-feedback-comment-row');
                     if (verdict === 'not_helpful') {
                         root.dataset.feedbackState = 'commenting';
-                        const commentRow = document.createElement('div');
-                        commentRow.className = 'answer-feedback-comment-row';
-                        commentRow.innerHTML = `
-                            <textarea maxlength="500" placeholder="${t('What went wrong? (optional)', 'מה השתבש? (אופציונלי)')}"></textarea>
-                            <button type="button" class="answer-feedback-submit">${t('Send feedback', 'שלח משוב')}</button>
-                        `;
-                        root.appendChild(commentRow);
-                        commentRow.querySelector('.answer-feedback-submit').addEventListener('click', async () => {
-                            const comment = commentRow.querySelector('textarea').value;
-                            if (comment.trim()) await submitFeedback(verdict, comment);
-                            showThanks();
-                        });
+                        openCommentRow();
+                        // A reader who already opened the box has typed in it; keep focus there.
+                        if (!writing) root.querySelector('.answer-feedback-comment-row textarea').focus();
+                    } else if (writing) {
+                        // They are mid-comment: let them finish it.
+                        root.dataset.feedbackState = 'commenting';
+                        openCommentRow();
                     } else {
-                        showThanks();
+                        showThanks(true);
                     }
                 });
             });

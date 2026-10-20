@@ -580,6 +580,8 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
         return {
             mode: ANSWER_MODE_BY_CHOICE[mode] || mode || prefs.mode || "balanced",
             language: language || prefs.language || "en",
+            // Only when switched off (Settings > Web search), like the request body.
+            ...(prefs.webSearch === false ? { webSearch: false } : {}),
         };
     }
 

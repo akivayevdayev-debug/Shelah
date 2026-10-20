@@ -387,6 +387,18 @@ test('later sends reuse the conversation and pass only server message ids as kno
     assert.deepEqual(secondAsk[3].knownMessageIds, ['u1', 'a1']);
 });
 
+test('a reader who switched web search off has it passed to every ask; the default adds nothing', async () => {
+    const { createConversationStore } = await loadStore();
+    for (const [prefs, expected] of [[{ webSearch: false }, { webSearch: false }], [{ webSearch: true }, undefined], [{}, undefined]]) {
+        const api = makeApi();
+        const store = createConversationStore({ api, getPrefs: () => ({ mode: 'practical', language: 'en', ...prefs }) });
+        await store.send('Is this gum kosher?');
+        const ask = api.calls.find((c) => c[0] === 'ask');
+        assert.equal(ask[2].webSearch, expected?.webSearch);
+        assert.equal('webSearch' in ask[2], Boolean(expected));
+    }
+});
+
 test('Standard/Deep choices map to backend answer modes', async () => {
     const { createConversationStore, ANSWER_MODE_BY_CHOICE } = await loadStore();
     assert.deepEqual({ ...ANSWER_MODE_BY_CHOICE }, { standard: 'balanced', deep: 'sources' });

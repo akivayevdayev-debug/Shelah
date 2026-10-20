@@ -161,6 +161,22 @@ test('the AI settings button opens the conversation panel\'s settings', async ()
     }
 });
 
+test('the Web search setting defaults to on, takes only a boolean, and is remembered', async () => {
+    const page = await openShellPage({ fetch: routes(), before: (window) => { window.ShelahConversationUI = fakeConversationUI(); } });
+    try {
+        assert.equal(page.eval('appState.prefs.webSearch'), true, 'on until the reader turns it off');
+        page.eval(`window.ShelahPrefs.set('webSearch', 'no')`);
+        assert.equal(page.eval('appState.prefs.webSearch'), true, 'a non-boolean is ignored');
+        assert.equal(prefs(page).webSearch, undefined, 'and nothing was saved');
+        page.eval(`window.ShelahPrefs.set('webSearch', false)`);
+        assert.equal(prefs(page).webSearch, false);
+        page.eval(`window.ShelahPrefs.set('webSearch', true)`);
+        assert.equal(prefs(page).webSearch, true);
+    } finally {
+        page.close();
+    }
+});
+
 test('the mobile bottom tabs go home, search, to the library and to the daily section', async () => {
     const page = await openText();
     try {

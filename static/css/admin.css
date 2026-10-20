@@ -431,7 +431,14 @@
     mask-image: var(--icon-thumbs-down);
 }
 
-.admin-pill--unknown .admin-ico {
+.admin-pill--comment .admin-ico {
+    color: var(--ink-secondary);
+    -webkit-mask-image: var(--icon-chat-text);
+    mask-image: var(--icon-chat-text);
+}
+
+.admin-pill--unknown .admin-ico,
+.admin-pill--ai-note .admin-ico {
     display: none;
 }
 
@@ -904,6 +911,13 @@
 .admin-pill .admin-ico {
     width: 14px;
     height: 14px;
+}
+
+/* The AI's own note: dashed outline and the words "AI note" mark it as not
+   from a reader (the label, not the line style, is what carries it). */
+.admin-pill--ai-note {
+    color: var(--ink-secondary);
+    border-style: dashed;
 }
 
 .admin-chips {

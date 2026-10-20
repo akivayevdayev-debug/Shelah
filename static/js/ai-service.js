@@ -121,6 +121,8 @@ function askSettings(options) {
         onRetry: typeof options.onRetry === "function" ? options.onRetry : null,
         onProgress: typeof options.onProgress === "function" ? options.onProgress : null,
         historyIds,
+        // The reader's "Web search" setting; on unless they switched it off.
+        webSearch: options.webSearch ?? (state?.prefs?.webSearch !== false),
     };
 }
 
@@ -162,7 +164,7 @@ export async function askAi(question, options = {}) {
         throw new Error("Question is required");
     }
 
-    const { mode, community, language, onRetry, onProgress, historyIds } = askSettings(options);
+    const { mode, community, language, onRetry, onProgress, historyIds, webSearch } = askSettings(options);
 
     setState({
         ai: {
@@ -185,6 +187,8 @@ export async function askAi(question, options = {}) {
             // A signed-out follow-up: the earlier answers of this conversation.
             // The server only uses the ones this device owns (backend/guest_cap.py).
             ...(historyIds.length ? { history_ids: historyIds } : {}),
+            // Sent only when off, so a request with the default stays as it was.
+            ...(webSearch === false ? { web_search: false } : {}),
         });
 
         const baseHeaders = { "Content-Type": "application/json", Accept: ACCEPT_PROGRESS };

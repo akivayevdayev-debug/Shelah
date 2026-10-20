@@ -498,7 +498,7 @@
                                 {{ phosphor('sparkle', size=14, class='h-3.5 w-3.5 shrink-0') }}
                                 <span class="flex-1">
                                     <span class="block" data-en="AI settings" data-he="הגדרות בינה מלאכותית">AI settings</span>
-                                    <span class="block font-normal text-[11px] text-slate-600" data-en="Community and answer mode, in the chat" data-he="קהילה ומצב תשובה, בצ׳אט">Community and answer mode, in the chat</span>
+                                    <span class="block font-normal text-[11px] text-slate-600" data-en="Community, answer mode and web search, in the chat" data-he="קהילה, מצב תשובה וחיפוש ברשת, בצ׳אט">Community, answer mode and web search, in the chat</span>
                                 </span>
                                 {{ phosphor('caret-right', size=12, class='h-3 w-3 shrink-0 ai-settings-caret') }}
                             </button>
@@ -2099,6 +2099,18 @@
                                 <button type="button" role="radio" aria-checked="false" class="conv-mode-opt" data-conv-mode="strict" data-en="Strict Sources" data-he="מקורות בלבד">Strict Sources</button>
                             </div>
                             <div class="conv-menu__rule" aria-hidden="true"></div>
+                            <p class="conv-eyebrow" id="convWebSearchHeading" data-en="Web search" data-he="חיפוש ברשת">Web search</p>
+                            <!-- The reader's switch for the AI's last-resort web lookup
+                                 (backend/web_lookup.py): on by default, saved with the
+                                 other AI defaults, sent as web_search only when off. -->
+                            <button type="button" role="switch" aria-checked="true" id="convWebSearchSwitch"
+                                class="conv-web-opt" data-conv-websearch aria-labelledby="convWebSearchHeading"
+                                aria-describedby="convWebSearchHint">
+                                <span class="conv-web-opt__label" data-en="Let the AI check the web" data-he="לאפשר לבינה המלאכותית לבדוק ברשת">Let the AI check the web</span>
+                                <span class="conv-web-opt__state" id="convWebSearchState" aria-hidden="true">On</span>
+                            </button>
+                            <p id="convWebSearchHint" class="conv-menu__note conv-menu__note--hint" data-en="Only as a last resort, for a fact no source covers, such as whether a product is kosher. Answers then say they used the web." data-he="רק כמוצא אחרון, לעובדה שאף מקור אינו מכסה, כמו אם מוצר מסוים כשר. התשובה תציין שנעשה שימוש ברשת.">Only as a last resort, for a fact no source covers, such as whether a product is kosher. Answers then say they used the web.</p>
+                            <div class="conv-menu__rule" aria-hidden="true"></div>
                             <div class="conv-menu__actions">
                                 <button type="button" class="conv-menu__item" data-conv-action="new">
                                     {{ phosphor('plus', size=14, class='h-3.5 w-3.5') }}
@@ -2404,6 +2416,7 @@
         "trash": "{{ phosphor_path('trash') }}",
         "thumbs-up": "{{ phosphor_path('thumbs-up') }}",
         "thumbs-down": "{{ phosphor_path('thumbs-down') }}",
+        "chat-text": "{{ phosphor_path('chat-text') }}",
         "check-circle": "{{ phosphor_path('check-circle') }}",
         "warning-circle": "{{ phosphor_path('warning-circle') }}",
         "x": "{{ phosphor_path('x') }}",

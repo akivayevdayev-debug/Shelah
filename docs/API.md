@@ -124,7 +124,8 @@ Submit a halachic or Torah-study question and receive an AI-synthesised answer w
   "community": "string, community lens such as 'Ashkenaz' or 'Sefardic' (optional, default 'All'; names and aliases are canonicalised)",
   "language": "string, 'en' | 'he' (optional, default 'en')",
   "turnstile_token": "string, Cloudflare Turnstile response token (optional; only read once an anonymous caller has crossed the hourly threshold, see Rate limiting)",
-  "history_ids": "array of strings, the history_id of each earlier answer in this signed-out conversation, oldest first (optional; see Guest limits; ignored for a signed-in caller)"
+  "history_ids": "array of strings, the history_id of each earlier answer in this signed-out conversation, oldest first (optional; see Guest limits; ignored for a signed-in caller)",
+  "web_search": "boolean, optional; send false to forbid the AI's web lookup for this question (the reader's Web search switch). Omitted means allowed, subject to the server's AI_WEB_SEARCH switch"
 }
 ```
 
@@ -654,7 +655,7 @@ The current weekly portion. Returns `{"title", "heTitle", "ref", "source"}`, whe
 
 ### `POST /api/feedback`
 
-Submit a thumbs up or down (and an optional short comment) on an AI answer. Writes one row to the `answer_feedback` table (`backend/routes_feedback.py`). Accepted from signed-out readers too, since `user_id` is nullable. The table is write-only from the client's side: its RLS policy grants `INSERT` to everyone and has no `SELECT` policy for `anon` or `authenticated`, so submitted feedback can only be read back through the backend's own service-role client (see `GET /api/devtools/feedback-digest`).
+Submit a thumbs up or down, a comment, or both, on an AI answer. A comment alone (`verdict: "comment"`) is stored as an unrated note, so a reader can say something without rating. Writes one row to the `answer_feedback` table (`backend/routes_feedback.py`). Accepted from signed-out readers too, since `user_id` is nullable. The table is write-only from the client's side: its RLS policy grants `INSERT` to everyone and has no `SELECT` policy for `anon` or `authenticated`, so submitted feedback can only be read back through the backend's own service-role client (see `GET /api/devtools/feedback-digest`).
 
 - **Auth:** Optional. A verified token's `sub` is attached as `user_id`.
 - **Rate-limit class:** `feedback`.
@@ -663,7 +664,7 @@ Submit a thumbs up or down (and an optional short comment) on an AI answer. Writ
 
 ```json
 {
-  "verdict": "string, required, 'helpful' | 'not_helpful'",
+  "verdict": "string, required, 'helpful' | 'not_helpful' | 'comment' (a comment with no rating; needs a non-empty comment)",
   "question": "string, required, the original question (hashed server-side with SHA-256 into question_hash; the raw text is not persisted)",
   "comment": "string, optional, sanitised and truncated to 500 characters; stored as '' if omitted",
   "mode": "string, optional (default 'balanced')",
@@ -679,9 +680,11 @@ A search-bar answer sends `history_id` (or `share_token` on a shared link). A re
 
 **Response (200):** `{"success": true}`
 
+`source` and the `ai_note` verdict are not client-writable: a body that sends them is ignored. The server writes its own one-line `ai_note` row for each answer it produces (`backend/ai_notes.py`: fixed wording and numbers such as how many sources it used or that it looked the web up, never the question, the answer or a source title; no user id; no extra model call; `AI_FEEDBACK_NOTES=0` turns it off). `/admin/feedback` shows those rows with an "AI" badge and keeps them out of the helpful / not helpful counts. Until `scripts/sql/migrate_answer_feedback_ai_notes.sql` has run, ratings behave as before, AI notes are skipped quietly, and a comment-only submission answers `500` (the reader can retry).
+
 | Status | Meaning |
 |---|---|
-| `400` | `verdict` missing or not `helpful`/`not_helpful`, or `question` missing |
+| `400` | `verdict` missing or not `helpful`/`not_helpful`/`comment`, `question` missing, or `verdict: "comment"` with an empty comment |
 | `401` | No token and `CLERK_ENFORCE_AUTH` on, or a token that failed verification |
 | `500` | The insert into `answer_feedback` failed |
 | `503` | Supabase not configured |

@@ -84,6 +84,15 @@ test('askInConversation happy path posts question/mode/language with auth and re
     assert.equal(fetchFn.calls[0].headers['Content-Type'], 'application/json');
 });
 
+test('askInConversation sends web_search:false only when the reader turned web search off', async () => {
+    for (const [webSearch, expected] of [[false, { question: 'Q?', web_search: false }], [true, { question: 'Q?' }], [undefined, { question: 'Q?' }]]) {
+        const fetchFn = makeRoutedFetch([['POST', ASK_RE, [jsonResponse(201, ASK_OK)]]]);
+        const api = await loadApi(fetchFn);
+        await api.askInConversation('c1', { question: 'Q?', webSearch });
+        assert.deepEqual(fetchFn.calls[0].body, expected);
+    }
+});
+
 test('askInConversation: a stored error turn (201, status=error) resolves, it does not throw', async () => {
     const body = { ...ASK_OK, assistant_message: { role: 'assistant', content: '', status: 'error', citations: [] } };
     const api = await loadApi(makeRoutedFetch([['POST', ASK_RE, [jsonResponse(201, body)]]]));

@@ -168,7 +168,7 @@ test('toCsv writes a header, CRLF line ends and one line per row', () => {
     const csv = api.toCsv(rows);
     const lines = csv.split('\r\n');
     assert.equal(lines.length, 3); // header, one row, trailing newline
-    assert.equal(lines[0], '"Date (UTC)","Verdict","Comment","Mode","Language","Source fallback","Safety class","Reader","Shared link"');
+    assert.equal(lines[0], '"Date (UTC)","Source","Verdict","Comment","Mode","Language","Source fallback","Safety class","Reader","Shared link"');
     assert.ok(lines[1].includes('"\'=HYPERLINK(""x"")"'));
     assert.ok(lines[1].includes('"not_helpful"'));
     assert.ok(lines[1].endsWith('"yes","ok","guest","yes"'));
@@ -338,7 +338,7 @@ test('a network failure and a timeout are reported, not left spinning', async ()
 test('no ratings yet is a calm empty state, not an error', async () => {
     const page = await openAdmin({ digest: response(200, { count: 0, rows: [] }) });
     assert.equal(page.text('adminStateTitle'), 'No feedback yet');
-    assert.match(page.text('adminStateBody'), /thumbs up or thumbs down/);
+    assert.match(page.text('adminStateBody'), /rate or comment under an AI answer/);
     assert.equal(page.$('adminStateActions').children.length, 0);
     page.close();
 });
@@ -370,7 +370,7 @@ test('loaded rows fill the tiles, the split, the trend and the table', async () 
     assert.equal(page.$('adminDownload').disabled, false);
     assert.match(page.text('adminLoadedAt'), /^Loaded /);
     const counts = [...page.doc.querySelectorAll('.admin-seg-count')].map((n) => n.textContent);
-    assert.deepEqual(counts, ['8', '6', '2']);
+    assert.deepEqual(counts, ['8', '0', '8', '6', '2']); // source: readers, AI; verdict: all, helpful, not helpful
     page.close();
 });
 
@@ -442,7 +442,7 @@ test('filtering, searching, sorting and paging change the table and the count, n
     await new Promise((resolve) => page.window.setTimeout(resolve, 200));
     assert.equal(page.rows().length, 0);
     assert.equal(page.$('adminTableEmpty').hidden, false);
-    assert.equal(page.text('adminCount'), 'No ratings match (32 loaded)');
+    assert.equal(page.text('adminCount'), 'Nothing matches (32 loaded)');
 
     search.value = '';
     search.dispatchEvent(new page.window.Event('input', { bubbles: true }));
@@ -600,5 +600,59 @@ test('the trend can be read with the keyboard, one day at a time', async () => {
     assert.ok(page.$('trendCols').children[0].classList.contains('is-active'));
     plot.dispatchEvent(new page.window.FocusEvent('blur'));
     assert.equal(page.$('trendTip').hidden, true);
+    page.close();
+});
+
+// ── The AI's own notes ─────────────────────────────────────────────────
+
+const note = (over = {}) => row({ verdict: 'ai_note', source: 'ai', user_id: null, comment: 'Answered from 3 retrieved sources in balanced mode.', ...over });
+
+test('an AI note is labelled as the AI\'s and stays out of the reader counts', () => {
+    const rows = api.normalizeRows([row({ verdict: 'helpful' }), row({ verdict: 'comment', comment: 'Nice' }), note(), note()]);
+    const ai = rows.filter((r) => r.source === 'ai');
+    assert.equal(ai.length, 2);
+    assert.ok(ai.every((r) => r.verdict === 'ai_note'));
+    const summary = api.summarize(rows);
+    assert.equal(summary.total, 2);
+    assert.equal(summary.helpful, 1);
+    assert.equal(summary.aiNotes, 2);
+    assert.equal(summary.helpfulPct, 100);
+    assert.equal(api.readerRows(rows).length, 2);
+});
+
+test('a row is the AI\'s by its verdict even without a source field', () => {
+    const rows = api.normalizeRows([{ created_at: new Date(NOW).toISOString(), verdict: 'ai_note', comment: 'x' }]);
+    assert.equal(rows[0].source, 'ai');
+});
+
+test('filterRows can show only readers or only the AI, and a verdict filter spares the AI notes', () => {
+    const rows = api.normalizeRows([row({ verdict: 'helpful' }), row({ verdict: 'not_helpful' }), note()]);
+    assert.equal(api.filterRows(rows, { source: 'ai' }).length, 1);
+    assert.equal(api.filterRows(rows, { source: 'reader' }).length, 2);
+    assert.equal(api.filterRows(rows, { source: 'reader', verdict: 'helpful' }).length, 1);
+    assert.equal(api.filterRows(rows, { source: 'ai', verdict: 'helpful' }).length, 1);
+    assert.equal(api.filterRows(rows).length, 3);
+});
+
+test('the CSV names the source of each row', () => {
+    const csv = api.toCsv(api.normalizeRows([row(), note()]));
+    const lines = csv.split('\r\n');
+    assert.ok(lines.some((line) => line.includes('"AI","ai_note"')));
+    assert.ok(lines.some((line) => line.includes('"reader","helpful"')));
+});
+
+test('the page shows readers first, and the AI notes behind their own filter with an AI badge', async () => {
+    const rows = [row({ comment: 'reader remark' }), note(), note({ comment: 'The AI did not respond, so the reader was shown 2 discovered sources instead of a written answer.' })];
+    const page = await openAdmin({ digest: response(200, { rows }) });
+    assert.equal(page.rows().length, 1, 'readers only by default');
+    assert.equal(page.text('tileTotal'), '1', 'AI notes are not ratings');
+    assert.match(page.text('tileTotalNote'), /2 AI notes/);
+
+    await page.check('input[name="adminSource"][value="ai"]');
+    assert.equal(page.rows().length, 2);
+    const html = page.$('adminRows').textContent;
+    assert.match(html, /AI note/);
+    assert.match(html, /Written by the AI/);
+    assert.equal(page.$('adminVerdictGroup').disabled, true, 'a rating filter means nothing for notes');
     page.close();
 });

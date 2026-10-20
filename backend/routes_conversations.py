@@ -43,7 +43,8 @@ from flask import Blueprint, Response, copy_current_request_context, current_app
 
 from backend.auth import require_clerk_auth
 from backend.device_identity import filter_owner, history_owners
-from backend import ask_progress, claude
+from backend import ask_progress, claude, web_lookup
+from backend.ai_notes import record_ai_note
 from backend.cost_gates import (
     bind_cost_attribution,
     budget_exhausted_message,
@@ -737,7 +738,7 @@ def _earlier_questions(conversation_history, limit=_MAX_RETRIEVAL_CONTEXT_QUESTI
 
 def _synthesize_and_store_assistant_reply(
     supabase, conversation_id, user_id, question, mode, canonical_lens,
-    answer_language, conversation_history,
+    answer_language, conversation_history, web_search=None,
 ):
     """Runs AI synthesis for one conversation turn and persists the
     assistant's reply as a message row, or a status="error" placeholder on
@@ -756,6 +757,7 @@ def _synthesize_and_store_assistant_reply(
             ctx = _collect_ask_question_context(
                 question, canonical_lens, user_id, answer_language, engine,
                 retrieval_context=_earlier_questions(conversation_history))
+            ctx["web_search"] = web_search
             result = _dispatch_ask_ai_synthesis_call(
                 question, mode, canonical_lens, answer_language, ctx, engine,
                 conversation_history=conversation_history,
@@ -774,6 +776,16 @@ def _synthesize_and_store_assistant_reply(
             answer_text = _compose_validated_ask_answer(raw_ai_answer, needs_web_warning)
             _store_user_memory_summary(user_id, question, answer_text)
             citations = _answer_citations(structured_payload, _compact_ai_sources(ctx["primary_sources"]))
+            # A thread reply has no ask_history row, so the AI's note is unlinked.
+            record_ai_note(
+                question,
+                result=result,
+                structured=structured_payload,
+                mode=mode,
+                language=answer_language,
+                community=canonical_lens,
+                source_count=len(ctx["primary_sources"]),
+            )
 
         message_result = supabase.table(SUPABASE_MESSAGES_TABLE).insert({
             "conversation_id": str(conversation_id),
@@ -975,7 +987,7 @@ def _touch_conversation(supabase, conversation, conversation_id, user_id, questi
     return updates
 
 
-def _run_conversation_ask(supabase, conversation_id, user_id, question, retry_of, mode, answer_language):
+def _run_conversation_ask(supabase, conversation_id, user_id, question, retry_of, mode, answer_language, web_search=None):
     """ask_in_conversation()'s body once the request itself is validated:
     ownership, retry-target resolution, cost gates, then (fresh asks only)
     the user-turn insert -- in that order, so a refused ask writes nothing
@@ -1018,7 +1030,7 @@ def _run_conversation_ask(supabase, conversation_id, user_id, question, retry_of
 
     assistant_message = _synthesize_and_store_assistant_reply(
         supabase, conversation_id, user_id, question, mode, canonical_lens,
-        answer_language, conversation_history,
+        answer_language, conversation_history, web_search=web_search,
     )
     # The conversation header as it stands after this turn (title may have
     # just been auto-derived above), so the client can update its header and
@@ -1181,9 +1193,12 @@ def ask_in_conversation(conversation_id):
     if answer_language not in {"en", "he"}:
         answer_language = "en"
 
+    web_search = web_lookup.coerce_preference(payload.get("web_search"))
+
     def run():
         return _run_conversation_ask(
-            supabase, conversation_id, user_id, question, retry_of, mode, answer_language)
+            supabase, conversation_id, user_id, question, retry_of, mode, answer_language,
+            web_search=web_search)
 
     if ask_progress.wants_stream(request.headers.get("Accept")):
         return _stream_conversation_ask(run)

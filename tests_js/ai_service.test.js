@@ -115,6 +115,24 @@ test('askAi happy path: single attempt, resolves with the parsed payload, update
     assert.deepEqual(window.appState.ai.lastResponse, payload);
 });
 
+test('askAi sends web_search:false only when the reader turned web search off', async () => {
+    for (const [prefs, options, expected] of [
+        [{ webSearch: false }, {}, false],
+        [{ webSearch: true }, {}, undefined],
+        [{}, {}, undefined],
+        [{ webSearch: true }, { webSearch: false }, false],
+        [{ webSearch: false }, { webSearch: true }, undefined],
+    ]) {
+        const fetchFn = makeSequenceFetch([makeJsonResponse(200, { answer: 'a' })]);
+        const { mod, window } = await loadAiService({ fetch: fetchFn });
+        window.appState.prefs = { ...(window.appState.prefs || {}), ...prefs };
+        await mod.namespace.askAi('Is this gum kosher?', options);
+        const body = JSON.parse(fetchFn.calls[0].opts.body);
+        assert.equal(body.web_search, expected);
+        assert.equal('web_search' in body, expected === false);
+    }
+});
+
 test('askAi retries once on a 502 then succeeds, reporting the retry via onRetry', async () => {
     const payload = { answer: 'ok after retry' };
     const fetchFn = makeSequenceFetch([

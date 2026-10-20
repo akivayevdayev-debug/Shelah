@@ -772,6 +772,40 @@ test('the settings menu changes the mode and community and remembers both as the
     }
 });
 
+test('the Web search switch shows On or Off, flips the saved setting and is reachable by keyboard', async () => {
+    const page = await openAsk();
+    try {
+        const saved = [];
+        page.window.appState.prefs = { ...(page.window.appState.prefs || {}) };
+        page.window.ShelahPrefs = {
+            set: (key, value) => {
+                saved.push([key, value]);
+                page.window.appState.prefs[key] = value;
+            },
+        };
+        page.click('#convMenuBtn');
+        await page.flush();
+        const sw = page.$('#convWebSearchSwitch');
+        assert.ok(sw, 'the switch exists');
+        assert.equal(sw.getAttribute('role'), 'switch');
+        assert.equal(sw.getAttribute('aria-checked'), 'true', 'on by default');
+        assert.equal(page.$('#convWebSearchState').textContent, 'On');
+
+        page.click(sw);
+        await page.flush();
+        assert.deepEqual(saved, [['webSearch', false]]);
+        assert.equal(page.$('#convWebSearchSwitch').getAttribute('aria-checked'), 'false');
+        assert.equal(page.$('#convWebSearchState').textContent, 'Off');
+
+        page.click(page.$('#convWebSearchSwitch'));
+        await page.flush();
+        assert.deepEqual(saved.at(-1), ['webSearch', true]);
+        assert.equal(page.$('#convWebSearchState').textContent, 'On');
+    } finally {
+        page.close();
+    }
+});
+
 test('Quick Settings\' AI settings opens the panel and then its menu', async () => {
     const page = await openConversationPage({ signedIn: true });
     try {
