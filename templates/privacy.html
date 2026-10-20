@@ -60,9 +60,8 @@
         <article id="legalDocumentBody" class="main-container prose prose-sm max-w-2xl">
             <div class="legal-toolbar">
                 <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span data-en="Back to Sh'elah" data-he="חזרה לשאלה">Back to Sh'elah</span></a>
-                                <button type="button" id="selectAllPolicyTextBtn" class="select-all-btn"
-                    aria-label="Select all policy text for copying">
-                    {{ phosphor('selection-all', size=16) }}
+                                <button type="button" id="selectAllPolicyTextBtn" class="select-all-btn">
+                    <span class="contents" aria-hidden="true">{{ phosphor('selection-all', size=16) }}</span>
                     <span data-en="Select all text" data-he="בחר את כל הטקסט">Select all text</span>
                 </button>
             
