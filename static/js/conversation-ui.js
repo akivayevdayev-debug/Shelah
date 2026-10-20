@@ -423,8 +423,8 @@ function renderMenu(state, { l, name, options }) {
         : "";
     els.menuDraft.classList.toggle("hidden", state.minhagLocked);
     if (!state.minhagLocked) syncMinhagSelect(options, state.draftMinhag, l);
-    els.menu.querySelectorAll("[data-conv-mode]").forEach((btn) => {
-        btn.setAttribute("aria-checked", btn.dataset.convMode === currentMode() ? "true" : "false");
+    els.menu.querySelectorAll("[data-conv-mode] input").forEach((radio) => {
+        radio.checked = radio.value === currentMode();
     });
     const webOn = webSearchOn();
     els.webSearchSwitch?.setAttribute("aria-checked", webOn ? "true" : "false");
@@ -1787,7 +1787,7 @@ function openMenu(trigger) {
     show(els.menu, "popover", trigger);
     els.menuBtn.setAttribute("aria-expanded", "true");
     requestAnimationFrame(() => {
-        const first = els.menu.querySelector("select:not([disabled]), [aria-checked='true'], button");
+        const first = els.menu.querySelector("select:not([disabled]), input:checked, button");
         first?.focus({ preventScroll: true });
     });
 }

@@ -439,7 +439,7 @@
                             </div>
                             <!-- "Searching…" when suggestions are slow, then how many came
                                  (fetchOmniboxSuggestions). -->
-                            <p id="searchSuggestStatus" class="sr-only" role="status"></p>
+                            <output id="searchSuggestStatus" class="sr-only block"></output>
                             <!-- What Sh'elah is doing while a question asked from this bar
                                  loads (conversation-ui.js renderBarStatus): the running step
                                  and the finished ones, the same two rows as the panel's
@@ -650,7 +650,7 @@
 
             <button id="readerPrevTopBarBtn" type="button" class="reader-topbar-icon-btn"
                 aria-label="Previous Section" title="Previous Section">
-                {{ phosphor('caret-left', size=18) }}
+                <span class="contents" aria-hidden="true">{{ phosphor('caret-left', size=18) }}</span>
             </button>
 
             <div class="text-start reader-topbar-settings-wrap">
@@ -745,7 +745,7 @@
 
             <button id="readerNextTopBarBtn" type="button" class="reader-topbar-icon-btn"
                 aria-label="Next Section" title="Next Section">
-                {{ phosphor('caret-right', size=18) }}
+                <span class="contents" aria-hidden="true">{{ phosphor('caret-right', size=18) }}</span>
             </button>
 
             <button id="readerCommentaryTopBarBtn" type="button"
@@ -1812,7 +1812,7 @@
          token/error callbacks close it again. The shell stays rendered
          (visibility, not display:none) so the background check can run while
          it is closed; `inert` keeps it out of the tab order until then. -->
-    <div id="turnstileModal" class="turnstile-modal" role="dialog" aria-modal="true"
+    <dialog open id="turnstileModal" class="dialog-box-reset turnstile-modal" aria-modal="true"
         aria-labelledby="turnstileModalTitle" aria-describedby="turnstileModalDesc" inert>
         <div class="turnstile-modal__scrim" aria-hidden="true"></div>
         <div class="turnstile-modal__card" tabindex="-1">
@@ -1828,7 +1828,7 @@
                 data-expired-callback="onTurnstileExpired" data-error-callback="onTurnstileError"
                 data-before-interactive-callback="onTurnstileBeforeInteractive"></div>
         </div>
-    </div>
+    </dialog>
     {% endif %}
 
     <!-- Calendar Modal -->
@@ -2005,8 +2005,7 @@
          conversation-store.js by static/js/conversation-ui.js; styles in
          static/css/conversation.css. -->
     <div id="convScrim" class="conv-scrim hidden" aria-hidden="true"></div>
-    <section id="convPanel" class="conv-panel hidden" data-size="overlay" data-layout="desktop"
-        role="dialog" aria-modal="true" aria-labelledby="convTitle" tabindex="-1">
+    <dialog open id="convPanel" class="dialog-box-reset conv-panel hidden" data-size="overlay" data-layout="desktop" aria-modal="true" aria-labelledby="convTitle" tabindex="-1">
         <aside id="convSidebar" class="conv-sidebar" aria-labelledby="convSidebarHeading">
             <!-- The homepage lockup (same classes as #brandHomeBtn in the top bar),
                  so the full page reads as part of the same site. -->
@@ -2056,7 +2055,7 @@
                         </button>
                         <!-- Already shared: pressing Share asks before it stops, rather
                              than copying the link again behind the user's back. -->
-                        <div id="convSharePop" class="conv-sharepop hidden" role="dialog" aria-modal="false"
+                        <dialog open id="convSharePop" class="dialog-box-reset conv-sharepop hidden" aria-modal="false"
                             aria-labelledby="convSharePopTitle">
                             <p id="convSharePopTitle" class="conv-sharepop__title"
                                 data-en="Stop sharing public link?" data-he="להפסיק את השיתוף הציבורי?">Stop sharing public link?</p>
@@ -2069,7 +2068,7 @@
                                 <button type="button" class="conv-sharepop__btn conv-sharepop__btn--danger" data-conv-action="share-stop"
                                     data-en="Stop sharing" data-he="הפסק שיתוף">Stop sharing</button>
                             </div>
-                        </div>
+                        </dialog>
                     </div>
                     <div class="conv-menu-wrap">
                         <!-- The one settings control: full page also shows the community on it. -->
@@ -2083,7 +2082,7 @@
                                 <span id="convMinhagChipLabel">All</span>
                             </span>
                         </button>
-                        <div id="convMenu" class="conv-menu hidden" role="group" aria-labelledby="convMenuHeading">
+                        <fieldset id="convMenu" class="conv-menu hidden" aria-labelledby="convMenuHeading">
                             <p id="convMenuHeading" class="conv-eyebrow" data-en="Community" data-he="קהילה">Community</p>
                             <p id="convMenuMinhagLocked" class="conv-menu__note"></p>
                             <label id="convMenuMinhagDraft" class="conv-menu__field">
@@ -2093,10 +2092,10 @@
                             <div class="conv-menu__rule" aria-hidden="true"></div>
                             <p class="conv-eyebrow" id="convModeHeading" data-en="AI mode" data-he="מצב בינה מלאכותית">AI mode</p>
                             <div class="conv-mode-group" role="radiogroup" aria-labelledby="convModeHeading">
-                                <button type="button" role="radio" aria-checked="true" class="conv-mode-opt" data-conv-mode="balanced" data-en="Balanced" data-he="מאוזן">Balanced</button>
-                                <button type="button" role="radio" aria-checked="false" class="conv-mode-opt" data-conv-mode="practical" data-en="Practical First" data-he="מעשי תחילה">Practical First</button>
-                                <button type="button" role="radio" aria-checked="false" class="conv-mode-opt" data-conv-mode="sources" data-en="Deep Sources" data-he="מקורות מעמיקים">Deep Sources</button>
-                                <button type="button" role="radio" aria-checked="false" class="conv-mode-opt" data-conv-mode="strict" data-en="Strict Sources" data-he="מקורות בלבד">Strict Sources</button>
+                                <label class="conv-mode-opt" data-conv-mode="balanced"><input type="radio" name="convMode" class="sr-only" value="balanced" checked><span data-en="Balanced" data-he="מאוזן">Balanced</span></label>
+                                <label class="conv-mode-opt" data-conv-mode="practical"><input type="radio" name="convMode" class="sr-only" value="practical"><span data-en="Practical First" data-he="מעשי תחילה">Practical First</span></label>
+                                <label class="conv-mode-opt" data-conv-mode="sources"><input type="radio" name="convMode" class="sr-only" value="sources"><span data-en="Deep Sources" data-he="מקורות מעמיקים">Deep Sources</span></label>
+                                <label class="conv-mode-opt" data-conv-mode="strict"><input type="radio" name="convMode" class="sr-only" value="strict"><span data-en="Strict Sources" data-he="מקורות בלבד">Strict Sources</span></label>
                             </div>
                             <div class="conv-menu__rule" aria-hidden="true"></div>
                             <p class="conv-eyebrow" id="convWebSearchHeading" data-en="Web search" data-he="חיפוש ברשת">Web search</p>
@@ -2145,7 +2144,7 @@
                                     <span data-en="Delete conversation" data-he="מחק שיחה">Delete conversation</span>
                                 </button>
                             </div>
-                        </div>
+                        </fieldset>
                     </div>
                     <!-- Shows the theme it switches to: the moon while the page is light,
                          the sun while it is dark (conversation.css .conv-theme-btn). -->
@@ -2228,15 +2227,15 @@
                 </button>
             </div>
 
-            <div id="convNotice" class="conv-notice hidden" role="status" aria-live="polite">
+            <output id="convNotice" class="conv-notice hidden" aria-live="polite">
                 <span id="convNoticeText"></span>
                 <button type="button" id="convNoticeAction" class="conv-link-btn hidden">Open</button>
-            </div>
+            </output>
 
             <div class="conv-composer-shell">
                 <!-- A passing confirmation ("Public link copied"): floats over the page
                      above the composer, so nothing on screen moves when it comes or goes. -->
-                <div id="convToast" class="conv-toast hidden" role="status" aria-live="polite" data-tone="success">
+                <output id="convToast" class="conv-toast hidden" aria-live="polite" data-tone="success">
                     <span class="conv-toast__icon conv-toast__icon--success" aria-hidden="true">{{ phosphor('check-circle', size=18, class='h-[18px] w-[18px]') }}</span>
                     <span class="conv-toast__icon conv-toast__icon--warn" aria-hidden="true">{{ phosphor('warning', size=18, class='h-[18px] w-[18px]') }}</span>
                     <span id="convToastText" class="conv-toast__text"></span>
@@ -2245,13 +2244,13 @@
                         aria-label="Dismiss" data-aria-en="Dismiss" data-aria-he="סגור">
                         <span class="contents" aria-hidden="true">{{ phosphor('x', size=12, class='h-3 w-3') }}</span>
                     </button>
-                </div>
+                </output>
                 <!-- A signed-out visitor's allowance is running low (or spent): says so above
                      the box, with the way out (conversation-ui.js render, guestBannerText). -->
-                <p id="convGuestBanner" class="conv-signin-follow hidden" role="status">
+                <output id="convGuestBanner" class="conv-signin-follow hidden">
                     <span id="convGuestBannerText" class="conv-signin-follow__text"></span>
                     <button type="button" class="conv-signin-follow__btn" data-conv-action="sign-in" data-en="Sign in" data-he="התחברות">Sign in</button>
-                </p>
+                </output>
                 <form id="convComposer" class="conv-composer" novalidate>
                     <div class="conv-halo" aria-hidden="true"></div>
                     <div class="conv-composer__fill">
@@ -2319,7 +2318,7 @@
                 </p>
                 <input type="text" class="answer-link-fallback hidden" readonly
                     aria-label="Link to this answer" data-aria-en="Link to this answer" data-aria-he="קישור לתשובה זו">
-                <span class="answer-link-status" role="status" aria-live="polite"></span>
+                <output class="answer-link-status" aria-live="polite"></output>
             </div>
         </div>
         <!-- Desktop mini widget only (static/js/conversation-mini.js): resize from
@@ -2337,7 +2336,7 @@
         </button>
         <span id="convResizeHint" class="sr-only"
             data-en="Arrow keys resize the chat. Home restores the default size." data-he="מקשי החצים משנים את הגודל. מקש Home מחזיר לגודל המקורי.">Arrow keys resize the chat. Home restores the default size.</span>
-    </section>
+    </dialog>
 
     <!-- Phone "minimized" state: a now-playing style bar above the tab bar. -->
     <div id="convPip" class="conv-pip hidden">
@@ -2358,7 +2357,7 @@
 
     <!-- Recent-conversations popover, shared by every history button (topbar,
          mobile search tray, and the panel's own header). -->
-    <div id="convHistoryPop" class="conv-pop hidden" role="dialog" aria-labelledby="convHistoryPopHeading">
+    <dialog open id="convHistoryPop" class="dialog-box-reset conv-pop hidden" aria-labelledby="convHistoryPopHeading">
         <button type="button" class="conv-pop__new" data-conv-action="new">
             {{ phosphor('plus', size=14, class='h-3.5 w-3.5') }}
             <span data-en="New conversation" data-he="שיחה חדשה">New conversation</span>
@@ -2369,11 +2368,11 @@
             <span data-en="Sign in to save and revisit your conversations." data-he="התחבר כדי לשמור ולחזור לשיחות שלך.">Sign in to save and revisit your conversations.</span>
             <button type="button" class="conv-link-btn" data-conv-action="sign-in" data-en="Sign in" data-he="התחברות">Sign in</button>
         </p>
-    </div>
+    </dialog>
 
     <!-- Phone search tray: rises above the tab bar while search is open, with the
          AI conversation button and the history button side by side. -->
-    <div id="mobileSearchTray" class="mobile-search-tray hidden" role="group" aria-label="Ask Sh'elah"
+    <fieldset id="mobileSearchTray" class="mobile-search-tray hidden" aria-label="Ask Sh'elah"
         data-aria-en="Ask Sh'elah" data-aria-he="שאל את ש׳אלה">
         <button type="button" id="mobileTrayAskBtn" class="mobile-search-tray__ask">
             {{ phosphor('chat-text', size=16, class='h-4 w-4') }}
@@ -2385,13 +2384,13 @@
             data-aria-en="Conversation history" data-aria-he="היסטוריית שיחות">
             <span class="contents" aria-hidden="true">{{ phosphor('clock-counter-clockwise', size=18, class='h-[18px] w-[18px]') }}</span>
         </button>
-    </div>
+    </fieldset>
 
     <!-- AI discovery tip: shown to visitors who have never used the AI, anchored
          to the topbar "Ask AI" button (desktop) or the phone top bar's Ask button
          (phones); gone for good after the first AI use or "Not now".
          Positioned and wired by static/js/conversation-ui.js. -->
-    <div id="aiDiscoveryTip" class="ai-tip hidden" role="dialog" aria-modal="false"
+    <dialog open id="aiDiscoveryTip" class="dialog-box-reset ai-tip hidden" aria-modal="false"
         aria-labelledby="aiDiscoveryTipTitle" aria-describedby="aiDiscoveryTipText">
         <span class="ai-tip__arrow" aria-hidden="true"></span>
         <span class="ai-tip__badge" aria-hidden="true">{{ phosphor('chat-text', size=18, class='h-[18px] w-[18px]') }}</span>
@@ -2405,7 +2404,7 @@
                 <button type="button" id="aiDiscoveryTipDismiss" class="ai-tip__dismiss" data-en="Not now" data-he="לא עכשיו">Not now</button>
             </div>
         </div>
-    </div>
+    </dialog>
 
     <!-- Path data for the icons static/js/shell.js draws itself. -->
     <script type="application/json" id="phosphorPaths">{
@@ -2705,9 +2704,9 @@
             .privacy-confirm__row .privacy-btn { flex: 1 1 100%; }
         }
     </style>
-    <div id="privacyDataModal" role="dialog" aria-modal="true" aria-labelledby="privacyDataModalTitle"
+    <dialog open id="privacyDataModal" aria-modal="true" aria-labelledby="privacyDataModalTitle"
         aria-describedby="privacyDataModalDesc"
-        class="hidden fixed inset-0 z-109 backdrop-blur-xs items-center justify-center p-4">
+        class="dialog-box-reset hidden fixed inset-0 z-109 backdrop-blur-xs items-center justify-center p-4">
         <div class="privacy-card">
             <header class="privacy-head">
                 <span class="privacy-head__mark" aria-hidden="true">{{ phosphor('shield-check', size=16) }}</span>
@@ -2775,7 +2774,7 @@
                 </a>
             </footer>
         </div>
-    </div>
+    </dialog>
 
     <!-- Library Category Browser Modal -->
     <div id="libraryCategoryModal"

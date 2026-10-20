@@ -86,6 +86,25 @@ body {
     position: relative;
 }
 
+/* Popovers and panels marked up as an always-open <dialog> (shown and hidden
+   by their own classes, never show()/showModal()): undo the browser's dialog
+   box so they lay out like the plain blocks their own rules expect. :where()
+   keeps this at zero specificity, so any of their rules wins. */
+:where(dialog.dialog-box-reset) {
+    position: static;
+    inset: auto;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+    background: transparent;
+    color: inherit;
+    unicode-bidi: isolate;
+}
+
 h1,
 h2,
 h3,
@@ -3292,7 +3311,7 @@ html.rtl .home-main-layout #popularTextsGrid {
     }
 }
 
-.library-shell :where(button, [role="button"], input, select, textarea, .mobile-tab-btn, .sidebar-show-tab, .suggestion-item) {
+.library-shell :where(button, [role="button"], input, select, textarea, .mobile-tab-btn, .sidebar-show-tab, .suggestion-item, .conv-mode-opt) {
     transition:
         background-color var(--motion-dur-base) var(--motion-ease-out),
         color var(--motion-dur-base) var(--motion-ease-out),

@@ -1326,6 +1326,9 @@ body.theme-dark .answer-link-btn {
     flex-shrink: 0;
 }
 
+/* An <output>: keep the bidi behaviour of the <span> it replaced. */
+.answer-link-status { unicode-bidi: normal; }
+
 /* Announced to screen readers always; shown on screen only when it's an
    error or the manual-copy hint (the button itself says "Copied!"). */
 .answer-link-status:not(.is-visible) {
