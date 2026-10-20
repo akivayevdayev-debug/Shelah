@@ -429,7 +429,6 @@
 
 #popularTextsGrid button { --hover-lift-shadow: 0 4px 12px rgba(0, 0, 0, 0.09); }
 .home-calendar-btn { --hover-lift-shadow: 0 3px 10px rgba(78, 64, 30, 0.18); }
-.sidebar-show-tab { --hover-lift-shadow: 0 6px 18px rgba(15, 23, 42, 0.08); }
 
 #popularTextsGrid button::after,
 .home-calendar-btn::after,
@@ -844,6 +843,7 @@ body.search-loading .search-liftoff-underlay::before {
 
 /* ── Library sidebar tab ─────────────────────────────────── */
 .sidebar-show-tab {
+    --hover-lift-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
     transition: opacity var(--motion-dur-base) var(--motion-ease-out), transform var(--motion-dur-base) var(--motion-ease-decel),
         background var(--motion-dur-fast) var(--motion-ease-out);
 }

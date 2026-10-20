@@ -3842,12 +3842,6 @@ html.theme-dark,
    controls placed on top of them (--surface-2/--ctrl-bg, via --surface-elevated
    elsewhere), so the panel itself reads as a distinct backdrop instead of
    blending into its own contents. */
-:is([data-theme="dark"], body.theme-dark) #selectionInsights {
-    background: var(--surface-elevated);
-    border-color: var(--surface-border);
-    color: var(--accent-cream);
-}
-
 :is([data-theme="dark"], body.theme-dark) #aiTrustSection {
     background: var(--surface-pill);
     border-color: var(--surface-border);
