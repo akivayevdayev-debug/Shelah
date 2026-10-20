@@ -391,6 +391,28 @@ class _Result:
         self.count = count
 
 
+class _SplitFeedbackQuery(_FakeQuery):
+    """A _FakeQuery whose execute() answers the digest's two reads apart: the
+    readers' rows (``neq("verdict", "ai_note")``) and the AI's notes
+    (``eq("verdict", "ai_note")``)."""
+
+    def __init__(self, reader_rows, ai_rows):
+        super().__init__(result=None)
+        self._reader_rows, self._ai_rows = reader_rows, ai_rows
+        self._current = None
+
+    def __getattr__(self, name):
+        def _record(*args, **kwargs):
+            self.calls.append((name, args, kwargs))
+            if name in ("neq", "eq"):
+                self._current = name
+            if name == "execute":
+                return _Result(data=self._reader_rows if self._current == "neq" else self._ai_rows)
+            return self
+
+        return _record
+
+
 class TestFeedbackDigest:
     """GET /api/devtools/feedback-digest — recent
     answer-feedback rows, newest first, auth-gated because comments are
@@ -423,28 +445,51 @@ class TestFeedbackDigest:
     def test_counts_verdicts_and_returns_rows_newest_first(
         self, test_client, authed, monkeypatch, devtools_module,
     ):
-        rows = [
-            {"verdict": "helpful", "comment": "a"},
-            {"verdict": "not_helpful", "comment": "b"},
-            {"verdict": "helpful", "comment": "c"},
-            {"verdict": "something_else", "comment": "d"},
+        reader_rows = [
+            {"verdict": "helpful", "comment": "a", "created_at": "2026-10-18T10:00:00Z"},
+            {"verdict": "not_helpful", "comment": "b", "created_at": "2026-10-18T08:00:00Z"},
+            {"verdict": "helpful", "comment": "c", "created_at": "2026-10-18T06:00:00Z"},
+            {"verdict": "comment", "comment": "d", "created_at": "2026-10-18T04:00:00Z"},
+            {"verdict": "something_else", "comment": "e", "created_at": "2026-10-18T02:00:00Z"},
         ]
-        client = _FakeQuery(result=_Result(data=rows))
+        ai_rows = [
+            {"verdict": "ai_note", "source": "ai", "comment": "n1", "created_at": "2026-10-18T09:00:00Z"},
+            {"verdict": "ai_note", "source": "ai", "comment": "n2", "created_at": "2026-10-18T01:00:00Z"},
+        ]
+        client = _SplitFeedbackQuery(reader_rows, ai_rows)
         self._use_client(monkeypatch, devtools_module, client)
 
         response = test_client.get(self.URL, headers=AUTH_HEADERS)
 
+        body = response.get_json()
         assert response.status_code == 200
-        assert response.get_json() == {"count": 4, "helpful": 2, "not_helpful": 1, "rows": rows}
+        # The AI's notes are listed but never counted as a rating.
+        assert (body["count"], body["helpful"], body["not_helpful"], body["comments"], body["ai_notes"]) == (
+            7, 2, 1, 1, 2)
+        assert [r["comment"] for r in body["rows"]] == ["a", "n1", "b", "c", "d", "e", "n2"]
         assert ("table", (devtools_module.SUPABASE_ANSWER_FEEDBACK_TABLE,), {}) in client.calls
         assert ("order", ("created_at",), {"desc": True}) in client.calls
+        assert ("neq", ("verdict", "ai_note"), {}) in client.calls
+        assert ("eq", ("verdict", "ai_note"), {}) in client.calls
+
+    def test_ai_notes_cannot_push_reader_rows_past_the_limit(
+        self, test_client, authed, monkeypatch, devtools_module,
+    ):
+        client = _SplitFeedbackQuery([], [])
+        self._use_client(monkeypatch, devtools_module, client)
+
+        assert test_client.get(self.URL + "?limit=7", headers=AUTH_HEADERS).status_code == 200
+
+        # Each of the two reads is capped on its own.
+        assert [c for c in client.calls if c[0] == "limit"] == [("limit", (7,), {}), ("limit", (7,), {})]
 
     def test_null_data_is_an_empty_digest(self, test_client, authed, monkeypatch, devtools_module):
         self._use_client(monkeypatch, devtools_module, _FakeQuery(result=_Result(data=None)))
 
         response = test_client.get(self.URL, headers=AUTH_HEADERS)
 
-        assert response.get_json() == {"count": 0, "helpful": 0, "not_helpful": 0, "rows": []}
+        assert response.get_json() == {
+            "count": 0, "helpful": 0, "not_helpful": 0, "comments": 0, "ai_notes": 0, "rows": []}
 
     @pytest.mark.parametrize(
         "query_string, expected_limit",

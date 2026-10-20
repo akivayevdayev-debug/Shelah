@@ -49,12 +49,13 @@ import { createConversationStore, MESSAGE_STATUS } from "./conversation-store.js
 import { isSignedIn } from "./conversation-entry.js";
 import { closeOverlay, pushRoute, readRoute, routeUrl } from "./router.js";
 import { icon as phosphorIcon } from "./icons.js";
-import { activeLabel, createProgress, doneLabel, progressView } from "./ask-progress.js";
+import { activeLabel, createProgress, doneLabel, progressView, viewKey } from "./ask-progress.js";
 import { sourceBadgeHtml, externalLinksHtml, previewHtml, hebrewRefName, readerRef } from "./source-cards.js";
 import { citeIdPrefix, injectMarkers, placeMarkers, stripSourcesBlock } from "./citation-markers.js";
 import { createCitationPopover } from "./citation-popover.js";
 import { createConversationShare } from "./conversation-share.js";
 import { createVoiceInput } from "./conversation-voice.js";
+import { createMiniWidget } from "./conversation-mini.js";
 import {
     normalizeSize,
     expandedSize,
@@ -71,6 +72,7 @@ import {
     conversationGroup,
     conversationGroupLabel,
     turnSignature,
+    mostlyHebrew,
 } from "./conversation-ui-helpers.js";
 
 const MOBILE_QUERY = "(max-width: 1023px)";
@@ -136,6 +138,7 @@ const ui = {
 let store = null;
 let shareControl = null;
 let voice = null;
+let mini = null;
 let els = null;
 // The card a numbered source chip opens (citation-popover.js); made in bindEvents.
 let citePop = null;
@@ -189,6 +192,11 @@ function communityOptions() {
     const list = document.getElementById("communityOptions");
     if (!list) return [];
     return [...list.content.querySelectorAll("option")].map((o) => ({ value: o.value, en: o.dataset.en || o.value, he: o.dataset.he || o.value }));
+}
+
+// The "Web search" switch in the chat menu; on unless the reader turned it off.
+function webSearchOn() {
+    return window.appState?.prefs?.webSearch !== false;
 }
 
 function currentMode() {
@@ -261,6 +269,10 @@ function collectElements() {
         title: $("convTitle"),
         subtitle: $("convSubtitle"),
         historyBtn: $("convHistoryBtn"),
+        sidebar: $("convSidebar"),
+        main: panel.querySelector(".conv-main"),
+        resizeCorner: $("convResizeBtn"),
+        resizeEdges: [...panel.querySelectorAll(".conv-resize[data-resize-axis]")],
         chipLabel: $("convMinhagChipLabel"),
         menuBtn: $("convMenuBtn"),
         menu: $("convMenu"),
@@ -268,6 +280,8 @@ function collectElements() {
         menuDraft: $("convMenuMinhagDraft"),
         minhagSelect: $("convMinhagSelect"),
         pinLabel: $("convPinLabel"),
+        webSearchSwitch: $("convWebSearchSwitch"),
+        webSearchState: $("convWebSearchState"),
         shareBtn: $("convShareBtn"),
         sharePop: $("convSharePop"),
         themeBtn: $("convThemeBtn"),
@@ -294,6 +308,7 @@ function collectElements() {
         pipOpen: $("convPipOpen"),
         pipTitle: $("convPipTitle"),
         pipStatus: $("convPipStatus"),
+        barStatus: $("searchLiveStatus"),
         pop: $("convHistoryPop"),
         popSignedOut: document.querySelector("#convHistoryPop .conv-pop__signed-out"),
         tray: $("mobileSearchTray"),
@@ -382,7 +397,10 @@ function panelTitle(state, answerView, hasMessages) {
 
 function renderHeader(state, { l, name, title, options }) {
     const conversation = state.conversation;
-    if (!els.title.querySelector("input")) els.title.textContent = title;
+    if (!els.title.querySelector("input")) {
+        els.title.textContent = title;
+        els.title.dataset.script = mostlyHebrew(title) ? "he" : "";
+    }
     els.subtitle.textContent = ui.layout === "mobile" ? tr(`${name} practice`, `מנהג ${name}`) : "";
     els.chipLabel.textContent = name;
     els.menuBtn.dataset.locked = state.minhagLocked ? "true" : "false";
@@ -408,6 +426,9 @@ function renderMenu(state, { l, name, options }) {
     els.menu.querySelectorAll("[data-conv-mode]").forEach((btn) => {
         btn.setAttribute("aria-checked", btn.dataset.convMode === currentMode() ? "true" : "false");
     });
+    const webOn = webSearchOn();
+    els.webSearchSwitch?.setAttribute("aria-checked", webOn ? "true" : "false");
+    if (els.webSearchState) els.webSearchState.textContent = webOn ? tr("On", "פועל") : tr("Off", "כבוי");
     els.pinLabel.textContent = conversation?.pinnedAt ? tr("Unpin", "בטל הצמדה") : tr("Pin", "הצמד");
     syncShare(conversation);
 }
@@ -457,8 +478,13 @@ function render() {
     const answerView = Boolean(state.answerView) && !conversation;
     els.panel.dataset.hasThread = conversation ? "true" : "false";
     els.panel.dataset.answerView = answerView || ui.publicState ? "true" : "false";
-    els.panel.dataset.sending = state.sending ? "true" : "false";
-    els.pip.dataset.sending = state.sending ? "true" : "false";
+    // A question asked from the search bar loads there (halo and status line)
+    // and nowhere else; the panel's composer halo is for questions asked in it.
+    const barLoading = state.sending && state.surface === "bar";
+    const panelLoading = state.sending && !barLoading;
+    els.panel.dataset.sending = panelLoading ? "true" : "false";
+    els.pip.dataset.sending = panelLoading ? "true" : "false";
+    renderBarStatus(barLoading, state, l);
 
     const title = panelTitle(state, answerView, hasMessages);
     renderHeader(state, { l, name, title, options });
@@ -471,7 +497,7 @@ function render() {
 
     // Minimised bar.
     els.pipTitle.textContent = title;
-    els.pipStatus.textContent = progress ? `${activeLabel(progress.active, l)}…` : "";
+    els.pipStatus.textContent = progress ? statusLine(progress, l) : "";
     els.pipOpen.setAttribute("aria-label", tr(`Open conversation: ${title}`, `פתח שיחה: ${title}`));
 
     syncAskExpanded();
@@ -680,6 +706,11 @@ function answerBodyHtml(message, idPrefix) {
     });
 }
 
+function answerBox(message, body) {
+    const script = mostlyHebrew(message.content) ? ' data-script="he"' : "";
+    return `<div class="conv-answer" dir="auto"${script}>${body}</div>`;
+}
+
 function answerHtml(content) {
     if (typeof window.renderAnswerMarkdown === "function") {
         try {
@@ -709,9 +740,16 @@ function statusHtml() {
         + '</div>';
 }
 
+// The line naming what is happening now. References stay in the form the
+// server sent them; communities are named the way the rest of the page does.
+function statusLine(view, l) {
+    const names = { community: (community) => communityDisplayName(community, l) };
+    return `${activeLabel(view.active, l, view.detail, names)}…`;
+}
+
 function applyStatus(host, view, l) {
     clearTimeout(host._statusTimer);
-    const wanted = view.active || "";
+    const wanted = viewKey(view);
     const shown = host.dataset.stage;
     const heldFor = performance.now() - (host._stageShownAt || 0);
     if (shown !== undefined && shown !== wanted && heldFor < STATUS_MIN_DWELL_MS) {
@@ -719,7 +757,11 @@ function applyStatus(host, view, l) {
             if (host.isConnected) applyStatus(host, progressView(store?.getState().progress || createProgress()), lang());
         }, STATUS_MIN_DWELL_MS - heldFor);
     } else if (shown !== wanted || host.dataset.lang !== l) {
-        host.querySelector("[data-status-now]").textContent = `${activeLabel(wanted, l)}…`;
+        const nowEl = host.querySelector("[data-status-now]");
+        nowEl.textContent = statusLine(view, l);
+        // The line changing under the reader's eyes settles in; the first line
+        // (nothing shown yet) is part of the turn's own entrance.
+        if (shown !== undefined) motion()?.settleIn?.(nowEl);
         host.dataset.stage = wanted;
         host.dataset.lang = l;
         host._stageShownAt = performance.now();
@@ -739,6 +781,30 @@ function renderStatus(state, l) {
     const host = els.messages.querySelector("[data-conv-status]");
     if (host) applyStatus(host, view, l);
     return view;
+}
+
+// The same two rows under the search bar for a question asked from it (the
+// panel stays shut until the answer lands). The rows are built when a question
+// starts and left in place while the line fades out, so it never empties first.
+function renderBarStatus(active, state, l) {
+    const host = els.barStatus;
+    document.body.classList.toggle("search-loading", active);
+    if (!host) return;
+    const shown = host.dataset.active === "true";
+    if (!active) {
+        if (shown) host.dataset.active = "false";
+        return;
+    }
+    if (!shown) {
+        clearTimeout(host._statusTimer);
+        host.innerHTML = '<span class="conv-status__now" data-status-now dir="auto"></span>'
+            + '<span class="conv-status__done" data-status-done dir="auto" data-empty="true"></span>';
+        delete host.dataset.stage;
+        delete host.dataset.lang;
+        host._stageShownAt = 0;
+        host.dataset.active = "true";
+    }
+    applyStatus(host, progressView(state.progress || createProgress()), l);
 }
 
 function turnInnerHtml(message, index, messages, l) {
@@ -778,14 +844,35 @@ function turnInnerHtml(message, index, messages, l) {
             // carries its safety banner, community customs, feedback and
             // Copy link; decorateAnswerTurn fills the hosts.
             const data = message.answer;
-            if (!data) return `<div class="conv-answer" dir="auto">${body}</div>${cites}`;
+            if (!data) return `${answerBox(message, body)}${cites}${threadReplyActionsHtml(message)}`;
+            // Paused answers: the banner says it, in the reader's language;
+            // the server's English sentence under it would only repeat it.
+            const paused = data.meta?.breaker_tripped && typeof window.renderDisclaimerBanner === "function";
+            const answer = paused ? "" : answerBox(message, body);
             return '<div class="conv-turn__banner" data-answer-banner></div>'
-                + `<div class="conv-answer" dir="auto">${body}</div>`
+                + answer
                 + customsHtml(data, l)
                 + cites
                 + '<div class="conv-turn__actions" data-answer-actions><div class="conv-turn__feedback"></div></div>';
         }
     }
+}
+
+// A reply in the viewer's own thread (a follow-up, or a thread reopened from
+// history) arrives as a stored message, not an /ask payload, so it has no
+// banner, customs or Copy link -- but it can still be rated. A shared thread
+// is read-only (no conversation row), and an empty reply has nothing to rate.
+function threadReplyActionsHtml(message) {
+    if (!store?.getState().conversation || !message.content.trim()) return "";
+    return '<div class="conv-turn__actions" data-answer-actions><div class="conv-turn__feedback"></div></div>';
+}
+
+// A community the way the rest of the page names it.
+function communityDisplayName(community, l) {
+    try {
+        if (typeof window.getCommunityDisplayName === "function") return window.getCommunityDisplayName(community);
+    } catch { /* fall through */ }
+    return communityName(community, l, communityOptions());
 }
 
 // The answer's per-community customs, as a compact list under it.
@@ -794,12 +881,7 @@ function customsHtml(data, l) {
         .map((c) => ({ community: c?.community, text: String(c?.ruling || c?.notes || "").trim() }))
         .filter((c) => c.text);
     if (!customs.length) return "";
-    const name = (community) => {
-        try {
-            if (typeof window.getCommunityDisplayName === "function") return window.getCommunityDisplayName(community);
-        } catch { /* fall through */ }
-        return communityName(community, l, communityOptions());
-    };
+    const name = (community) => communityDisplayName(community, l);
     return `<section class="conv-customs" aria-label="${escapeText(tr("Community customs", "מנהגי קהילות"))}">`
         + `<h3 class="conv-customs__title">${escapeText(tr("Community customs", "מנהגי קהילות"))}</h3><ul>`
         + customs.map((c) => `<li class="conv-custom"><span class="conv-custom__name">${escapeText(name(c.community))}</span>`
@@ -829,6 +911,14 @@ function decorateAnswerTurn(li, message, question) {
     }
 }
 
+// The rating row of a thread reply. There is no payload to read the mode or the
+// safety class from (and no ask_history row to link), so the rating carries the
+// question and the language the reader is using.
+function decorateThreadReply(li, question, l) {
+    const host = li.querySelector("[data-answer-actions] .conv-turn__feedback");
+    if (host) window.renderFeedbackWidget?.(host, { meta: { language: l } }, question || "");
+}
+
 // Back to its hidden home before the turn holding it is re-rendered or removed.
 function parkAnswerLink() {
     if (els.answerLink && els.answerLinkPark && els.answerLink.parentElement !== els.answerLinkPark) {
@@ -854,7 +944,7 @@ function createTurnEntry(key) {
     li.dataset.turnKey = key;
     const entry = { li, sig: null };
     ui.turns.set(key, entry);
-    if (ui.animateInserts && !reducedMotion()) {
+    if (ui.animateInserts) {
         li.classList.add("conv-turn--enter");
         li.addEventListener("animationend", () => li.classList.remove("conv-turn--enter"), { once: true });
     }
@@ -866,24 +956,57 @@ function createTurnEntry(key) {
 // the staggered children each fire one.
 function revealArrivedAnswer(entry, message) {
     if (entry.status !== MESSAGE_STATUS.PENDING || message.status !== MESSAGE_STATUS.COMPLETE
-        || message.role !== "assistant" || reducedMotion()) return;
+        || message.role !== "assistant") return;
     entry.li.classList.add("conv-turn--reveal");
     clearTimeout(entry.revealTimer);
     entry.revealTimer = setTimeout(() => entry.li.classList.remove("conv-turn--reveal"), 900);
 }
 
+// The pending turn an answer replaces (status line and skeleton) fades out as a
+// copy laid over the top of the turn while the answer fades in, so the thread
+// never goes blank between the two. Null for any other redraw.
+function skeletonGhost(entry, message, li) {
+    if (entry.status !== MESSAGE_STATUS.PENDING || message.status !== MESSAGE_STATUS.COMPLETE
+        || message.role !== "assistant" || !li.querySelector(".conv-turn__skel")) return null;
+    const ghost = document.createElement("div");
+    ghost.className = "conv-ghost";
+    ghost.setAttribute("aria-hidden", "true");
+    ghost.innerHTML = li.innerHTML;
+    // A copy must not answer the status updates meant for the live line.
+    ghost.querySelectorAll("[data-conv-status]").forEach((node) => {
+        node.removeAttribute("data-conv-status");
+        node.removeAttribute("role");
+    });
+    return ghost;
+}
+
+function mountSkeletonGhost(li, ghost) {
+    li.classList.add("conv-turn--ghosting");
+    li.append(ghost);
+    const done = () => {
+        ghost.remove();
+        li.classList.remove("conv-turn--ghosting");
+    };
+    ghost.addEventListener("animationend", done, { once: true });
+    setTimeout(done, 400); // a backgrounded tab never fires animationend
+}
+
 function redrawTurn(entry, message, index, messages, l) {
     const li = entry.li;
+    const ghost = skeletonGhost(entry, message, li);
     li.className = `conv-turn conv-turn--${message.role}${message.status === MESSAGE_STATUS.FAILED ? " conv-turn--failed" : ""}${li.classList.contains("conv-turn--enter") ? " conv-turn--enter" : ""}`;
     li.setAttribute("aria-busy", message.status === MESSAGE_STATUS.PENDING ? "true" : "false");
     if (els.answerLink && li.contains(els.answerLink)) parkAnswerLink();
     li.innerHTML = turnInnerHtml(message, index, messages, l);
-    if (message.answer && message.status === MESSAGE_STATUS.COMPLETE) {
-        decorateAnswerTurn(li, message, messages[index - 1]?.content);
+    if (message.status === MESSAGE_STATUS.COMPLETE) {
+        const question = messages[index - 1]?.content;
+        if (message.answer) decorateAnswerTurn(li, message, question);
+        else decorateThreadReply(li, question, l);
     }
     if (message.citations?.length) hydrateCitations(li);
     if (citePop?.anchor() && !citePop.anchor().isConnected) citePop.close();
     revealArrivedAnswer(entry, message);
+    if (ghost) mountSkeletonGhost(li, ghost);
     entry.status = message.status;
 }
 
@@ -968,6 +1091,9 @@ function latestTop() {
     const bottom = scroller.scrollHeight - scroller.clientHeight;
     const questions = els.messages.querySelectorAll(".conv-turn--user");
     const last = questions[questions.length - 1];
+    // Nothing asked yet: the empty state (heading, hint, suggestions) is read
+    // from its top, not landed on at its last line on a short screen.
+    if (!els.messages.children.length) return 0;
     if (!last) return bottom;
     const offset = last.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 12;
     return Math.max(0, Math.min(bottom, offset));
@@ -985,14 +1111,18 @@ function updateJumpButton() {
 
 function renderLists(state, l) {
     const list = state.list;
-    const listRef = `${l}:${list.status}:${state.conversation?.id || ""}:${ui.signedIn}`;
+    const listRef = `${l}:${list.status}:${state.conversation?.id || ""}:${ui.signedIn}:${ui.authResolved}`;
     if (ui.lastListRef === listRef && ui.lastListItems === list.items) return;
     ui.lastListRef = listRef;
     ui.lastListItems = list.items;
 
     let html;
     if (!ui.signedIn) {
-        html = "";
+        // Signed out there is no list to show; say why, so the heading above is
+        // not followed by blank space.
+        html = clerkConfigured() && ui.authResolved
+            ? `<li class="conv-list__empty">${escapeText(tr("Sign in to keep a list of your conversations.", "התחברו כדי לשמור רשימת שיחות."))}</li>`
+            : "";
     } else if (list.status !== "ready" && list.status !== "error" && list.items.length === 0) {
         // Not loaded yet (idle or loading): skeletons, never a premature
         // "No conversations yet".
@@ -1109,6 +1239,7 @@ function applyAttributes() {
         els.expandBtn.setAttribute("aria-label", label);
         els.expandBtn.title = label;
     }
+    mini?.sync();
 }
 
 function show(el, preset, origin = null) {
@@ -1243,6 +1374,9 @@ function openPanel({ size = null, origin = null, fromRoute = false, routeId = nu
     ui.layout = effectiveLayout();
     ui.size = nextSize;
     markAiUsed();
+    // Opening the panel while the search bar waits for an answer hands the
+    // wait to the panel: its status line and halo take over from the bar's.
+    store?.setSurface("panel");
     if (!wasOpen) {
         ui.open = true;
         ui.returnFocus = origin || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
@@ -1277,6 +1411,7 @@ function closePanel({ fromRoute = false } = {}) {
     closeMenu();
     closeSharePop();
     closeHistoryPop();
+    mini?.closeHistory({ immediate: true });
     voice?.abort();
     citePop?.close();
     hide(els.panel, panelPreset());
@@ -1309,6 +1444,7 @@ function setSize(size, { fromRoute = false } = {}) {
     const previousSize = ui.size;
     ui.size = next;
     closeMenu();
+    closeHistoryPop(); // its anchor moved: the sidebar, popover or column takes over
     citePop?.close();
     applyVisibility({ previousSize });
     if (!fromRoute) pushRoute({ cv: next }, { replace: true });
@@ -1335,19 +1471,47 @@ function presentAnswer() {
     openPanel({ size: ui.open && ui.size === "full" ? "full" : "overlay", fromRoute: true });
 }
 
+// Where a question's loading cues belong: "bar" for a fresh question typed in
+// the search bar while the panel is shut (the panel stays shut until the answer
+// lands, so the bar carries every cue), "panel" for everything else -- a
+// question asked in the panel's own composer, a follow-up, a re-ask from the
+// shelf, or a bar question while the panel is already open on screen.
+function askSurface({ origin = "bar", followUp = false } = {}) {
+    return origin === "bar" && !followUp && !ui.open && Boolean(els?.barStatus) ? "bar" : "panel";
+}
+
 // handleAiSearch: ask through /ask and show it here. Resolves the payload,
 // or null when another question or answer replaced it meanwhile; rejects
 // (after showing the failure on the turn) for the caller's side effects.
-function askFromSearch(question, request = {}, { followUp = false } = {}) {
+// `surface` is askSurface()'s answer: "bar" holds the panel back until the
+// answer (or its failure) is ready to show.
+function askFromSearch(question, request = {}, { followUp = false, surface = "panel" } = {}) {
     ui.publicState = null;
     // Follow-ups (and the URL) use the settings this answer was asked with:
     // the search bar asks with the visitor's own community.
     if (request.mode) ui.mode = request.mode;
     ui.routeMinhag = null;
-    const pending = followUp
+    const fromBar = surface === "bar" && !followUp;
+    const asked = followUp
         ? store.askGuestFollowUp(question, request)
-        : store.askSearch(question, request);
-    presentAnswer();
+        : store.askSearch(question, request, { surface: fromBar ? "bar" : "panel" });
+    let pending = asked;
+    if (fromBar) {
+        // Unless the reader opened the panel meanwhile (which took the cues
+        // over), it opens now on the answer or on the failure with its Retry.
+        pending = asked.then(
+            (data) => {
+                if (data && !ui.open) presentAnswer();
+                return data;
+            },
+            (error) => {
+                if (!ui.open) presentAnswer();
+                throw error;
+            },
+        );
+    } else {
+        presentAnswer();
+    }
     pending.catch((error) => {
         if (error?.code === "guest_cap_reached") onGuestCapRefused(error, question, followUp);
     });
@@ -1438,7 +1602,7 @@ function showSavedUnavailable(gone, { signIn = false } = {}) {
 // Signed out, a question is a one-shot /ask (Decision A1); `followUp` names the
 // answers on screen as the conversation it continues (guest limits apply).
 function askOneShot(question, { followUp = false } = {}) {
-    if (typeof window.handleAiSearch === "function") void window.handleAiSearch(question, { followUp });
+    if (typeof window.handleAiSearch === "function") void window.handleAiSearch(question, { followUp, origin: "panel" });
 }
 
 // Open (or resume) the conversation UI. `fresh` starts a new thread first;
@@ -1531,8 +1695,31 @@ function setTriggerExpanded(trigger, expanded) {
     });
 }
 
+// The mini widget's history: a column that grows out of its free side
+// (conversation-mini.js). Pressing the button again folds it away; picking a
+// conversation leaves it open, so a few can be looked through in a row.
+function toggleHistoryColumn() {
+    if (mini.isHistoryOpen()) {
+        mini.closeHistory();
+        return;
+    }
+    closeMenu();
+    closeSharePop();
+    maybeLoadList();
+    render();
+    mini.openHistory();
+    requestAnimationFrame(() => {
+        const first = els.sidebar.querySelector("[aria-current='true'], .conv-list__item, .conv-new-btn");
+        first?.focus({ preventScroll: true });
+    });
+}
+
 function openHistoryPop(trigger) {
     if (!trigger) return;
+    if (mini && isDesktopMini() && trigger === els.historyBtn) {
+        toggleHistoryColumn();
+        return;
+    }
     if (!els.pop.classList.contains("hidden") && ui.popTrigger === trigger) {
         closeHistoryPop();
         return;
@@ -1882,15 +2069,17 @@ function maybeShowTip() {
     ui.tipTimer = window.setTimeout(() => {
         // Only on a calm screen: never over an open panel, modal, search or reader.
         const menuOpen = openTipBlockingMenu();
-        // A menu open now is not "never": watchTipBlockingMenus brings the tip back
-        // once the last menu closes (it only does so for a tip it knows is waiting).
-        if (menuOpen) ui.tipDeferred = true;
         const busy = ui.open
             || menuOpen
             || document.body.classList.contains("mobile-search-open")
             || document.body.classList.contains("conv-modal-open");
         const anchor = tipAnchor();
-        if (busy || !anchor || anchor.offsetParent === null || readFlag(AI_USED_KEY) || readFlag(TIP_DISMISSED_KEY)) return;
+        if (busy || !anchor || anchor.offsetParent === null || readFlag(AI_USED_KEY) || readFlag(TIP_DISMISSED_KEY)) {
+            // A menu in the way only postpones the tip: the menu watcher
+            // brings it back once every menu is closed.
+            ui.tipDeferred = menuOpen;
+            return;
+        }
         ui.tipAnchor = anchor;
         anchor.classList.add("ai-attention");
         els.tip.classList.remove("hidden");
@@ -2139,12 +2328,23 @@ function isMobileMini() {
     return ui.layout === "mobile" && ui.size === "mini";
 }
 
+// The floating corner widget on a desktop-sized window: the one place the
+// history opens as a column beside the chat rather than as a popover.
+function isDesktopMini() {
+    return ui.layout === "desktop" && ui.size === "mini";
+}
+
 // What Escape closes, innermost first, before it closes the panel itself.
 const ESCAPE_LAYERS = [
     [() => citePop?.isOpen(), () => citePop.close({ restoreFocus: true })],
     [() => !els.pop.classList.contains("hidden"), () => closeHistoryPop({ restoreFocus: true })],
     [() => ui.menuOpen, () => closeMenu({ restoreFocus: true })],
     [() => ui.sharePopOpen, () => closeSharePop({ restoreFocus: true })],
+    // The mini widget's history column, while focus is in the widget.
+    [() => mini?.isHistoryOpen() && els.panel.contains(document.activeElement), () => {
+        mini.closeHistory();
+        els.historyBtn.focus({ preventScroll: true });
+    }],
 ];
 
 function onEscape(event) {
@@ -2252,6 +2452,14 @@ function clickMode(target) {
     return true;
 }
 
+function clickWebSearch(target) {
+    const toggle = target.closest("[data-conv-websearch]");
+    if (!toggle || !els.menu.contains(toggle)) return false;
+    window.ShelahPrefs?.set("webSearch", !webSearchOn());
+    render();
+    return true;
+}
+
 function clickTurnAction(target) {
     const turnBtn = target.closest("[data-turn-action]");
     if (!turnBtn || !els.messages.contains(turnBtn)) return false;
@@ -2272,7 +2480,7 @@ function clickCitation(target, event) {
 
 const CLICK_HANDLERS = [
     clickSuggestion, clickHistoryTrigger, clickOpenConversation, clickSize,
-    clickAction, clickMode, clickTurnAction, clickCitation,
+    clickAction, clickMode, clickWebSearch, clickTurnAction, clickCitation,
 ];
 
 function onDocumentClick(event) {
@@ -2577,6 +2785,19 @@ export function installConversationUI({ storeFactory = createConversationStore }
     els = collectElements();
     if (!els) return null;
     ui.installed = true;
+    mini = els.sidebar && els.main
+        ? createMiniWidget({
+            panel: els.panel,
+            sidebar: els.sidebar,
+            main: els.main,
+            historyBtn: els.historyBtn,
+            corner: els.resizeCorner,
+            edges: els.resizeEdges,
+            isActive: isDesktopMini,
+            reducedMotion,
+        })
+        : null;
+    mini?.restoreSize();
 
     try {
         iconPaths = JSON.parse(document.getElementById("convIconPaths")?.textContent || "{}");
@@ -2624,6 +2845,12 @@ export function installConversationUI({ storeFactory = createConversationStore }
         getStore: () => store,
         markAiUsed,
         askFromSearch,
+        askSurface,
+        // The search bar can no longer show the wait (the phone's search was
+        // closed mid-question): open the panel on the pending answer.
+        showPendingAnswer() {
+            if (!ui.open && store.getState().sending) presentAnswer();
+        },
         showAnswer: showStoredAnswer,
         showPublicConversation,
         showPublicLoading,

@@ -367,6 +367,25 @@ h6 {
    and always win the cascade tie, so a rule here would be dead weight
    regardless of its value. */
 
+/* Touch: the brand link is 34px tall. An invisible layer stretches its tap
+   area to --hit-min (44px) without changing the topbar's size. Lives here
+   because the legal pages share this topbar and do not load ai.css. */
+@media (pointer: coarse) {
+    .topbar-brand {
+        position: relative;
+    }
+
+    .topbar-brand::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: max(100%, var(--hit-min));
+        transform: translateY(-50%);
+    }
+}
+
 /* Scales in step with .topbar-brand-title's own text-sm -> sm:text-base
    jump (index.html) so the icon:text proportion stays constant across
    that breakpoint. Below sm, the topbar's search bar is hidden (see the
@@ -628,7 +647,7 @@ html.rtl #hebrewDateDisplay {
     visibility: visible;
     border-radius: 0.6rem;
     padding: 0.42rem 0.62rem;
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     line-height: 1.6;
 }
 
@@ -858,7 +877,11 @@ html[dir="rtl"] #searchInput {
     background: #efe3d0;
     border-color: #a59072;
     color: #16324f !important;
-    transform: translateY(-1px);
+}
+
+/* The lift is a mouse gesture: a tap on a touch screen would leave it stuck. */
+@media (hover: hover) and (pointer: fine) {
+    .menu-parasha-quick-link:hover { transform: translateY(-1px); }
 }
 
 .segment-row {
@@ -869,7 +892,7 @@ html[dir="rtl"] #searchInput {
     display: inline-block;
     min-width: 1.15rem;
     text-align: center;
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     letter-spacing: 0;
     text-transform: none;
     /* Was a hardcoded slate-400 (#94a3b8): only 2.4:1 against the light
@@ -1094,7 +1117,7 @@ html[dir="rtl"] #searchInput {
 }
 
 .chapter-grid-parasha-meta {
-    font-size: 0.64rem;
+    font-size: var(--text-xs);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: #7f735f;
@@ -1102,7 +1125,7 @@ html[dir="rtl"] #searchInput {
 
 .chapter-grid-group-label {
     grid-column: 1 / -1;
-    font-size: 0.68rem;
+    font-size: var(--text-xs);
     letter-spacing: 0.13em;
     text-transform: uppercase;
     color: #7d705c;
@@ -1171,7 +1194,7 @@ html[dir="rtl"] #searchInput {
 }
 
 .chapter-grid-item-label {
-    font-size: 0.65rem;
+    font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: #64748b;
@@ -1663,7 +1686,7 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
     /* The press-grow is a scale (audit M-9): tweening width, height and
        margin-top re-laid the thumb out every frame. */
     transform: scale(var(--range-thumb-scale));
-    transition: transform var(--motion-dur-fast, 150ms) ease-out;
+    transition: transform var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 .reader-range-slider::-moz-range-track {
@@ -1689,7 +1712,7 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
     box-shadow: 0 1px 3px rgba(31, 63, 99, 0.26), 0 0 1px rgba(31, 63, 99, 0.4);
     cursor: pointer;
     transform: scale(var(--range-thumb-scale));
-    transition: transform var(--motion-dur-fast, 150ms) ease-out;
+    transition: transform var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 .reader-range-slider:focus-visible::-webkit-slider-thumb {
@@ -2398,7 +2421,7 @@ body.mobile-panel-open {
     }
 
     .reader-topbar-settings-label {
-        font-size: 0.72rem;
+        font-size: var(--text-xs);
     }
 
     #reader header .flex.flex-wrap.justify-center.items-center {
@@ -2426,7 +2449,7 @@ body.mobile-panel-open {
 }
 
 .home-section-label {
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     letter-spacing: 0.17em;
     text-transform: uppercase;
     font-variant: small-caps;
@@ -2557,8 +2580,11 @@ html.rtl .home-main-layout #popularTextsGrid {
 .home-calendar-btn:hover {
     background: linear-gradient(135deg, #fff5e0 0%, #f2e8c8 100%);
     border-color: #b09050;
-    /* The raised shadow is a fading layer (ai.css, audit M-9). */
-    transform: translateY(-1px);
+}
+
+/* The raised shadow is a fading layer (ai.css, audit M-9). */
+@media (hover: hover) and (pointer: fine) {
+    .home-calendar-btn:hover { transform: translateY(-1px); }
 }
 
 .home-daily-entry {
@@ -2580,7 +2606,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 
 .home-daily-label {
     display: block;
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     letter-spacing: 0.17em;
     text-transform: uppercase;
     /* Same stale-hardcoded-hex issue as .home-section-label above. */
@@ -2784,7 +2810,7 @@ html.rtl .home-main-layout #popularTextsGrid {
         gap: var(--sp-1);
         border: 0;
         background: transparent;
-        font-size: 0.66rem;
+        font-size: var(--text-xs);
         font-weight: 700;
         letter-spacing: 0.08em;
         line-height: 1;
@@ -3484,7 +3510,7 @@ html.theme-dark,
 }
 
 .modal-close-icon-btn:focus-visible {
-    outline: 2px solid rgba(176, 154, 116, 0.65);
+    outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
     border-radius: 3px;
 }
@@ -4860,7 +4886,7 @@ html[data-consent-set] #analyticsConsentBanner {
     font-size: var(--text-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 200ms ease-out, scale var(--motion-dur-fast) var(--motion-ease-out);
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out), scale var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 #analyticsConsentAccept {

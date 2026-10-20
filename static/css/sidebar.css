@@ -54,7 +54,7 @@
 
 /* Details/summary expand animation for library sidebar items */
 details[open]>summary~* {
-    animation: shelah-slide-down-fade 0.18s ease both;
+    animation: shelah-slide-down-fade var(--motion-dur-fast) var(--motion-ease-out) both;
 }
 
 details>summary .group-open\:rotate-90 {
@@ -262,7 +262,7 @@ html.rtl #citySearchInput {
 
 .ask-history-date {
     color: var(--text-muted, #94a3b8);
-    font-size: 0.625rem;
+    font-size: var(--text-xs);
     line-height: 1.2;
     margin-bottom: 0.1rem;
 }
@@ -297,7 +297,7 @@ html.rtl #citySearchInput {
 }
 
 .ask-history-del:focus-visible {
-    outline: 2px solid rgba(176, 154, 116, 0.65);
+    outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
     border-radius: 3px;
 }

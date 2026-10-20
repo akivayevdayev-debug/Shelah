@@ -195,14 +195,15 @@ Per-call AI cost ledger and atomic per-caller daily-budget reservation bookkeepi
 
 ### `answer_feedback`
 
-Write-only thumbs up/down (plus an optional short comment) a reader leaves on an AI answer, accepted from signed-in and signed-out readers alike — `user_id` is nullable, so unlike `ask_history` there is no owner-per-row invariant to enforce with RLS. Written by `POST /api/feedback` (`backend/routes_feedback.py`); read by `GET /api/devtools/feedback-digest` (`backend/routes_devtools.py`), which is auth-gated (`@require_clerk_auth`) because comments are free-text supplied by readers and not meant for public display. Base table: [`scripts/sql/migrate_answer_feedback.sql`](../scripts/sql/migrate_answer_feedback.sql). Grant hardening: [`scripts/sql/migrate_security_hardening.sql`](../scripts/sql/migrate_security_hardening.sql).
+Write-only thumbs up/down (plus an optional short comment) a reader leaves on an AI answer, accepted from signed-in and signed-out readers alike — `user_id` is nullable, so unlike `ask_history` there is no owner-per-row invariant to enforce with RLS. Written by `POST /api/feedback` (`backend/routes_feedback.py`); read by `GET /api/devtools/feedback-digest` (`backend/routes_devtools.py`), which is auth-gated (`@require_clerk_auth`) because comments are free-text supplied by readers and not meant for public display. Base table: [`scripts/sql/migrate_answer_feedback.sql`](../scripts/sql/migrate_answer_feedback.sql); comment-only feedback, the AI's own notes and the `source` column: [`scripts/sql/migrate_answer_feedback_ai_notes.sql`](../scripts/sql/migrate_answer_feedback_ai_notes.sql) (run it once in the SQL Editor). Grant hardening: [`scripts/sql/migrate_security_hardening.sql`](../scripts/sql/migrate_security_hardening.sql).
 
 | Column | Type | Nullable | Default | Description |
 |---|---|---|---|---|
 | `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Row ID |
 | `user_id` | `text` | YES | — | Clerk `sub` claim; null for signed-out feedback |
 | `question_hash` | `text` | NOT NULL | — | SHA-256 of the question text |
-| `verdict` | `text` | NOT NULL | — | `helpful` or `not_helpful` (`CHECK` constraint) |
+| `verdict` | `text` | NOT NULL | — | `helpful`, `not_helpful`, `comment` (a comment with no rating) or `ai_note` (the server's own note; `CHECK` constraint, widened by `migrate_answer_feedback_ai_notes.sql`) |
+| `source` | `text` | NOT NULL | `'reader'` | `reader` for anything a person submitted, `ai` for the server's note (`CHECK`); set by the server, never by the client |
 | `comment` | `text` | NOT NULL | `''` | Optional free-text comment, capped at 500 chars |
 | `mode` | `text` | NOT NULL | `'balanced'` | Answer mode the feedback refers to |
 | `language` | `text` | NOT NULL | `'en'` | Response language |

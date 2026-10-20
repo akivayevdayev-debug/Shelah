@@ -369,7 +369,7 @@
     <!-- Mobile drawer backdrop — starts below the topbar -->
     <div id="mobileDrawerBackdrop" aria-hidden="true"
         class="hidden fixed left-0 right-0 bottom-0 bg-slate-900/45 backdrop-blur-[1px] z-85 lg:hidden"
-        style="top: var(--topbar-height, 3.4rem); transition: opacity 0.25s ease;">
+        style="top: var(--topbar-height, 3.4rem); transition: opacity var(--motion-dur-base) var(--motion-ease-out);">
     </div>
 
 
@@ -406,6 +406,11 @@
                     <div class="w-full min-w-0">
                         <!-- Search Form -->
                         <form id="searchForm" role="search" aria-label="Search texts" class="w-full relative min-w-0">
+                            <!-- Decorative loading halo: a gold-and-blue gradient that orbits
+                                 the bar while body.search-loading is set (static/css/ai.css).
+                                 Absolutely positioned with a negative z-index, so it never
+                                 affects layout or covers the input text or the suggestions. -->
+                            <div class="search-liftoff-underlay" aria-hidden="true"></div>
                             <input type="text" id="searchInput"
                                 aria-label="Ask Sh'elah about any topic, halachah, or custom"
                                 placeholder="Ask Sh'elah about any topic, halachah, or custom..."
@@ -435,6 +440,13 @@
                             <!-- "Searching…" when suggestions are slow, then how many came
                                  (fetchOmniboxSuggestions). -->
                             <p id="searchSuggestStatus" class="sr-only" role="status"></p>
+                            <!-- What Sh'elah is doing while a question asked from this bar
+                                 loads (conversation-ui.js renderBarStatus): the running step
+                                 and the finished ones, the same two rows as the panel's
+                                 status. The panel stays shut until the answer lands, so this
+                                 and the halo above are the only loading cues. -->
+                            <div id="searchLiveStatus" class="search-live" data-active="false"
+                                role="status" aria-live="polite"></div>
                         </form>
                     </div>
                     <!-- Ask Sh'elah, right beside the search bar (desktop): opens the
@@ -472,7 +484,7 @@
                     class="topbar-controls relative z-110 flex gap-1.5 items-center flex-wrap justify-end w-full lg:w-auto">
                     <div id="settingsMenuContainer" class="relative z-120 shrink-0">
                         <button id="settingsMenuBtn" type="button" aria-expanded="false" aria-haspopup="true"
-                            class="topbar-flat-btn text-[#7a6a52]" title="Open settings menu">
+                            class="topbar-flat-btn text-[#7a6a52]" title="Open settings menu" aria-label="Open settings menu">
                             {{ phosphor('sliders-horizontal', size=16, class='h-4 w-4') }}
                         </button>
 
@@ -486,7 +498,7 @@
                                 {{ phosphor('sparkle', size=14, class='h-3.5 w-3.5 shrink-0') }}
                                 <span class="flex-1">
                                     <span class="block" data-en="AI settings" data-he="הגדרות בינה מלאכותית">AI settings</span>
-                                    <span class="block font-normal text-[11px] text-slate-600" data-en="Community and answer mode, in the chat" data-he="קהילה ומצב תשובה, בצ׳אט">Community and answer mode, in the chat</span>
+                                    <span class="block font-normal text-[11px] text-slate-600" data-en="Community, answer mode and web search, in the chat" data-he="קהילה, מצב תשובה וחיפוש ברשת, בצ׳אט">Community, answer mode and web search, in the chat</span>
                                 </span>
                                 {{ phosphor('caret-right', size=12, class='h-3 w-3 shrink-0 ai-settings-caret') }}
                             </button>
@@ -1620,6 +1632,10 @@
             <!-- ═══════════════════════════════════════════════════════ -->
             <style>
                 .site-footer {
+                    /* A short view (history signed out, an empty list) leaves the
+                       pane taller than its content: the footer rides the bottom
+                       edge instead of floating mid-screen. */
+                    margin-top: auto;
                     background: var(--surface-2);
                     border-top: 1px solid var(--surface-border);
                     padding: var(--sp-2) var(--sp-4);
@@ -1991,7 +2007,7 @@
     <div id="convScrim" class="conv-scrim hidden" aria-hidden="true"></div>
     <section id="convPanel" class="conv-panel hidden" data-size="overlay" data-layout="desktop"
         role="dialog" aria-modal="true" aria-labelledby="convTitle" tabindex="-1">
-        <aside class="conv-sidebar" aria-labelledby="convSidebarHeading">
+        <aside id="convSidebar" class="conv-sidebar" aria-labelledby="convSidebarHeading">
             <!-- The homepage lockup (same classes as #brandHomeBtn in the top bar),
                  so the full page reads as part of the same site. -->
             <button type="button" class="topbar-brand conv-sidebar__brand flex items-center gap-1.5 shrink-0"
@@ -2025,7 +2041,7 @@
                     <span class="contents" aria-hidden="true">{{ phosphor('clock-counter-clockwise', size=16, class='h-4 w-4') }}</span>
                 </button>
                 <div class="conv-heading">
-                    <h2 id="convTitle" class="conv-title">Ask Sh'elah</h2>
+                    <h2 id="convTitle" class="conv-title" dir="auto">Ask Sh'elah</h2>
                     <p id="convSubtitle" class="conv-subtitle"></p>
                 </div>
                 <div class="conv-header__actions">
@@ -2082,6 +2098,18 @@
                                 <button type="button" role="radio" aria-checked="false" class="conv-mode-opt" data-conv-mode="sources" data-en="Deep Sources" data-he="מקורות מעמיקים">Deep Sources</button>
                                 <button type="button" role="radio" aria-checked="false" class="conv-mode-opt" data-conv-mode="strict" data-en="Strict Sources" data-he="מקורות בלבד">Strict Sources</button>
                             </div>
+                            <div class="conv-menu__rule" aria-hidden="true"></div>
+                            <p class="conv-eyebrow" id="convWebSearchHeading" data-en="Web search" data-he="חיפוש ברשת">Web search</p>
+                            <!-- The reader's switch for the AI's last-resort web lookup
+                                 (backend/web_lookup.py): on by default, saved with the
+                                 other AI defaults, sent as web_search only when off. -->
+                            <button type="button" role="switch" aria-checked="true" id="convWebSearchSwitch"
+                                class="conv-web-opt" data-conv-websearch aria-labelledby="convWebSearchHeading"
+                                aria-describedby="convWebSearchHint">
+                                <span class="conv-web-opt__label" data-en="Let the AI check the web" data-he="לאפשר לבינה המלאכותית לבדוק ברשת">Let the AI check the web</span>
+                                <span class="conv-web-opt__state" id="convWebSearchState" aria-hidden="true">On</span>
+                            </button>
+                            <p id="convWebSearchHint" class="conv-menu__note conv-menu__note--hint" data-en="Only as a last resort, for a fact no source covers, such as whether a product is kosher. Answers then say they used the web." data-he="רק כמוצא אחרון, לעובדה שאף מקור אינו מכסה, כמו אם מוצר מסוים כשר. התשובה תציין שנעשה שימוש ברשת.">Only as a last resort, for a fact no source covers, such as whether a product is kosher. Answers then say they used the web.</p>
                             <div class="conv-menu__rule" aria-hidden="true"></div>
                             <div class="conv-menu__actions">
                                 <button type="button" class="conv-menu__item" data-conv-action="new">
@@ -2160,17 +2188,17 @@
                 <div id="convEmpty" class="conv-empty">
                     <p class="conv-empty__title font-serif" data-en="What would you like to learn?" data-he="מה תרצה ללמוד?">What would you like to learn?</p>
                     <p class="conv-empty__text"
-                        data-en="Ask a question and follow up as much as you like. Every answer cites its sources."
-                        data-he="שאל שאלה והמשך לשאול כרצונך. כל תשובה מציינת את מקורותיה.">Ask a question and follow up
-                        as much as you like. Every answer cites its sources.</p>
+                        data-en="Ask a question and follow up as much as you like. Answers show the sources they used."
+                        data-he="שאל שאלה והמשך לשאול כרצונך. התשובות מציגות את המקורות שבהם נעשה שימוש.">Ask a question and follow up
+                        as much as you like. Answers show the sources they used.</p>
                     <!-- Signed out: a question still gets an answer (a one-shot /ask) and
                          can be followed up, within the guest limits (backend/guest_cap.py)
                          -- say so up front. -->
                     <p id="convSignedOutHint" class="conv-empty__hint conv-signin-callout hidden">
                         <span class="conv-signin-callout__icon" aria-hidden="true">{{ phosphor('lock-simple', size=16) }}</span>
                         <span class="conv-signin-callout__text"
-                            data-en="You can ask as a guest. Sign in to save your conversations and keep going without limits."
-                            data-he="אפשר לשאול כאורח. התחברו כדי לשמור את השיחות ולהמשיך ללא הגבלה.">You can ask as a guest. Sign in to save your conversations and keep going without limits.</span>
+                            data-en="You can ask as a guest. Sign in to save your conversations and go past the guest limits."
+                            data-he="אפשר לשאול כאורח. התחברו כדי לשמור את השיחות ולעבור את מגבלות האורחים.">You can ask as a guest. Sign in to save your conversations and go past the guest limits.</span>
                         <button type="button" class="conv-link-btn" data-conv-action="sign-in" data-en="Sign in" data-he="התחברות">Sign in</button>
                     </p>
                     <!-- A few places to start; pressing one fills the question box (it does not send). -->
@@ -2225,6 +2253,7 @@
                     <button type="button" class="conv-signin-follow__btn" data-conv-action="sign-in" data-en="Sign in" data-he="התחברות">Sign in</button>
                 </p>
                 <form id="convComposer" class="conv-composer" novalidate>
+                    <div class="conv-halo" aria-hidden="true"></div>
                     <div class="conv-composer__fill">
                         <label for="convInput" class="sr-only" data-en="Ask a question" data-he="שאל שאלה">Ask a question</label>
                         <textarea id="convInput" rows="1" dir="auto" maxlength="2000" autocomplete="off"></textarea>
@@ -2293,6 +2322,21 @@
                 <span class="answer-link-status" role="status" aria-live="polite"></span>
             </div>
         </div>
+        <!-- Desktop mini widget only (static/js/conversation-mini.js): resize from
+             the free corner (arrow keys work; Home restores the size) or either
+             free edge. Hidden everywhere else by conversation.css. -->
+        <span class="conv-resize conv-resize--x" data-resize-axis="x" aria-hidden="true"></span>
+        <span class="conv-resize conv-resize--y" data-resize-axis="y" aria-hidden="true"></span>
+        <button type="button" id="convResizeBtn" class="conv-resize conv-resize--corner"
+            aria-label="Resize the floating chat" title="Resize the floating chat"
+            aria-describedby="convResizeHint"
+            data-aria-en="Resize the floating chat" data-aria-he="שינוי גודל החלון הצף">
+            <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false">
+                <path d="M1.5 10.5 10.5 1.5M1.5 6 6 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+        </button>
+        <span id="convResizeHint" class="sr-only"
+            data-en="Arrow keys resize the chat. Home restores the default size." data-he="מקשי החצים משנים את הגודל. מקש Home מחזיר לגודל המקורי.">Arrow keys resize the chat. Home restores the default size.</span>
     </section>
 
     <!-- Phone "minimized" state: a now-playing style bar above the tab bar. -->
@@ -2354,8 +2398,8 @@
         <div class="ai-tip__body">
             <p id="aiDiscoveryTipTitle" class="ai-tip__title" data-en="Ask Sh'elah anything" data-he="שאל את ש׳אלה כל שאלה">Ask Sh'elah anything</p>
             <p id="aiDiscoveryTipText" class="ai-tip__text"
-                data-en="Our AI answers questions on halachah, customs and texts — and every answer cites its sources."
-                data-he="הבינה המלאכותית שלנו עונה על שאלות בהלכה, במנהגים ובטקסטים — וכל תשובה מציינת את מקורותיה.">Our AI answers questions on halachah, customs and texts — and every answer cites its sources.</p>
+                data-en="Our AI answers questions on halachah, customs and texts, and shows the sources it used."
+                data-he="הבינה המלאכותית שלנו עונה על שאלות בהלכה, במנהגים ובטקסטים, ומציגה את המקורות שבהם השתמשה.">Our AI answers questions on halachah, customs and texts, and shows the sources it used.</p>
             <div class="ai-tip__actions">
                 <button type="button" id="aiDiscoveryTipTry" class="ai-tip__try" data-en="Try it" data-he="נסה עכשיו">Try it</button>
                 <button type="button" id="aiDiscoveryTipDismiss" class="ai-tip__dismiss" data-en="Not now" data-he="לא עכשיו">Not now</button>
@@ -2372,6 +2416,7 @@
         "trash": "{{ phosphor_path('trash') }}",
         "thumbs-up": "{{ phosphor_path('thumbs-up') }}",
         "thumbs-down": "{{ phosphor_path('thumbs-down') }}",
+        "chat-text": "{{ phosphor_path('chat-text') }}",
         "check-circle": "{{ phosphor_path('check-circle') }}",
         "warning-circle": "{{ phosphor_path('warning-circle') }}",
         "x": "{{ phosphor_path('x') }}",
@@ -2489,7 +2534,7 @@
             height: var(--sp-8);
             border-radius: var(--radius-full);
             background: var(--surface-pill);
-            transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1), transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+            transition: background-color var(--motion-dur-fast) var(--motion-ease-decel), transform var(--motion-dur-fast) var(--motion-ease-decel);
         }
         .privacy-close svg { position: relative; z-index: 1; }
         .privacy-close:hover::before { background: var(--ctrl-bg-hover); }
@@ -2527,11 +2572,11 @@
             font-weight: 600;
             white-space: nowrap;
             cursor: pointer;
-            transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1),
-                border-color 150ms cubic-bezier(0.23, 1, 0.32, 1),
-                color 150ms cubic-bezier(0.23, 1, 0.32, 1),
-                opacity 150ms cubic-bezier(0.23, 1, 0.32, 1),
-                transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+            transition: background-color var(--motion-dur-fast) var(--motion-ease-decel),
+                border-color var(--motion-dur-fast) var(--motion-ease-decel),
+                color var(--motion-dur-fast) var(--motion-ease-decel),
+                opacity var(--motion-dur-fast) var(--motion-ease-decel),
+                transform var(--motion-dur-fast) var(--motion-ease-decel);
         }
         .privacy-btn:not(:disabled):active { transform: scale(0.97); }
         .privacy-btn:disabled { cursor: not-allowed; }
@@ -2583,7 +2628,7 @@
             font-size: 0.9375rem;
             letter-spacing: 0.04em;
             /* The focus ring (box-shadow) lands at once: no repaint per frame. */
-            transition: border-color 150ms cubic-bezier(0.23, 1, 0.32, 1);
+            transition: border-color var(--motion-dur-fast) var(--motion-ease-decel);
         }
         .privacy-input::placeholder { color: var(--ink-secondary); opacity: 0.7; }
         .privacy-input:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 22%, transparent); }
@@ -2613,7 +2658,7 @@
             font-size: 0.8125rem;
             color: var(--ink-secondary);
             text-decoration: none;
-            transition: color 150ms cubic-bezier(0.23, 1, 0.32, 1);
+            transition: color var(--motion-dur-fast) var(--motion-ease-decel);
         }
         .privacy-link:hover { color: var(--ink-heading); text-decoration: underline; text-underline-offset: 3px; }
 

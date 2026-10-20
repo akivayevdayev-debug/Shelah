@@ -122,8 +122,8 @@ export function noticeFor(error, lang = "en") {
             return {
                 tone: "warn",
                 text: tr({
-                    en: "You've reached today's AI limit. It resets tomorrow.",
-                    he: "הגעת למגבלת הבינה המלאכותית היומית. היא מתאפסת מחר.",
+                    en: "You've reached today's AI limit. It resets at midnight UTC.",
+                    he: "הגעת למגבלת הבינה המלאכותית היומית. היא מתאפסת בחצות UTC.",
                 }, lang),
                 action: null,
             };
@@ -278,12 +278,96 @@ export function logicalCorner(corner, rtl) {
     return corner[0] + (corner[1] === "r" ? "l" : "r");
 }
 
+// ── mini widget size ───────────────────────────────────────────────────
+// The floating widget can be resized within these bounds (CSS px). `w` is the
+// width of the chat itself; the history column that opens beside it adds
+// MINI_HISTORY_RATIO of that on top (conversation.css --conv-hist-w uses the
+// same ratio), so a wider widget gets a proportionally wider list.
+export const MINI_BOUNDS = Object.freeze({ minW: 300, maxW: 520, minH: 320, maxH: 720 });
+export const MINI_HISTORY_RATIO = 0.6;
+export const MINI_STEP_PX = 24;
+// What the viewport keeps free around the widget: the CSS gutter on both
+// sides (--sp-4 each) and, vertically, the top bar plus the --sp-8 margins.
+const MINI_GUTTER_X = 32;
+const MINI_GUTTER_Y = 120;
+
+function clampTo(value, min, max) {
+    return Math.min(Math.max(value, min), Math.max(min, max));
+}
+
+// A size inside the bounds and inside the window. `h` may be null (the widget
+// sizes itself to its content, up to a ceiling).
+export function clampMiniSize({ w, h = null }, viewport, { historyOpen = false } = {}) {
+    const span = historyOpen ? 1 + MINI_HISTORY_RATIO : 1;
+    const maxW = Math.min(MINI_BOUNDS.maxW, (viewport.width - MINI_GUTTER_X) / span);
+    const maxH = Math.min(MINI_BOUNDS.maxH, viewport.height - MINI_GUTTER_Y);
+    return {
+        w: Math.round(clampTo(w, MINI_BOUNDS.minW, maxW)),
+        h: h == null ? null : Math.round(clampTo(h, MINI_BOUNDS.minH, maxH)),
+    };
+}
+
+// The saved size from storage (or null when it is missing or not a size).
+export function parseMiniSize(raw) {
+    let data;
+    try {
+        data = JSON.parse(raw);
+    } catch {
+        return null;
+    }
+    const finite = (n) => typeof n === "number" && Number.isFinite(n);
+    if (!data || !finite(data.w)) return null;
+    return {
+        w: Math.round(clampTo(data.w, MINI_BOUNDS.minW, MINI_BOUNDS.maxW)),
+        h: finite(data.h) ? Math.round(clampTo(data.h, MINI_BOUNDS.minH, MINI_BOUNDS.maxH)) : null,
+    };
+}
+
+// The size after dragging a free edge or corner by (dx, dy). The widget stays
+// pinned to its corner, so pulling away from it grows it: with the corner on
+// the right a leftward drag widens it, with the corner at the bottom an upward
+// drag makes it taller. `anchor` is where the widget sits ({ right, bottom }),
+// `axes` which edges the handle moves ("x", "y" or "xy").
+export function dragMiniSize({ start, dx, dy, anchor, axes = "xy", historyOpen = false }, viewport) {
+    const span = historyOpen ? 1 + MINI_HISTORY_RATIO : 1;
+    const growX = anchor.right ? -dx : dx;
+    const growY = anchor.bottom ? -dy : dy;
+    const next = {
+        w: axes.includes("x") ? start.w + growX / span : start.w,
+        h: axes.includes("y") ? (start.h ?? 0) + growY : start.h,
+    };
+    return clampMiniSize(next, viewport, { historyOpen });
+}
+
+// Arrow keys as a drag of one step, in screen directions (the same maths as
+// the pointer, so the corner the widget sits in decides which way grows).
+export function miniKeyDelta(key) {
+    const step = MINI_STEP_PX;
+    switch (key) {
+        case "ArrowLeft": return { dx: -step, dy: 0 };
+        case "ArrowRight": return { dx: step, dy: 0 };
+        case "ArrowUp": return { dx: 0, dy: -step };
+        case "ArrowDown": return { dx: 0, dy: step };
+        default: return null;
+    }
+}
+
 // Excerpt in the reader's language, falling back to the other one.
 export function citationExcerpt(citation, lang = "en") {
     if (!citation) return "";
     return lang === "he"
         ? citation.excerptHe || citation.excerptEn || ""
         : citation.excerptEn || citation.excerptHe || "";
+}
+
+// Whether most of the letters in `text` are Hebrew. Cardo's Hebrew bold face
+// covers only a few letters (a bold heading came out half regular, half
+// bold), so a Hebrew answer's headings take a stroke instead (conversation.css).
+export function mostlyHebrew(text) {
+    const s = String(text || "");
+    const hebrew = (s.match(/[\u05D0-\u05EA]/g) || []).length;
+    const latin = (s.match(/[A-Za-z]/g) || []).length;
+    return hebrew > 0 && hebrew >= latin;
 }
 
 // Change-detection key for a rendered transcript turn.

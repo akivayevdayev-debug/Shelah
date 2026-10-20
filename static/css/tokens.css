@@ -79,6 +79,11 @@
        `mask: var(--icon-check) center / contain no-repeat`. */
     --icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z'/%3E%3C/svg%3E");
     --icon-caret-right: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M184.49,136.49l-80,80a12,12,0,0,1-17-17L159,128,87.51,56.49a12,12,0,1,1,17-17l80,80A12,12,0,0,1,184.49,136.49Z'/%3E%3C/svg%3E");
+    --icon-thumbs-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M237,77.47A28,28,0,0,0,216,68H164V56a44.05,44.05,0,0,0-44-44,12,12,0,0,0-10.73,6.63L72.58,92H32a20,20,0,0,0-20,20v88a20,20,0,0,0,20,20H204a28,28,0,0,0,27.78-24.53l12-96A28,28,0,0,0,237,77.47ZM36,116H68v80H36ZM220,96.5l-12,96a4,4,0,0,1-4,3.5H92V106.83L126.82,37.2A20,20,0,0,1,140,56V80a12,12,0,0,0,12,12h64a4,4,0,0,1,4,4.5Z'/%3E%3C/svg%3E");
+    --icon-thumbs-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M243.78,156.53l-12-96A28,28,0,0,0,204,36H32A20,20,0,0,0,12,56v88a20,20,0,0,0,20,20H72.58l36.69,73.37A12,12,0,0,0,120,244a44.05,44.05,0,0,0,44-44V188h52a28,28,0,0,0,27.78-31.47ZM68,140H36V60H68Zm151,22.65a4,4,0,0,1-3,1.35H152a12,12,0,0,0-12,12v24a20,20,0,0,1-13.18,18.8L92,149.17V60H204a4,4,0,0,1,4,3.5l12,96A4,4,0,0,1,219,162.65Z'/%3E%3C/svg%3E");
+    --icon-lock-simple: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M208,76H180V56A52,52,0,0,0,76,56V76H48A20,20,0,0,0,28,96V208a20,20,0,0,0,20,20H208a20,20,0,0,0,20-20V96A20,20,0,0,0,208,76ZM100,56a28,28,0,0,1,56,0V76H100ZM204,204H52V100H204Z'/%3E%3C/svg%3E");
+    --icon-warning-circle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm0,192a84,84,0,1,1,84-84A84.09,84.09,0,0,1,128,212Zm-12-80V80a12,12,0,0,1,24,0v52a12,12,0,0,1-24,0Zm28,40a16,16,0,1,1-16-16A16,16,0,0,1,144,172Z'/%3E%3C/svg%3E");
+    --icon-chat-text: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M216,44H40A20,20,0,0,0,20,64V224A19.82,19.82,0,0,0,31.56,242.1a20.14,20.14,0,0,0,8.49,1.9,19.91,19.91,0,0,0,12.82-4.72l.12-.11L84.47,212H216a20,20,0,0,0,20-20V64A20,20,0,0,0,216,44Zm-4,144H80a11.93,11.93,0,0,0-7.84,2.92L44,215.23V68H212ZM84,108A12,12,0,0,1,96,96h64a12,12,0,1,1,0,24H96A12,12,0,0,1,84,108Zm0,40a12,12,0,0,1,12-12h64a12,12,0,0,1,0,24H96A12,12,0,0,1,84,148Z'/%3E%3C/svg%3E");
 
     color-scheme: light dark;
 
@@ -107,6 +112,15 @@
     --accent-green:       #059669;
     --accent-red:         #be123c;
     --accent-orange:      #ea580c;
+
+    /* ── Data-viz series (admin feedback charts) ────────────────────── */
+    /* Categorical slots 1 and 2 of the dataviz reference palette, validated
+       with its validate_palette.js against --surface-2 (the card the charts sit
+       on): lightness band, chroma floor, CVD and normal-vision separation and
+       3:1 contrast all pass in both themes. Charts also carry a legend, direct
+       labels and a table view, so hue is never the only channel. */
+    --viz-series-1:       #2a78d6;   /* helpful */
+    --viz-series-2:       #eb6834;   /* not helpful */
 
     /* ── Controls ───────────────────────────────────────────────────── */
     --ctrl-bg:            #f4f0e7;
@@ -173,6 +187,8 @@
 
     /* ── Fluid typography (clamp: min, preferred, max) ──────────────── */
     --text-xs:   clamp(0.7rem,  0.65rem + 0.25vw, 0.75rem);
+    --text-meta:      0.8125rem;   /* 13px: captions, secondary rows (fixed, not fluid) */
+    --text-body-sm:   0.9375rem;   /* 15px: dense body in panels and detail rows (fixed) */
     --text-sm:   clamp(0.8rem,  0.78rem + 0.25vw, 0.875rem);
     --text-base: clamp(0.9rem,  0.88rem + 0.3vw,  1rem);
     --text-md:   clamp(1rem,    0.96rem + 0.35vw, 1.125rem);
@@ -185,12 +201,17 @@
     --motion-dur-fast:   150ms;
     --motion-dur-base:   220ms;
     --motion-dur-slow:   400ms;
+    /* One turn of the search bar's loading halo (shelah-halo-orbit). */
+    --motion-dur-orbit:  3s;
     --motion-ease-out:   cubic-bezier(0.25, 0, 0.3, 1);
     --motion-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     /* Deceleration curve for card/scale-in transform reveals — no overshoot,
        distinct from --motion-ease-spring; was repeated as a raw literal at
        5+ sites across style.css/ai.css before being named here. */
     --motion-ease-decel: cubic-bezier(0.22, 1, 0.36, 1);
+    /* The gap between siblings of a cascade (answer blocks, source cards,
+       reveals): 30 to 80 ms reads as one gesture, and callers cap the length. */
+    --motion-stagger:     40ms;
     /* Views (audit §2): the old one fades out, the new one fades in
        shifted 12px from the side the navigation goes to. */
     --motion-dur-view-out: 120ms;
@@ -317,6 +338,13 @@
     to   { opacity: 1; transform: scale(1); }
 }
 
+/* A bar growing up from its baseline (admin trend). It starts at 60%, not 0:
+   nothing in the real world appears from nothing. */
+@keyframes shelah-grow-up {
+    from { opacity: 0; transform: scaleY(0.6); }
+    to   { opacity: 1; transform: scaleY(1); }
+}
+
 @keyframes shelah-slide-in-left {
     from { opacity: 0; transform: translateX(-16px); }
     to   { opacity: 1; transform: translateX(0); }
@@ -370,6 +398,18 @@
 @keyframes shelah-warm-pulse {
     0%, 100% { opacity: 0.7; transform: scale(0.97); }
     50%      { opacity: 1;   transform: scale(1.04); }
+}
+
+/* The search bar's loading halo (ai.css .search-liftoff-underlay): its
+   gold-and-blue conic gradient turns steadily around the bar while an AI
+   question loads. Transform only. Both keyframes repeat the SAME transform
+   list as the element's base transform (translate, scale, then rotate), so
+   each term interpolates on its own and the turn is pure rotation; a bare
+   rotate() against that base would matrix-interpolate and drag the square off
+   centre each cycle. The 2.2 stretch must match ai.css. */
+@keyframes shelah-halo-orbit {
+    from { transform: translate(-50%, -50%) scale(2.2, 1) rotate(0deg); }
+    to   { transform: translate(-50%, -50%) scale(2.2, 1) rotate(360deg); }
 }
 
 /* View transitions (::view-transition-*(root), below). Forward comes in
@@ -454,6 +494,25 @@ html[data-vt-active] #calendarModal { view-transition-name: shelah-calendar; }
     ::view-transition-new(*) { animation: none !important; }
 }
 
+/* Theme switch (topbar_shared.js withThemeFade): the picture of the old theme
+   fades into the new one. Scoped by data-vt-theme, so the route transitions'
+   flag above is untouched. The browser's own cross-fade is kept; only its
+   length is ours. Reduced motion keeps a shorter fade, since a cut between a
+   light and a dark page is the harsher of the two. */
+html[data-vt-theme]::view-transition-group(root) {
+    animation-duration: var(--motion-dur-base);
+}
+html[data-vt-theme]::view-transition-old(root),
+html[data-vt-theme]::view-transition-new(root) {
+    animation-duration: var(--motion-dur-base);
+    animation-timing-function: var(--motion-ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-vt-theme]::view-transition-group(root) { animation: none !important; }
+    html[data-vt-theme]::view-transition-old(root) { animation: shelah-overlay-in 120ms linear reverse both !important; }
+    html[data-vt-theme]::view-transition-new(root) { animation: shelah-overlay-in 120ms linear both !important; }
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════
    DARK THEME — [data-theme="dark"]
@@ -527,6 +586,9 @@ body.theme-dark {
        red (hue 0°) instead: 4.96-6.61:1 on every dark surface as is. */
     --accent-red:         #f26b6b;
     --accent-orange:      #c86840;
+
+    --viz-series-1:       #3987e5;   /* helpful: see the light-theme note above */
+    --viz-series-2:       #d95926;   /* not helpful */
 
     /* ── Controls ───────────────────────────────────────────────────── */
     --ctrl-bg:            #23211f;
@@ -750,6 +812,8 @@ body.theme-dark {
         --accent-green:       #2aaa7a;
         --accent-red:         #f26b6b;
         --accent-orange:      #c86840;
+        --viz-series-1:       #3987e5;
+        --viz-series-2:       #d95926;
 
         --ctrl-bg:            #23211f;
         --ctrl-bg-hover:      #2d2b28;

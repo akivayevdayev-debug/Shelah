@@ -92,7 +92,7 @@ body.theme-dark {
 .fc .fc-button-primary:focus-visible {
     background: var(--cal-toolbar-btn-hover) !important;
     border-color: #a09060 !important;
-    outline: 2px solid rgba(176, 154, 116, 0.65) !important;
+    outline: 2px solid var(--accent-primary) !important;
     outline-offset: 2px;
     box-shadow: 0 2px 5px rgba(78, 64, 30, 0.15);
 }
@@ -248,8 +248,10 @@ body.theme-dark {
     max-width: 100%;
 }
 
-.fc-event:hover {
-    transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+    .fc-event:hover {
+        transform: translateY(-1px);
+    }
 }
 
 /* Classes are assigned per-event from the backend's `category` field via
@@ -427,7 +429,7 @@ html.rtl .fc-daygrid-event {
 .cal-agenda-hebrew {
     margin: var(--sp-1) 0 0;
     font-family: var(--font-hebrew, 'Ezra SIL', 'Cardo', serif);
-    font-size: 0.9375rem;
+    font-size: var(--text-body-sm);
     color: var(--ink-secondary);
 }
 
@@ -472,7 +474,7 @@ html.rtl .fc-daygrid-event {
 .cal-agenda-title {
     min-width: 0;
     align-self: center;
-    font-size: 0.9375rem;
+    font-size: var(--text-body-sm);
     line-height: 1.4;
     color: var(--ink-primary);
     overflow-wrap: anywhere; /* long names wrap instead of clipping */
@@ -506,7 +508,7 @@ html.rtl .fc-daygrid-event {
 
 /* Zmanim row focus state */
 .today-zmanim-list [data-zman-row]:focus-visible {
-    outline: 2px solid rgba(176, 154, 116, 0.6);
+    outline: 2px solid var(--accent-primary);
     outline-offset: 1px;
     border-radius: 0.44rem;
 }
@@ -547,10 +549,10 @@ body.theme-dark #calendarModal p.text-xs {
 /* Legend colour swatches — keep as-is (coloured), no override needed */
 
 /* Close button — focus-visible ring (icon swap didn't have one before;
-   same rgba(176, 154, 116, ...) ring used across ai.css/reader.css/
+   same ring (--accent-primary) used across ai.css/reader.css/
    typography.css, so no separate dark-mode value is needed here). */
 #calendarModal button[aria-label="Close calendar"]:focus-visible {
-    outline: 2px solid rgba(176, 154, 116, 0.65);
+    outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
 }
 

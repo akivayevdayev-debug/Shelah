@@ -126,6 +126,22 @@ test('the menus open and close, and a click outside closes them', async () => {
     }
 });
 
+test('the search field and the settings button are named in the interface language', async () => {
+    const page = await openText();
+    try {
+        const search = el(page, 'searchInput');
+        const settings = el(page, 'settingsMenuBtn');
+        page.eval(`applyStaticHebrewFallbackTranslations('he'); localizePlaceholders('he')`);
+        assert.equal(settings.getAttribute('aria-label'), 'פתח תפריט הגדרות');
+        assert.equal(search.getAttribute('aria-label'), search.dataset.hePlaceholder.replace(/\.+$/, ''));
+        page.eval(`applyStaticHebrewFallbackTranslations('en'); localizePlaceholders('en')`);
+        assert.equal(settings.getAttribute('aria-label'), 'Open settings menu');
+        assert.equal(search.getAttribute('aria-label'), search.dataset.enPlaceholder.replace(/\.+$/, ''));
+    } finally {
+        page.close();
+    }
+});
+
 test('the AI settings button opens the conversation panel\'s settings', async () => {
     const ui = fakeConversationUI();
     const page = await openShellPage({ fetch: routes(), before: (window) => { window.ShelahConversationUI = ui; } });
@@ -140,6 +156,22 @@ test('the AI settings button opens the conversation panel\'s settings', async ()
         page.eval(`window.ShelahPrefs.set('mode', 'deep')`);
         page.eval(`window.ShelahPrefs.set('other', 'x')`);
         assert.equal(prefs(page).other, undefined);
+    } finally {
+        page.close();
+    }
+});
+
+test('the Web search setting defaults to on, takes only a boolean, and is remembered', async () => {
+    const page = await openShellPage({ fetch: routes(), before: (window) => { window.ShelahConversationUI = fakeConversationUI(); } });
+    try {
+        assert.equal(page.eval('appState.prefs.webSearch'), true, 'on until the reader turns it off');
+        page.eval(`window.ShelahPrefs.set('webSearch', 'no')`);
+        assert.equal(page.eval('appState.prefs.webSearch'), true, 'a non-boolean is ignored');
+        assert.equal(prefs(page).webSearch, undefined, 'and nothing was saved');
+        page.eval(`window.ShelahPrefs.set('webSearch', false)`);
+        assert.equal(prefs(page).webSearch, false);
+        page.eval(`window.ShelahPrefs.set('webSearch', true)`);
+        assert.equal(prefs(page).webSearch, true);
     } finally {
         page.close();
     }

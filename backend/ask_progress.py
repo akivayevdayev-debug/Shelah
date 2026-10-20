@@ -21,11 +21,17 @@ Design constraints:
 * Steps that fan out into several lookups (Halachipedia and Wikipedia are one
   "commentary" step) are reference-counted, so the client sees one start when
   the first lookup begins and one done when the last one ends.
+* A step can also say exactly what it is doing right now ("Reading Shulchan
+  Arukh, Orach Chayim 261", "Checking sunset and nightfall for Shabbat
+  times"). That is a separate `detail` event with a closed vocabulary of
+  kinds plus plain parameters, never prose: the client owns the wording, in
+  both languages, so a detail can never carry markup or the wrong language.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import threading
 from collections.abc import Callable
 from contextlib import contextmanager
@@ -47,6 +53,13 @@ STAGES = frozenset({
     STAGE_SOURCES, STAGE_COMMENTARY, STAGE_CUSTOMS, STAGE_TIMES, STAGE_THINKING,
 })
 
+# What a step can say about itself (static/js/ask-progress.js words each kind).
+DETAIL_REFS = "refs"          # sources:  refs=[...up to 3], count=<all refs>
+DETAIL_COMMUNITY = "community"  # customs: community=<the reader's lens>
+DETAIL_TIMES = "times"        # times:    topic=<one of TIMES_TOPICS>
+DETAIL_TOOL = "tool"          # thinking: tool=<tool name>, ref=<a text ref>
+DETAIL_KINDS = frozenset({DETAIL_REFS, DETAIL_COMMUNITY, DETAIL_TIMES, DETAIL_TOOL})
+
 NDJSON_MIMETYPE = "application/x-ndjson"
 
 
@@ -57,6 +70,7 @@ class ProgressReporter:
         self._send = send
         self._lock = threading.Lock()
         self._depth: dict[str, int] = {}
+        self._detail_depth: dict[str, int] = {}
 
     def begin(self, stage: str) -> None:
         with self._lock:
@@ -75,6 +89,28 @@ class ProgressReporter:
             if depth > 1:
                 return
             self._deliver({"type": "stage", "stage": stage, "state": "done"})
+
+    def detail(self, stage: str, detail: dict[str, Any] | None) -> None:
+        """What `stage` is doing right now; None clears it. Not reference
+        counted: the latest word wins, which is what the line should say."""
+        with self._lock:
+            self._deliver({"type": "detail", "stage": stage, "detail": detail})
+
+    def enter_detail(self, stage: str, detail: dict[str, Any]) -> None:
+        with self._lock:
+            self._detail_depth[stage] = self._detail_depth.get(stage, 0) + 1
+            self._deliver({"type": "detail", "stage": stage, "detail": detail})
+
+    def leave_detail(self, stage: str) -> None:
+        """The matching end of enter_detail: the line goes back to naming the
+        step only when the last concurrent piece of work under it is over."""
+        with self._lock:
+            depth = self._detail_depth.get(stage, 0)
+            if depth <= 0:
+                return
+            self._detail_depth[stage] = depth - 1
+            if depth == 1:
+                self._deliver({"type": "detail", "stage": stage, "detail": None})
 
     def _deliver(self, event: dict[str, Any]) -> None:
         try:
@@ -108,6 +144,105 @@ def end(stage: str) -> None:
         reporter.end(stage)
 
 
+def _clean_detail(kind: str, params: dict[str, Any]) -> dict[str, Any]:
+    """The detail's wire form: its kind and whichever parameters have a value."""
+    if isinstance(params.get("refs"), (list, tuple)):
+        params = {**params, "refs": [str(ref).strip() for ref in params["refs"] if str(ref or "").strip()]}
+    return {"kind": kind, **{key: value for key, value in params.items() if value not in (None, "", [], ())}}
+
+
+def detail(stage_id: str, kind: str, **params: Any) -> None:
+    """Say what `stage_id` is doing right now, e.g.
+    `detail("sources", "refs", refs=[...], count=7)`. A no-op with no stream
+    bound, for a stage or kind the client has no wording for, and when the
+    kind has nothing to say."""
+    reporter = _reporter.get()
+    if reporter is None or stage_id not in STAGES or kind not in DETAIL_KINDS:
+        return
+    reporter.detail(stage_id, _clean_detail(kind, params))
+
+
+@contextmanager
+def detail_scope(stage_id: str, kind: str, **params: Any):
+    """`with ask_progress.detail_scope("thinking", "tool", tool=name):` for
+    work that happens inside a step and ends before it does (one tool call of
+    the model's). The detail clears when the last such block exits."""
+    reporter = _reporter.get()
+    if reporter is None or stage_id not in STAGES or kind not in DETAIL_KINDS:
+        yield
+        return
+    reporter.enter_detail(stage_id, _clean_detail(kind, params))
+    try:
+        yield
+    finally:
+        reporter.leave_detail(stage_id)
+
+
+# ── the "times" step: only when the question is about a time ─────────────
+#
+# Every answer is given today's date and zmanim, because the model has no
+# clock of its own. Telling the reader "Looking up today's zmanim" for a
+# question about the Rambam would be noise, so the step is reported only when
+# the question is about a time or date, and then it says which kind.
+
+TIMES_SHABBAT = "shabbat"
+TIMES_ZMANIM = "zmanim"
+TIMES_OMER = "omer"
+TIMES_PARASHA = "parasha"
+TIMES_HOLIDAY = "holiday"
+TIMES_TOPICS = (TIMES_SHABBAT, TIMES_ZMANIM, TIMES_OMER, TIMES_PARASHA, TIMES_HOLIDAY)
+
+_SHABBAT_TIMING = re.compile(
+    r"candle[\s-]?light|havdal|motz[ae]i|kabbalat shabbat"
+    r"|(?:shabbat|shabbos|sabbath|yom tov|erev)\b.*\b(?:when|time|until|till|before|after|start|begin|end|finish|over|out)\b"
+    r"|\b(?:when|time|until|till|before|after|start|begin|end|finish|over|out)\b.*\b(?:shabbat|shabbos|sabbath|yom tov)\b",
+    re.IGNORECASE,
+)
+_ZMANIM = re.compile(
+    r"\bzman(?:im|ei)?\b|sunrise|sunset|nightfall|\bdawn\b|tz[ae]is?\b|\bnetz\b|shkia|\bplag\b|chatzot"
+    r"|latest time|earliest time|what time|alot hashachar|sof zman",
+    re.IGNORECASE,
+)
+_OMER = re.compile(r"\bomer\b", re.IGNORECASE)
+_PARASHA = re.compile(r"parash(?:a|ah)\b|\bparsha\b|weekly (?:torah )?portion|torah portion", re.IGNORECASE)
+_HOLIDAY = re.compile(
+    r"rosh chodesh|rosh hashana|yom kippur|sukkot|simchat torah|chanukah|hanukkah|\bpurim\b|pesach|passover"
+    r"|shavuot|tisha b'?av|tu b'?shvat|lag b'?omer|fast day|hebrew date|what day is|\bholiday\b",
+    re.IGNORECASE,
+)
+_TIMES_PATTERNS = (
+    (TIMES_SHABBAT, _SHABBAT_TIMING),
+    (TIMES_OMER, _OMER),
+    (TIMES_PARASHA, _PARASHA),
+    (TIMES_ZMANIM, _ZMANIM),
+    (TIMES_HOLIDAY, _HOLIDAY),
+)
+
+
+def times_topic(question: str | None) -> str | None:
+    """Which kind of time the question is about, or None when it is not about
+    one (the "times" step is then not reported)."""
+    text = str(question or "")
+    for topic, pattern in _TIMES_PATTERNS:
+        if pattern.search(text):
+            return topic
+    return None
+
+
+@contextmanager
+def times_stage(question: str | None):
+    """`with ask_progress.times_stage(question):` around the date/zmanim
+    lookup: reported as the "times" step, naming the topic, only when the
+    question is about a time."""
+    topic = times_topic(question)
+    if topic is None:
+        yield
+        return
+    detail(STAGE_TIMES, DETAIL_TIMES, topic=topic)
+    with stage(STAGE_TIMES):
+        yield
+
+
 @contextmanager
 def stage(stage_id: str):
     """`with ask_progress.stage("sources"):` around a blocking step."""
@@ -125,6 +260,16 @@ async def track(stage_id: str, awaitable):
         return await awaitable
     finally:
         end(stage_id)
+
+
+async def track_times(question: str | None, awaitable):
+    """Await `awaitable` as the "times" step when `question` is about a time
+    (see times_stage); otherwise just await it."""
+    topic = times_topic(question)
+    if topic is None:
+        return await awaitable
+    detail(STAGE_TIMES, DETAIL_TIMES, topic=topic)
+    return await track(STAGE_TIMES, awaitable)
 
 
 def wants_stream(accept_header: str | None) -> bool:

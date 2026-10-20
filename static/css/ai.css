@@ -59,7 +59,7 @@
        ~3.7:1 -- below the WCAG AA 4.5:1 floor. --ink-primary clears >8:1
        in both themes against this background. */
     color: var(--ink-primary, #334155);
-    font-size: 0.8125rem;
+    font-size: var(--text-meta);
     line-height: 1.5;
 }
 
@@ -193,7 +193,7 @@
 
 /* Focus ring for modal close button */
 #textsMenuModal button:focus-visible {
-    outline: 2px solid rgba(176, 154, 116, 0.65);
+    outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
     border-radius: 3px;
 }
@@ -245,7 +245,7 @@
     display: inline-flex;
     align-items: center;
     gap: var(--space-xs);
-    font-size: 0.68rem;
+    font-size: var(--text-xs);
     font-weight: 600;
     color: var(--accent-deep-blue, #1f3f63);
     text-decoration: none;
@@ -332,15 +332,15 @@
 /* ═══════════════════════════════════════════════════════ */
 
 .animate-fade-up {
-    animation: shelah-fade-up 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) both;
 }
 
 .animate-fade-in {
-    animation: shelah-fade-in 0.28s ease both;
+    animation: shelah-fade-in var(--motion-dur-base) var(--motion-ease-out) both;
 }
 
 .animate-scale-in {
-    animation: shelah-scale-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: shelah-scale-in var(--motion-dur-base) var(--motion-ease-decel) both;
 }
 
 /* Modal entrance/exit (textsMenu, chapterGrid, calendar,
@@ -353,7 +353,7 @@
 }
 
 #readerTopBar:not(.hidden) {
-    animation: shelah-fade-up 0.2s ease both;
+    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) both;
 }
 
 /* Search suggestions: entrance/exit is ShelahMotion.present()/dismiss()
@@ -361,7 +361,7 @@
 
 /* Source dual template in article */
 #readerSources>div {
-    animation: shelah-fade-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) both;
 }
 
 #readerSources>div:nth-child(1) {
@@ -369,32 +369,31 @@
 }
 
 #readerSources>div:nth-child(2) {
-    animation-delay: 80ms;
+    animation-delay: var(--motion-stagger);
 }
 
 #readerSources>div:nth-child(3) {
-    animation-delay: 160ms;
+    animation-delay: calc(var(--motion-stagger) * 2);
 }
 
 #readerSources>div:nth-child(4) {
-    animation-delay: 240ms;
+    animation-delay: calc(var(--motion-stagger) * 3);
 }
 
-/* Library sidebar items fade in */
-#leftSidebar details>ul>li {
-    animation: shelah-fade-in 0.2s ease both;
-}
+/* Library sidebar items: no per-item fade. The list itself slides down as one
+   (sidebar.css details[open]>summary~*); a second animation on every row of
+   the same subtree only doubled it, on a control used tens of times a day. */
 
 /* Popular texts grid */
 #popularTextsGrid>* {
     /* backwards, not both: a fill kept after the end holds transform at
        translateY(0) and cancels the cards' hover lift below. */
-    animation: shelah-fade-up 0.25s ease backwards;
+    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) backwards;
 }
 
 /* Home grid sections */
 .home-today-section {
-    animation: shelah-fade-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) backwards;
 }
 
 /* Card hover lift effect for popular texts, customs cards */
@@ -405,10 +404,17 @@
 }
 
 #popularTextsGrid button:hover {
-    transform: translateY(-2px);
     /* The raised shadow is the ::after layer below; none here also keeps
        the cards' own hover:shadow-sm utility off. */
     box-shadow: none;
+}
+
+/* The lift and its shadow layer are a mouse gesture (a tap on a touch screen
+   would leave them stuck on the card). */
+@media (hover: hover) and (pointer: fine) {
+    #popularTextsGrid button:hover {
+        transform: translateY(-2px);
+    }
 }
 
 /* Hover elevation (audit M-9): the raised shadow is drawn once on a layer
@@ -438,10 +444,12 @@
     transition: opacity var(--motion-dur-fast) var(--motion-ease-out);
 }
 
-#popularTextsGrid button:hover::after,
-.home-calendar-btn:hover::after,
-.sidebar-show-tab:hover::after {
-    opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+    #popularTextsGrid button:hover::after,
+    .home-calendar-btn:hover::after,
+    .sidebar-show-tab:hover::after {
+        opacity: 1;
+    }
 }
 
 :is([data-theme="dark"], body.theme-dark) :is(#popularTextsGrid button, .home-calendar-btn)::after {
@@ -468,12 +476,19 @@
     #chapterGridModal>div,
     #calendarModal>div,
     #libraryCategoryModal>div,
-    #readerTopBar,
-    #searchSuggestions,
+    #searchSuggestions {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    /* What arrives on screen still arrives as a short fade, with no travel and
+       no stagger: reduced motion means gentler, not none. */
+    #readerTopBar:not(.hidden),
     #readerSources>div,
     #popularTextsGrid>*,
     .home-today-section {
-        animation: none !important;
+        animation: shelah-overlay-in 120ms linear both !important;
+        animation-delay: 0ms !important;
         transition: none !important;
     }
 }
@@ -543,6 +558,20 @@
 
 .topbar-flat-btn:active {
     transform: scale(0.94) !important;
+}
+
+/* Touch: the home "this week's parasha" link and the search field are a
+   little under 44px tall. The link gets balanced padding and margin so
+   nothing moves; the field simply grows to the minimum. */
+@media (pointer: coarse) {
+    #homeParashaQuickLink {
+        padding-block: var(--sp-1);
+        margin-block: calc(var(--sp-1) * -1);
+    }
+
+    #searchInput {
+        min-height: var(--hit-min);
+    }
 }
 
 /* ── Mobile bottom tabs ──────────────────────────────────── */
@@ -660,6 +689,145 @@ body.search-loading .search-ai-sparkle {
     animation: shelah-warm-pulse 1.6s ease-in-out infinite;
 }
 
+/* Loading halo: a soft gold-and-blue gradient orbiting the bar for as long as
+   the question is loading. It comes on once when loading starts and goes off
+   once when it ends (the opacity transition below) and never pulses in between;
+   the only motion is the gradient turning (shelah-halo-orbit in tokens.css). It
+   is a cue that the question was heard, so it stays quiet: low opacity, one slow
+   turn every --motion-dur-orbit. It belongs to a question asked from the bar:
+   conversation-ui.js sets body.search-loading only for those, and the answer
+   panel stays shut until the answer lands. A question asked in the panel gets
+   the panel's own halo (.conv-halo) instead, never both. */
+#searchForm {
+    isolation: isolate;
+}
+
+body.search-loading .search-liftoff-underlay {
+    opacity: 0.6;
+}
+
+/* The orbit is declared on the base ::before rule but held paused, and only
+   let run here. When loading ends the gradient therefore freezes where it is
+   while the halo fades out (dropping the animation instead would snap it back
+   to angle 0 mid-fade), and the next request resumes from that angle. */
+body.search-loading .search-liftoff-underlay::before {
+    animation-play-state: running;
+}
+
+/* Fixed stadium-shaped mask: border-radius + overflow:hidden keep the visible
+   silhouette a stable pill at every frame, however its ::before gradient turns
+   underneath (the rotation can't live on this element: turning a wide, short
+   box would swing it into a tall diagonal streak over the neighbouring topbar
+   content). It sits one step outside the input and is blurred, so only a soft
+   halo shows past the input's edge; the input and icons paint above it
+   (z-index -1 inside the form's isolation). */
+.search-liftoff-underlay {
+    position: absolute;
+    /* One --sp-2 step, not more: on mobile the topbar pads the form by exactly
+       that much, so this layout box (the blur doesn't count toward scrollable
+       overflow) stops at the viewport edge instead of adding 2px of
+       horizontal overflow at 320px. */
+    inset: calc(-1 * var(--sp-2));
+    z-index: -1;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    filter: blur(9px);
+    transition: opacity var(--motion-dur-base) var(--motion-ease-out);
+}
+
+/* The rotating gradient: one side of the halo is always gold, the opposite
+   side always blue, and the whole thing turns so the two swap sides. It is a
+   square turned around its own centre and clipped back to the stadium shape
+   by the mask every frame.
+
+   scale(2.2, 1) stretches it horizontally to the bar's wide shape. A conic
+   gradient lays its colours out by angle from the centre, so on a bar ~15x
+   wider than tall the long edges would sit almost entirely near +/-90deg: one
+   colour at a time, flipping in unison, which reads as pulsing, not turning.
+   Stretched, the colours spread along the edges roughly in proportion to
+   distance and the two halves genuinely travel around the bar. They are
+   mirror images, so total brightness stays within a few percent at every angle
+   and nothing dips or vanishes. --accent-gold and --accent-primary resolve per
+   theme. The first background is the sRGB fallback; `in oklab` (second) blends
+   gold into blue cleanly instead of muddy. */
+.search-liftoff-underlay::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 70%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%) scale(2.2, 1);
+    background: conic-gradient(from 0deg,
+        var(--accent-gold) 0%,
+        var(--accent-gold) 12%,
+        var(--accent-primary) 38%,
+        var(--accent-primary) 62%,
+        var(--accent-gold) 88%,
+        var(--accent-gold) 100%);
+    background: conic-gradient(in oklab from 0deg,
+        var(--accent-gold) 0%,
+        var(--accent-gold) 12%,
+        var(--accent-primary) 38%,
+        var(--accent-primary) 62%,
+        var(--accent-gold) 88%,
+        var(--accent-gold) 100%);
+    animation: shelah-halo-orbit var(--motion-dur-orbit) linear infinite paused;
+}
+
+/* The status line under the bar while a question asked from it loads: one card
+   that holds the running step ("Searching the sources...", or what the AI is
+   looking up) over the finished ones. It overlays the page like the suggestion
+   list does, so it never moves the layout, and sits one step below the halo's
+   blur. The panel stays shut until the answer lands, so this is the one place
+   the wait is spelled out. The rows are the panel's own (.conv-status__now and
+   .conv-status__done in conversation.css, which also keep the blink AA). */
+.search-live {
+    position: absolute;
+    inset-inline: 0;
+    top: calc(100% + var(--sp-3));
+    z-index: 80;
+    display: grid;
+    gap: var(--sp-1);
+    padding: var(--sp-2) var(--sp-4);
+    border: 1px solid var(--ctrl-border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+    box-shadow: var(--shadow-md);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(calc(-1 * var(--sp-1)));
+    pointer-events: none;
+    transition:
+        opacity var(--motion-dur-base) var(--motion-ease-out),
+        transform var(--motion-dur-base) var(--motion-ease-out),
+        visibility 0s linear var(--motion-dur-base);
+}
+.search-live[data-active="true"] {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition-delay: 0s;
+}
+.search-live .conv-status__done[data-empty="true"] { display: none; }
+
+/* Reduced motion: no turning. The halo is a still soft ring that fades in and
+   out over 120ms (gentler, not none), like the other fades. The status card
+   just fades, without the slide. */
+@media (prefers-reduced-motion: reduce) {
+    .search-liftoff-underlay { transition: opacity 120ms linear !important; }
+    .search-liftoff-underlay::before { animation: none !important; }
+    .search-live {
+        transform: none !important;
+        transition: opacity 120ms linear, visibility 0s linear 120ms !important;
+    }
+    .search-live[data-active="true"] { transition-delay: 0s !important; }
+}
+
 /* .search-ai-sparkle's always-on ambient pulse lives in static/style.css
    (shelah-warm-pulse 3.4s infinite) -- this compound selector's higher
    specificity takes over for the liftoff window only, without editing that
@@ -675,8 +843,10 @@ body.search-loading .search-ai-sparkle {
         background var(--motion-dur-fast) var(--motion-ease-out) !important;
 }
 
-.sidebar-show-tab:hover {
-    transform: translateX(2px);
+@media (hover: hover) and (pointer: fine) {
+    .sidebar-show-tab:hover {
+        transform: translateX(2px);
+    }
 }
 
 #closeLeftSidebarBtn,
@@ -702,8 +872,10 @@ body.search-loading .search-ai-sparkle {
     transition: transform var(--motion-dur-fast) var(--motion-ease-out), opacity var(--motion-dur-fast) var(--motion-ease-out), scale var(--motion-dur-fast) var(--motion-ease-out);
 }
 
-.home-library-link:hover {
-    transform: translateX(2px);
+@media (hover: hover) and (pointer: fine) {
+    .home-library-link:hover {
+        transform: translateX(2px);
+    }
 }
 
 /* ── Legal modal ─────────────────────────────────────────── */
@@ -716,8 +888,13 @@ body.search-loading .search-ai-sparkle {
 }
 
 #legalAcceptBtn:not(:disabled):hover {
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(31, 63, 99, 0.3);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    #legalAcceptBtn:not(:disabled):hover {
+        transform: translateY(-1px);
+    }
 }
 
 #legalAcceptBtn:not(:disabled):active {
@@ -730,7 +907,7 @@ body.search-loading .search-ai-sparkle {
 }
 
 .lang-btn {
-    transition: background-color var(--motion-dur-fast) var(--motion-ease-out), font-weight var(--motion-dur-fast) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out) !important;
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out) !important;
 }
 
 .lang-btn-active {
@@ -746,7 +923,16 @@ body.search-loading .search-ai-sparkle {
     height: 2px;
     background: currentColor;
     border-radius: 1px;
-    animation: shelah-scale-in 0.2s ease both;
+    animation: shelah-scale-in var(--motion-dur-base) var(--motion-ease-decel) both;
+}
+
+/* The EN / עברית switch is 28px tall on a mouse; touch screens get the
+   44px target (iPad landscape and wider tablets show it, phones use the menu). */
+@media (pointer: coarse) {
+    .lang-btn {
+        min-block-size: var(--hit-min);
+        min-inline-size: var(--hit-min);
+    }
 }
 
 /* ── Respect reduced-motion additions ────────────────────── */
@@ -979,6 +1165,52 @@ body.search-loading .search-ai-sparkle {
 }
 
 .answer-feedback-btn svg {
+    width: 0.9375rem;
+    height: 0.9375rem;
+    flex-shrink: 0;
+}
+
+/* "Add a comment": a text-and-icon ghost beside the thumbs, quieter than the
+   prompt it follows (same --ink-secondary, same size). 44px tall like the
+   thumbs; the visible footprint is just the words. */
+.answer-feedback-comment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    min-height: 44px;
+    margin-inline-start: var(--sp-1);
+    padding: var(--sp-1) var(--sp-2);
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--ink-secondary);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out),
+        color var(--motion-dur-fast) var(--motion-ease-out),
+        transform var(--motion-dur-fast) var(--motion-ease-out);
+}
+
+.answer-feedback-comment-btn:hover {
+    background: var(--ctrl-bg-hover);
+    color: var(--ink-primary);
+}
+
+.answer-feedback-comment-btn:active {
+    transform: scale(0.97);
+}
+
+.answer-feedback-comment-btn:focus-visible {
+    background: var(--ctrl-bg-hover);
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+.answer-feedback-comment-btn[aria-expanded="true"] {
+    color: var(--accent-primary);
+}
+
+.answer-feedback-comment-btn svg {
     width: 0.9375rem;
     height: 0.9375rem;
     flex-shrink: 0;
@@ -1267,8 +1499,15 @@ body.theme-dark .answer-link-btn {
     font-weight: 600;
 }
 
+.answer-feedback-error {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--accent-red);
+}
+
 @media (prefers-reduced-motion: reduce) {
     .answer-feedback-btn,
+    .answer-feedback-comment-btn,
     .answer-feedback-submit {
         transition: none;
     }

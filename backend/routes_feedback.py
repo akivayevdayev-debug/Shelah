@@ -2,9 +2,14 @@
 Answer-feedback blueprint for Sh'elah.
 
 A single write-only endpoint: readers leave a thumbs up/down (and an
-optional short comment) on an AI answer. Feedback is accepted from
-signed-out readers too (nullable user_id), matching the accept_legal()
-optional-auth pattern in backend/routes_user.py.
+optional short comment) on an AI answer, or just a comment ("comment" verdict,
+no rating). Feedback is accepted from signed-out readers too (nullable
+user_id), matching the accept_legal() optional-auth pattern in
+backend/routes_user.py.
+
+Readers can never write the server's own note on an answer (verdict
+"ai_note", source "ai" -- backend/ai_notes.py): ``source`` is not read from
+the request, and "ai_note" is not an accepted verdict here.
 
 Feedback on a stored answer is linked to its ask_history row (deep-link
 Phase 6): the owner's client sends ``history_id``, a visitor on a shared
@@ -36,7 +41,7 @@ from app import (
 
 routes_feedback = Blueprint("feedback", __name__)
 
-_VALID_VERDICTS = ("helpful", "not_helpful")
+_VALID_VERDICTS = ("helpful", "not_helpful", "comment")
 _MAX_COMMENT_CHARS = 500
 # The three metadata fields are enum-like short strings ("balanced"/"strict",
 # "en"/"he", "ok"/"mental_health_or_self_harm" -- the longest safety class is
@@ -105,7 +110,7 @@ def submit_feedback():
 
     verdict = str(payload.get("verdict") or "").strip()
     if verdict not in _VALID_VERDICTS:
-        return jsonify({"error": "verdict must be 'helpful' or 'not_helpful'"}), 400
+        return jsonify({"error": "verdict must be 'helpful', 'not_helpful' or 'comment'"}), 400
 
     question = str(payload.get("question") or "").strip()
     if not question:
@@ -114,6 +119,8 @@ def submit_feedback():
 
     comment = sanitize_user_query(
         str(payload.get("comment") or ""), max_chars=_MAX_COMMENT_CHARS)
+    if verdict == "comment" and not comment:
+        return jsonify({"error": "comment is required"}), 400
 
     record = {
         "user_id": _get_request_user_id(),

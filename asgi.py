@@ -19,7 +19,12 @@ from pydantic import BaseModel, Field
 
 import app as flask_app_module
 from backend import ask_pipeline, ask_progress, claude, guest_cap, search
-from backend.ask_payloads import build_ai_answer_payload, build_source_fallback_payload, is_usable_primary_source
+from backend.ask_payloads import (
+    build_ai_answer_payload,
+    build_source_fallback_payload,
+    is_usable_primary_source,
+    source_fallback_answer,
+)
 from backend.auth import CLERK_ENFORCE_AUTH, extract_user_id_from_bearer_value
 from backend.device_identity import (
     bind_device, current_history_owner, release_device, request_is_secure, set_device_cookie,
@@ -30,6 +35,7 @@ from backend.data_service import ShelahEngine
 from backend.rag import _build_ask_tool_context, _retrieve_community_knowledge, _compose_answer_with_prefixes
 from backend.rag import _knowledge_rows_to_customs, RAG_TOP_KNOWLEDGE_ROWS, RAG_MEMORY_ROWS
 from backend.rag import _fetch_user_memory_summaries, _store_user_memory_summary, _store_ask_history
+from backend.ai_notes import record_ai_note
 from backend.helpers import _sanitize_answer_mode, _compact_ai_sources, extract_ai_cited, _resolve_client_ip
 from backend.helpers import SECURITY_RESPONSE_HEADERS
 from backend.helpers import _canonicalize_community_name
@@ -77,6 +83,9 @@ class AskRequest(BaseModel):
     # used (backend/guest_cap.py); signed-in callers follow up in a
     # conversation instead and this is ignored for them.
     history_ids: list[str] | None = Field(default=None, max_length=32)
+    # The reader's "Web search" setting (backend/web_lookup.py): False keeps the
+    # AI from looking anything up on the web; absent means the default, on.
+    web_search: bool | None = None
 
 
 def _select_source_line_text(line: dict[str, Any], use_hebrew: bool) -> str:
@@ -134,6 +143,8 @@ async def _collect_primary_sources(
         *((question, context) if context else (question,)),
     )
     refs = primary_refs if isinstance(primary_refs, list) else []
+    ask_progress.detail(
+        ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs[:3], count=len(refs))
 
     async def _load_one(ref: str) -> dict[str, Any] | None:
         engine = ShelahEngine()
@@ -354,6 +365,9 @@ async def _collect_ask_async_context(
     # Earlier questions go in only when a guest follow-up has some, so every
     # other call is exactly what it was before they existed.
     primary_args = (question, retrieval_context) if retrieval_context else (question,)
+    # Which community's customs are being read, said as that step starts.
+    if canonical_lens and canonical_lens != "All":
+        ask_progress.detail(ask_progress.STAGE_CUSTOMS, ask_progress.DETAIL_COMMUNITY, community=canonical_lens)
     primary_task = asyncio.create_task(ask_progress.track(
         ask_progress.STAGE_SOURCES,
         _within("primary", _collect_primary_sources(*primary_args), ([], []))))
@@ -379,8 +393,10 @@ async def _collect_ask_async_context(
             RAG_MEMORY_ROWS,
             bearer_token,
         ), [])))
-    tool_context_task = asyncio.create_task(ask_progress.track(
-        ask_progress.STAGE_TIMES,
+    # Reported (with its topic) only when the question is about a time; every
+    # answer still gets the date and zmanim, the step is just not announced.
+    tool_context_task = asyncio.create_task(ask_progress.track_times(
+        question,
         _within("tool_context", _build_tool_context(), {"route": "/ask", "async": True})))
 
     (_, primary_sources), halachipedia_info, wiki_info, knowledge_rows, user_memory_summaries, tool_context = await asyncio.gather(
@@ -614,10 +630,12 @@ async def _dispatch_ask_async_ai_synthesis_call(question, mode, canonical_lens, 
     if ctx.get("conversation_history"):
         call_kwargs["conversation_history"] = ctx["conversation_history"]
 
+    # The reader's "Web search" setting, only when they sent one.
+    web_kwargs = {"web_search": ctx["web_search"]} if ctx.get("web_search") is not None else {}
     ai_synthesis_coro = (
         ask_pipeline.run_agentic_ask(**call_kwargs)
         if claude.AI_AGENTIC_TOOLS
-        else claude.ask_ai_async(**call_kwargs)
+        else claude.ask_ai_async(**call_kwargs, **web_kwargs)
     )
     ask_progress.begin(ask_progress.STAGE_THINKING)
     return await asyncio.wait_for(
@@ -687,6 +705,22 @@ def _compose_validated_ask_async_answer(raw_ai_answer, needs_web_warning):
     return normalized_answer
 
 
+_AI_NOTE_TIMEOUT_SECONDS = 3.0
+
+
+async def _leave_ai_note(question, **fields):
+    """Write the AI's one-line note for an answer (backend/ai_notes.py) from a
+    thread, bounded so a slow database can never hold the response. Never
+    raises: the note is a courtesy, the answer does not depend on it."""
+    try:
+        await asyncio.wait_for(
+            asyncio.to_thread(record_ai_note, question, **fields),
+            timeout=_AI_NOTE_TIMEOUT_SECONDS,
+        )
+    except Exception:  # noqa: BLE001 - includes asyncio.TimeoutError
+        pass
+
+
 async def _run_ask_async_ai_synthesis(
     question, mode, canonical_lens, answer_language, user_id, question_was_sanitized, ctx,
 ):
@@ -742,6 +776,17 @@ async def _run_ask_async_ai_synthesis(
         prompt_version=claude.PROMPT_VERSION,
     )
 
+    await _leave_ai_note(
+        question,
+        history_id=history_id,
+        result=result,
+        structured=structured_payload,
+        mode=mode,
+        language=answer_language,
+        community=canonical_lens,
+        source_count=len(ctx["primary_sources"]),
+    )
+
     return build_ai_answer_payload(
         result=result,
         answer=normalized_answer,
@@ -786,7 +831,7 @@ async def _run_ask_async_fallback(
         fallback_payload.get("warning") or "").strip()
 
     fallback_answer = _compose_answer_with_prefixes(
-        "## Ruling\n\nAI synthesis unavailable. Returning discovered halakhic references.",
+        source_fallback_answer(answer_language),
         include_web_warning=bool(fallback_warning),
     )
 
@@ -801,6 +846,15 @@ async def _run_ask_async_fallback(
     flask_app_module.DEVTOOLS_STATS["fallback_answers"] += 1
     fallback_sources = _compact_ai_sources(
         fallback_payload.get("sources", []))
+
+    await _leave_ai_note(
+        question,
+        mode=mode,
+        language=answer_language,
+        community=canonical_lens,
+        source_count=len(fallback_sources),
+        fallback=True,
+    )
 
     return build_source_fallback_payload(
         answer=fallback_answer,
@@ -1124,6 +1178,10 @@ async def _ask_async_impl(
     if guest is not None and guest.rows:
         # A follow-up's answer depends on the turns before it.
         ask_cache_key += f"|thread:{guest.cache_scope}"
+    if payload.web_search is False:
+        # Same split as app.py: an answer written with a web lookup is not
+        # served to a reader who switched Web search off.
+        ask_cache_key += "|noweb"
 
     try:
         prayer_result = _ask_async_prayer_result(question, mode, canonical_lens)
@@ -1144,6 +1202,7 @@ async def _ask_async_impl(
         )
         if guest is not None and guest.rows:
             ctx["conversation_history"] = guest.history
+        ctx["web_search"] = payload.web_search
 
         strict_result = _ask_async_strict_block(mode, canonical_lens, ctx)
         if strict_result is not None:

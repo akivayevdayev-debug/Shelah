@@ -548,8 +548,8 @@ function hasParenthetical(text) {
         function disclaimerBannerText(kind) {
             if (kind === 'breaker') {
                 return t(
-                    'AI answers are paused for today to stay within our usage budget — you can still browse and search the full Torah library below. Please try again after midnight UTC.',
-                    'תשובות בינה מלאכותית מושהות להיום כדי להישאר בתקציב השימוש שלנו — ניתן עדיין לעיין ולחפש בספריית התורה המלאה למטה. אנא נסה/י שוב לאחר חצות בשעון UTC.'
+                    'AI answers are paused for today to stay within our usage budget — you can still browse and search the full Torah library. Please try again after midnight UTC.',
+                    'תשובות בינה מלאכותית מושהות להיום כדי להישאר בתקציב השימוש שלנו — ניתן עדיין לעיין ולחפש בספריית התורה המלאה. אנא נסה/י שוב לאחר חצות בשעון UTC.'
                 );
             }
             if (kind === 'referral') {
@@ -1223,6 +1223,7 @@ function hasParenthetical(text) {
             prefs: {
                 mode: 'balanced',
                 community: 'All',
+                webSearch: true,
                 readerLayout: regionalDefaults.readerLayout,
                 fontSize: 18,
                 lineHeight: 1.8,
@@ -1363,8 +1364,13 @@ function hasParenthetical(text) {
         function setThemePreference(themePreference, options = {}) {
             const persist = options.persist !== false;
             appState.prefs.theme = normalizeThemePreference(themePreference);
-            applyThemePreferenceClass();
-            updateThemeToggleUi();
+            const apply = () => {
+                applyThemePreferenceClass();
+                updateThemeToggleUi();
+            };
+            // A switch the visitor made crosses over; applying a saved or system theme does not.
+            if (persist && typeof withThemeFade === 'function') withThemeFade(apply);
+            else apply();
             if (persist) {
                 savePrefs();
             }
@@ -2009,7 +2015,9 @@ function hasParenthetical(text) {
             });
 
             if (settingsMenuBtn) {
-                settingsMenuBtn.title = lang === 'he' ? 'פתח תפריט הגדרות' : 'Open settings menu';
+                const settingsLabel = lang === 'he' ? 'פתח תפריט הגדרות' : 'Open settings menu';
+                settingsMenuBtn.title = settingsLabel;
+                settingsMenuBtn.setAttribute('aria-label', settingsLabel);
             }
         }
 
@@ -3870,10 +3878,18 @@ function hasParenthetical(text) {
             });
         }
 
+        // True while a question asked from the search bar is loading there. The
+        // phone's search is then kept open to show it, so closing it mid-question
+        // (setMobileSearchExpanded) hands the wait to the panel.
+        let barAskLoading = false;
+
         function setMobileSearchExpanded(expanded) {
             const shouldExpand = Boolean(expanded) && isMobileViewport();
             const wasOpen = document.body.classList.contains('mobile-search-open');
             const activeTab = () => mobileBottomTabs?.querySelector('.mobile-tab-active')?.dataset.mobileTab;
+            // Closed by the reader while their question was still loading in it:
+            // nothing on the page shows the wait any more, so the panel does.
+            if (wasOpen && !shouldExpand && barAskLoading) window.ShelahConversationUI?.showPendingAnswer?.();
             document.body.classList.toggle('mobile-search-open', shouldExpand);
             if (wasOpen !== shouldExpand) fadeTopbarSwap(shouldExpand);
             if (shouldExpand) {
@@ -4751,7 +4767,10 @@ function hasParenthetical(text) {
                 : t("Sh'elah - Torah Encyclopedia", 'שאלה - אנציקלופדיית תורה');
         }
 
-        const PRIMARY_TEXT_VIEWS = new Set(['text', 'prayer', 'siddur']);
+        // The views whose page Sh'elah composes itself; every other view is
+        // Sefaria's text or one of the app's own pages (history), neither of
+        // which is a synthesis.
+        const COMPOSED_VIEWS = new Set(['community']);
 
         function setCurrentView(type, value, label, options = {}) {
             // Leaving the siddur stops its scroll tracking and lets go of a
@@ -4759,10 +4778,10 @@ function hasParenthetical(text) {
             // over it ('ask') doesn't leave it.
             if (type !== 'siddur' && type !== 'ask') window.ShelahSiddur?.close();
             // "Sh'elah Synthesis" would claim Sefaria's own text (a verse, a
-            // prayer, the siddur) as the app's writing; it shows only once a
-            // page Sh'elah composes itself has loaded.
+            // prayer, the siddur) or a plain page (history) as the app's
+            // writing; it shows only once a page Sh'elah composes itself has loaded.
             if (type !== 'ask') {
-                document.getElementById('readerKindBadge')?.classList.toggle('hidden', PRIMARY_TEXT_VIEWS.has(type));
+                document.getElementById('readerKindBadge')?.classList.toggle('hidden', !COMPOSED_VIEWS.has(type));
                 // Styling hook (siddur.css sets the siddur's own title size).
                 document.getElementById('reader')?.setAttribute('data-view', type);
                 // The siddur sets its own type and lists: the markdown "prose"
@@ -7444,6 +7463,7 @@ function hasParenthetical(text) {
                 appState.prefs.readerLayout = 'hebrew';
             }
 
+            appState.prefs.webSearch = appState.prefs.webSearch !== false;
             appState.prefs.transliteration = Boolean(appState.prefs.transliteration);
             appState.prefs.showVowels = appState.prefs.showVowels !== false;
             appState.prefs.showCantillation = appState.prefs.showCantillation !== false;
@@ -7508,15 +7528,17 @@ function hasParenthetical(text) {
                     openStoredAskAnswer(result.item);
                     return;
                 }
-                await handleAiSearch(result.reask || '');
+                // Asked from the shelf, not the search bar: the panel carries the wait.
+                await handleAiSearch(result.reask || '', { origin: 'panel' });
             }
         }
 
-        // The AI mode and community are picked in the chat's settings menu
-        // (conversation-ui.js), which saves them here as the defaults.
+        // The AI mode, community and web-search switch are picked in the chat's
+        // settings menu (conversation-ui.js), which saves them here as the defaults.
         window.ShelahPrefs = {
             set(key, value) {
-                if (!['mode', 'community'].includes(key) || appState.prefs[key] === value) return;
+                const valid = key === 'webSearch' ? typeof value === 'boolean' : ['mode', 'community'].includes(key);
+                if (!valid || appState.prefs[key] === value) return;
                 appState.prefs[key] = value;
                 savePrefs();
             },
@@ -9716,8 +9738,6 @@ function hasParenthetical(text) {
         // -- this used to be an inline
         // askWithRetry() duplicating that module. See ai-service.js's module
         // docstring for the ported behavior and the return contract.
-        // `followUp`: a signed-out visitor's follow-up on the answers on screen
-        // (conversation-ui.js), not a fresh question from the search bar.
         // Brief "liftoff" glow pulse on the search bar itself, fired in the
         // same tick as the panel opening -- a handoff moment, not a
         // sustained loader. Self-cleaning via setTimeout so the class never
@@ -9787,16 +9807,30 @@ function hasParenthetical(text) {
             }
         }
 
-        async function handleAiSearch(question, { followUp = false } = {}) {
+        // `origin` says where the question was asked: 'bar' (the search bar, the
+        // default) or 'panel' (the conversation panel's own composer, or the
+        // shelf). The loading cues -- the bar's halo and status line, or the
+        // panel's -- belong to that one surface only (conversation-ui.js
+        // askSurface). `followUp`: a signed-out visitor's follow-up on the
+        // answers on screen, not a fresh question.
+        async function handleAiSearch(question, { followUp = false, origin = 'bar' } = {}) {
             const sanitizedQuestion = sanitizeQuestionInput(question);
             if (!sanitizedQuestion) return;
             question = sanitizedQuestion;
+
+            // Modules load deferred, but this only runs from a user
+            // interaction, well after they have; assert rather than assume.
+            const panel = window.ShelahConversationUI;
+            const surface = panel?.askSurface?.({ origin, followUp }) || 'panel';
+            const onBar = surface === 'bar';
 
             // Kill the suggestion dropdown immediately -- it must not persist
             // while the answer is on screen.
             suppressSuggestionMenu = true;
             hideSearchSuggestions();
-            setMobileSearchExpanded(false);
+            // A question asked from the phone's search bar loads there, so the
+            // search stays open until the answer lands (the finally below).
+            if (!onBar) setMobileSearchExpanded(false);
             // A leftover chapter-grid modal (z-[110]) sits above the panel and
             // would silently block it from view if left open -- close it first.
             closeChapterGrid();
@@ -9809,31 +9843,36 @@ function hasParenthetical(text) {
             // bookmark button); closing the panel restores the page's
             // (restoreShownView).
             setCurrentView('ask', question, question);
-            document.body.classList.add('search-loading');
-            pulseSearchLiftoff();
+            if (onBar) {
+                barAskLoading = true;
+                pulseSearchLiftoff();
+            }
 
             try {
-                // The conversation panel shows the question and a pending
-                // answer at once, then the answer as the thread's first turn
-                // (conversation-ui.js askFromSearch -> ai-service.js askAi).
-                // Modules load deferred, but this only runs from a user
-                // interaction, well after they have; assert rather than assume.
-                const panel = window.ShelahConversationUI;
+                // From the bar the panel opens when the answer is ready; from the
+                // panel it shows the question and a pending answer at once. Either
+                // way the answer is the thread's first turn (conversation-ui.js
+                // askFromSearch -> ai-service.js askAi). The loading cues
+                // (body.search-loading, the status line) are conversation-ui's:
+                // it turns them on with the pending turn and off with the answer.
                 if (!panel?.askFromSearch) throw new Error('AI module unavailable');
 
                 const data = await panel.askFromSearch(question, {
                     mode: appState.prefs.mode,
                     community: appState.prefs.community,
                     language: isHebrewMode() ? 'he' : 'en',
-                }, { followUp });
+                }, { followUp, surface });
                 // Another question or answer replaced this one meanwhile.
                 if (!data) return;
                 noteAiAnswer(panel, data, question);
             } catch (error) {
                 noteAiSearchFailure(error);
             } finally {
-                document.body.classList.remove('search-loading');
                 suppressSuggestionMenu = false;
+                if (onBar) {
+                    barAskLoading = false;
+                    setMobileSearchExpanded(false);
+                }
             }
         }
 
@@ -10769,6 +10808,8 @@ function hasParenthetical(text) {
             const searchInput = document.getElementById('searchInput');
             if (searchInput) {
                 searchInput.placeholder = lang === 'he' ? searchInput.dataset.hePlaceholder : searchInput.dataset.enPlaceholder;
+                // The accessible name follows the visible prompt, minus its trailing dots.
+                searchInput.setAttribute('aria-label', searchInput.placeholder.replace(/[.…]+$/, ''));
             }
 
             if (libraryIndexFilterInput) {
@@ -11842,7 +11883,9 @@ function hasParenthetical(text) {
                 searchInput.value = question;
             }
 
-            setMobileSearchExpanded(false);
+            // The phone's search closes with the navigation it leads to, or stays
+            // open to show a question loading (handleAiSearch closes it at the end).
+            searchInput.blur();
 
             if (appState.activeSuggestionIndex >= 0 && appState.suggestionItems[appState.activeSuggestionIndex]) {
                 await openSearchTarget(appState.suggestionItems[appState.activeSuggestionIndex], question);
@@ -11877,6 +11920,7 @@ function hasParenthetical(text) {
         const _ANSWER_FEEDBACK_ICONS = {
             up: phosphorPathMarkup('thumbs-up'),
             down: phosphorPathMarkup('thumbs-down'),
+            comment: phosphorPathMarkup('chat-text'),
         };
 
         // Which stored answer a rating is about: the owner's ask_history id,
@@ -11889,6 +11933,14 @@ function hasParenthetical(text) {
             return window.ShelahAskHistory?.isHistoryId(id) ? { history_id: id } : {};
         }
 
+        // The quiet "Add a comment" control that sits beside the thumbs: a reader
+        // can say something without rating (verdict "comment"), or add to a rating.
+        function feedbackCommentButtonHtml() {
+            return `<button type="button" class="answer-feedback-comment-btn" aria-expanded="false">
+                <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${_ANSWER_FEEDBACK_ICONS.comment}</svg>
+                <span>${t('Add a comment', 'הוספת הערה')}</span></button>`;
+        }
+
         function renderFeedbackWidget(container, data, queryTitle) {
             if (!container) return;
             const answerLink = feedbackAnswerLink(data);
@@ -11899,15 +11951,19 @@ function hasParenthetical(text) {
                         aria-label="${t('Helpful', 'מועיל')}"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${_ANSWER_FEEDBACK_ICONS.up}</svg></button>
                     <button type="button" class="answer-feedback-btn" data-verdict="not_helpful" aria-pressed="false"
                         aria-label="${t('Not helpful', 'לא מועיל')}"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${_ANSWER_FEEDBACK_ICONS.down}</svg></button>
+                    ${feedbackCommentButtonHtml()}
                 </div>
             `;
             const root = container.querySelector('.answer-feedback');
             const buttons = Array.from(root.querySelectorAll('.answer-feedback-btn'));
+            let rated = ''; // 'helpful' | 'not_helpful' once a thumb was pressed
 
+            // True when the server took it. A rating is best-effort (a reader is
+            // never told it was lost); a typed comment is not, so it reports back.
             async function submitFeedback(verdict, comment) {
                 try {
                     const headers = await authHeaders({ 'Content-Type': 'application/json' });
-                    await fetch('/api/feedback', {
+                    const response = await fetch('/api/feedback', {
                         method: 'POST',
                         headers,
                         body: JSON.stringify({
@@ -11921,20 +11977,115 @@ function hasParenthetical(text) {
                             ...answerLink,
                         }),
                     });
+                    return response?.ok !== false;
                 } catch {
-                    // Best-effort — feedback loss isn't worth surfacing an error to the reader.
+                    return false;
                 }
             }
 
-            function showThanks() {
-                root.dataset.feedbackState = 'done';
-                root.innerHTML = `<span class="answer-feedback-thanks">${t('Thank you for your feedback!', 'תודה על המשוב!')}</span>`;
+            function commentButton() {
+                return root.querySelector('.answer-feedback-comment-btn');
             }
+
+            function closeCommentRow({ refocus = false } = {}) {
+                root.querySelector('.answer-feedback-comment-row')?.remove();
+                const toggle = commentButton();
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', 'false');
+                    if (refocus) toggle.focus();
+                }
+                if (root.dataset.feedbackState === 'commenting' && !rated) root.dataset.feedbackState = 'idle';
+            }
+
+            // `withComment` keeps the comment control after a thumbs-up so the
+            // reader can still add words; the final thanks removes it.
+            function showThanks(withComment) {
+                root.dataset.feedbackState = 'done';
+                root.innerHTML = `<span class="answer-feedback-thanks" role="status">${t('Thank you for your feedback!', 'תודה על המשוב!')}</span>${withComment ? feedbackCommentButtonHtml() : ''}`;
+                bindCommentButton();
+            }
+
+            // The comment is a row of its own when the reader has not rated, and
+            // after a thumbs-up. After a thumbs-down it travels with that verdict
+            // (the original contract, so it still saves before the AI-notes
+            // migration has run).
+            async function sendComment(row) {
+                const field = row.querySelector('textarea');
+                const text = field.value.trim();
+                if (!text) {
+                    if (rated) showThanks(false);
+                    else field.focus();
+                    return;
+                }
+                const send = row.querySelector('.answer-feedback-submit');
+                const problem = row.querySelector('.answer-feedback-error');
+                send.disabled = true;
+                problem.hidden = true;
+                const saved = await submitFeedback(rated === 'not_helpful' ? 'not_helpful' : 'comment', text);
+                if (saved) {
+                    showThanks(false);
+                    return;
+                }
+                send.disabled = false;
+                problem.hidden = false;
+                field.focus();
+            }
+
+            function openCommentRow() {
+                let row = root.querySelector('.answer-feedback-comment-row');
+                if (!row) {
+                    row = document.createElement('div');
+                    row.className = 'answer-feedback-comment-row';
+                    row.innerHTML = `
+                        <textarea maxlength="500" dir="auto"></textarea>
+                        <p class="answer-feedback-error" role="alert" hidden>${t('Could not send that. Please try again.', 'לא הצלחנו לשלוח. אפשר לנסות שוב.')}</p>
+                        <button type="button" class="answer-feedback-submit"></button>
+                    `;
+                    root.appendChild(row);
+                    row.querySelector('.answer-feedback-submit').addEventListener('click', () => { void sendComment(row); });
+                    row.querySelector('textarea').addEventListener('keydown', (event) => {
+                        if (event.key === 'Escape' && !rated) {
+                            event.preventDefault();
+                            closeCommentRow({ refocus: true });
+                        } else if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                            event.preventDefault();
+                            void sendComment(row);
+                        }
+                    });
+                }
+                const field = row.querySelector('textarea');
+                const prompt = rated === 'not_helpful'
+                    ? t('What went wrong? (optional)', 'מה השתבש? (אופציונלי)')
+                    : t('Add a comment', 'הוספת הערה');
+                field.placeholder = prompt;
+                field.setAttribute('aria-label', prompt);
+                row.querySelector('.answer-feedback-submit').textContent = rated === 'not_helpful'
+                    ? t('Send feedback', 'שלח משוב')
+                    : t('Send comment', 'שליחת הערה');
+                const toggle = commentButton();
+                if (toggle) toggle.setAttribute('aria-expanded', 'true');
+                return field;
+            }
+
+            function bindCommentButton() {
+                const toggle = commentButton();
+                if (!toggle) return;
+                toggle.addEventListener('click', () => {
+                    if (root.querySelector('.answer-feedback-comment-row')) {
+                        closeCommentRow({ refocus: true });
+                        return;
+                    }
+                    if (root.dataset.feedbackState === 'idle') root.dataset.feedbackState = 'commenting';
+                    openCommentRow().focus();
+                });
+            }
+            bindCommentButton();
 
             buttons.forEach((btn) => {
                 btn.addEventListener('click', () => {
-                    if (root.dataset.feedbackState !== 'idle') return;
+                    if (rated) return;
                     const verdict = btn.dataset.verdict;
+                    rated = verdict;
                     buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
                     buttons.forEach((b) => { b.disabled = true; });
 
@@ -11944,22 +12095,18 @@ function hasParenthetical(text) {
                     // verdict entirely to abandonment.
                     void submitFeedback(verdict, '');
 
+                    const writing = root.querySelector('.answer-feedback-comment-row');
                     if (verdict === 'not_helpful') {
                         root.dataset.feedbackState = 'commenting';
-                        const commentRow = document.createElement('div');
-                        commentRow.className = 'answer-feedback-comment-row';
-                        commentRow.innerHTML = `
-                            <textarea maxlength="500" placeholder="${t('What went wrong? (optional)', 'מה השתבש? (אופציונלי)')}"></textarea>
-                            <button type="button" class="answer-feedback-submit">${t('Send feedback', 'שלח משוב')}</button>
-                        `;
-                        root.appendChild(commentRow);
-                        commentRow.querySelector('.answer-feedback-submit').addEventListener('click', async () => {
-                            const comment = commentRow.querySelector('textarea').value;
-                            if (comment.trim()) await submitFeedback(verdict, comment);
-                            showThanks();
-                        });
+                        openCommentRow();
+                        // A reader who already opened the box has typed in it; keep focus there.
+                        if (!writing) root.querySelector('.answer-feedback-comment-row textarea').focus();
+                    } else if (writing) {
+                        // They are mid-comment: let them finish it.
+                        root.dataset.feedbackState = 'commenting';
+                        openCommentRow();
                     } else {
-                        showThanks();
+                        showThanks(true);
                     }
                 });
             });

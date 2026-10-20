@@ -14,7 +14,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { applyLanguagePreference, swapPendingLanguage, computeFloatingMenuPosition } = require('../static/js/topbar_shared.js');
+const { applyLanguagePreference, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade } = require('../static/js/topbar_shared.js');
 
 function createFakeLocalStorage() {
     const store = new Map();
@@ -239,4 +239,81 @@ test('computeFloatingMenuPosition respects a custom offset from the topbar botto
 
 test('the fake document/localStorage/window are removed again once a test has finished', () => {
     assert.equal(typeof globalThis.document === 'undefined' || globalThis.document.querySelector === undefined, true);
+});
+
+// ── withThemeFade ───────────────────────────────────────────────────────
+
+function fakeThemeDocument({ api = true, hidden = false, routeTransition = false, throws = false } = {}) {
+    const attrs = new Map(routeTransition ? [['data-vt-active', '']] : []);
+    const doc = {
+        hidden,
+        started: [],
+        documentElement: {
+            hasAttribute: (name) => attrs.has(name),
+            setAttribute: (name, value) => attrs.set(name, String(value)),
+            removeAttribute: (name) => attrs.delete(name),
+        },
+        attrs,
+    };
+    if (api) {
+        doc.startViewTransition = (update) => {
+            if (throws) throw new Error('InvalidStateError');
+            let finish;
+            const transition = { update, finished: new Promise((resolve) => { finish = resolve; }), finish };
+            doc.started.push(transition);
+            return transition;
+        };
+    }
+    return doc;
+}
+
+function withThemeDocument(t, doc) {
+    const saved = globalThis.document;
+    globalThis.document = doc;
+    t.after(() => { globalThis.document = saved; });
+}
+
+test('withThemeFade applies the change at once when the browser has no View Transitions', (t) => {
+    withThemeDocument(t, fakeThemeDocument({ api: false }));
+    let calls = 0;
+    withThemeFade(() => { calls += 1; });
+    assert.equal(calls, 1);
+});
+
+test('withThemeFade applies the change at once in a hidden tab or during a route transition', (t) => {
+    for (const options of [{ hidden: true }, { routeTransition: true }]) {
+        const doc = fakeThemeDocument(options);
+        withThemeDocument(t, doc);
+        let calls = 0;
+        withThemeFade(() => { calls += 1; });
+        assert.equal(calls, 1, JSON.stringify(options));
+        assert.equal(doc.started.length, 0, 'no transition is started');
+        assert.equal(doc.attrs.has('data-vt-theme'), false);
+    }
+});
+
+test('withThemeFade hands the change to a view transition and scopes it with data-vt-theme until it ends', async (t) => {
+    const doc = fakeThemeDocument();
+    withThemeDocument(t, doc);
+    let calls = 0;
+    const change = () => { calls += 1; };
+    withThemeFade(change);
+    assert.equal(calls, 0, 'the browser calls it after it has pictured the old page');
+    assert.equal(doc.started.length, 1);
+    assert.equal(doc.started[0].update, change);
+    assert.equal(doc.attrs.has('data-vt-theme'), true);
+
+    doc.started[0].finish();
+    await doc.started[0].finished;
+    await Promise.resolve();
+    assert.equal(doc.attrs.has('data-vt-theme'), false, 'the scope is gone once the fade has finished');
+});
+
+test('withThemeFade still applies the change, once, when starting the transition throws', (t) => {
+    const doc = fakeThemeDocument({ throws: true });
+    withThemeDocument(t, doc);
+    let calls = 0;
+    withThemeFade(() => { calls += 1; });
+    assert.equal(calls, 1);
+    assert.equal(doc.attrs.has('data-vt-theme'), false);
 });

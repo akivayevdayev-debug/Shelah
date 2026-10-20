@@ -200,3 +200,21 @@ class TestIsUsablePrimarySource:
     ])
     def test_a_failed_empty_or_malformed_source_is_not(self, source):
         assert ask_payloads.is_usable_primary_source(source) is False
+
+
+class TestSourceFallbackAnswer:
+    def test_english_by_default(self):
+        text = ask_payloads.source_fallback_answer("en")
+        assert text.startswith("No written answer this time")
+        assert ask_payloads.source_fallback_answer(None) == text
+        assert ask_payloads.source_fallback_answer("") == text
+
+    def test_hebrew_when_the_answer_language_is_hebrew(self):
+        text = ask_payloads.source_fallback_answer("he")
+        assert "הפעם" in text
+        assert ask_payloads.source_fallback_answer("HE") == text
+
+    def test_is_not_a_ruling(self):
+        # Nothing was decided: the text must not sit under a "Ruling" heading.
+        for lang in ("en", "he"):
+            assert not ask_payloads.source_fallback_answer(lang).lstrip().startswith("#")

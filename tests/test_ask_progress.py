@@ -15,6 +15,8 @@ import asyncio
 import json
 import threading
 
+import pathlib
+
 import pytest
 from fastapi import HTTPException
 
@@ -123,6 +125,155 @@ class TestProgressReporter:
         assert ask_progress.STAGES == {"sources", "commentary", "customs", "times", "thinking"}
 
 
+class TestDetails:
+    """A step can say exactly what it is doing (static/js/ask-progress.js words it)."""
+
+    @staticmethod
+    def _capture(work):
+        events = []
+        token = ask_progress.bind(events.append)
+        try:
+            work()
+        finally:
+            ask_progress.unbind(token)
+        return events
+
+    def test_unbound_details_are_a_silent_no_op(self):
+        ask_progress.detail("sources", "refs", refs=["Berakhot 1:1"])
+        with ask_progress.detail_scope("thinking", "tool", tool="get_zmanim"):
+            pass
+
+    def test_a_detail_is_its_kind_and_the_parameters_that_have_a_value(self):
+        events = self._capture(lambda: ask_progress.detail(
+            "sources", "refs", refs=["Berakhot 1:1", " ", "Shabbat 2:1"], count=7, extra=None, blank=""))
+        assert events == [{
+            "type": "detail", "stage": "sources",
+            "detail": {"kind": "refs", "refs": ["Berakhot 1:1", "Shabbat 2:1"], "count": 7},
+        }]
+
+    def test_an_unknown_kind_or_stage_is_ignored(self):
+        events = self._capture(lambda: (
+            ask_progress.detail("sources", "free-text", text="<b>hi</b>"),
+            ask_progress.detail("not-a-stage", "refs", refs=["x"]),
+        ))
+        assert events == []
+
+    def test_a_detail_scope_clears_when_the_last_overlapping_piece_of_work_ends(self):
+        def work():
+            with ask_progress.detail_scope("thinking", "tool", tool="get_zmanim"):
+                with ask_progress.detail_scope("thinking", "tool", tool="get_parasha"):
+                    pass
+                events_inside.append(len(events))
+        events_inside = []
+        events = []
+        token = ask_progress.bind(events.append)
+        try:
+            work()
+        finally:
+            ask_progress.unbind(token)
+        tools = [e["detail"] and e["detail"]["tool"] for e in events]
+        # zmanim, parasha, then (parasha over, zmanim still running) nothing, then cleared
+        assert tools == ["get_zmanim", "get_parasha", None]
+        assert events_inside == [2]
+
+    def test_a_detail_scope_clears_even_when_the_work_raises(self):
+        def work():
+            with pytest.raises(ValueError):
+                with ask_progress.detail_scope("thinking", "tool", tool="get_omer"):
+                    raise ValueError("boom")
+        events = self._capture(work)
+        assert [e["detail"] for e in events] == [{"kind": "tool", "tool": "get_omer"}, None]
+
+    @pytest.mark.parametrize("question, topic", [
+        ("When does Shabbat start this week?", "shabbat"),
+        ("What time is candle lighting?", "shabbat"),
+        ("how long after sunset does Shabbat end", "shabbat"),
+        ("When is havdalah in Jerusalem?", "shabbat"),
+        ("What time is sunrise today?", "zmanim"),
+        ("What is the latest time for Shema?", "zmanim"),
+        ("What day of the Omer is it?", "omer"),
+        ("What parsha is this week?", "parasha"),
+        ("When is Rosh Chodesh?", "holiday"),
+        ("What is today's Hebrew date?", "holiday"),
+        ("Can I use a dishwasher on Shabbat?", None),
+        ("Is it ok to cook on Yom Tov?", None),
+        ("What is the Rambam's view on charity?", None),
+        ("", None),
+        (None, None),
+    ])
+    def test_times_topic_is_the_kind_of_time_a_question_is_about(self, question, topic):
+        assert ask_progress.times_topic(question) == topic
+
+    def test_every_topic_the_classifier_can_return_is_a_declared_one(self):
+        assert {topic for topic, _ in ask_progress._TIMES_PATTERNS} == set(ask_progress.TIMES_TOPICS)
+
+    def test_times_stage_names_the_topic_then_opens_and_closes_the_step(self):
+        def work():
+            with ask_progress.times_stage("When does Shabbat start?"):
+                pass
+        assert self._capture(work) == [
+            {"type": "detail", "stage": "times", "detail": {"kind": "times", "topic": "shabbat"}},
+            {"type": "stage", "stage": "times", "state": "start"},
+            {"type": "stage", "stage": "times", "state": "done"},
+        ]
+
+    def test_times_stage_is_silent_for_a_question_that_is_not_about_a_time(self):
+        def work():
+            with ask_progress.times_stage("Tell me about Rashi"):
+                pass
+        assert self._capture(work) == []
+
+    async def test_track_times_awaits_the_work_either_way(self):
+        async def work():
+            return "context"
+
+        events = []
+        token = ask_progress.bind(events.append)
+        try:
+            assert await ask_progress.track_times("Tell me about Rashi", work()) == "context"
+            assert events == []
+            assert await ask_progress.track_times("What time is sunset?", work()) == "context"
+        finally:
+            ask_progress.unbind(token)
+        assert [e.get("state") or e["type"] for e in events] == ["detail", "start", "done"]
+
+    async def test_a_tool_call_is_reported_while_it_runs_and_cleared_after(self, monkeypatch):
+        from backend import ai_tools
+        seen = []
+
+        async def handler(arguments, context):
+            seen.append(list(events))
+            return {"ok": True}
+
+        original = ai_tools._TOOLS_BY_NAME["get_text_by_ref"]
+        import dataclasses
+        monkeypatch.setitem(ai_tools._TOOLS_BY_NAME, "get_text_by_ref", dataclasses.replace(original, handler=handler))
+        events = []
+        token = ask_progress.bind(events.append)
+        try:
+            result = await ai_tools.execute_tool("get_text_by_ref", {"ref": "Shabbat 31a"}, context={})
+        finally:
+            ask_progress.unbind(token)
+        assert result == {"ok": True}
+        running = {"type": "detail", "stage": "thinking", "detail": {"kind": "tool", "tool": "get_text_by_ref", "ref": "Shabbat 31a"}}
+        assert seen == [[running]]
+        assert events == [running, {"type": "detail", "stage": "thinking", "detail": None}]
+
+    def test_every_ai_tool_has_a_line_in_the_client(self):
+        """static/js/ask-progress.js words each tool the server can run (no stray English names)."""
+        from backend import ai_tools
+        source = (pathlib.Path(__file__).resolve().parent.parent / "static" / "js" / "ask-progress.js").read_text()
+        missing = [t.name for t in ai_tools.TOOLS if t.name != "get_text_by_ref" and f"{t.name}:" not in source]
+        assert not missing, f"add a line for these tools to TOOL_LABELS: {missing}"
+        assert "get_text_by_ref" in source
+
+    async def test_only_get_text_by_ref_shares_an_argument_with_the_reader(self):
+        from backend import ai_tools
+        assert ai_tools._progress_ref("get_zmanim", {"ref": "x", "date": "2026-10-17"}) is None
+        assert ai_tools._progress_ref("get_text_by_ref", {"ref": "  " + "A" * 200}) == "A" * 80
+        assert ai_tools._progress_ref("get_text_by_ref", None) is None
+
+
 class TestWireFormat:
     @pytest.mark.parametrize("accept, expected", [
         ("application/x-ndjson", True),
@@ -170,12 +321,13 @@ class TestCollectContextReportsSteps:
         events = []
         token = ask_progress.bind(events.append)
         try:
-            await asgi._collect_ask_async_context("q", "All", None, "en")
+            await asgi._collect_ask_async_context("What time does Shabbat end?", "All", None, "en")
         finally:
             ask_progress.unbind(token)
 
-        started = [e["stage"] for e in events if e["state"] == "start"]
-        done = [e["stage"] for e in events if e["state"] == "done"]
+        steps = [e for e in events if e["type"] == "stage"]
+        started = [e["stage"] for e in steps if e["state"] == "start"]
+        done = [e["stage"] for e in steps if e["state"] == "done"]
         # Stubs that answer instantly can open and close a step more than
         # once (its second lookup starts after its first already finished), so
         # compare first appearances, not raw counts.
@@ -184,6 +336,47 @@ class TestCollectContextReportsSteps:
         # No step is left open: every start has a matching done.
         for stage in set(started):
             assert started.count(stage) == done.count(stage)
+
+    async def test_the_times_step_is_left_out_of_a_question_that_is_not_about_a_time(self, stubbed):
+        events = []
+        token = ask_progress.bind(events.append)
+        try:
+            await asgi._collect_ask_async_context("What is the Rambam's view on charity?", "All", None, "en")
+        finally:
+            ask_progress.unbind(token)
+        stages = {e["stage"] for e in events if e["type"] == "stage"}
+        assert stages == {"sources", "commentary", "customs"}
+
+    async def test_the_times_step_names_the_kind_of_time_before_it_starts(self, stubbed):
+        events = []
+        token = ask_progress.bind(events.append)
+        try:
+            await asgi._collect_ask_async_context("When does Shabbat start?", "All", None, "en")
+        finally:
+            ask_progress.unbind(token)
+        details = [e for e in events if e["type"] == "detail" and e["stage"] == "times"]
+        assert details and details[0]["detail"] == {"kind": "times", "topic": "shabbat"}
+        # said before the step opens, so the line never shows the generic words first
+        first_times = next(i for i, e in enumerate(events) if e.get("stage") == "times")
+        assert events[first_times]["type"] == "detail"
+
+    async def test_a_community_lens_is_named_as_the_customs_step_starts(self, stubbed):
+        events = []
+        token = ask_progress.bind(events.append)
+        try:
+            await asgi._collect_ask_async_context("q", "Sephardi", None, "en")
+        finally:
+            ask_progress.unbind(token)
+        assert {"type": "detail", "stage": "customs", "detail": {"kind": "community", "community": "Sephardi"}} in events
+
+    async def test_no_lens_means_no_community_detail(self, stubbed):
+        events = []
+        token = ask_progress.bind(events.append)
+        try:
+            await asgi._collect_ask_async_context("q", "All", None, "en")
+        finally:
+            ask_progress.unbind(token)
+        assert not [e for e in events if e["type"] == "detail" and e["stage"] == "customs"]
 
     async def test_a_timed_out_lookup_still_closes_its_step(self, stubbed, monkeypatch):
         async def hung(question):

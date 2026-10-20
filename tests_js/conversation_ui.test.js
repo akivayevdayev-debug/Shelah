@@ -69,7 +69,7 @@ test('signed out, a question goes to the one-shot search instead of the conversa
         // No Clerk on the deployment (local dev): the panel does not wait for sign-in.
         await page.ui.open({ question: '  What is Shabbat?  ' });
         await page.flush();
-        assert.deepEqual(asked, [['What is Shabbat?', { followUp: false }]]);
+        assert.deepEqual(asked, [['What is Shabbat?', { followUp: false, origin: 'panel' }]]);
 
         // The composer does the same from inside the panel.
         await page.ui.open({ fresh: true });
@@ -78,6 +78,35 @@ test('signed out, a question goes to the one-shot search instead of the conversa
         assert.deepEqual(asked.map(([question]) => question), ['What is Shabbat?', 'And Rosh Chodesh?']);
         assert.equal(page.$('#convInput').value, '');
         assert.equal(page.api.calls.length, 0);
+    } finally {
+        page.close();
+    }
+});
+
+test('a paused answer shows the banner and the sources it found, not the server sentence again', async () => {
+    const page = await openConversationPage();
+    try {
+        page.window.renderDisclaimerBanner = (el, _safety, paused) => {
+            el.classList.toggle('ai-disclaimer-banner--breaker-paused', Boolean(paused));
+            el.textContent = 'Answers are paused today.';
+        };
+        await page.ui.open({ fresh: true });
+        await page.flush();
+        page.ui.showAnswer({
+            id: 'h-paused',
+            question: 'Hot plate?',
+            answer: 'AI answers are paused for today -- try later.',
+            ai_cited_sources: [],
+            sources: [{ ref: 'Shulchan Arukh, Orach Chayim 253:1', lines: [] }],
+            meta: { fallback: true, breaker_tripped: true },
+        });
+        await page.flush();
+
+        const turn = page.$('#convMessages .conv-turn--assistant') || page.$('#convMessages li:last-child');
+        assert.ok(turn.querySelector('.ai-disclaimer-banner--breaker-paused'));
+        assert.equal(turn.querySelector('.conv-answer'), null);
+        assert.match(turn.textContent, /Shulchan Arukh, Orach Chayim 253:1/);
+        assert.doesNotMatch(turn.textContent, /try later/);
     } finally {
         page.close();
     }
@@ -330,6 +359,43 @@ test('a question creates the conversation and shows both turns, locked to its co
     }
 });
 
+test('a reply in the signed-in thread can be rated, with the question it answers', async () => {
+    const page = await openAsk();
+    try {
+        const widgets = [];
+        page.window.renderFeedbackWidget = (host, data, question) => { widgets.push([host.className, data.meta.language, question, data.history_id]); };
+        await page.ask('When do we light candles?');
+        assert.deepEqual(widgets, [['conv-turn__feedback', 'en', 'When do we light candles?', undefined]]);
+        assert.ok(turns(page)[1].querySelector('[data-answer-actions] .conv-turn__feedback'), 'the reply has its rating row');
+        assert.equal(turns(page)[0].querySelector('[data-answer-actions]'), null, 'the question has none');
+    } finally {
+        page.close();
+    }
+});
+
+test('a reply that is still pending, failed or came back empty has no rating row', async () => {
+    const reply = (content, status) => async (id, { question }) => ({
+        user_message: { id: 'u1', role: 'user', content: question, status: 'complete' },
+        assistant_message: { id: 'a1', role: 'assistant', content, status, citations: [] },
+        conversation: { id, title: question, minhag: 'All' },
+    });
+    const rated = [];
+    const run = async (api) => {
+        const page = await openAsk({ api });
+        try {
+            page.window.renderFeedbackWidget = (host, data, question) => { rated.push(question); };
+            await page.ask('A question?');
+            return page.$$('#convMessages [data-answer-actions]').length;
+        } finally {
+            page.close();
+        }
+    };
+    assert.equal(await run({ askInConversation: () => new Promise(() => {}) }), 0, 'pending');
+    assert.equal(await run({ askInConversation: reply('', 'error') }), 0, 'failed');
+    assert.equal(await run({ askInConversation: reply('  ', 'complete') }), 0, 'empty');
+    assert.deepEqual(rated, []);
+});
+
 test('Shift+Enter keeps typing; Enter on an empty box and an open request send nothing', async () => {
     const page = await openAsk();
     try {
@@ -518,6 +584,27 @@ test('the jump button appears when the newest question is off screen', async () 
     }
 });
 
+test('a new conversation opens at the top of its empty state, even on a short screen', async () => {
+    const page = await openConversationPage({
+        signedIn: true,
+        before: (window) => {
+            const scroller = window.document.getElementById('convScroller');
+            Object.defineProperty(scroller, 'scrollHeight', { configurable: true, value: 600 });
+            Object.defineProperty(scroller, 'clientHeight', { configurable: true, value: 400 });
+        },
+    });
+    try {
+        await page.ui.open({ fresh: true });
+        await page.flush();
+        await page.tick(50);
+        const scroller = page.$('#convScroller');
+        assert.ok(scroller.scrolledTo, 'the thread was positioned on open');
+        assert.equal(scroller.scrolledTo[0].top, 0);
+    } finally {
+        page.close();
+    }
+});
+
 // --- history list -----------------------------------------------------------
 
 test('the history list groups conversations by day and opens one', async () => {
@@ -680,6 +767,40 @@ test('the settings menu changes the mode and community and remembers both as the
         page.click('#convMenuBtn');
         assert.equal(page.key('Escape').defaultPrevented, true);
         assert.equal(page.hidden('#convMenu'), true);
+    } finally {
+        page.close();
+    }
+});
+
+test('the Web search switch shows On or Off, flips the saved setting and is reachable by keyboard', async () => {
+    const page = await openAsk();
+    try {
+        const saved = [];
+        page.window.appState.prefs = { ...(page.window.appState.prefs || {}) };
+        page.window.ShelahPrefs = {
+            set: (key, value) => {
+                saved.push([key, value]);
+                page.window.appState.prefs[key] = value;
+            },
+        };
+        page.click('#convMenuBtn');
+        await page.flush();
+        const sw = page.$('#convWebSearchSwitch');
+        assert.ok(sw, 'the switch exists');
+        assert.equal(sw.getAttribute('role'), 'switch');
+        assert.equal(sw.getAttribute('aria-checked'), 'true', 'on by default');
+        assert.equal(page.$('#convWebSearchState').textContent, 'On');
+
+        page.click(sw);
+        await page.flush();
+        assert.deepEqual(saved, [['webSearch', false]]);
+        assert.equal(page.$('#convWebSearchSwitch').getAttribute('aria-checked'), 'false');
+        assert.equal(page.$('#convWebSearchState').textContent, 'Off');
+
+        page.click(page.$('#convWebSearchSwitch'));
+        await page.flush();
+        assert.deepEqual(saved.at(-1), ['webSearch', true]);
+        assert.equal(page.$('#convWebSearchState').textContent, 'On');
     } finally {
         page.close();
     }
@@ -1081,8 +1202,7 @@ test('a menu that is open when the tip is due holds it back until the menu close
         menu.classList.remove('hidden');
         await page.tick(1700);
         assert.equal(page.hidden('#aiDiscoveryTip'), true);
-
-        // The timer already fired and gave up for now; closing the menu brings the tip back.
+        // Not for good: closing the menu brings the tip that was due back.
         menu.classList.add('hidden');
         await page.flush();
         await page.tick(1700);
@@ -1507,6 +1627,163 @@ test('without speech recognition the microphone button stays hidden', async () =
     const page = await openAsk();
     try {
         assert.equal(page.$('#convMicBtn').classList.contains('hidden'), true);
+    } finally {
+        page.close();
+    }
+});
+
+// --- the mini widget's history column and size ----------------------------------
+
+const historyListApi = {
+    listConversations: async () => LIST,
+    getConversation: async (id) => ({ id, title: 'Shabbat candles', minhag: 'Sefardic', messages: [] }),
+};
+
+async function openMini(options = {}) {
+    const page = await openConversationPage({ signedIn: true, api: historyListApi, ...options });
+    page.ui.open({ size: 'mini' });
+    await page.flush();
+    return page;
+}
+
+test('in the mini widget the history button opens a column beside the chat, not the popover', async () => {
+    const page = await openMini();
+    try {
+        const button = page.$('#convHistoryBtn');
+        assert.equal(button.getAttribute('aria-controls'), 'convSidebar');
+        page.click(button);
+        await page.flush();
+        assert.equal(panel(page).dataset.history, 'open');
+        assert.equal(button.getAttribute('aria-expanded'), 'true');
+        assert.equal(page.hidden('#convHistoryPop'), true);
+        const items = page.$$('#convSidebar .conv-list__item');
+        assert.equal(items.length, 3);
+        assert.match(items[0].textContent, /Pinned question/);
+        // Focus lands on the list so the keyboard can carry on from the button.
+        assert.ok(page.$('#convSidebar').contains(page.document.activeElement));
+
+        page.click(button);
+        await page.flush();
+        assert.equal('history' in panel(page).dataset, false);
+        assert.equal(button.getAttribute('aria-expanded'), 'false');
+    } finally {
+        page.close();
+    }
+});
+
+test('picking a conversation from the column opens it and leaves the column open', async () => {
+    const page = await openMini();
+    try {
+        page.click('#convHistoryBtn');
+        await page.flush();
+        page.click(page.$('#convSidebar [data-conv-open="c1"]'));
+        await page.flush();
+        assert.equal(page.store.getState().conversation.id, 'c1');
+        assert.equal(panel(page).dataset.size, 'mini');
+        assert.equal(panel(page).dataset.history, 'open');
+        assert.match(route(page), /^\/chat\/c1/);
+    } finally {
+        page.close();
+    }
+});
+
+test('Escape inside the widget folds the column away first and keeps the widget', async () => {
+    const page = await openMini();
+    try {
+        page.click('#convHistoryBtn');
+        await page.flush();
+        const event = page.key('Escape');
+        assert.equal(event.defaultPrevented, true);
+        assert.equal('history' in panel(page).dataset, false);
+        assert.equal(page.document.activeElement.id, 'convHistoryBtn');
+        assert.equal(page.hidden('#convPanel'), false);
+        assert.equal(panel(page).dataset.size, 'mini');
+    } finally {
+        page.close();
+    }
+});
+
+test('the column is a mini-widget thing: the centred overlay keeps its popover', async () => {
+    const page = await openMini();
+    try {
+        page.click('#convHistoryBtn');
+        await page.flush();
+        assert.equal(panel(page).dataset.history, 'open');
+        // Growing to the overlay folds the column away and hands the button back to the popover.
+        page.ui.setSize('overlay');
+        await page.flush();
+        assert.equal('history' in panel(page).dataset, false);
+        assert.equal(page.$('#convHistoryBtn').getAttribute('aria-controls'), 'convHistoryPop');
+        assert.equal(page.$('#convHistoryBtn').getAttribute('aria-haspopup'), 'dialog');
+
+        page.click('#convHistoryBtn');
+        await page.flush();
+        assert.equal(page.hidden('#convHistoryPop'), false);
+        assert.equal('history' in panel(page).dataset, false);
+    } finally {
+        page.close();
+    }
+});
+
+test('closing the panel folds the column away', async () => {
+    const page = await openMini();
+    try {
+        page.click('#convHistoryBtn');
+        await page.flush();
+        page.ui.close();
+        await page.flush();
+        assert.equal('history' in panel(page).dataset, false);
+        // Reopening starts with the column shut.
+        page.ui.open({ size: 'mini' });
+        await page.flush();
+        assert.equal('history' in panel(page).dataset, false);
+        assert.equal(page.$('#convHistoryBtn').getAttribute('aria-expanded'), 'false');
+    } finally {
+        page.close();
+    }
+});
+
+test('on a phone the history button still opens the popover', async () => {
+    const page = await openConversationPage({ signedIn: true, mobile: true, api: historyListApi });
+    try {
+        page.ui.open({ size: 'overlay' });
+        await page.flush();
+        page.click('#convHistoryBtn');
+        await page.flush();
+        assert.equal(page.hidden('#convHistoryPop'), false);
+        assert.equal('history' in panel(page).dataset, false);
+        assert.equal(page.$('#convHistoryBtn').getAttribute('aria-haspopup'), 'dialog');
+    } finally {
+        page.close();
+    }
+});
+
+test('the widget comes back at the size it was left at', async () => {
+    const page = await openConversationPage({ storage: { 'shelah.conv.miniSize': JSON.stringify({ w: 440, h: 520 }) } });
+    try {
+        page.ui.open({ size: 'mini' });
+        await page.flush();
+        assert.equal(panel(page).style.getPropertyValue('--conv-mini-w'), '440px');
+        assert.equal(panel(page).style.getPropertyValue('--conv-mini-h'), '520px');
+        assert.equal(panel(page).dataset.miniH, 'fixed');
+    } finally {
+        page.close();
+    }
+});
+
+test('dragging the corner handle of the real widget resizes it and keeps the size', async () => {
+    const page = await openMini();
+    try {
+        // jsdom has no layout: the widget sits in the bottom-right corner, 340 by 400.
+        panel(page).getBoundingClientRect = () => ({ left: 700, top: 300, width: 340, height: 400, right: 1040, bottom: 700 });
+        const handle = page.$('#convResizeBtn');
+        page.pointer(handle, 'pointerdown', { clientX: 700, clientY: 300 });
+        page.pointer(handle, 'pointermove', { clientX: 650, clientY: 280 });
+        page.pointer(handle, 'pointerup', { clientX: 650, clientY: 280 });
+        assert.equal(panel(page).style.getPropertyValue('--conv-mini-w'), '390px');
+        assert.equal(panel(page).style.getPropertyValue('--conv-mini-h'), '420px');
+        assert.deepEqual(JSON.parse(page.window.localStorage.getItem('shelah.conv.miniSize')), { w: 390, h: 420 });
+        assert.deepEqual(page.errors, []);
     } finally {
         page.close();
     }

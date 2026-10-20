@@ -121,6 +121,11 @@ function initialThreadState(draftMinhag) {
         loadStatus: "ready",
         loadError: null,
         sending: false,
+        // Where the question was asked, and so where its loading cues belong:
+        // "bar" (the search bar; the panel stays shut until the answer lands)
+        // or "panel" (this panel's own composer). Only meaningful while
+        // `sending`; askSearch is the one entry that takes it from the caller.
+        surface: "panel",
         // Live steps of the answer being prepared (ask-progress.js); reset on
         // every send and only meaningful while `sending`.
         progress: createProgress(),
@@ -147,7 +152,12 @@ const CITED_SOURCE_RE = /^(.*?)\s[\u2013\u2014]\s(.*)$/;
 const CITED_SOURCE_LIMIT = 10;
 
 export function answerCitations(data) {
-    const cited = Array.isArray(data?.ai_cited_sources) ? data.ai_cited_sources : [];
+    let cited = Array.isArray(data?.ai_cited_sources) ? data.ai_cited_sources : [];
+    // An answer the AI never wrote (synthesis failed, or answers are paused)
+    // cites nothing; the sources it did find are the whole answer, so list them.
+    if (!cited.length && (data?.meta?.fallback_detail || data?.meta?.breaker_tripped) && Array.isArray(data?.sources)) {
+        cited = data.sources.map((source) => String(source?.ref || source?.title || ""));
+    }
     const seen = new Set();
     const citations = [];
     for (const raw of cited) {
@@ -180,6 +190,10 @@ function searchErrorCode(error) {
     if (error?.name === "AbortError") return SEARCH_ERROR_CODES.TIMEOUT;
     switch (error?.status) {
         case 401: return ERROR_CODES.UNAUTHORIZED;
+        // /ask's per-user daily budget (asgi.py _enforce_ask_async_budget):
+        // retrying cannot help until midnight UTC, so it must not read as a
+        // generic failure.
+        case 402: return ERROR_CODES.BUDGET_EXHAUSTED;
         case 429: return ERROR_CODES.RATE_LIMITED;
         case undefined: case null: return ERROR_CODES.NETWORK;
         default: return ERROR_CODES.SERVER;
@@ -356,7 +370,8 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
     // ask_history, works signed out). Resolves the payload, or null when the
     // user moved on meanwhile; rethrows a failure for the caller's side
     // effects (Turnstile reset, logging) after showing it as a FAILED turn.
-    async function askSearch(question, request = {}) {
+    // `surface` names where it was asked ("bar" or "panel", see initialThreadState).
+    async function askSearch(question, request = {}, { surface = "panel" } = {}) {
         const text = String(question || "").trim();
         if (!text || typeof askAnswer !== "function") return null;
         const myGeneration = ++generation;
@@ -365,6 +380,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
             ...initialThreadState(getPrefs()?.community),
             answerView: { historyId: null, isPublic: false, request },
             sending: true,
+            surface: surface === "bar" ? "bar" : "panel",
             messages: [
                 { ...normalizeMessage({ role: "user", content: text }), id: ids[0], status: MESSAGE_STATUS.PENDING },
                 { ...normalizeMessage({ role: "assistant" }), id: ids[1], status: MESSAGE_STATUS.PENDING },
@@ -393,6 +409,13 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
             });
             throw error;
         }
+    }
+
+    // The panel took over an answer the search bar was waiting for (it was
+    // opened, or the bar went away): its cues move here and the bar's stop.
+    function setSurface(surface) {
+        const next = surface === "bar" ? "bar" : "panel";
+        if (state.surface !== next) setState({ surface: next });
     }
 
     // ── signed-out follow-ups ───────────────────────────────────────────
@@ -441,6 +464,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
         const historyIds = guestHistoryIds();
         setState({
             sending: true,
+            surface: "panel",
             progress: createProgress(),
             lastError: null,
             messages: [
@@ -556,6 +580,8 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
         return {
             mode: ANSWER_MODE_BY_CHOICE[mode] || mode || prefs.mode || "balanced",
             language: language || prefs.language || "en",
+            // Only when switched off (Settings > Web search), like the request body.
+            ...(prefs.webSearch === false ? { webSearch: false } : {}),
         };
     }
 
@@ -580,6 +606,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
 
         setState({
             sending: true,
+            surface: "panel",
             progress: createProgress(),
             lastError: null,
             messages: [
@@ -658,6 +685,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
         const pending = { ...normalizeMessage({ role: "assistant" }), id: answerLocalId, status: MESSAGE_STATUS.PENDING };
         setState({
             sending: true,
+            surface: "panel",
             progress: createProgress(),
             lastError: null,
             messages: state.messages.map((m) => (m.id === target.id ? pending : m)),
@@ -832,6 +860,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
         showSharedConversation,
         askSearch,
         askGuestFollowUp,
+        setSurface,
         canContinueAsGuest,
         guestCapReached,
         guestHistoryIds,

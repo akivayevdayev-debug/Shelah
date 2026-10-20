@@ -418,9 +418,10 @@ async function settleAskFailure(id, body, failure, knownMessageIds) {
 // result resolves exactly like the plain 201; one that ends in an error line
 // or is cut short goes through the same transient-failure reconcile as a
 // plain failure, so a dropped connection never re-sends a saved question.
-export async function askInConversation(id, { question, mode, language, retryOf } = {}, { knownMessageIds = [], onRetry, onProgress } = {}) {
+export async function askInConversation(id, { question, mode, language, retryOf, webSearch } = {}, { knownMessageIds = [], onRetry, onProgress } = {}) {
     const body = { question: String(question || "").trim(), mode, language };
     if (retryOf) body.retry_of = String(retryOf);
+    if (webSearch === false) body.web_search = false;
     const path = conversationPath(id, "/ask");
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         if (attempt > 1) await waitBeforeRetry(attempt, onRetry);

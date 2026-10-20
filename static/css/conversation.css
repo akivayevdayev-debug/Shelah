@@ -40,7 +40,7 @@
        across it (motion.js "drawer" travels them off the bottom edge). */
     --conv-z-bar: 95;
     /* Strong ease-out for entrances and presses. */
-    --conv-ease: cubic-bezier(0.23, 1, 0.32, 1);
+    --conv-ease: var(--motion-ease-decel);
     /* Text-safe danger: --accent-red clears WCAG AA 4.5:1 on the panel in
        both themes, so it is used as is. */
     --conv-label: var(--ink-secondary);
@@ -115,7 +115,7 @@ body.conv-modal-open {
 .conv-panel[data-layout="desktop"][data-size="overlay"] {
     top: 50%;
     left: 50%;
-    width: min(760px, calc(100vw - 2 * var(--sp-6)));
+    width: min(var(--conv-column), calc(100vw - 2 * var(--sp-6)));
     height: min(680px, calc(100dvh - 2 * var(--sp-8)));
     translate: -50% -50%;
     border-radius: var(--radius-xl);
@@ -130,10 +130,17 @@ body.conv-modal-open {
     background: var(--surface-0);
 }
 
-/* Mini widget (desktop): non-modal, snapped to a corner. */
+/* Mini widget (desktop): non-modal, snapped to a corner. Its size is two custom
+   properties, which the resize handles overwrite inline (conversation-mini.js,
+   bounds in MINI_BOUNDS): the chat's width, and a fixed height once the widget
+   has been made taller or shorter (data-mini-h). The history column that opens
+   beside it adds 60% of the chat's width (MINI_HISTORY_RATIO), so a wider
+   widget gets a wider list. */
 .conv-panel[data-layout="desktop"][data-size="mini"] {
+    --conv-mini-w: 340px;
+    --conv-hist-w: calc(var(--conv-mini-w) * 0.6);
     z-index: var(--conv-z-mini);
-    width: min(340px, calc(100vw - 2 * var(--sp-4)));
+    width: min(var(--conv-mini-w), calc(100vw - 2 * var(--sp-4)));
     max-height: min(480px, calc(100dvh - 2 * var(--sp-8)));
     border-radius: var(--radius-lg);
     inset-block-end: var(--sp-6);
@@ -147,11 +154,21 @@ body.conv-modal-open {
     inset-block-start: calc(var(--topbar-height, 3.5rem) + var(--sp-4));
     inset-inline-start: var(--sp-6);
 }
-.conv-panel.is-dragging {
+.conv-panel[data-layout="desktop"][data-size="mini"][data-history="open"] {
+    width: min(calc(var(--conv-mini-w) + var(--conv-hist-w)), calc(100vw - 2 * var(--sp-4)));
+    /* Room for a list; a short empty chat would otherwise leave a stub of one. */
+    min-height: min(360px, calc(100dvh - 2 * var(--sp-8)));
+}
+.conv-panel[data-layout="desktop"][data-size="mini"][data-mini-h="fixed"] {
+    height: min(var(--conv-mini-h), calc(100dvh - 2 * var(--sp-8)));
+    max-height: none;
+}
+.conv-panel.is-dragging,
+.conv-panel.is-resizing {
     transition: none;
-    cursor: grabbing;
     user-select: none;
 }
+.conv-panel.is-dragging { cursor: grabbing; }
 
 /* Mobile sheet. */
 .conv-panel[data-layout="mobile"][data-size="overlay"] {
@@ -183,6 +200,33 @@ body.conv-modal-open {
     overflow-y: auto;
     overscroll-behavior: contain;
 }
+/* Mini widget (desktop): the history opens as a column on the widget's free
+   side, the side away from its screen corner, so the chat does not move when
+   it opens (conversation-mini.js wipes it in). Same list, heading and New
+   button as the full page's sidebar, minus its lockup. */
+.conv-panel[data-layout="desktop"][data-size="mini"][data-history="open"] .conv-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    flex: 0 0 var(--conv-hist-w);
+    min-width: 0;
+    /* Sized by the chat beside it, never by the list: a long list scrolls in the
+       column instead of making the widget taller. */
+    contain: size;
+    padding: var(--sp-3) var(--sp-2) var(--sp-2);
+    border-inline-end: 1px solid var(--conv-hairline);
+    background: var(--conv-sidebar-bg);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+/* Anchored on the start side the widget grows toward the end, and the column goes there. */
+.conv-panel[data-size="mini"][data-corner$="l"] .conv-sidebar {
+    order: 2;
+    border-inline-end: 0;
+    border-inline-start: 1px solid var(--conv-hairline);
+}
+.conv-panel[data-size="mini"] .conv-sidebar__brand { display: none; }
+
 /* The homepage lockup (index.html #brandHomeBtn): the hebrew letter, the name
    and "Torah Encyclopedia" come from the same utility classes, so only the
    placement is set here. */
@@ -390,12 +434,33 @@ body.conv-modal-open {
     color: var(--ink-heading);
 }
 .conv-panel[data-size="mini"] .conv-title { font-size: var(--text-base); }
+/* Cardo's Hebrew bold is partial (see .conv-answer[data-script]). */
+.conv-title[data-script="he"] {
+    font-weight: 400;
+    -webkit-text-stroke: 0.05em currentColor;
+}
 .conv-subtitle {
     margin: 0;
     font-size: var(--text-xs);
     color: var(--ink-secondary);
 }
 .conv-subtitle:empty { display: none; }
+/* A 320px sheet: four 44px buttons leave the title ~86px, so "Ask Sh'elah" read
+   "Ask..." and the community line wrapped to two. Snugger header edges and a
+   base-size title give the words back; the subtitle stays on one line. */
+@media (max-width: 26rem) {
+    .conv-panel[data-layout="mobile"][data-size="overlay"] .conv-header {
+        padding-inline: var(--sp-2);
+        gap: var(--sp-1);
+    }
+    .conv-panel[data-layout="mobile"][data-size="overlay"] .conv-header__actions { gap: 0; }
+    .conv-panel[data-layout="mobile"][data-size="overlay"] .conv-title { font-size: var(--text-base); }
+    .conv-panel[data-layout="mobile"] .conv-subtitle {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+}
 
 .conv-header__actions {
     display: flex;
@@ -453,7 +518,7 @@ body.conv-modal-open {
 }
 
 :is(.conv-icon-btn, .conv-new-btn, .conv-pop__new, .conv-list__item, .conv-send,
-    .conv-mode-opt, .conv-menu__item, .conv-link-btn, .conv-jump, .conv-turn__retry,
+    .conv-mode-opt, .conv-web-opt, .conv-menu__item, .conv-link-btn, .conv-jump, .conv-turn__retry,
     .topbar-ask-btn, .ai-tip__try, .ai-tip__dismiss, .conv-signin-follow__btn,
     .conv-cite__preview > summary, .mobile-search-tray__ask, .conv-pip__open, .conv-cite a,
     .conv-select, .conv-mic, .conv-sharepop__btn, .conv-toast__action, .conv-toast__close,
@@ -652,6 +717,52 @@ body.conv-modal-open {
     mask: var(--icon-check) center / contain no-repeat;
 }
 
+/* The Web search switch: a full-width row, its state spelled out ("On" / "Off")
+   and a check glyph when on, so it never relies on colour alone. */
+.conv-web-opt {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    inline-size: 100%;
+    min-height: var(--hit-min);
+    padding: var(--sp-1) var(--sp-2);
+    border-radius: var(--radius-inner);
+    border: 1px solid var(--ctrl-border);
+    background: transparent;
+    color: var(--ink-primary);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-align: start;
+    cursor: pointer;
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out);
+}
+.conv-web-opt:hover { background: var(--ctrl-bg-hover); }
+.conv-web-opt__state {
+    flex: none;
+    font-weight: 700;
+}
+.conv-web-opt[aria-checked="true"] {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: var(--conv-on-accent);
+}
+.conv-web-opt[aria-checked="true"] .conv-web-opt__state::before {
+    content: '';
+    display: inline-block;
+    inline-size: 1em;
+    block-size: 1em;
+    margin-inline-end: var(--sp-1);
+    vertical-align: -0.15em;
+    background: currentColor;
+    -webkit-mask: var(--icon-check) center / contain no-repeat;
+    mask: var(--icon-check) center / contain no-repeat;
+}
+.conv-menu__note--hint {
+    font-size: var(--text-xs);
+    color: var(--ink-secondary);
+}
+
 .conv-menu__actions { display: flex; flex-direction: column; }
 .conv-menu__item {
     display: flex;
@@ -801,7 +912,7 @@ body.conv-modal-open {
     scroll-padding-bottom: var(--sp-8);
 }
 .conv-panel[data-size="full"] .conv-scroller {
-    padding-inline: max(var(--sp-4), calc((100% - 760px) / 2));
+    padding-inline: max(var(--sp-4), calc((100% - var(--conv-column)) / 2));
 }
 .conv-panel[data-size="mini"] .conv-scroller {
     padding: var(--sp-3);
@@ -981,6 +1092,10 @@ body.conv-modal-open {
 
 .conv-answer {
     max-width: 68ch;
+    /* The answer's own direction (dir="auto") decides which edge of the column
+       it sits against: an English answer in the Hebrew UI starts at the left
+       edge, with the sources below it, instead of floating right-anchored. */
+    margin-inline-end: auto;
     color: var(--ink-primary);
     line-height: 1.7;
     overflow-wrap: anywhere;
@@ -997,9 +1112,19 @@ body.conv-modal-open {
 .conv-answer :is(h1, h2, h3, h4) {
     margin-block: var(--sp-6) var(--sp-2);
     font-size: var(--text-md);
+    /* The reset flattens headings to the body weight; weight, not colour
+       alone, is what sets a heading apart. */
+    font-weight: 700;
     line-height: 1.35;
     letter-spacing: -0.005em;
     color: var(--ink-heading);
+}
+/* Cardo's Hebrew bold covers only a few letters (ב and ו came out heavy, the
+   rest regular), so a Hebrew answer keeps the regular face and gets a thin
+   stroke for weight, as style.css does for Ezra SIL. */
+.conv-answer[data-script="he"] :is(h1, h2, h3, h4, strong, b) {
+    font-weight: 400;
+    -webkit-text-stroke: 0.05em currentColor;
 }
 .conv-answer li + li { margin-top: var(--sp-1); }
 .conv-answer blockquote {
@@ -1155,14 +1280,28 @@ body.conv-modal-open {
 /* An answer replacing its skeleton reveals block by block. */
 .conv-turn--reveal .conv-answer > *,
 .conv-turn--reveal :is(.conv-customs, .conv-cites__title, .conv-cites, .conv-turn__actions) {
-    animation: conv-rise 360ms var(--conv-ease) both;
+    animation: conv-rise var(--motion-dur-base) var(--conv-ease) both;
 }
-.conv-turn--reveal .conv-answer > :nth-child(2) { animation-delay: 40ms; }
-.conv-turn--reveal .conv-answer > :nth-child(3) { animation-delay: 80ms; }
-.conv-turn--reveal .conv-answer > :nth-child(4) { animation-delay: 120ms; }
+.conv-turn--reveal .conv-answer > :nth-child(2) { animation-delay: var(--motion-stagger); }
+.conv-turn--reveal .conv-answer > :nth-child(3) { animation-delay: calc(var(--motion-stagger) * 2); }
+.conv-turn--reveal .conv-answer > :nth-child(4) { animation-delay: calc(var(--motion-stagger) * 3); }
 .conv-turn--reveal .conv-answer > :nth-child(n + 5),
-.conv-turn--reveal :is(.conv-customs, .conv-cites__title, .conv-cites) { animation-delay: 160ms; }
-.conv-turn--reveal .conv-turn__actions { animation-delay: 220ms; }
+.conv-turn--reveal :is(.conv-customs, .conv-cites__title, .conv-cites) { animation-delay: calc(var(--motion-stagger) * 4); }
+.conv-turn--reveal .conv-turn__actions { animation-delay: calc(var(--motion-stagger) * 5); }
+
+/* The skeleton the answer replaces fades out over the answer's first beat (a
+   copy laid over the top of the turn), so the thread never goes blank. */
+.conv-turn--ghosting { position: relative; }
+.conv-ghost {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    pointer-events: none;
+    animation: shelah-overlay-in var(--motion-dur-fast) linear reverse both;
+}
 
 /* Sources: a heading and one flat list under the answer, the one place the
    answer's sources are written out. Each row is a number, the source (type +
@@ -1394,7 +1533,7 @@ body.conv-modal-open {
     outline: none;
     transform-origin: var(--citepop-origin, 50% 0);
 }
-.conv-citepop--in { animation: conv-citepop-in 160ms var(--conv-ease) both; }
+.conv-citepop--in { animation: conv-citepop-in var(--motion-dur-fast) var(--conv-ease) both; }
 .conv-citepop__head {
     display: flex;
     align-items: center;
@@ -1527,6 +1666,10 @@ body.conv-modal-open {
     /* Replays each time the notice un-hides (display: none -> flex). */
     animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-out) both;
 }
+.conv-panel[data-size="full"] .conv-notice {
+    /* Same column as the transcript and composer it sits between. */
+    margin-inline: max(var(--sp-4), calc((100% - var(--conv-column)) / 2));
+}
 .conv-notice[data-tone="info"] {
     border-color: var(--conv-hairline);
     background: var(--surface-2);
@@ -1616,7 +1759,7 @@ body.conv-modal-open {
     padding: var(--sp-2) var(--sp-4) var(--sp-3);
 }
 .conv-panel[data-size="full"] .conv-composer-shell {
-    padding-inline: max(var(--sp-4), calc((100% - 760px) / 2));
+    padding-inline: max(var(--sp-4), calc((100% - var(--conv-column)) / 2));
 }
 .conv-panel[data-size="mini"] .conv-composer-shell { padding: var(--sp-2) var(--sp-3); }
 
@@ -1742,6 +1885,39 @@ body.conv-modal-open {
     color: color-mix(in srgb, var(--ink-secondary) 72%, var(--conv-panel-bg));
 }
 
+/* Halo behind the composer while an answer asked IN THE PANEL is in flight: the
+   same gold and blue gradient that orbits the search bar (.search-liftoff-underlay
+   in ai.css, same mask and the same shelah-halo-orbit keyframe). A question asked
+   from the search bar loads there instead (conversation-ui.js render keeps
+   data-sending off for it), so a question only ever carries one halo. Steady
+   opacity, only the gradient turns; it freezes where it is when the answer
+   lands, then fades. */
+.conv-halo {
+    position: absolute;
+    inset: calc(-1 * var(--sp-2));
+    z-index: -1;
+    border-radius: 32px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    filter: blur(8px);
+    transition: opacity var(--motion-dur-base) var(--motion-ease-out);
+}
+.conv-halo::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 70%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%) scale(2.2, 1);
+    background: conic-gradient(from 0deg, var(--accent-gold) 0%, var(--accent-gold) 12%, var(--accent-primary) 38%, var(--accent-primary) 62%, var(--accent-gold) 88%, var(--accent-gold) 100%);
+    background: conic-gradient(in oklab from 0deg, var(--accent-gold) 0%, var(--accent-gold) 12%, var(--accent-primary) 38%, var(--accent-primary) 62%, var(--accent-gold) 88%, var(--accent-gold) 100%);
+    animation: shelah-halo-orbit var(--motion-dur-orbit) linear infinite paused;
+}
+.conv-panel[data-sending="true"] .conv-halo { opacity: 0.6; }
+.conv-panel[data-sending="true"] .conv-halo::before { animation-play-state: running; }
+
 .conv-disclaimer {
     margin: 0;
     font-size: var(--text-xs);
@@ -1763,7 +1939,7 @@ body.conv-modal-open {
     border: 1px solid var(--ctrl-border);
     border-radius: var(--radius-full);
     background: var(--surface-1);
-    animation: conv-rise 280ms var(--conv-ease) both;
+    animation: conv-rise var(--motion-dur-base) var(--conv-ease) both;
 }
 [dir="rtl"] .conv-signin-follow { padding: var(--sp-1) var(--sp-4) var(--sp-1) var(--sp-1); }
 .conv-signin-follow.hidden { display: none; }
@@ -1807,7 +1983,7 @@ body.conv-modal-open {
     box-shadow: var(--glass-shadow);
 }
 .conv-capdialog::backdrop { background: rgba(15, 23, 42, 0.5); }
-.conv-capdialog[open] { animation: conv-rise 220ms var(--conv-ease) both; }
+.conv-capdialog[open] { animation: conv-rise var(--motion-dur-base) var(--conv-ease) both; }
 .conv-capdialog__card {
     display: grid;
     gap: var(--sp-3);
@@ -1860,9 +2036,6 @@ body.conv-modal-open {
 @media (max-width: 480px) {
     .conv-capdialog__actions { flex-direction: column; }
     .conv-capdialog__btn { width: 100%; }
-}
-@media (prefers-reduced-motion: reduce) {
-    .conv-capdialog[open] { animation: none; }
 }
 
 /* A search-bar answer isn't a conversation yet: no minhag lock to show. */
@@ -2169,6 +2342,73 @@ body.theme-dark .topbar-ask-btn {
     opacity: 1;
 }
 
+/* ── Resize handles (desktop mini widget; conversation-mini.js) ───── */
+/* The free corner (keyboard-operable) and the two free edges. The widget is
+   pinned to its screen corner, so the handles sit on the opposite sides. */
+.conv-resize { display: none; }
+.conv-panel[data-layout="desktop"][data-size="mini"] .conv-resize {
+    position: absolute;
+    z-index: 3;
+    display: block;
+    touch-action: none;
+}
+.conv-resize--x {
+    inset-block: 16px;
+    inset-inline-start: 0;
+    width: 6px;
+    cursor: ew-resize;
+}
+.conv-resize--y {
+    inset-inline: 16px;
+    inset-block-start: 0;
+    height: 6px;
+    cursor: ns-resize;
+}
+.conv-resize--corner {
+    --corner-flip-x: 1;
+    --corner-flip-y: 1;
+    --corner-flip-dir: 1;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: 16px;
+    height: 16px;
+    padding: 2px;
+    border: 0;
+    background: transparent;
+    color: var(--ink-secondary);
+    cursor: nwse-resize;
+    transition: color var(--motion-dur-fast) var(--motion-ease-out);
+}
+.conv-resize--corner svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transform: scale(calc(var(--corner-flip-x) * var(--corner-flip-dir)), var(--corner-flip-y));
+}
+.conv-panel[data-corner$="l"] :is(.conv-resize--x, .conv-resize--corner) {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+}
+.conv-panel[data-corner^="t"] :is(.conv-resize--y, .conv-resize--corner) {
+    inset-block-start: auto;
+    inset-block-end: 0;
+}
+.conv-panel[data-corner$="l"] .conv-resize--corner { --corner-flip-x: -1; }
+.conv-panel[data-corner^="t"] .conv-resize--corner { --corner-flip-y: -1; }
+:root[dir="rtl"] .conv-resize--corner { --corner-flip-dir: -1; }
+.conv-resize--corner:hover,
+.conv-resize--corner:focus-visible,
+.conv-panel.is-resizing .conv-resize--corner { color: var(--accent-primary); }
+.conv-resize--corner:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+}
+/* A touch screen drags the widget by its header; a 16px corner is not a touch
+   target (and there is no pointer to aim it), so it is left out there. */
+@media (pointer: coarse) {
+    .conv-panel[data-layout="desktop"][data-size="mini"] .conv-resize { display: none; }
+}
+
 /* ── Reduced motion ──────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
     .conv-panel,
@@ -2187,14 +2427,25 @@ body.theme-dark .topbar-ask-btn {
     }
     .ai-attention::after,
     .conv-notice,
-    .conv-citepop,
     .conv-cite::before,
+    .conv-halo::before,
     .conv-jump {
         animation: none !important;
     }
+    /* The halo stays as a still ring that fades over 120ms, like the arrivals below. */
+    .conv-panel .conv-halo { transition: opacity 120ms linear !important; }
+    /* What arrives on screen still arrives, as a short fade with no travel and
+       no stagger: reduced motion means gentler, not none. */
+    .conv-turn--enter,
+    .conv-turn--reveal .conv-answer > *,
+    .conv-turn--reveal :is(.conv-customs, .conv-cites__title, .conv-cites, .conv-turn__actions),
+    .conv-citepop--in,
     .conv-signin-follow,
+    .conv-capdialog[open] {
+        animation: shelah-overlay-in 120ms linear both !important;
+        animation-delay: 0ms !important;
+    }
     .conv-mic::before,
-    .conv-turn--reveal *,
     .conv-live-dot,
     .conv-status__now,
     .conv-status__now::before,
@@ -2230,7 +2481,7 @@ body.theme-dark .topbar-ask-btn {
 
 /* ── Additions: turn entrance, draft chip, inline rename ─────────── */
 .conv-turn--enter {
-    animation: conv-rise 320ms var(--conv-ease) both;
+    animation: conv-rise var(--motion-dur-base) var(--conv-ease) both;
 }
 .conv-title-input {
     width: 100%;
@@ -2241,7 +2492,4 @@ body.theme-dark .topbar-ask-btn {
     background: var(--surface-1);
     color: var(--ink-heading);
     font: inherit;
-}
-@media (prefers-reduced-motion: reduce) {
-    .conv-turn--enter { animation: none; }
 }

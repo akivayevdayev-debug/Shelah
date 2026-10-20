@@ -149,7 +149,13 @@ def admin_feedback_page():
     """The feedback digest as a page. It holds no data itself: its script signs
     in with Clerk and calls the API with a Bearer header (a browser address-bar
     visit to the API cannot send one). Access is decided by the API, not here."""
-    response = make_response(render_template("admin_feedback.html", clerk_publishable_key=CLERK_PUBLISHABLE_KEY))
+    response = make_response(
+        render_template(
+            "admin_feedback.html",
+            clerk_publishable_key=CLERK_PUBLISHABLE_KEY,
+            clerk_enforce_auth=CLERK_ENFORCE_AUTH,
+        )
+    )
     response.headers["X-Robots-Tag"] = "noindex, nofollow"
     response.headers["Cache-Control"] = "no-store"
     return response
@@ -161,6 +167,15 @@ def admin_feedback_page():
 def feedback_digest():
     """Recent answer-feedback rows, newest first.
 
+    Two reads, each capped at ``limit``: what readers submitted (ratings and
+    comment-only rows) and the AI's own one-line notes on its answers
+    (verdict "ai_note", backend/ai_notes.py). They are fetched apart because
+    the notes outnumber ratings by a lot -- one query would let them push every
+    reader comment past the cap. Each row carries ``source`` ("reader"/"ai")
+    once the AI-notes migration has run; the verdict is the reliable marker
+    either way, and the helpful / not_helpful counts come from readers' rows
+    only.
+
     Auth-gated like /api/stack/health: feedback comments are free-text
     supplied by readers (sanitized, but not meant for public display), so
     this has no legitimate anonymous caller.
@@ -171,24 +186,37 @@ def feedback_digest():
         return jsonify({"error": "Supabase not configured"}), 503
 
     try:
-        result = (
+        reader_rows = (
             supabase.table(SUPABASE_ANSWER_FEEDBACK_TABLE)
             .select("*")
+            .neq("verdict", "ai_note")
             .order("created_at", desc=True)
             .limit(limit)
             .execute()
-        )
-        rows = result.data or []
+        ).data or []
+        ai_rows = (
+            supabase.table(SUPABASE_ANSWER_FEEDBACK_TABLE)
+            .select("*")
+            .eq("verdict", "ai_note")
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        ).data or []
     except Exception as e:
         _capture_backend_error("feedback_digest_query_failed", e, {})
         return jsonify({"error": "Could not load feedback"}), 500
 
-    helpful = sum(1 for r in rows if r.get("verdict") == "helpful")
-    not_helpful = sum(1 for r in rows if r.get("verdict") == "not_helpful")
+    rows = sorted(
+        [*reader_rows, *ai_rows],
+        key=lambda r: str(r.get("created_at") or ""),
+        reverse=True,
+    )
     return jsonify({
         "count": len(rows),
-        "helpful": helpful,
-        "not_helpful": not_helpful,
+        "helpful": sum(1 for r in reader_rows if r.get("verdict") == "helpful"),
+        "not_helpful": sum(1 for r in reader_rows if r.get("verdict") == "not_helpful"),
+        "comments": sum(1 for r in reader_rows if r.get("verdict") == "comment"),
+        "ai_notes": len(ai_rows),
         "rows": rows,
     })
 

@@ -59,6 +59,9 @@ function fakeConversationUI(overrides = {}) {
     const calls = [];
     const ui = {
         calls,
+        // The real rule (conversation-ui.js askSurface) with the panel shut.
+        askSurface: ({ origin = 'bar', followUp = false } = {}) => (origin === 'bar' && !followUp ? 'bar' : 'panel'),
+        showPendingAnswer: () => calls.push(['showPendingAnswer']),
         askFromSearch: async (question, options, extra) => {
             calls.push(['askFromSearch', question, options, extra]);
             return { answer: 'A', history_id: 'h-1', meta: { mode: options.mode, source_count: 2 } };

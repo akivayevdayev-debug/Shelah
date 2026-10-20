@@ -58,7 +58,7 @@ For an argument built from text at runtime, write it with `encodeURIComponent()`
 | Library navigation | `#leftSidebar` | Text tree, siddur contents, community list |
 | Main content | `#mainContainer` | `#homeGrid` (home cards), the reader, prayer/community/history pages |
 | Commentary panel | `#rightSidebar` | Commentary on the selected passage or, in "reading" mode, the verse in view |
-| Ask Sh'elah | `#convPanel` (`data-size` overlay / full / mini, `data-layout` desktop / mobile), `#convPip`, `#convHistoryPop`, `#mobileSearchTray` | Owned by `conversation-ui.js` |
+| Ask Sh'elah | `#convPanel` (`data-size` overlay / full / mini, `data-layout` desktop / mobile), `#convSidebar` (the history list: permanent in full, a column beside the chat in the desktop mini widget), `#convResizeBtn` and the two edge strips (mini resize), `#convPip`, `#convHistoryPop`, `#mobileSearchTray`, and `#searchLiveStatus` under the search bar | Owned by `conversation-ui.js` |
 | Calendar | FullCalendar overlay, plus one `<dialog id="calDetail">` | Detail card owned by `calendar-detail.js` |
 
 Other templates: `404`, `about`, `acceptable-use`, `accessibility`, `ai-disclosure`, `dmca`, `glossary`, `help`, `licenses`, `privacy`, `terms` (static, server-rendered), and `templates/components/` (`icons.html` Jinja macro, `legal_topbar/footer/scripts`, `site_footer`, `theme_bootstrap`).
@@ -93,6 +93,7 @@ Other templates: `404`, `about`, `acceptable-use`, `accessibility`, `ai-disclosu
 | `conversation-store.js` | View-model for one thread: header, transcript, the "sources consulted" disclosure, the sidebar list. Owns no DOM; every surface renders from `getState()` |
 | `conversation-ui.js` | Renders the store into `#convPanel` and wires every entry point (topbar Ask button, phone tray, history popover, one-time discovery tip). Exposed as `window.ShelahConversationUI` |
 | `conversation-ui-helpers.js` | Pure helpers for the above (no DOM) |
+| `conversation-mini.js` | The desktop mini widget's two extras: the history column that opens beside the chat and the resize handles. Created by `conversation-ui.js`, which tells it when the widget is a desktop mini one (`isActive`); see [The mini widget](#the-mini-widget) |
 | `source-cards.js` | Pure string builders for source cards, shared by every turn |
 | `citation-markers.js`, `citation-popover.js` | The `[n]` chips after a claim, and the card a chip opens (source, one-line note, first lines, open-in-reader or jump to the list row) |
 | `answer-link.js`, `answer-share.js` | "Copy link" for a stored answer (owner link `/answer/<id>`) and public share links (`/a/<token>`, `POST …/share`, revoke) |
@@ -106,6 +107,28 @@ A signed-out visitor keeps the composer. Their first question is the one-shot `/
 - When the conversation's own allowance is spent, the next send does not reach the network (`guestCapReached`; the day's allowance is left to the server, since it can lift while the panel stays open); if the server refuses anyway (`403` with `code: "guest_cap_reached"`, surfaced by `ai-service.js` as an error carrying `.reason` and `.usage`), the turn is removed from the thread and the typed question goes back into the composer. Either way the native `<dialog id="convGuestCap">` opens (Sign in, Create free account, Not now). Escape and Not now close it and return focus to the composer; the thread stays readable and the question stays typed.
 - After signing in mid-thread, `ensureConversation` seeds the account conversation from the latest answer (`fromHistoryId`); the earlier guest turns stay visible above it, but the continued conversation contains only that latest guest answer.
 - The dialog is centered by `margin: auto` in `.conv-capdialog`: the page's reset zeroes every margin, which cancels the browser's own centering of a modal dialog, so the rule restates it.
+
+#### Where a question loads
+
+A question's loading cues (the orbiting halo, the status line, the skeleton) appear on the surface it was asked from, and nowhere else. The store records this as `surface` (`"bar"` or `"panel"`, meaningful while `sending`); `conversation-ui.js` renders from it.
+
+- **Asked in the search bar** (`askSurface()` returns `"bar"`: a fresh question, typed in the bar, with the panel shut): the halo around the bar (`body.search-loading`) and the status line under it (`#searchLiveStatus`) carry the wait, and the panel **stays shut** until the answer lands. It then opens on the answer, or on the failed turn with its Retry. Opening the panel meanwhile (or, on a phone, closing the search tray) calls `store.setSurface("panel")` and the cues move with it: the bar's stop, the panel composer's halo and the turn's own status line start.
+- **Asked in the panel** (its composer, a retry, a re-ask, a follow-up, or a bar question while the panel is already on screen): the bar is never lit. The panel composer's halo (`.conv-panel[data-sending="true"]`) and the pending turn's status line carry it.
+- `conversation-ui.js`'s `render()` is the only code that sets `body.search-loading`; `shell.js` leaves it alone.
+
+The status line says what the AI is doing as the server reports it (`detail` events, `docs/API.md`): "Searching the sources", then "Reading Berakhot 2a and Shabbat 31a", "Checking sunset and nightfall for Shabbat times", "Checking today's Omer count", or the name of a community's customs. A line stays on screen for at least `STATUS_MIN_DWELL_MS` (700 ms) before the next replaces it, so fast steps never flicker. The words, in English and Hebrew, live in `ask-progress.js` (`detailLabel`); a Hebrew page still shows references in their English form.
+
+#### Feedback and the web-search switch
+
+- **Comment control.** `renderFeedbackWidget` (`shell.js`) shows thumbs up, thumbs down and a quiet "Add a comment" button beside them (the `chat-text` Phosphor glyph). A comment on its own is sent as `verdict: "comment"`; a comment after a thumbs-down opens the existing "Send feedback" row; a comment after a thumbs-up keeps the control next to "Thank you". Escape closes the row and returns focus to the button. A rating is fire-and-forget as before; a typed comment is awaited and shows a retryable "Could not send that" line on failure, so the text is never silently lost. The same widget is used under search-bar answers and under conversation-thread replies.
+- **Web search switch.** The chat menu (`#convMenu`) has a "Web search" switch (`#convWebSearchSwitch`, `role="switch"`, On/Off text so it never relies on colour). It is the reader's `prefs.webSearch` (default on), saved and synced with the other preferences by `ShelahPrefs.set("webSearch", bool)`. The ask requests carry `web_search: false` only while it is off (`ai-service.js`, `conversation-api.js`); the server's last-resort rules are in [AI_TOOLS.md](AI_TOOLS.md#last-resort-web-lookup). An answer that used the web lists the pages in its sources as `Web: <page>`.
+
+#### The mini widget
+
+On a desktop the mini widget is a small floating chat in one corner (`data-size="mini"`, `data-layout="desktop"`; its corner is `data-corner`, stored physically in `shelah.conv.corner` and mirrored in a right-to-left page). `conversation-mini.js` adds two things to it, **only** at that size and layout: the centred overlay keeps its history popover, the full page keeps its permanent sidebar, and on a phone the history is still the tray popover.
+
+- **History column.** The history button (`aria-expanded`, `aria-controls="convSidebar"`) opens `#convSidebar` as a column on the widget's free side (the side away from its screen corner), so the chat itself never moves. The widget gets wider by `--conv-hist-w`, 0.6 of the chat's width (`MINI_HISTORY_RATIO`), and the column is revealed by a `clip-path` wipe from the chat's edge (220 ms, `--motion-ease-decel`, interruptible: a second press turns it round from where the clip has got to). No width is animated and no content is scaled, so the list text is never squashed. Under reduced motion the column only fades in. Picking a conversation leaves the column open; Escape inside the widget folds it away first (and returns focus to the button); changing size or layout, or closing the panel, folds it away at once.
+- **Resize.** A corner handle (`#convResizeBtn`, a real button) and two edge strips on the free edges resize the widget from 300 to 520 px wide and 320 to 720 px tall (`MINI_BOUNDS`), never beyond the window (a 32 px gutter at the sides, 120 px above and below; with the column open the chat plus its column must fit). The widget stays pinned to its corner, so pulling away from the corner grows it, in either direction. Arrow keys on the focused corner handle resize in steps of 24 px, `Home` or a double click puts the default back. The size is written as `--conv-mini-w` / `--conv-mini-h` on the panel (with `data-mini-h="fixed"` once a height is set; before that the height follows the content) and remembered in `shelah.conv.miniSize`. The handles are hidden on touch-first devices (`@media (pointer: coarse)`), where the widget is moved by its header instead.
 
 ### Reading
 
@@ -211,7 +234,7 @@ The single source of truth, loaded before every other sheet.
 | Calendar | `--cal-event-holiday`, `--cal-event-shabbat`, … (kept in step with the backend's Hebcal colour palette) |
 | Geometry | `--radius-xs` to `--radius-full`, `--sp-1` to `--sp-12` (a 4 px / 8 px grid), `--shadow-sm/md/lg` |
 | Type | `--text-xs` to `--text-3xl` (fluid `clamp()` sizes; these are **sizes**, not colours), `--font-serif` (Cardo), `--font-sans` (Inter), `--font-hebrew` (Ezra SIL) |
-| Motion | `--motion-dur-*`, `--motion-ease-out/spring/decel`, `--motion-dur-view-*`, `--motion-view-shift` |
+| Motion | `--motion-dur-fast/base/slow` (150 / 220 / 400 ms), `--motion-ease-out/spring/decel`, `--motion-stagger` (40 ms), `--motion-dur-view-*`, `--motion-view-shift` |
 | Glass | `--glass-bg`, `--glass-edge`, `--glass-shadow` (the translucent surfaces) |
 
 Legacy aliases (`--surface-base`, `--text-main`, `--text-muted`, `--ink`, `--paper`, `--control-*`, …) remain so untouched sheets keep working; new code uses the semantic names above.
@@ -222,7 +245,7 @@ Fonts: Ezra SIL is self-hosted (`static/fonts/SILEOT.woff2`, preloaded); Cardo a
 
 Two layers, per `.agents/ENGINEERING_RULES.md`:
 
-1. **CSS keyframes** live in `tokens.css` (`shelah-fade-in`, `-fade-up`, `-scale-in`, `-slide-in-left/right`, `-slide-down-fade`, `-overlay-in`, `-shimmer`, `-spin`, `-dot-bounce`, `-warm-pulse`, `-attention-ping`, `-cite-highlight`, `-view-in`, `-view-out`) plus the Ask panel's five (`conv-rise`, `conv-cite-flash`, `conv-citepop-in`, `conv-status-blink`, `conv-status-dot`, which kept their `conv-` names). Feature sheets and inline template styles apply them by name. The rule is no `@keyframes` anywhere but `tokens.css`, and `tests/test_css_keyframes_guard.py` fails the build if one appears elsewhere.
+1. **CSS keyframes** live in `tokens.css` (`shelah-fade-in`, `-fade-up`, `-scale-in`, `-slide-in-left/right`, `-slide-down-fade`, `-overlay-in`, `-shimmer`, `-spin`, `-dot-bounce`, `-warm-pulse`, `-attention-ping`, `-cite-highlight`, `-view-in`, `-view-out`, `-grow-up`) plus the Ask panel's five (`conv-rise`, `conv-cite-flash`, `conv-citepop-in`, `conv-status-blink`, `conv-status-dot`, which kept their `conv-` names). Feature sheets and inline template styles apply them by name. The rule is no `@keyframes` anywhere but `tokens.css`, and `tests/test_css_keyframes_guard.py` fails the build if one appears elsewhere.
 2. **`static/js/motion.js`** (`window.ShelahMotion`) wraps the vanilla motion.dev `animate()` for anything JavaScript mounts, unmounts or moves:
 
 | Helper | Use for |
@@ -235,12 +258,37 @@ Two layers, per `.agents/ENGINEERING_RULES.md`:
 | `slideIn` / `slideOut` / `slideTo` | Drawers and sidebars |
 | `present` / `dismiss` | Popovers, cards and sheets that grow from, and fold back into, their trigger |
 | `transitionView`, `viewTransitionsOn` | The View Transitions API path for view changes, off unless the `data-view-transitions` flag is on |
+| `settleIn` | A 150 ms fade and 3 px rise for text that changes under the reader's eyes (the Ask panel's status line); native WAAPI, restarts instead of stacking |
 
-Spring for movement, tween only for opacity and colour, animate only `transform` and `opacity`. Every helper checks `isMotionReduced()` first and falls back to an instant state change.
+Spring for movement, tween only for opacity and colour, animate only `transform` and `opacity`. Every helper checks `isMotionReduced()` first. `present` and `dismiss` then keep a 120 ms opacity fade (so something visibly arrived or left) and drop the travel; the others fall back to an instant state change.
 
 `fadeOpacity` starts from the element's computed opacity (`[from, to]`). Motion remembers the last value it animated and would otherwise start a bare target from that, so code that sets `style.opacity` by hand and then fades back in (`swapContent`, `crossFade`) saw "already there" and left the element hidden.
 
-**Reduced motion.** `typography.css` carries the global `prefers-reduced-motion: reduce` fallback (near-zero durations, one iteration, no smooth scroll). Feature sheets (`loading.css`, `ai.css`, …) additionally set `animation: none` so the end state is static, and every skeleton disables its shimmer.
+**Reduced motion.** `typography.css` carries the global `prefers-reduced-motion: reduce` fallback (near-zero durations, one iteration, no smooth scroll). Feature sheets (`loading.css`, `ai.css`, …) additionally set `animation: none` so the end state is static, and every skeleton disables its shimmer. The policy is *fewer and gentler, not none*: an entrance that carries meaning (an answer arriving, a section revealed, a dialog opening, the theme changing) keeps a 120 ms linear opacity fade, and travel, scale and looping motion go. `typography.css` is not loaded on the legal pages, so their reduced-motion fades are written as `!important` shorthands with the specificity to win without it.
+
+### Motion spec (the October 2026 pass)
+
+Principles: motion has a named purpose (feedback, spatial consistency, state change, or bridging a jarring swap); entrances run 180–300 ms, feedback 100–200 ms, exits about two thirds of their entrance; ease-out for entrances, springs for movement, tweens only for opacity and colour; nothing scales from 0 (0.95 to 0.98, bars 0.6); 4 to 12 px of travel; transform and opacity only; nothing blocks input; content is visible if the motion layer fails. Hover lifts sit behind `@media (hover: hover) and (pointer: fine)`.
+
+| Surface | What moves | Timing and curve | Reduced motion |
+|---|---|---|---|
+| Ask panel turns | The user turn and the assistant turn rise 6 px into place (`conv-rise`) | 220 ms, `--motion-ease-decel` | 120 ms opacity |
+| Ask panel pending turn | Status line text settles in when the stage changes (`settleIn`); the skeleton shimmers; the status dot blinks | 150 ms; shimmer 1.4 s and blink 2.6 s loop | Text fades only; loops off |
+| Ask panel answer | The skeleton is cloned as a ghost (`.conv-ghost`) that cross-fades out over the arriving answer, so the thread does not jump; the answer's parts follow in turn | Ghost 150 ms linear opacity; parts `conv-rise` 220 ms, 40 ms apart (`--motion-stagger`), six steps at most | 120 ms opacity, no stagger |
+| Ask panel open / close, menus, dialogs, sheets | `ShelahMotion.present` / `dismiss` presets: `popover` (12 px, 0.98, grows from the trigger), `modal` (18 px, 0.97), `window` (0.985, no travel), `sheet` and `drawer` (slide from the bottom edge on phones) | Springs, 0.14 to 0.42 s settle, exits shorter than entrances | 120 ms opacity |
+| Loading halo (search bar and panel composer) | A soft gold-and-blue conic gradient orbits the bar a question was asked from, and only that one (see [Where a question loads](#where-a-question-loads)): `.search-liftoff-underlay` in `#searchForm` while `body.search-loading`, `.conv-halo` in `#convComposer` while `.conv-panel[data-sending="true"]`. One steady opacity (0.6); only the gradient turns (`shelah-halo-orbit`, transform only). It freezes where it is when the answer lands, then fades out | Turn 3 s (`--motion-dur-orbit`), linear; fade 220 ms | No turning: a still ring that fades in and out over 120 ms |
+| Mini widget history column | The column is uncovered from the chat's edge by a `clip-path` wipe; its text fades in under it. A second press reverses from the current clip | 220 ms, `--motion-ease-decel`; fade 160 ms | Column fades in over 120 ms, no wipe; closing is immediate |
+| Buttons and rows | Press dips to 0.97 (0.985 on wide cards and rows) with the standalone `scale` property, so it composes with any `transform` | `--motion-dur-fast` | No scale |
+| Hover lifts (quick links, popular texts, calendar button, sidebar tab, library link, legal accept) | A small lift and its shadow layer's opacity | `--motion-dur-fast` | Not applied on touch (gated) |
+| Home, reader, panels | `.view-enter` rises into place when shown | 220 ms decel | Global fallback |
+| Theme change | A cross-fade of the whole page through the View Transitions API, scoped by `html[data-vt-theme]` (set by `withThemeFade` in `topbar_shared.js`, so it is separate from the route flag) | 220 ms ease-out | 120 ms opacity |
+| Info pages (about, help, accessibility, AI disclosure) | Blocks below the fold rise 8 px and fade in once, on first sight (`data-reveal` on the `<article>`, `reveal.js`); blocks arriving together follow 40 ms apart, three steps at most | 220 ms decel | 120 ms opacity |
+| `/admin/feedback` first data | The four tiles fade up 40 ms apart, the split and the grid fade in, the 13 to 30 trend bars grow from their baseline (`shelah-grow-up`, from 0.6) with at most 320 ms of spread; held by `data-enter` for 800 ms | 220 ms | 120 ms opacity, no delay |
+| `/admin/feedback` redraws | Rows fade from 0.4 to 1 on a verdict, sort or page-size change; a refresh only dims the content to 0.6 | 150 ms | Row fade only |
+
+**Do not animate.** The Ask button and the AI mark (the star, its hover glow and `shelah-warm-pulse` are deliberately custom). The terms, privacy and licences pages (people search and skim them; text still fading in cannot be read). Text and prayer bodies, the reader's verse rows, anything the user is reading or acting on. Keyboard-initiated focus moves and shortcuts. The route-change View Transition stays behind its flag (`VIEW_TRANSITIONS`) and off. Home keeps its existing mount cascade, with no scroll reveal added on top.
+
+**Checking motion.** In a browser, `document.documentElement.getAnimations({ subtree: true })` lists every running animation with its target, duration and easing (the `::view-transition-*` pseudo-elements appear too). Sample it a few tens of milliseconds after the trigger; a pane that is not in front throttles frames, so a headless run is the reliable one. Check once with 4x CPU throttling at 375 px and once with `prefers-reduced-motion: reduce`.
 
 ---
 

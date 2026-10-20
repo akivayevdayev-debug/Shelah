@@ -55,7 +55,7 @@
 
     <!-- MAIN CONTENT -->
     <main id="mainContent" class="flex-1">
-        <article id="legalDocumentBody" class="main-container prose prose-sm max-w-2xl">
+        <article id="legalDocumentBody" class="main-container prose prose-sm max-w-2xl" data-reveal>
             <div class="legal-toolbar">
                 <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span data-en="Back to Sh'elah" data-he="חזרה לשאלה">Back to Sh'elah</span></a>
                                 <button type="button" id="selectAllPolicyTextBtn" class="select-all-btn"
@@ -67,99 +67,94 @@
             </div>
 
             <div class="info-box">
-                <p data-en="Sh'elah is committed to making Torah study accessible to everyone, including people who use assistive technology. This statement explains what we've implemented, what we're still improving, and how to reach us."
-                    data-he="Sh'elah מחויבת להפוך את לימוד התורה לנגיש לכולם, כולל אנשים המשתמשים בטכנולוגיה מסייעת. הצהרה זו מסבירה מה יישמנו, מה אנחנו עדיין משפרים, וכיצד ניתן לפנות אלינו.">
-                    Sh'elah is committed to making Torah study accessible to everyone, including people who use
-                    assistive technology. This statement explains what we've implemented, what we're still
-                    improving, and how to reach us.
+                <p data-en="I want Sh'elah to work for people who use a keyboard, a screen reader, zoom or other assistive technology. This page says what is in place, what is not yet, and how to tell me about a problem."
+                    data-he="אני רוצה ש-Sh'elah תעבוד גם עבור מי שמשתמשים במקלדת, בקורא מסך, בהגדלה או בטכנולוגיה מסייעת אחרת. בעמוד הזה כתוב מה כבר קיים, מה עדיין לא, ואיך לספר לי על בעיה.">
+                    I want Sh'elah to work for people who use a keyboard, a screen reader, zoom or other assistive
+                    technology. This page says what is in place, what is not yet, and how to tell me about a
+                    problem.
                 </p>
             </div>
 
-            <h2 data-en="1. Our Standard" data-he="1. הסטנדרט שלנו">1. Our Standard</h2>
-            <p data-en="We design and build Sh'elah against the Web Content Accessibility Guidelines (WCAG) 2.1, Level AA. This is a target we actively design for, not a certification — see 'Known Limitations' below for where we currently fall short."
-                data-he="אנו מתכננים ובונים את Sh'elah בהתאם להנחיות הנגישות לתוכן אינטרנט (WCAG) 2.1, רמה AA. זהו יעד שאנו מתכננים אליו באופן פעיל, לא הסמכה — ראה 'מגבלות ידועות' למטה לגבי המקומות בהם איננו עומדים בו עדיין.">
-                We design and build Sh'elah against the Web Content Accessibility Guidelines (WCAG) 2.1, Level AA.
-                This is a target we actively design for, not a certification — see <a href="#limitations">Known
-                    Limitations</a> below for where we currently fall short.
+            <h2 data-en="1. The standard" data-he="1. הסטנדרט">1. The standard</h2>
+            <p data-en="Sh'elah is built to meet the Web Content Accessibility Guidelines (WCAG) 2.1, Level AA. That is a target, not a certification. The list of known limitations below shows where it falls short."
+                data-he="Sh'elah נבנית כדי לעמוד בהנחיות הנגישות לתוכן אינטרנט (WCAG) 2.1, רמה AA. זה יעד ולא אישור רשמי. רשימת המגבלות הידועות למטה מראה איפה היא עדיין לא שם.">
+                Sh'elah is built to meet the Web Content Accessibility Guidelines (WCAG) 2.1, Level AA. That is a
+                target, not a certification. The list of <a href="#limitations">known limitations</a> below shows
+                where it falls short.
             </p>
 
-            <h2 data-en="2. What We've Implemented" data-he="2. מה יישמנו">2. What We've Implemented</h2>
+            <h2 data-en="2. What is in place" data-he="2. מה קיים">2. What is in place</h2>
             <ul>
-                <li data-en="A 'skip to main content' link on every page for keyboard and screen-reader users"
-                    data-he="קישור 'דלג לתוכן הראשי' בכל עמוד, למשתמשי מקלדת וקוראי מסך">A 'skip to main content' link
-                    on every page for keyboard and screen-reader users</li>
-                <li data-en="Full keyboard operability for menus, the reader settings panel, and modals, with visible focus indicators"
-                    data-he="תפעול מלא באמצעות מקלדת לתפריטים, לוח הגדרות הקריאה וחלונות קופצים, עם סימוני פוקוס נראים לעין">
-                    Full keyboard operability for menus, the reader settings panel, and modals, with visible focus
-                    indicators</li>
-                <li data-en="ARIA roles, labels, and live-region announcements on interactive controls (menus, toggles, the AI answer panel)"
-                    data-he="תפקידי ARIA, תוויות והכרזות אזור-חי על פקדים אינטראקטיביים (תפריטים, מתגים, פאנל תשובות ה-AI)">
-                    ARIA roles, labels, and live-region announcements on interactive controls (menus, toggles, the AI
-                    answer panel)</li>
-                <li data-en="Color contrast meeting WCAG AA (4.5:1 text, 3:1 UI elements) in both light and dark themes"
-                    data-he="ניגודיות צבעים העומדת בדרישת WCAG AA (4.5:1 לטקסט, 3:1 לאלמנטי ממשק) במראה הבהיר והכהה">
-                    Color contrast meeting WCAG AA (4.5:1 text, 3:1 UI elements) in both light and dark themes</li>
-                <li data-en="Full right-to-left (RTL) layout mirroring for Hebrew, not just text direction"
-                    data-he="שיקוף מלא של פריסת ימין-לשמאל (RTL) לעברית, ולא רק כיוון הטקסט">Full right-to-left (RTL)
-                    layout mirroring for Hebrew, not just text direction</li>
-                <li data-en="Adjustable text size, font, and line spacing in Reader Settings"
-                    data-he="גודל טקסט, גופן ומרווח שורות מתכווננים בהגדרות הקריאה">Adjustable text size, font, and
-                    line spacing in Reader Settings</li>
-                <li data-en="Respect for your operating system's 'reduce motion' setting — animations are minimized or removed"
-                    data-he="כיבוד הגדרת 'הפחתת תנועה' של מערכת ההפעלה שלך — אנימציות מוקטנות או מוסרות">Respect for
-                    your operating system's 'reduce motion' setting — animations are minimized or removed</li>
-                <li data-en="Minimum 44×44px touch targets for interactive elements on touch devices"
-                    data-he="שטח מגע מינימלי של 44×44 פיקסלים לאלמנטים אינטראקטיביים במכשירי מגע">Minimum 44×44px
-                    touch targets for interactive elements on touch devices</li>
-                <li data-en="No information is conveyed by color alone — status and state always include text, an icon, or both"
-                    data-he="לא נמסר מידע על ידי צבע בלבד — סטטוס ומצב כוללים תמיד טקסט, סמל, או שניהם">No information
-                    is conveyed by color alone — status and state always include text, an icon, or both</li>
-                <li data-en="Automated WCAG 2.1 AA checks (pa11y-ci) run in continuous integration on every push against our key pages (home, this page, and the other legal pages), in both light and dark themes, failing the build on a real violation — see docs/ACCESSIBILITY_AUDIT.md for the manual color-contrast audit these automated checks build on"
-                    data-he="בדיקות WCAG 2.1 AA אוטומטיות (pa11y-ci) פועלות באינטגרציה רציפה בכל דחיפה מול עמודי המפתח שלנו (עמוד הבית, עמוד זה, ושאר העמודים המשפטיים), במראה הבהיר ובמראה הכהה כאחד, וגורמות לכשל בבנייה במקרה של הפרה אמיתית — ראה docs/ACCESSIBILITY_AUDIT.md לביקורת ניגודיות הצבעים הידנית שעליה בדיקות אוטומטיות אלה נשענות">
-                    Automated WCAG 2.1 AA checks (<code>pa11y-ci</code>) run in continuous integration on every push
-                    against our key pages (home, this page, and the other legal pages), in both light and dark
-                    themes, failing the build on a real violation — see <code>docs/ACCESSIBILITY_AUDIT.md</code>
-                    for the manual color-contrast audit these automated checks build on</li>
+                <li data-en="A 'skip to main content' link on every page, for keyboard and screen-reader users"
+                    data-he="קישור 'דלגו לתוכן הראשי' בכל עמוד, למשתמשי מקלדת וקוראי מסך">A 'skip to main content' link
+                    on every page, for keyboard and screen-reader users</li>
+                <li data-en="Menus, the reader settings panel and dialogs work from the keyboard, with a visible focus indicator"
+                    data-he="תפריטים, לוח הגדרות הקריאה וחלונות דו-שיח עובדים מהמקלדת, עם סימון פוקוס גלוי">
+                    Menus, the reader settings panel and dialogs work from the keyboard, with a visible focus
+                    indicator</li>
+                <li data-en="ARIA roles, labels and live-region announcements on interactive controls, including menus, toggles and the AI answer panel"
+                    data-he="תפקידי ARIA, תוויות והכרזות אזור-חי על פקדים אינטראקטיביים, ובהם תפריטים, מתגים ופאנל התשובות של הבינה המלאכותית">
+                    ARIA roles, labels and live-region announcements on interactive controls, including menus, toggles
+                    and the AI answer panel</li>
+                <li data-en="Text and control contrast checked against WCAG AA (4.5:1 for text, 3:1 for controls) in both the light and dark themes"
+                    data-he="ניגודיות הטקסט והפקדים נבדקת מול WCAG AA (4.5:1 לטקסט, 3:1 לפקדים) במראה הבהיר והכהה">
+                    Text and control contrast checked against WCAG AA (4.5:1 for text, 3:1 for controls) in both the
+                    light and dark themes</li>
+                <li data-en="Hebrew pages are mirrored right to left, not only set in a right-to-left text direction"
+                    data-he="עמודים בעברית משוקפים מימין לשמאל, ולא רק מוגדרים בכיוון טקסט מימין לשמאל">
+                    Hebrew pages are mirrored right to left, not only set in a right-to-left text direction</li>
+                <li data-en="Text size, font and line spacing can be changed in the reader settings"
+                    data-he="אפשר לשנות את גודל הטקסט, הגופן ומרווח השורות בהגדרות הקריאה">Text size, font and line
+                    spacing can be changed in the reader settings</li>
+                <li data-en="Animations are reduced or removed when your operating system's 'reduce motion' setting is on"
+                    data-he="האנימציות מצטמצמות או נעלמות כשהגדרת 'הפחתת תנועה' של מערכת ההפעלה פעילה">Animations are
+                    reduced or removed when your operating system's 'reduce motion' setting is on</li>
+                <li data-en="Buttons and links are at least 44×44 px on touch devices"
+                    data-he="כפתורים וקישורים הם בגודל של 44×44 פיקסלים לפחות במכשירי מגע">Buttons and links are at
+                    least 44×44 px on touch devices</li>
+                <li data-en="Status is shown with text or an icon as well as color"
+                    data-he="מצבים מוצגים גם בטקסט או בסמל, ולא רק בצבע">Status is shown with text or an icon as well
+                    as color</li>
+                <li data-en="An automated WCAG 2.1 AA check (pa11y) runs on every push against the home page, the legal and info pages and the Tanakh page, in both themes. A failure stops the build."
+                    data-he="בדיקת WCAG 2.1 AA אוטומטית (pa11y) רצה בכל דחיפת קוד מול דף הבית, דפי המשפט והמידע ודף התנ״ך, בשני המראות. כשל עוצר את הבנייה.">
+                    An automated WCAG 2.1 AA check (<code>pa11y</code>) runs on every push against the home page,
+                    the legal and info pages and the Tanakh page, in both themes. A failure stops the build.</li>
             </ul>
 
-            <h2 id="limitations" data-en="3. Known Limitations" data-he="3. מגבלות ידועות">3. Known Limitations</h2>
-            <p data-en="In the interest of honesty, not every part of Sh'elah meets this standard yet:"
-                data-he="לשם כנות, לא כל חלק ב-Sh'elah עומד בסטנדרט הזה עדיין:">
-                In the interest of honesty, not every part of Sh'elah meets this standard yet:
+            <h2 id="limitations" data-en="3. Known limitations" data-he="3. מגבלות ידועות">3. Known limitations</h2>
+            <p data-en="Not every part of Sh'elah meets the standard yet:"
+                data-he="לא כל חלק ב-Sh'elah עומד בתקן עדיין:">
+                Not every part of Sh'elah meets the standard yet:
             </p>
             <ul>
-                <li data-en="Some embedded third-party components (the sign-in widget, calendar picker) follow their own vendor's accessibility implementation, which we don't fully control"
-                    data-he="חלק מהרכיבים המוטמעים של צדדים שלישיים (חלונית ההתחברות, בורר התאריכים) פועלים לפי יישום הנגישות של הספק שלהם, שאינו בשליטתנו המלאה">
-                    Some embedded third-party components (the sign-in widget, calendar picker) follow their own
-                    vendor's accessibility implementation, which we don't fully control</li>
-                <li data-en="AI-generated answers are long-form prose and may not always be optimally structured for screen-reader navigation (e.g., heading levels within an answer)"
-                    data-he="תשובות שנוצרו על ידי AI הן טקסט רציף וארוך, וייתכן שלא יהיו תמיד בנויות באופן אופטימלי לניווט בעזרת קורא מסך (למשל, רמות כותרות בתוך תשובה)">
-                    AI-generated answers are long-form prose and may not always be optimally structured for
-                    screen-reader navigation (e.g., heading levels within an answer)</li>
-                <li data-en="Some historical source texts (scanned or OCR'd Hebrew manuscripts) are provided as-is by our source libraries and may have inconsistent markup"
-                    data-he="חלק מטקסטי המקור ההיסטוריים (כתבי יד עבריים סרוקים או שעברו OCR) מסופקים כפי שהם על ידי ספריות המקור שלנו, וייתכן שיש בהם סימון לא אחיד">
-                    Some historical source texts (scanned or OCR'd Hebrew manuscripts) are provided as-is by our
-                    source libraries and may have inconsistent markup</li>
+                <li data-en="Two third-party components, the sign-in widget and the calendar, follow their vendors' own accessibility work, which I do not control"
+                    data-he="שני רכיבים של צדדים שלישיים, חלונית ההתחברות ולוח השנה, פועלים לפי עבודת הנגישות של הספקים שלהם, ואין לי שליטה בה">Two third-party components, the sign-in widget and the calendar, follow their
+                    vendors' own accessibility work, which I do not control</li>
+                <li data-en="AI answers are long prose. Their structure, such as heading levels inside an answer, may not suit screen-reader navigation"
+                    data-he="תשובות הבינה המלאכותית הן טקסט ארוך. המבנה שלהן, למשל רמות הכותרות בתוך תשובה, עשוי שלא להתאים לניווט בקורא מסך">AI answers are long prose. Their structure, such as heading levels inside an
+                    answer, may not suit screen-reader navigation</li>
+                <li data-en="Some historical source texts, such as scanned or OCR'd Hebrew manuscripts, arrive as-is from the source libraries and can have inconsistent markup"
+                    data-he="חלק מטקסטי המקור ההיסטוריים, כמו כתבי יד עבריים סרוקים או שעברו OCR, מגיעים כמו שהם מספריות המקור ועלולים לכלול סימון לא עקבי">Some historical source texts, such as scanned or OCR'd Hebrew manuscripts,
+                    arrive as-is from the source libraries and can have inconsistent markup</li>
             </ul>
-            <p data-en="We treat each of these as an open item, not a permanent exception, and we prioritize fixes as we find them."
-                data-he="אנו מתייחסים לכל אחד מהפריטים הללו כפריט פתוח, לא כחריג קבוע, ומתעדפים תיקונים ככל שאנו מוצאים אותם.">
-                We treat each of these as an open item, not a permanent exception, and we prioritize fixes as we find
-                them.
+            <p data-en="These are open items, not permanent exceptions. I fix them as I find them."
+                data-he="אלה פריטים פתוחים ולא חריגים קבועים. אני מתקן אותם ככל שאני מוצא אותם.">
+                These are open items, not permanent exceptions. I fix them as I find them.
             </p>
 
-            <h2 data-en="4. Compatibility" data-he="4. תאימות">4. Compatibility</h2>
-            <p data-en="Sh'elah is built and tested against current versions of Chrome, Safari, Firefox, and Edge, and is intended to work with modern screen readers such as VoiceOver, NVDA, and JAWS."
-                data-he="Sh'elah נבנית ונבדקת מול הגרסאות הנוכחיות של Chrome, Safari, Firefox ו-Edge, ומיועדת לעבוד עם קוראי מסך מודרניים כגון VoiceOver, NVDA ו-JAWS.">
-                Sh'elah is built and tested against current versions of Chrome, Safari, Firefox, and Edge, and is
-                intended to work with modern screen readers such as VoiceOver, NVDA, and JAWS.
+            <h2 data-en="4. Browsers and screen readers" data-he="4. דפדפנים וקוראי מסך">4. Browsers and screen readers</h2>
+            <p data-en="Sh'elah is built for current versions of Chrome, Safari, Firefox and Edge, and is meant to work with screen readers such as VoiceOver, NVDA and JAWS. The automated checks run in Chrome only."
+                data-he="Sh'elah נבנית עבור הגרסאות הנוכחיות של Chrome, Safari, Firefox ו-Edge, ונועדה לעבוד עם קוראי מסך כמו VoiceOver, NVDA ו-JAWS. הבדיקות האוטומטיות רצות ב-Chrome בלבד.">
+                Sh'elah is built for current versions of Chrome, Safari, Firefox and Edge, and is meant to work with
+                screen readers such as VoiceOver, NVDA and JAWS. The automated checks run in Chrome only.
             </p>
 
-            <h2 data-en="5. Feedback &amp; Contact" data-he="5. משוב וצור קשר">5. Feedback &amp; Contact</h2>
-            <p data-en="If you encounter an accessibility barrier anywhere on Sh'elah, please tell us — include the page, what you were trying to do, and the assistive technology you were using if relevant. We will do our best to respond within a reasonable time and fix genuine barriers."
-                data-he="אם נתקלת במכשול נגישות כלשהו ב-Sh'elah, נשמח לדעת — כלול את העמוד, מה ניסית לעשות, ואת הטכנולוגיה המסייעת שבה השתמשת אם רלוונטי. נשתדל להגיב בזמן סביר ולתקן מכשולים אמיתיים.">
-                If you encounter an accessibility barrier anywhere on Sh'elah, please tell us — include the page,
-                what you were trying to do, and the assistive technology you were using if relevant. We will do our
-                best to respond within a reasonable time and fix genuine barriers.
+            <h2 data-en="5. Tell me about a problem" data-he="5. ספרו לי על בעיה">5. Tell me about a problem</h2>
+            <p data-en="If something on Sh'elah is hard or impossible to use, write to me. Say which page it was, what you were trying to do and, if it matters, which assistive technology you use. I will do my best to reply promptly and fix real barriers."
+                data-he="אם משהו ב-Sh'elah קשה או בלתי אפשרי לשימוש, כתבו לי. ציינו באיזה עמוד זה קרה, מה ניסיתם לעשות, ואם זה רלוונטי, באיזו טכנולוגיה מסייעת אתם משתמשים. אעשה כמיטב יכולתי להשיב במהירות ולתקן מכשולים אמיתיים.">
+                If something on Sh'elah is hard or impossible to use, write to me. Say which page it was, what you
+                were trying to do and, if it matters, which assistive technology you use. I will do my best to reply
+                promptly and fix real barriers.
             </p>
             <p><strong data-en="Contact:" data-he="איש קשר:">Contact:</strong> Akiva Yevdayev</p>
             <p><strong data-en="Email:" data-he="דוא״ל:">Email:</strong> <a
@@ -169,10 +164,10 @@
 
             <div class="info-box">
                 <p class="text-sm"
-                    data-en="See also our Terms of Service and Privacy Policy."
-                    data-he="ראה גם את תנאי השירות ומדיניות הפרטיות שלנו.">
-                    See also our <a href="/terms" data-en="Terms of Service" data-he="תנאי השירות">Terms of
-                        Service</a> and <a href="/privacy" data-en="Privacy Policy" data-he="מדיניות הפרטיות">Privacy
+                    data-en="See also the Terms of Service and the Privacy Policy."
+                    data-he="ראו גם את תנאי השירות ואת מדיניות הפרטיות.">
+                    See also the <a href="/terms" data-en="Terms of Service" data-he="תנאי השירות">Terms of
+                        Service</a> and the <a href="/privacy" data-en="Privacy Policy" data-he="מדיניות הפרטיות">Privacy
                         Policy</a>.
                 </p>
             </div>

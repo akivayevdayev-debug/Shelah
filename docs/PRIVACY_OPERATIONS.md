@@ -31,7 +31,12 @@ without waiting on a manual request:
   row survived account deletion undiscoverable and unreachable) and
   `conversations`, the AI chat history, with its messages and citations
   embedded (added 2026-09-26; before that, chat threads were neither
-  exported nor deleted). The panel also adds this browser's local
+  exported nor deleted). `answer_feedback` rows with `source = 'ai'` (the
+  server's own note on an answer, `backend/ai_notes.py`) carry no user id and
+  no question text, so they belong to nobody and are not part of any export or
+  deletion. A web lookup (`backend/web_lookup.py`) sends Google, through the
+  Gemini API, only a short search phrase the model wrote (links, emails and long
+  numbers are refused), never an identity, history or memory. The panel also adds this browser's local
   recent history, shelf and settings under `this_device`. This
   satisfies GDPR Art. 15 (access) and Art. 20 (portability — the export is
   already machine-readable JSON, matching the "JSON/CSV" commitment in

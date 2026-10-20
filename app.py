@@ -33,7 +33,8 @@ from backend.data_service import ShelahEngine
 from backend import sefaria
 from backend import claude
 from backend import ask_pipeline
-from backend import ask_progress
+from backend import ask_progress, web_lookup
+from backend.ai_notes import record_ai_note
 from backend import cost_gates
 from backend import page_meta
 from backend import module_versions
@@ -46,7 +47,12 @@ from backend.logging_setup import (
     get_logger,
     submit_with_context,
 )
-from backend.ask_payloads import build_ai_answer_payload, build_source_fallback_payload, is_usable_primary_source
+from backend.ask_payloads import (
+    build_ai_answer_payload,
+    build_source_fallback_payload,
+    is_usable_primary_source,
+    source_fallback_answer,
+)
 from backend.customs import validate_all_customs_at_startup
 from backend.device_identity import issues_device_cookie
 from backend.customs import (  # noqa: F401  (re-import shims; see below)
@@ -1561,9 +1567,12 @@ def _collect_primary_sources_sync(question, engine, context=()):
     `context`: a conversation's earlier questions, newest first (see
     sefaria.find_refs_for_question).
     """
+    refs = list(_primary_ref_candidates(question, context))
+    ask_progress.detail(
+        ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs[:3], count=len(refs))
     source_futures = [
         submit_with_context(_THREAD_POOL, engine.get_library_text, ref)
-        for ref in _primary_ref_candidates(question, context)
+        for ref in refs
     ]
     primary_sources = []
     for future in source_futures:
@@ -1631,6 +1640,8 @@ def _submit_ask_question_context_futures(question, canonical_lens, user_id, engi
     submitting them afterwards made every follow-up pay the primary-source
     stage and then the slowest secondary lookup back to back.
     """
+    if canonical_lens and canonical_lens != "All":
+        ask_progress.detail(ask_progress.STAGE_CUSTOMS, ask_progress.DETAIL_COMMUNITY, community=canonical_lens)
     return (
         submit_with_context(
             _THREAD_POOL,
@@ -1875,10 +1886,11 @@ def _security_blocked_ask_payload(
     }
 
 
-def _tracked_ask_tool_context(engine):
+def _tracked_ask_tool_context(engine, question=None):
     """The zmanim / Hebrew-date / parasha lookup behind every answer's tool
-    context, reported as the "times" progress step."""
-    with ask_progress.stage(ask_progress.STAGE_TIMES):
+    context, reported as the "times" progress step when `question` is about a
+    time (every answer still gets the context)."""
+    with ask_progress.times_stage(question):
         return _build_ask_tool_context(engine)
 
 
@@ -1919,7 +1931,7 @@ def _dispatch_ask_ai_synthesis_call(question, mode, canonical_lens, answer_langu
         "mode": mode,
         "community_lens": canonical_lens,
         "answer_language": answer_language,
-        "tool_context": _tracked_ask_tool_context(engine),
+        "tool_context": _tracked_ask_tool_context(engine, question),
         "conversation_history": conversation_history,
     }
 
@@ -1929,6 +1941,9 @@ def _dispatch_ask_ai_synthesis_call(question, mode, canonical_lens, answer_langu
             return asyncio.run(ask_pipeline.run_agentic_ask(**kwargs))
         ask_future = submit_with_context(_THREAD_POOL, _run_agentic, **call_kwargs)
     else:
+        # The reader's "Web search" setting, only when they sent one.
+        if ctx.get("web_search") is not None:
+            call_kwargs["web_search"] = ctx["web_search"]
         ask_future = submit_with_context(_THREAD_POOL, claude.ask_claude, **call_kwargs)
 
     return ask_future.result(timeout=claude.AI_TOTAL_BUDGET_SECONDS)
@@ -2052,6 +2067,17 @@ def _run_ask_question_ai_synthesis(
         prompt_version=claude.PROMPT_VERSION,
     )
 
+    record_ai_note(
+        question,
+        history_id=history_id,
+        result=result,
+        structured=structured_payload,
+        mode=mode,
+        language=answer_language,
+        community=canonical_lens,
+        source_count=len(ctx["primary_sources"]),
+    )
+
     # Successful AI answer path returns immediately; fallback is only for empty/error responses.
     return build_ai_answer_payload(
         result=result,
@@ -2093,7 +2119,7 @@ def _run_ask_question_fallback(question, mode, canonical_lens, answer_language, 
         fallback_payload.get("warning") or "").strip()
 
     fallback_answer = _compose_answer_with_prefixes(
-        "## Ruling\n\nAI synthesis unavailable. Returning discovered halakhic references.",
+        source_fallback_answer(answer_language),
         include_web_warning=bool(fallback_warning),
     )
 
@@ -2103,6 +2129,14 @@ def _run_ask_question_fallback(question, mode, canonical_lens, answer_language, 
     DEVTOOLS_STATS["fallback_answers"] += 1
     fallback_sources = _compact_ai_sources(
         fallback_payload.get("sources", []))
+    record_ai_note(
+        question,
+        mode=mode,
+        language=answer_language,
+        community=canonical_lens,
+        source_count=len(fallback_sources),
+        fallback=True,
+    )
     return build_source_fallback_payload(
         answer=fallback_answer,
         sources=fallback_sources,
@@ -2212,6 +2246,7 @@ def _parse_and_validate_ask_question_request(data):
     canonical_lens = "All" if community_lens.lower() == "all" else (
         _canonicalize_community_name(community_lens) or community_lens)
     user_id = _get_request_user_id()
+    web_search = web_lookup.coerce_preference(data.get("web_search"))
     ask_cache_key = "|".join([
         question.lower(),
         answer_language,
@@ -2219,6 +2254,10 @@ def _parse_and_validate_ask_question_request(data):
         canonical_lens.lower(),
         user_id or "anon",
     ])
+    if web_search is False:
+        # A reader who switched Web search off must not be served an answer
+        # that was written with a web lookup (or the other way round).
+        ask_cache_key += "|noweb"
 
     return {
         "question": question,
@@ -2227,6 +2266,7 @@ def _parse_and_validate_ask_question_request(data):
         "mode": mode,
         "canonical_lens": canonical_lens,
         "user_id": user_id,
+        "web_search": web_search,
         "ask_cache_key": ask_cache_key,
     }
 
@@ -2299,6 +2339,7 @@ def ask_question():
 
         ctx = _collect_ask_question_context(
             question, canonical_lens, user_id, answer_language, engine)
+        ctx["web_search"] = parsed_request["web_search"]
 
         strict_payload = _ask_question_strict_payload(mode, canonical_lens, ctx)
         if strict_payload is not None:

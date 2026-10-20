@@ -9,6 +9,10 @@
 //
 // Wire events:
 //   { type: "stage", stage, state: "start" | "done" }
+//   { type: "detail", stage, detail: { kind, ...params } | null }
+//        what a running step is doing right now; null when that work ends.
+//        Kinds are a closed set (refs, community, times, tool); this module
+//        owns the English and Hebrew wording, the server only names the work.
 //   { type: "ping" }                                   (keep-alive, ignored)
 //   { type: "result", payload | body, status? }        (terminal)
 //   { type: "error",  status, detail | body }          (terminal)
@@ -47,39 +51,155 @@ const ACTIVE_PRIORITY = Object.freeze(["thinking", "sources", "commentary", "cus
 export const STAGE_IDS = Object.freeze(Object.keys(STAGES));
 
 export function createProgress() {
-    return { order: [], status: {} };
+    return { order: [], status: {}, details: {} };
 }
 
 const STEP_STATE = new Map([["start", "active"], ["done", "done"]]);
 
+const DETAIL_KINDS = Object.freeze(["refs", "community", "times", "tool"]);
+
+function withoutDetail(details, stage) {
+    if (!Object.hasOwn(details, stage)) return details;
+    const { [stage]: _gone, ...rest } = details;
+    return rest;
+}
+
+function applyDetail(state, event) {
+    if (!Object.hasOwn(STAGES, event.stage)) return state;
+    const detail = event.detail;
+    if (detail == null) {
+        const details = withoutDetail(state.details, event.stage);
+        return details === state.details ? state : { ...state, details };
+    }
+    if (typeof detail !== "object" || !DETAIL_KINDS.includes(detail.kind)) return state;
+    if (JSON.stringify(state.details[event.stage]) === JSON.stringify(detail)) return state;
+    return { ...state, details: { ...state.details, [event.stage]: detail } };
+}
+
 // Pure: returns a new state, or the same object when the event changes nothing.
 export function applyProgressEvent(state, event) {
+    if (event?.type === "detail") return applyDetail(state, event);
     if (event?.type !== "stage" || !Object.hasOwn(STAGES, event.stage)) return state;
     const next = STEP_STATE.get(event.state);
     if (!next || state.status[event.stage] === next) return state;
     return {
         order: state.order.includes(event.stage) ? state.order : [...state.order, event.stage],
         status: { ...state.status, [event.stage]: next },
+        // A step that has finished is no longer doing the thing it described.
+        details: next === "done" ? withoutDetail(state.details, event.stage) : state.details,
     };
 }
 
 // What the status line should show: `active` is the step to name (null before
-// anything has started), `done` the finished steps in the order they began.
+// anything has started), `detail` what that step is doing right now (or null),
+// `done` the finished steps in the order they began.
 export function progressView(state) {
-    const running = ACTIVE_PRIORITY.find((id) => state.status[id] === "active") || null;
     const done = state.order.filter((id) => state.status[id] === "done" && STAGES[id].done);
-    if (running) return { active: running, done };
+    const running = ACTIVE_PRIORITY.filter((id) => state.status[id] === "active");
+    // The model call outranks everything. Among the lookups, one that can say
+    // exactly what it is doing beats one that can only say its name.
+    const shown = running[0] === "thinking"
+        ? "thinking"
+        : (running.find((id) => state.details[id]) || running[0] || null);
+    if (shown) return { active: shown, detail: state.details[shown] || null, done };
     // Everything reported has finished but no answer yet (between the last
     // lookup and the model call): the model is the only thing left to wait on.
-    return { active: state.order.length ? "thinking" : null, done };
+    return { active: state.order.length ? "thinking" : null, detail: state.details.thinking || null, done };
 }
+
+// Identity of what the line says, so a caller redraws only when it changes.
+export function viewKey(view) {
+    return `${view.active || ""}|${view.detail ? JSON.stringify(view.detail) : ""}`;
+}
+
+const isHebrew = (lang) => String(lang || "").toLowerCase().startsWith("he");
 
 function pick(pair, lang) {
-    return String(lang || "").toLowerCase().startsWith("he") ? pair[1] : pair[0];
+    return isHebrew(lang) ? pair[1] : pair[0];
 }
 
-export function activeLabel(stageId, lang) {
-    return pick(stageId && STAGES[stageId] ? STAGES[stageId].active : WAITING_LABEL, lang);
+// What each kind of time question is looking up. Shabbat names the two moments
+// the lookup really returns (sunset and nightfall), not a halachic start/end.
+const TIMES_TOPICS = Object.freeze({
+    shabbat: ["Checking sunset and nightfall for Shabbat times", "בודקים שקיעה וצאת הכוכבים לזמני שבת"],
+    zmanim: ["Checking today's zmanim", "בודקים את זמני היום"],
+    omer: ["Checking today's Omer count", "בודקים את ספירת העומר להיום"],
+    parasha: ["Checking this week's Torah portion", "בודקים את פרשת השבוע"],
+    holiday: ["Checking the Hebrew date and coming holidays", "בודקים את התאריך העברי והחגים הקרובים"],
+});
+
+// [English, Hebrew] per AI tool; get_text_by_ref names the reference it opens.
+const TOOL_LABELS = Object.freeze({
+    search_judaic_texts: ["Searching Sefaria for sources", "מחפשים מקורות בספריא"],
+    search_responsa_external: ["Searching Halachipedia and HebrewBooks", "מחפשים בהלכיפדיה ובהיברובוקס"],
+    get_zmanim: TIMES_TOPICS.zmanim,
+    get_daily_zmanim_summary: TIMES_TOPICS.zmanim,
+    get_hebrew_date: ["Checking the Hebrew date", "בודקים את התאריך העברי"],
+    calculate_hebrew_date_math: ["Calculating a Hebrew date", "מחשבים תאריך עברי"],
+    get_parasha: TIMES_TOPICS.parasha,
+    get_omer: TIMES_TOPICS.omer,
+    get_holidays: ["Checking the coming holidays", "בודקים את החגים הקרובים"],
+    get_daily_study: ["Checking the daily study schedule", "בודקים את לוח הלימוד היומי"],
+    web_search: ["Searching the web", "מחפשים ברשת"],
+    lookup_word_meaning: ["Looking up a word", "בודקים משמעות של מילה"],
+    translate_text: ["Translating a passage", "מתרגמים קטע"],
+    get_commentaries: ["Looking up commentaries", "מחפשים פרשנים"],
+    search_community_customs: ["Checking community customs", "בודקים מנהגי קהילות"],
+    get_community_profile: ["Checking a community's profile", "בודקים פרטי קהילה"],
+    browse_library: ["Browsing the library", "מעיינים בספרייה"],
+    search_library: ["Browsing the library", "מעיינים בספרייה"],
+    get_prayer_text: ["Opening the prayer text", "פותחים את נוסח התפילה"],
+    convert_measurements: ["Converting measurements", "ממירים מידות"],
+    format_source_citation: ["Preparing the citation", "מכינים את הציטוט"],
+});
+
+function refsLabel(detail, lang, names) {
+    const shown = (Array.isArray(detail.refs) ? detail.refs : []).filter((r) => typeof r === "string" && r.trim());
+    if (!shown.length) return "";
+    const refs = shown.map((r) => (names.ref ? names.ref(r) : r));
+    const more = Math.max(0, (Number(detail.count) || shown.length) - shown.length);
+    if (isHebrew(lang)) {
+        return `קוראים ${refs.join(", ")}${more ? ` ועוד ${more}` : ""}`;
+    }
+    const list = refs.length > 1 && !more ? `${refs.slice(0, -1).join(", ")} and ${refs.at(-1)}` : refs.join(", ");
+    return `Reading ${list}${more ? ` and ${more} more` : ""}`;
+}
+
+function toolLabel(detail, lang, names) {
+    const ref = typeof detail.ref === "string" ? detail.ref.trim() : "";
+    if (detail.tool === "get_text_by_ref") {
+        if (!ref) return isHebrew(lang) ? "קוראים מקור" : "Reading a source";
+        const shown = names.ref ? names.ref(ref) : ref;
+        return isHebrew(lang) ? `קוראים ${shown}` : `Reading ${shown}`;
+    }
+    const pair = Object.hasOwn(TOOL_LABELS, detail.tool) ? TOOL_LABELS[detail.tool] : null;
+    return pair ? pick(pair, lang) : "";
+}
+
+function communityLabel(detail, lang, names) {
+    const raw = typeof detail.community === "string" ? detail.community.trim() : "";
+    if (!raw) return "";
+    const name = names.community ? names.community(raw) : raw;
+    return isHebrew(lang) ? `בודקים מנהגי ${name}` : `Checking ${name} customs`;
+}
+
+// The line for a detail, or "" when this module has no words for it (the
+// caller then falls back to the step's own label). `names` lets the UI render
+// references and communities the way the rest of the page does.
+export function detailLabel(detail, lang, names = {}) {
+    if (!detail || typeof detail !== "object") return "";
+    switch (detail.kind) {
+        case "times": return Object.hasOwn(TIMES_TOPICS, detail.topic) ? pick(TIMES_TOPICS[detail.topic], lang) : "";
+        case "refs": return refsLabel(detail, lang, names);
+        case "community": return communityLabel(detail, lang, names);
+        case "tool": return toolLabel(detail, lang, names);
+        default: return "";
+    }
+}
+
+export function activeLabel(stageId, lang, detail = null, names = {}) {
+    return detailLabel(detail, lang, names)
+        || pick(stageId && STAGES[stageId] ? STAGES[stageId].active : WAITING_LABEL, lang);
 }
 
 export function doneLabel(stageId, lang) {

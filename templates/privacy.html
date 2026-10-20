@@ -188,10 +188,6 @@
                         <td data-en="Legitimate interest (Art. 6(1)(f))" data-he="אינטרס לגיטימי (סעיף 6(1)(ו))">Legitimate interest (Art. 6(1)(f))</td>
                     </tr>
                     <tr>
-                        <td data-en="Age attestation &amp; legal consent record" data-he="הצהרת גיל ורישום הסכמה משפטית">Age attestation &amp; legal consent record</td>
-                        <td data-en="Consent (Art. 6(1)(a)) and legal obligation (Art. 6(1)(c))" data-he="הסכמה (סעיף 6(1)(א)) וחובה חוקית (סעיף 6(1)(ג))">Consent (Art. 6(1)(a)) and legal obligation (Art. 6(1)(c))</td>
-                    </tr>
-                    <tr>
                         <td data-en="Any future non-essential cookie/marketing use" data-he="כל שימוש עתידי בעוגיה לא-חיונית/שיווק">Any future non-essential cookie/marketing use</td>
                         <td data-en="Consent (Art. 6(1)(a)), opt-in only" data-he="הסכמה (סעיף 6(1)(א)), הצטרפות בלבד">Consent (Art. 6(1)(a)), opt-in only</td>
                     </tr>
@@ -221,7 +217,7 @@
                         <td data-en="Until account deletion or 1 year of inactivity" data-he="עד מחיקת החשבון או שנה של חוסר פעילות">Until account deletion or 1 year of inactivity</td>
                     </tr>
                     <tr>
-                        <td data-en="Query logs (questions + AI answers)" data-he="יומני שאילתות (שאלות + תשובות AI)">Query logs (questions + AI answers)</td>
+                        <td data-en="Answer history (questions + AI answers, including answers asked without signing in)" data-he="היסטוריית תשובות (שאלות + תשובות AI, כולל תשובות שנשאלו ללא התחברות)">Answer history (questions + AI answers, including answers asked without signing in)</td>
                         <td data-en="90 days, then automatically deleted" data-he="90 ימים, ואז נמחקים אוטומטית">90 days, then automatically deleted</td>
                     </tr>
                     <tr>
@@ -229,12 +225,16 @@
                         <td data-en="24 hours (shared across users, not linked to you)" data-he="24 שעות (משותף בין משתמשים, לא מקושר אליך)">24 hours (shared across users, not linked to you)</td>
                     </tr>
                     <tr>
-                        <td data-en="User preferences &amp; bookmarks" data-he="העדפות משתמש וסימניות">User preferences &amp; bookmarks</td>
-                        <td data-en="Until deleted by user or account deletion" data-he="עד שנמחק על ידי משתמש או מחיקת החשבון">Until deleted by user or account deletion</td>
+                        <td data-en="Saved AI conversations (signed-in users)" data-he="שיחות AI שמורות (משתמשים מחוברים)">Saved AI conversations (signed-in users)</td>
+                        <td data-en="Until you delete your account. Deleting a single conversation hides it from your list; the stored copy is removed when your account is deleted." data-he="עד שתמחקו את החשבון. מחיקת שיחה בודדת מסתירה אותה מהרשימה שלכם; העותק השמור נמחק כשהחשבון נמחק.">Until you delete your account. Deleting a single conversation hides it from your list; the stored copy is removed when your account is deleted.</td>
                     </tr>
                     <tr>
-                        <td data-en="Legal consent &amp; age-attestation records" data-he="רישומי הסכמה משפטית והצהרת גיל">Legal consent &amp; age-attestation records</td>
-                        <td data-en="Duration of account + a reasonable period after deletion for defensibility (dispute/compliance evidence)" data-he="משך החשבון + תקופה סבירה לאחר המחיקה לצורכי הגנה משפטית (ראיה למחלוקת/ציות)">Duration of account + a reasonable period after deletion for defensibility (dispute/compliance evidence)</td>
+                        <td data-en="Short summaries of earlier questions (signed-in users)" data-he="סיכומים קצרים של שאלות קודמות (משתמשים מחוברים)">Short summaries of earlier questions (signed-in users)</td>
+                        <td data-en="Until account deletion" data-he="עד מחיקת החשבון">Until account deletion</td>
+                    </tr>
+                    <tr>
+                        <td data-en="User preferences &amp; bookmarks" data-he="העדפות משתמש וסימניות">User preferences &amp; bookmarks</td>
+                        <td data-en="Until deleted by user or account deletion" data-he="עד שנמחק על ידי משתמש או מחיקת החשבון">Until deleted by user or account deletion</td>
                     </tr>
                     <tr>
                         <td data-en="Device cookie (shelah_device, signed-out answers)" data-he="עוגיית מכשיר (shelah_device, תשובות ללא התחברות)">Device cookie (shelah_device, signed-out answers)</td>
@@ -254,9 +254,9 @@
                     </tr>
                 </tbody>
             </table>
-            <p data-en="An automated daily job enforces the query-log and AI usage/cost log retention windows above in production (docs/PRIVACY_OPERATIONS.md §5). Account deletion is available on request at any time -- see 'Your Rights' below for the self-serve download/delete tools in your account settings."
-                data-he="עבודה אוטומטית יומית אוכפת את חלונות השמירה של יומני השאילתות ויומני עלות/שימוש הבינה המלאכותית שלעיל בסביבת הייצור (docs/PRIVACY_OPERATIONS.md §5). מחיקת חשבון זמינה לפי בקשה בכל עת -- ראה 'זכויותיך' למטה לכלי הורדה/מחיקה עצמאיים בהגדרות החשבון שלך.">
-                An automated daily job enforces the query-log and AI usage/cost log retention windows above in
+            <p data-en="An automated daily job enforces the answer-history and AI usage/cost log retention windows above in production (docs/PRIVACY_OPERATIONS.md §5). Account deletion is available on request at any time — see 'Your Rights' below for the self-serve download/delete tools in your account settings."
+                data-he="עבודה אוטומטית יומית אוכפת את חלונות השמירה של היסטוריית התשובות ויומני עלות/שימוש הבינה המלאכותית שלעיל בסביבת הייצור (docs/PRIVACY_OPERATIONS.md §5). מחיקת חשבון זמינה לפי בקשה בכל עת — ראה 'זכויותיך' למטה לכלי הורדה/מחיקה עצמאיים בהגדרות החשבון שלך.">
+                An automated daily job enforces the answer-history and AI usage/cost log retention windows above in
                 production (<code>docs/PRIVACY_OPERATIONS.md</code> §5). Account deletion is available on request at
                 any time — see "Your Rights" below for the self-serve download/delete tools in your account settings.
             </p>
@@ -283,16 +283,19 @@
                     <span data-en="(vercel.com, US) — Application hosting, request logs, and cookieless aggregated analytics."
                         data-he="(vercel.com, ארה״ב) — אחסון יישומים, יומני בקשות, וניתוחים מרוכזים ללא עוגיות.">(vercel.com, US) — Application hosting, request logs, and cookieless aggregated analytics.</span></li>
                 <li><strong data-en="Google" data-he="Google">Google</strong>
-                    <span data-en="(Google Gemini API, US) — Your question text is sent to Google's AI model to generate answers. No account identifiers (name/email) are sent, only the question text and retrieved source excerpts."
-                        data-he="(Google Gemini API, ארה״ב) — טקסט שאלתך נשלח למודל ה-AI של גוגל ליצירת תשובות. לא נשלחים מזהי חשבון (שם/דוא״ל), רק טקסט השאלה וקטעי מקור שאוחזרו.">(Google
-                        Gemini API, US) — Your question text is sent to Google's AI model to generate answers. No
-                        account identifiers (name/email) are sent, only the question text and retrieved source
-                        excerpts.</span></li>
+                    <span data-en="(Google Gemini API, US) — The first AI model asked. It receives your question, the earlier turns of the same conversation, and the source excerpts found for the question. Your name and email are not sent. When a question depends on a real-world fact the sources cannot settle (for example whether a product is kosher), the AI may also ask Google Search, through the same API, to look it up. That lookup sends only a short search phrase the AI wrote, never your name, email or history, and you can turn it off under Web search in the chat menu."
+                        data-he="(Google Gemini API, ארה״ב) — מודל ה-AI הראשון שפונים אליו. הוא מקבל את השאלה, את התורות הקודמות באותה שיחה ואת קטעי המקור שנמצאו לשאלה. השם והדוא״ל שלך לא נשלחים. כששאלה תלויה בעובדה מהעולם שהמקורות אינם מכריעים בה (למשל אם מוצר כשר), ה-AI עשוי גם לבקש מחיפוש Google, דרך אותו API, לבדוק אותה. הבדיקה שולחת רק משפט חיפוש קצר שה-AI כתב, אף פעם לא את שמך, הדוא״ל או ההיסטוריה שלך, ואפשר לכבות אותה תחת חיפוש ברשת בתפריט הצ׳אט.">(Google
+                        Gemini API, US) — The first AI model asked. It receives your question, the earlier turns of
+                        the same conversation, and the source excerpts found for the question. Your name and email
+                        are not sent. When a question depends on a real-world fact the sources cannot settle (for
+                        example whether a product is kosher), the AI may also ask Google Search, through the same
+                        API, to look it up. That lookup sends only a short search phrase the AI wrote, never your
+                        name, email or history, and you can turn it off under Web search in the chat menu.</span></li>
                 <li><strong data-en="Anthropic" data-he="Anthropic">Anthropic</strong>
-                    <span data-en="(Claude API, US) — Fallback/primary AI model depending on routing. Same conditions as Google above."
-                        data-he="(Claude API, ארה״ב) — מודל AI גיבוי/ראשי בהתאם לניתוב. אותם תנאים כמו גוגל לעיל.">(Claude
-                        API, US) — Fallback/primary AI model depending on routing. Same conditions as Google
-                        above.</span></li>
+                    <span data-en="(Claude API, US) — The backup AI model, used when Gemini fails or is paused. Receives the same things as Google above."
+                        data-he="(Claude API, ארה״ב) — מודל ה-AI הגיבוי, בשימוש כש-Gemini נכשל או מושהה. מקבל את אותם דברים כמו גוגל לעיל.">(Claude
+                        API, US) — The backup AI model, used when Gemini fails or is paused. Receives the same
+                        things as Google above.</span></li>
                 <li><strong data-en="Sefaria" data-he="Sefaria">Sefaria</strong>
                     <span data-en="(sefaria.org) — Source-text retrieval. Receives search/lookup queries derived from your question, not your identity."
                         data-he="(sefaria.org) — אחזור טקסטי מקור. מקבלת שאילתות חיפוש/בדיקה הנגזרות משאלתך, לא את זהותך.">(sefaria.org)
@@ -303,6 +306,22 @@
                         data-he="(hebcal.com) — נתוני לוח שנה יהודי, חגים וזמנים הלכתיים, המתבררים לפי תאריך ומיקומך הכללי (עיר/קואורדינטות), לא לפי זהותך.">(hebcal.com)
                         — Jewish calendar, holiday, and zmanim (halachic times) data, looked up by date and your
                         general location (city/coordinates), not your identity.</span></li>
+                <li><strong data-en="Halachipedia / Wikipedia" data-he="Halachipedia / Wikipedia">Halachipedia / Wikipedia</strong>
+                    <span data-en="(halachipedia.com, wikipedia.org) — Extra source lookups for some questions. They receive search terms taken from your question, not your identity."
+                        data-he="(halachipedia.com, wikipedia.org) — חיפושי מקור נוספים בחלק מהשאלות. הם מקבלים מילות חיפוש שנלקחו מהשאלה שלך, לא את זהותך.">(halachipedia.com, wikipedia.org)
+                        — Extra source lookups for some questions. They receive search terms taken from your question,
+                        not your identity.</span></li>
+                <li><strong data-en="Upstash" data-he="Upstash">Upstash</strong>
+                    <span data-en="(upstash.com, US) — Rate limiting. Holds short-lived request counters keyed to a hash of your IP address, to slow down abuse."
+                        data-he="(upstash.com, ארה״ב) — הגבלת קצב. שומר מונים קצרי-מועד של בקשות לפי גיבוב של כתובת ה-IP שלך, כדי להאט שימוש לרעה.">(upstash.com, US) — Rate
+                        limiting. Holds short-lived request counters keyed to a hash of your IP address, to slow down
+                        abuse.</span></li>
+                <li><strong data-en="Google Fonts / jsDelivr" data-he="Google Fonts / jsDelivr">Google Fonts / jsDelivr</strong>
+                    <span data-en="(fonts.googleapis.com, cdn.jsdelivr.net) — Serve the Cardo and Inter typefaces and some page scripts (calendar, animation, sign-in). Your browser fetches these directly, so those services see your IP address and browser details."
+                        data-he="(fonts.googleapis.com, cdn.jsdelivr.net) — מספקים את הגופנים Cardo ו-Inter ואת חלק מסקריפטי העמוד (לוח שנה, אנימציה, התחברות). הדפדפן שלך מושך אותם ישירות, ולכן השירותים האלה רואים את כתובת ה-IP ופרטי הדפדפן שלך.">(fonts.googleapis.com,
+                        cdn.jsdelivr.net) — Serve the Cardo and Inter typefaces and some page scripts (calendar, animation,
+                        sign-in). Your browser fetches these directly, so those services see your IP address and browser
+                        details.</span></li>
                 <li><strong data-en="MyMemory / Google Translate" data-he="MyMemory / Google Translate">MyMemory /
                         Google Translate</strong>
                     <span data-en="— Used as a fallback translation service for source-text passages when needed. Receives text snippets, not your identity."
@@ -352,20 +371,20 @@
             </p>
             <ul>
                 <li><strong data-en="Access:" data-he="גישה:">Access:</strong>
-                    <span data-en="Request a copy of all personal data we hold about you -- signed-in users can self-serve this instantly via &quot;Privacy &amp; Data&quot; in the account menu"
-                        data-he="בקש עותק של כל הנתונים האישיים שאנו מחזיקים אודותיך -- משתמשים מחוברים יכולים לבצע זאת מיידית באופן עצמאי דרך 'פרטיות ונתונים' בתפריט החשבון">Request a copy of all personal data we hold about you — signed-in users can self-serve this
+                    <span data-en="Request a copy of all personal data we hold about you — signed-in users can self-serve this instantly via &quot;Privacy &amp; Data&quot; in the account menu"
+                        data-he="בקש עותק של כל הנתונים האישיים שאנו מחזיקים אודותיך — משתמשים מחוברים יכולים לבצע זאת מיידית באופן עצמאי דרך 'פרטיות ונתונים' בתפריט החשבון">Request a copy of all personal data we hold about you — signed-in users can self-serve this
                         instantly via "Privacy &amp; Data" in the account menu</span></li>
                 <li><strong data-en="Correction:" data-he="תיקון:">Correction:</strong>
                     <span data-en="Request correction of inaccurate or incomplete data"
                         data-he="בקש תיקון של נתונים לא מדויקים או חסרים">Request correction of inaccurate or incomplete data</span></li>
-                <li><strong data-en="Deletion ('Right to be Forgotten'):" data-he="מחיקה ('הזכות להישכח'):">Deletion ("Right to be Forgotten"):</strong>
-                    <span data-en="Request deletion of your account and all associated personal data -- signed-in users can self-serve this instantly via &quot;Privacy &amp; Data&quot; in the account menu, which also deletes your sign-in identity"
-                        data-he="בקש למחוק את החשבון שלך ואת כל הנתונים האישיים הקשורים אליו -- משתמשים מחוברים יכולים לבצע זאת מיידית באופן עצמאי דרך 'פרטיות ונתונים' בתפריט החשבון, הכולל גם מחיקת זהות ההתחברות שלך">Request deletion of your account and all associated personal data — signed-in users can self-serve
+                <li><strong data-en="Deletion (&quot;Right to be Forgotten&quot;):" data-he="מחיקה ('הזכות להישכח'):">Deletion ("Right to be Forgotten"):</strong>
+                    <span data-en="Request deletion of your account and all associated personal data — signed-in users can self-serve this instantly via &quot;Privacy &amp; Data&quot; in the account menu, which also deletes your sign-in identity"
+                        data-he="בקש למחוק את החשבון שלך ואת כל הנתונים האישיים הקשורים אליו — משתמשים מחוברים יכולים לבצע זאת מיידית באופן עצמאי דרך 'פרטיות ונתונים' בתפריט החשבון, הכולל גם מחיקת זהות ההתחברות שלך">Request deletion of your account and all associated personal data — signed-in users can self-serve
                         this instantly via "Privacy &amp; Data" in the account menu, which also deletes your sign-in
                         identity</span></li>
                 <li><strong data-en="Portability:" data-he="ניידות:">Portability:</strong>
-                    <span data-en="Request your data in a machine-readable format (JSON) -- available instantly via the same self-serve download tool"
-                        data-he="בקש את הנתונים שלך בפורמט קריא למכונה (JSON) -- זמין מיידית דרך אותו כלי הורדה עצמאי">Request your data in a machine-readable format (JSON) — available instantly via the same self-serve
+                    <span data-en="Request your data in a machine-readable format (JSON) — available instantly via the same self-serve download tool"
+                        data-he="בקש את הנתונים שלך בפורמט קריא למכונה (JSON) — זמין מיידית דרך אותו כלי הורדה עצמאי">Request your data in a machine-readable format (JSON) — available instantly via the same self-serve
                         download tool</span></li>
                 <li><strong data-en="Opt-out / Do Not Sell or Share:" data-he="ביטול הסכמה / אין למכור או לשתף:">Opt-out
                         / Do Not Sell or Share:</strong>
@@ -381,9 +400,9 @@
                         data-he="התנגד לעיבוד הנתונים שלך למטרות מסוימות, או בקש שנגביל אותו">Object to, or request
                         we restrict, processing of your data for certain purposes</span></li>
                 <li><strong data-en="Withdraw consent:" data-he="משיכת הסכמה:">Withdraw consent:</strong>
-                    <span data-en="Where processing is based on consent (e.g., age attestation, any future non-essential cookies), withdraw it at any time without affecting the lawfulness of processing before withdrawal"
-                        data-he="כאשר עיבוד מבוסס על הסכמה (למשל, הצהרת גיל, כל עוגיה לא-חיונית עתידית), משוך אותה בכל עת מבלי לפגוע בחוקיות העיבוד שקדם למשיכה">Where
-                        processing is based on consent (e.g., age attestation, any future non-essential cookies),
+                    <span data-en="Where processing is based on consent (e.g., any future non-essential cookies), withdraw it at any time without affecting the lawfulness of processing before withdrawal"
+                        data-he="כאשר עיבוד מבוסס על הסכמה (למשל, כל עוגיה לא-חיונית עתידית), משוך אותה בכל עת מבלי לפגוע בחוקיות העיבוד שקדם למשיכה">Where
+                        processing is based on consent (e.g., any future non-essential cookies),
                         withdraw it at any time without affecting the lawfulness of processing before
                         withdrawal</span></li>
                 <li><strong data-en="Non-discrimination:" data-he="אי-אפליה:">Non-discrimination:</strong>
@@ -439,14 +458,15 @@
             </p>
 
             <h2 data-en="9. AI Processing &amp; Automated Decision-Making" data-he="9. עיבוד בינה מלאכותית וקבלת החלטות אוטומטית">9. AI Processing &amp; Automated Decision-Making</h2>
-            <p data-en="Your question text (and, where relevant, retrieved source excerpts) is sent to Google Gemini and/or Anthropic Claude to generate an AI Output. This is an automated process, but it does not produce a legal or similarly significant decision about you — it generates educational information, always paired with a referral to consult your rabbi. See our AI Disclosure page for how this works and its limitations."
-                data-he="טקסט שאלתך (וכן, בעת הצורך, קטעי מקור שאוחזרו) נשלח ל-Google Gemini ו/או ל-Anthropic Claude ליצירת פלט בינה מלאכותית. זהו תהליך אוטומטי, אך הוא אינו מייצר החלטה משפטית או משמעותית באופן דומה לגביך — הוא יוצר מידע חינוכי, המלווה תמיד בהפניה להתייעצות עם הרב שלך. ראה את עמוד גילוי הנאות בנושא בינה מלאכותית להסבר על אופן פעולתו ומגבלותיו.">
-                Your question text (and, where relevant, retrieved source excerpts) is sent to Google Gemini and/or
-                Anthropic Claude to generate an AI Output. This is an automated process, but it does not produce a
-                legal or similarly significant decision about you — it generates educational information, always
-                paired with a referral to consult your rabbi. See our <a href="/ai-disclosure" data-en="AI Disclosure"
-                    data-he="גילוי נאות בנושא בינה מלאכותית">AI Disclosure</a> page for how this works and its
-                limitations.
+            <p data-en="Your question, the earlier turns of the same conversation and the source excerpts found for it are sent to Google Gemini, or to Anthropic Claude if Gemini is unavailable, to write the answer. If you are signed in and short summaries of your earlier questions are stored for your account, up to two of them are sent too. This is automated, but it does not produce a legal or similarly significant decision about you. It writes study material, and the answer tells you to ask your own rabbi. See our AI Disclosure page for how this works and where it goes wrong."
+                data-he="השאלה שלך, התורות הקודמות באותה שיחה וקטעי המקור שנמצאו לה נשלחים ל-Google Gemini, או ל-Anthropic Claude אם Gemini אינו זמין, כדי לכתוב את התשובה. אם התחברת ויש שמורים בחשבונך סיכומים קצרים של שאלות קודמות, עד שניים מהם נשלחים גם הם. התהליך אוטומטי, אבל הוא אינו מייצר החלטה משפטית או משמעותית באופן דומה לגביך. הוא כותב חומר ללימוד, והתשובה מפנה אותך להתייעץ עם הרב שלך. ראו את עמוד גילוי הנאות בנושא בינה מלאכותית להסבר על אופן הפעולה ועל המקומות שבהם הוא טועה.">
+                Your question, the earlier turns of the same conversation and the source excerpts found for it are
+                sent to Google Gemini, or to Anthropic Claude if Gemini is unavailable, to write the answer. If you
+                are signed in and short summaries of your earlier questions are stored for your account, up to two of
+                them are sent too. This is automated, but it does not produce a legal or similarly significant
+                decision about you. It writes study material, and the answer tells you to ask your own rabbi. See our
+                <a href="/ai-disclosure" data-en="AI Disclosure" data-he="גילוי נאות בנושא בינה מלאכותית">AI
+                    Disclosure</a> page for how this works and where it goes wrong.
             </p>
 
             <h2 data-en="10. EU Representative &amp; Data Protection Officer" data-he="10. נציג באיחוד האירופי וממונה הגנת מידע">10. EU Representative &amp; Data Protection Officer</h2>
