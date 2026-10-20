@@ -120,20 +120,25 @@ async function main(puppeteerLib = puppeteer, pa11yFn = pa11y, configPath = CONF
 
     try {
         console.log(`Running pa11y (dark theme) on ${urls.length} URLs:`);
-        for (const url of urls) {
-            const result = await checkUrl(browser, url, defaults, pa11yFn);
-            const issues = result.issues || [];
-            if (issues.length) {
-                failures += 1;
-                console.log(` > ${url} - ${issues.length} errors`);
-                for (const issue of issues) {
-                    console.log(`   • ${issue.code}: ${issue.message}`);
-                    console.log(`     (${issue.selector})`);
-                }
-            } else {
-                console.log(` > ${url} - 0 errors`);
-            }
-        }
+        // One page at a time: they share the one browser.
+        await urls.reduce(
+            (chain, url) =>
+                chain.then(async () => {
+                    const result = await checkUrl(browser, url, defaults, pa11yFn);
+                    const issues = result.issues || [];
+                    if (issues.length) {
+                        failures += 1;
+                        console.log(` > ${url} - ${issues.length} errors`);
+                        for (const issue of issues) {
+                            console.log(`   • ${issue.code}: ${issue.message}`);
+                            console.log(`     (${issue.selector})`);
+                        }
+                    } else {
+                        console.log(` > ${url} - 0 errors`);
+                    }
+                }),
+            Promise.resolve(),
+        );
     } finally {
         await browser.close();
     }

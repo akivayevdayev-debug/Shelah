@@ -310,11 +310,10 @@ async function precacheSiddur({ rite, version, services }) {
         ...slugs.map((slug) => `/api/siddur/v2/service/${riteSegment}/${encodeURIComponent(slug)}?v=${versionParam}`),
     ];
     let whole = true;
-    // One at a time: the reader's own requests go first.
-    for (const path of paths) {
+    const cachePath = async (path) => {
         const url = new URL(path, self.location.origin).href;
         if (await cache.match(url)) {
-            continue;
+            return;
         }
         try {
             const response = await fetch(url, { credentials: "same-origin" });
@@ -327,7 +326,9 @@ async function precacheSiddur({ rite, version, services }) {
             // Offline or refused: this version isn't whole yet; a later open retries.
             whole = false;
         }
-    }
+    };
+    // One at a time: the reader's own requests go first.
+    await paths.reduce((chain, path) => chain.then(() => cachePath(path)), Promise.resolve());
     if (!whole) {
         // Keep the previous version too until this one is complete.
         return;

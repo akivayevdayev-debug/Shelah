@@ -33,7 +33,7 @@ const phosphorPathMarkup = (name) => `<path d="${PHOSPHOR_PATHS[name] || ''}"/>`
 // by whitespace. Written as `(.+?)\s+<section>` the title and the whitespace after
 // it can both take the same run of spaces, and a long run backtracks quadratically.
 const REF_TITLE = String.raw`(\S+(?:\s+\S+)*?)`;
-const refPattern = (section, flags = '') => new RegExp(`^${REF_TITLE}\\s+${section}$`, flags);
+const refPattern = (section, flags = '') => new RegExp(String.raw`^${REF_TITLE}\s+${section}$`, flags);
 const CHAPTER_REF_RE = refPattern(String.raw`(\d+)(?::\d+)?`);
 const INDEX_SECTION_RE = refPattern(String.raw`(\d+[ab]?)`, 'i');
 const TALMUD_REF_RE = refPattern(String.raw`(\d+)([ab])(?::(\d+))?`, 'i');
@@ -517,12 +517,12 @@ function hasParenthetical(text) {
             }
 
             return raw
-                .replaceAll(/&/g, '&amp;')
-                .replaceAll(/</g, '&lt;')
-                .replaceAll(/>/g, '&gt;')
-                .replaceAll(/"/g, '&quot;')
-                .replaceAll(/'/g, '&#39;')
-                .replaceAll(/\n/g, '<br>');
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;')
+                .replaceAll('\n', '<br>');
         }
 
         // safety_class values that short-circuit synthesis into a referral
@@ -2183,11 +2183,11 @@ function hasParenthetical(text) {
 
         function escapeHtml(text) {
             return (text || '')
-                .replaceAll(/&/g, '&amp;')
-                .replaceAll(/</g, '&lt;')
-                .replaceAll(/>/g, '&gt;')
-                .replaceAll(/"/g, '&quot;')
-                .replaceAll(/'/g, '&#039;');
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
         }
 
         // static/js/zmanim.js's installZmanim()/refreshZmanimDisplay()/
@@ -2236,7 +2236,7 @@ function hasParenthetical(text) {
                 .replace(/<[^<>]*>/g, ' ');
 
             return decodeHtmlEntities(withoutTags)
-                .replaceAll(/\u00a0/g, ' ')
+                .replaceAll('\u00a0', ' ')
                 .replace(/&nbsp;/gi, ' ')
                 .replace(/&thinsp;/gi, ' ')
                 .replace(/[ \t]+/g, ' ')
@@ -2269,7 +2269,7 @@ function hasParenthetical(text) {
                 .replace(/<(?!\/?(?:b|strong|i|em|small)(?:[\s>]|$))[^<>]*>/gi, ' ');
 
             return decodeHtmlEntities(withoutTags)
-                .replaceAll(/\u00A0/g, ' ')
+                .replaceAll('\u00A0', ' ')
                 .replace(/&nbsp;/gi, ' ')
                 .replace(/&thinsp;/gi, ' ')
                 .replace(/[ \t]+/g, ' ')
@@ -2307,7 +2307,7 @@ function hasParenthetical(text) {
                 : escapeHtml(withBreaksAsNewlines.replace(/<[^<>]*>/g, ' '));
 
             return sanitized
-                .replaceAll(/\u00A0/g, ' ')
+                .replaceAll('\u00A0', ' ')
                 .replace(/&nbsp;/gi, ' ')
                 .replace(/&thinsp;/gi, ' ')
                 .replace(/[ \t]+/g, ' ')
@@ -2466,8 +2466,8 @@ function hasParenthetical(text) {
             });
 
             return transliterated
-                .replaceAll(/׳/g, "'")
-                .replaceAll(/״/g, '"')
+                .replaceAll('׳', "'")
+                .replaceAll('״', '"')
                 .replace(/\s+/g, ' ')
                 .trim();
         }
@@ -2500,9 +2500,7 @@ function hasParenthetical(text) {
                 if (localStorage.getItem(migrationKey) !== 'true') {
                     try {
                         const registrations = await navigator.serviceWorker.getRegistrations();
-                        for (const registration of registrations) {
-                            await registration.unregister();
-                        }
+                        await Promise.all(registrations.map((registration) => registration.unregister()));
 
                         if ('caches' in window) {
                             const cacheKeys = await caches.keys();
@@ -5834,10 +5832,10 @@ function hasParenthetical(text) {
 
                 const segmentLabel = formatSegmentLabel(line?.segment, idx);
                 const hebrewMarkup = he
-                    ? `<p dir="rtl" class="font-hebrew text-start text-[1.05rem] leading-[1.9] text-slate-800">${he.replaceAll(/\n/g, '<br>')}</p>`
+                    ? `<p dir="rtl" class="font-hebrew text-start text-[1.05rem] leading-[1.9] text-slate-800">${he.replaceAll('\n', '<br>')}</p>`
                     : '';
                 const englishMarkup = en
-                    ? `<p dir="ltr" class="font-serif text-start text-sm leading-relaxed text-slate-700 mt-2">${en.replaceAll(/\n/g, '<br>')}</p>`
+                    ? `<p dir="ltr" class="font-serif text-start text-sm leading-relaxed text-slate-700 mt-2">${en.replaceAll('\n', '<br>')}</p>`
                     : '';
 
                 return `
@@ -5870,10 +5868,10 @@ function hasParenthetical(text) {
                 const en = enRaw ? escapeDisplayTextPreservingEmphasis(enFallbackLines[idx] || '') : '';
 
                 const hebrewMarkup = he
-                    ? `<p dir="rtl" class="font-hebrew text-start text-[1.05rem] leading-[1.9] text-slate-800">${he.replaceAll(/\n/g, '<br>')}</p>`
+                    ? `<p dir="rtl" class="font-hebrew text-start text-[1.05rem] leading-[1.9] text-slate-800">${he.replaceAll('\n', '<br>')}</p>`
                     : '';
                 const englishMarkup = en
-                    ? `<p dir="ltr" class="font-serif text-start text-sm leading-relaxed text-slate-700 mt-2">${en.replaceAll(/\n/g, '<br>')}</p>`
+                    ? `<p dir="ltr" class="font-serif text-start text-sm leading-relaxed text-slate-700 mt-2">${en.replaceAll('\n', '<br>')}</p>`
                     : '';
 
                 return `
@@ -6645,7 +6643,7 @@ function hasParenthetical(text) {
                 const normalized = escapeDisplayTextPreservingEmphasis(text);
                 return normalized
                     .replace(/\n{2,}/g, '<br><br>')
-                    .replaceAll(/\n/g, ' ')
+                    .replaceAll('\n', ' ')
                     .replace(/\bG\s+OD\b/g, 'GOD')
                     .replace(/\bL\s+ORD\b/g, 'LORD');
             };
@@ -7216,7 +7214,7 @@ function hasParenthetical(text) {
                 String(value || ''),
                 String(window.currentPrayerName || ''),
             );
-            const normalized = normalizeDisplayText(deduped).replaceAll(/\r/g, '').trim();
+            const normalized = normalizeDisplayText(deduped).replaceAll('\r', '').trim();
             if (!normalized) return [];
             return normalized
                 .split(/\n{2,}/)
@@ -8780,7 +8778,7 @@ function hasParenthetical(text) {
             // Returns raw (unescaped) paragraphs -- callers escape at the point
             // text becomes HTML (see displayPrayer's heHtml/enHtml construction
             // and renderHebrewParagraph/renderEnglishParagraph).
-            const normalized = normalizeDisplayText(String(rawText || '')).replaceAll(/\r/g, '').trim();
+            const normalized = normalizeDisplayText(String(rawText || '')).replaceAll('\r', '').trim();
             if (!normalized) return [];
             return normalized
                 .split(/\n{2,}/)
