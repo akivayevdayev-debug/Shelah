@@ -27,6 +27,7 @@ out is only fixed tags and escaped text.
 import logging
 import os
 import re
+from bisect import bisect_left
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from html import escape
 from html.parser import HTMLParser
@@ -52,12 +53,21 @@ _POOL = ThreadPoolExecutor(max_workers=8, thread_name_prefix="text-ssr")
 _DISPLAY_SAFE_TAGS = frozenset({"b", "strong", "i", "em", "small"})
 _SKIPPED_CONTENT_TAGS = frozenset({"script", "style"})
 
-# The three footnote shapes normalizeDisplayText strips, in the same order.
-_FOOTNOTE_RES = (
-    re.compile(r"<sup[^>]*>[\s\S]*?</sup>\s*<(?:i|span|small)[^>]*>[\s\S]*?</(?:i|span|small)>", re.IGNORECASE),
-    re.compile(r"""<(?:i|span|small)[^>]*class=["'][^"']*footnote[^"']*["'][^>]*>[\s\S]*?</(?:i|span|small)>""", re.IGNORECASE),
-    re.compile(r"<sup[^>]*>[\s\S]*?</sup>", re.IGNORECASE),
-)
+# The pieces of the footnote shapes normalizeDisplayText strips. Its first two
+# patterns are scans here rather than one regex each: a lazy run followed by
+# more pattern, and two runs that overlap inside one tag, backtrack
+# super-linearly on hostile input (python:S8786). The scans find the same
+# matches; tests/test_linear_regex_equivalence.py keeps the regexes as oracles.
+_GT_RE = re.compile(">")
+_QUOTE_RE = re.compile("[\"']")
+_SUP_START_RE = re.compile("<sup", re.IGNORECASE)
+_SUP_CLOSE_RE = re.compile("</sup>", re.IGNORECASE)
+_NOTE_AFTER_SUP_RE = re.compile(r"</sup>\s*<(?:i|span|small)[^>]*>", re.IGNORECASE)
+_NOTE_START_RE = re.compile("<(?:i|span|small)", re.IGNORECASE)
+_NOTE_CLOSE_RE = re.compile("</(?:i|span|small)>", re.IGNORECASE)
+_CLASS_ATTR_RE = re.compile("class=[\"']", re.IGNORECASE)
+_FOOTNOTE_WORD_RE = re.compile("footnote", re.IGNORECASE)
+_SUP_RE = re.compile(r"<sup[^>]*>[\s\S]*?</sup>", re.IGNORECASE)
 _BR_RE = re.compile(r"<br\s*/?>", re.IGNORECASE)
 _INLINE_SPACE_RE = re.compile(r"[ \t]+")
 _BLANK_RUN_RE = re.compile(r"\s+")
@@ -113,10 +123,87 @@ def _newline_if_any(run):
     return "\n" if "\n" in blanks else blanks
 
 
+def _first_from(positions, index):
+    """The first of the sorted ``positions`` at or after ``index``, else None."""
+    i = bisect_left(positions, index)
+    return positions[i] if i < len(positions) else None
+
+
+def _starts(pattern, text):
+    return [m.start() for m in pattern.finditer(text)]
+
+
+def _strip_sup_notes(text):
+    """Each <sup>...</sup> followed by an <i>/<span>/<small> note, replaced
+    with one space: the matches of ``<sup[^>]*>[\\s\\S]*?</sup>\\s*<(?:i|span|small)
+    [^>]*>[\\s\\S]*?</(?:i|span|small)>``."""
+    gts = _starts(_GT_RE, text)
+    closes = [m.span() for m in _NOTE_CLOSE_RE.finditer(text)]
+    close_starts = [start for start, _ in closes]
+    # For each </sup> a note opens after: where a match through it ends.
+    note_ends = {}
+    for sup_close in _SUP_CLOSE_RE.finditer(text):
+        note = _NOTE_AFTER_SUP_RE.match(text, sup_close.start())
+        i = bisect_left(close_starts, note.end()) if note else len(closes)
+        if i < len(closes):
+            note_ends[sup_close.start()] = closes[i][1]
+    noted = sorted(note_ends)
+    out, pos = [], 0
+    while start := _SUP_START_RE.search(text, pos):
+        gt = _first_from(gts, start.end())
+        sup_close = _first_from(noted, gt + 1) if gt is not None else None
+        if sup_close is None:
+            # A later <sup> has no nearer '>' or </sup>: nothing more matches.
+            break
+        out += (text[pos:start.start()], " ")
+        pos = note_ends[sup_close]
+    out.append(text[pos:])
+    return "".join(out)
+
+
+def _footnote_tag_end(text, name_end, gts, quotes, words, closes, close_starts):
+    """Where ``<(?:i|span|small)[^>]*class=["'][^"']*footnote[^"']*["'][^>]*>
+    [\\s\\S]*?</(?:i|span|small)>`` ends when its tag name ends at ``name_end``;
+    None when it does not match there. Class attributes are tried last first,
+    as the greedy ``[^>]*`` does."""
+    tag_end = _first_from(gts, name_end)
+    if tag_end is None:
+        return None
+    for attr in reversed(list(_CLASS_ATTR_RE.finditer(text, name_end, tag_end))):
+        value_end = _first_from(quotes, attr.end())
+        word = _first_from(words, attr.end())
+        if value_end is None or word is None or word + len("footnote") > value_end:
+            continue
+        gt = _first_from(gts, value_end + 1)
+        i = bisect_left(close_starts, gt + 1) if gt is not None else len(closes)
+        if i < len(closes):
+            return closes[i][1]
+    return None
+
+
+def _strip_footnote_tags(text):
+    """Each <i>/<span>/<small> whose class names a footnote, contents and
+    all, replaced with one space."""
+    gts, quotes, words = _starts(_GT_RE, text), _starts(_QUOTE_RE, text), _starts(_FOOTNOTE_WORD_RE, text)
+    closes = [m.span() for m in _NOTE_CLOSE_RE.finditer(text)]
+    close_starts = [start for start, _ in closes]
+    out, pos = [], 0
+    start = _NOTE_START_RE.search(text, pos)
+    while start:
+        end = _footnote_tag_end(text, start.end(), gts, quotes, words, closes, close_starts)
+        if end is None:
+            start = _NOTE_START_RE.search(text, start.start() + 1)
+            continue
+        out += (text[pos:start.start()], " ")
+        pos = end
+        start = _NOTE_START_RE.search(text, pos)
+    out.append(text[pos:])
+    return "".join(out)
+
+
 def _display_text(raw, keep_emphasis):
-    text = str(raw or "")
-    for footnote_re in _FOOTNOTE_RES:
-        text = footnote_re.sub(" ", text)
+    # The three footnote shapes normalizeDisplayText strips, in the same order.
+    text = _SUP_RE.sub(" ", _strip_footnote_tags(_strip_sup_notes(str(raw or ""))))
     text = _BR_RE.sub("\n", text)
     parser = _DisplayTextParser(keep_emphasis)
     parser.feed(text)

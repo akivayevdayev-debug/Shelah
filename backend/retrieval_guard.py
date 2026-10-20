@@ -216,8 +216,9 @@ RETRIEVED_INJECTION_PATTERNS = [
     # "ignore" loanword root "יגנאָר..." (common in informal digital
     # Yiddish), then "אלע" ("all", unambiguous and standard), then up to
     # ~20 characters of qualifier, then the "אינסטרוקציעס" loanword
-    # ("instructions").
-    re.compile(r"יגנאָר\w{0,30}\s+אלע\s+\w{0,20}\s*אינסטרוקציעס"),
+    # ("instructions"). The qualifier and the space after it are one optional
+    # group, so no two space runs sit side by side (python:S8786).
+    re.compile(r"יגנאָר\w{0,30}\s+אלע\s+(?:\w{1,20}\s*)?אינסטרוקציעס"),
 ]
 
 # Cyrillic / Greek letters that render like a Latin one. Used ONLY to build a

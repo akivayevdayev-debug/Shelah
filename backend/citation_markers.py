@@ -129,11 +129,21 @@ def strip_markers(text: str) -> str:
 # back to the run's start. (A "+" here would be retried from every mark of a long run.)
 _TERMINALS = ".!?\u2026\u05c3"
 _BOUNDARY_RE = re.compile(r"[.!?\u2026\u05c3][\"'\u201d\u2019)\]]*\s+(?=\S)")
-_LAST_WORD_RE = re.compile(r"(?<!\S)(\S+)$")
 _ABBREVIATIONS = frozenset({
     "r", "rabbi", "rav", "dr", "mr", "mrs", "st", "vs", "cf", "etc", "ibid", "e.g", "i.e",
     "b", "bar", "ben", "no", "vol", "ch", "chap", "sec", "par", "ex", "lev", "num", "deut", "gen",
 })
+
+
+def _last_word(text: str) -> str:
+    """The non-space run that ends ``text``, or that ends it before one final
+    newline (where ``$`` would also match); "" when ``text`` ends in other
+    space. A backwards walk, so a long run is read once."""
+    end = len(text) - 1 if text.endswith("\n") else len(text)
+    start = end
+    while start > 0 and not text[start - 1].isspace():
+        start -= 1
+    return text[start:end]
 
 
 def _sentence_count(span: str) -> int:
@@ -146,8 +156,7 @@ def _sentence_count(span: str) -> int:
         run_start = match.start()
         while run_start > 0 and text[run_start - 1] in _TERMINALS:
             run_start -= 1
-        word = _LAST_WORD_RE.search(text[:run_start])
-        previous = word.group(1).strip("([\"'\u201c").lower() if word else ""
+        previous = _last_word(text[:run_start]).strip("([\"'\u201c").lower()
         if previous in _ABBREVIATIONS or re.fullmatch(r"[a-z]", previous):
             continue
         count += 1
