@@ -116,3 +116,12 @@ test('a page with no data-reveal host creates no observer and hides nothing', ()
     assert.equal(created, 0);
     dom.window.close();
 });
+
+test('any pixel in view reveals a block: a block taller than the screen can never reach a fractional threshold', () => {
+    const { doc, dom } = makePage();
+    let options = null;
+    dom.window.IntersectionObserver = function Capturing(cb, opts) { options = opts; this.observe = () => {}; this.unobserve = () => {}; };
+    initReveal(doc);
+    assert.equal(options.threshold, 0);
+    dom.window.close();
+});

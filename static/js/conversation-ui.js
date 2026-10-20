@@ -2186,8 +2186,8 @@ async function submitComposer() {
 function voiceErrorText(kind) {
     switch (kind) {
         case "denied":
-            return tr("Microphone access is blocked. Allow it in your browser's site settings to dictate.",
-                "הגישה למיקרופון חסומה. אפשר/י אותה בהגדרות האתר בדפדפן כדי להכתיב.");
+            return tr("Microphone is blocked. To dictate, open the site settings by the address bar (the lock icon), allow the microphone, then try again.",
+                "המיקרופון חסום. כדי להכתיב, פתחו את הגדרות האתר ליד שורת הכתובת (סמל המנעול), אפשרו את המיקרופון ונסו שוב.");
         case "no-mic":
             return tr("No microphone was found.", "לא נמצא מיקרופון.");
         case "network":
@@ -2222,11 +2222,40 @@ function installVoice() {
     els.micBtn.classList.toggle("hidden", !voice);
 }
 
+// The box grows a line at a time up to COMPOSER_MAX_PX, then scrolls. It can
+// only be measured while it is laid out: filled while the panel is hidden it
+// would read a scrollHeight of 0, so it is left to its CSS height and measured
+// again when the panel opens (openConversation) or its width changes
+// (installComposerResize). The thread's scroll position is held across the
+// brief "auto" reset, so typing never nudges the answers above.
+const COMPOSER_MAX_PX = 160;
+
 function autosize() {
     const input = els.input;
-    input.style.height = "auto";
-    input.style.height = `${Math.min(input.scrollHeight, 160)}px`;
     syncSendDisabled();
+    if (!input.getClientRects().length) {
+        input.style.removeProperty("height");
+        return;
+    }
+    const scroller = els.scroller;
+    const top = scroller?.scrollTop;
+    input.style.height = "auto";
+    input.style.height = `${Math.min(input.scrollHeight, COMPOSER_MAX_PX)}px`;
+    if (scroller && scroller.scrollTop !== top) scroller.scrollTop = top;
+}
+
+// A wider or narrower box wraps differently: re-measure when the composer's
+// width changes (a resize of the widget, a size switch), never on height, which
+// autosize itself changes.
+function installComposerResize() {
+    if (typeof ResizeObserver !== "function") return;
+    let width = null;
+    new ResizeObserver((entries) => {
+        const next = Math.round(entries[0]?.contentRect?.width ?? 0);
+        if (next === width) return;
+        width = next;
+        if (next > 0) autosize();
+    }).observe(els.input);
 }
 
 // ── gestures ───────────────────────────────────────────────────────────
@@ -2708,6 +2737,7 @@ function bindEvents() {
         void submitComposer();
     });
     els.input.addEventListener("input", autosize);
+    installComposerResize();
     els.input.addEventListener("keydown", (event) => {
         if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
             event.preventDefault();

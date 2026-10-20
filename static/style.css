@@ -4859,6 +4859,15 @@ html.rtl #readerTopBar #readerLibraryTopBarBtn {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
+/* Phones and tablets: above the bottom tab bar (in flow at the bottom of
+   the screen; its height is measured into --mobile-tabs-height by shell.js),
+   never over it. */
+@media (max-width: 1023px) {
+    #analyticsConsentBanner {
+        bottom: calc(var(--mobile-tabs-height, 64px) + var(--sp-4));
+    }
+}
+
 #analyticsConsentBanner.hidden,
 html[data-consent-set] #analyticsConsentBanner {
     display: none;

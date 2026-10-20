@@ -946,3 +946,25 @@ test('a failed delete reads out which part of the account is left over', async (
         page.close();
     }
 });
+
+test('a Clerk load that never settles still shows the Sign In button, and a late load corrects it', async () => {
+    const clerk = signedIn();
+    let finishLoad;
+    const realLoad = clerk.load;
+    clerk.load = (...args) => new Promise((resolve) => { finishLoad = () => resolve(realLoad.apply(clerk, args)); });
+    const page = await openAccountPage({ libs: (window) => { window.Clerk = clerk; return true; } });
+    try {
+        page.eval('clerkStallMs = 20');
+        page.$('#authControls').setAttribute('aria-busy', 'true');
+        const started = call(page, 'ensureClerk');
+        await new Promise((resolve) => setTimeout(resolve, 60));
+        assert.equal(page.$('#authControls').hasAttribute('aria-busy'), false);
+        assert.equal(page.$('#signInBtn').classList.contains('hidden'), false);
+        finishLoad();
+        assert.equal(await started, true);
+        assert.equal(page.$('#signInBtn').classList.contains('hidden'), true);
+        assert.equal(page.$('#userProfileMenuLabel').textContent, 'Dana');
+    } finally {
+        page.close();
+    }
+});

@@ -1596,7 +1596,7 @@ test('the microphone button dictates into the box and explains itself once', asy
         // A refused microphone says why, and the first-use note is owed again.
         FakeRecognition.instance.onerror?.({ error: 'not-allowed' });
         await page.flush();
-        assert.match(page.text('#convToastText'), /Microphone access is blocked/);
+        assert.match(page.text('#convToastText'), /Microphone is blocked/);
         assert.equal(page.window.localStorage.getItem('shelah.conv.voiceNotice'), null);
     } finally {
         delete globalThis.SpeechRecognition;
@@ -1784,6 +1784,47 @@ test('dragging the corner handle of the real widget resizes it and keeps the siz
         assert.equal(panel(page).style.getPropertyValue('--conv-mini-h'), '420px');
         assert.deepEqual(JSON.parse(page.window.localStorage.getItem('shelah.conv.miniSize')), { w: 390, h: 420 });
         assert.deepEqual(page.errors, []);
+    } finally {
+        page.close();
+    }
+});
+
+// --- the composer box --------------------------------------------------------
+
+test('typing several lines grows the box a line at a time, caps it, and never moves the thread', async () => {
+    const page = await openAsk();
+    try {
+        const input = page.$('#convInput');
+        const scroller = page.$('#convScroller');
+        // jsdom has no layout: give the box a rendered box and a content height
+        // that follows its line count, the way a browser would.
+        input.getClientRects = () => [{ width: 212, height: 38 }];
+        Object.defineProperty(input, 'scrollHeight', { configurable: true, get: () => 16 + 22 * input.value.split('\n').length });
+        scroller.scrollTop = 120;
+        const heights = [];
+        for (const line of ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight']) {
+            input.value = input.value ? `${input.value}\n${line}` : line;
+            input.dispatchEvent(new page.window.Event('input', { bubbles: true }));
+            heights.push(input.style.height);
+        }
+        assert.deepEqual(heights.slice(0, 4), ['38px', '60px', '82px', '104px']);
+        assert.equal(heights.at(-1), '160px');
+        assert.equal(scroller.scrollTop, 120);
+    } finally {
+        page.close();
+    }
+});
+
+test('a box filled while it is not laid out keeps its CSS height instead of collapsing to 0', async () => {
+    const page = await openAsk();
+    try {
+        const input = page.$('#convInput');
+        input.getClientRects = () => [];
+        Object.defineProperty(input, 'scrollHeight', { configurable: true, value: 0 });
+        input.style.height = '82px';
+        input.value = 'a question\nover two lines';
+        input.dispatchEvent(new page.window.Event('input', { bubbles: true }));
+        assert.equal(input.style.height, '');
     } finally {
         page.close();
     }

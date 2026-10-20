@@ -2550,12 +2550,29 @@ function hasParenthetical(text) {
             return Boolean(route.auth || route.chat || route.history || route.conversation || route.a);
         }
 
+        // Neither the SDK script nor Clerk.load() has a timeout of its own. If
+        // they stall, the auth slot stops waiting after this long and shows
+        // Sign In instead of staying blank; a late load still corrects it.
+        let clerkStallMs = 8000;
+
+        function showSignInWhileClerkStalls() {
+            if (!authControls?.hasAttribute('aria-busy')) return;
+            signInBtn?.classList.remove('hidden');
+            userProfileMenuContainer?.classList.add('hidden');
+            settleAuthSlot();
+        }
+
         function ensureClerk() {
             if (!isClerkConfigured()) return Promise.resolve(false);
             if (!clerkStart) {
                 clerkStart = (async () => {
-                    if (!window.Clerk && window.ShelahLibs) await window.ShelahLibs.load('clerk');
-                    await initClerkAuth();
+                    const stall = setTimeout(showSignInWhileClerkStalls, clerkStallMs);
+                    try {
+                        if (!window.Clerk && window.ShelahLibs) await window.ShelahLibs.load('clerk');
+                        await initClerkAuth();
+                    } finally {
+                        clearTimeout(stall);
+                    }
                     clerkFailed = !window.Clerk?.loaded;
                     if (clerkFailed) clerkStart = null; // the next sign-in click tries again
                     return !clerkFailed;
@@ -11941,25 +11958,39 @@ function hasParenthetical(text) {
                 <span>${t('Add a comment', 'הוספת הערה')}</span></button>`;
         }
 
+        // The two thumbs. `choice` is the pressed one ('' for none); they are
+        // disabled once rated, and live again while the reader edits.
+        function feedbackThumbsHtml(choice = '', disabled = false) {
+            const thumb = (verdict, label, icon) => `<button type="button" class="answer-feedback-btn" data-verdict="${verdict}"
+                aria-pressed="${choice === verdict}"${disabled ? ' disabled' : ''}
+                aria-label="${label}"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${icon}</svg></button>`;
+            return `<span class="answer-feedback-prompt">${t('Was this answer helpful?', 'האם התשובה הייתה מועילה?')}</span>
+                ${thumb('helpful', t('Helpful', 'מועיל'), _ANSWER_FEEDBACK_ICONS.up)}
+                ${thumb('not_helpful', t('Not helpful', 'לא מועיל'), _ANSWER_FEEDBACK_ICONS.down)}`;
+        }
+
+        // A reader can change what they sent: the server answers a rating with
+        // its row id, and "Edit feedback" PATCHes that row (only the account or
+        // device that wrote it may, backend/routes_feedback.py). Without an id
+        // (an older server, a failed save) the widget works as it always did.
         function renderFeedbackWidget(container, data, queryTitle) {
             if (!container) return;
             const answerLink = feedbackAnswerLink(data);
             container.innerHTML = `
                 <div class="answer-feedback" data-feedback-state="idle">
-                    <span class="answer-feedback-prompt">${t('Was this answer helpful?', 'האם התשובה הייתה מועילה?')}</span>
-                    <button type="button" class="answer-feedback-btn" data-verdict="helpful" aria-pressed="false"
-                        aria-label="${t('Helpful', 'מועיל')}"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${_ANSWER_FEEDBACK_ICONS.up}</svg></button>
-                    <button type="button" class="answer-feedback-btn" data-verdict="not_helpful" aria-pressed="false"
-                        aria-label="${t('Not helpful', 'לא מועיל')}"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${_ANSWER_FEEDBACK_ICONS.down}</svg></button>
+                    ${feedbackThumbsHtml()}
                     ${feedbackCommentButtonHtml()}
                 </div>
             `;
             const root = container.querySelector('.answer-feedback');
-            const buttons = Array.from(root.querySelectorAll('.answer-feedback-btn'));
             let rated = ''; // 'helpful' | 'not_helpful' once a thumb was pressed
+            let savedComment = '';
+            let rowId = null; // the stored row, once the server has said which
+            let ratingSaved = Promise.resolve({ ok: false, id: null });
 
-            // True when the server took it. A rating is best-effort (a reader is
-            // never told it was lost); a typed comment is not, so it reports back.
+            // { ok, id }: ok when the server took it. A rating is best-effort (a
+            // reader is never told it was lost); a typed comment is not, so it
+            // reports back.
             async function submitFeedback(verdict, comment) {
                 try {
                     const headers = await authHeaders({ 'Content-Type': 'application/json' });
@@ -11977,6 +12008,23 @@ function hasParenthetical(text) {
                             ...answerLink,
                         }),
                     });
+                    if (response?.ok === false) return { ok: false, id: null };
+                    const body = await response.json().catch(() => null);
+                    const id = String(body?.id || '');
+                    return { ok: true, id: /^[0-9a-f-]{36}$/i.test(id) ? id : null };
+                } catch {
+                    return { ok: false, id: null };
+                }
+            }
+
+            async function editFeedback(verdict, comment) {
+                try {
+                    const headers = await authHeaders({ 'Content-Type': 'application/json' });
+                    const response = await fetch(`/api/feedback/${rowId}`, {
+                        method: 'PATCH',
+                        headers,
+                        body: JSON.stringify({ verdict, comment }),
+                    });
                     return response?.ok !== false;
                 } catch {
                     return false;
@@ -11985,6 +12033,10 @@ function hasParenthetical(text) {
 
             function commentButton() {
                 return root.querySelector('.answer-feedback-comment-btn');
+            }
+
+            function editButtonHtml() {
+                return `<button type="button" class="answer-feedback-comment-btn answer-feedback-edit">${t('Edit feedback', 'עריכת המשוב')}</button>`;
             }
 
             function closeCommentRow({ refocus = false } = {}) {
@@ -11997,18 +12049,49 @@ function hasParenthetical(text) {
                 if (root.dataset.feedbackState === 'commenting' && !rated) root.dataset.feedbackState = 'idle';
             }
 
-            // `withComment` keeps the comment control after a thumbs-up so the
-            // reader can still add words; the final thanks removes it.
-            function showThanks(withComment) {
+            // The settled state: thanks, then "Edit feedback" once the row id is
+            // known (or, without one, the comment control after a thumbs-up).
+            // Focus that was inside the widget moves to the control left, so it
+            // never drops to the page.
+            function showThanks(withComment, message = t('Thank you for your feedback!', 'תודה על המשוב!')) {
+                const hadFocus = root.contains(document.activeElement);
                 root.dataset.feedbackState = 'done';
-                root.innerHTML = `<span class="answer-feedback-thanks" role="status">${t('Thank you for your feedback!', 'תודה על המשוב!')}</span>${withComment ? feedbackCommentButtonHtml() : ''}`;
+                const control = rowId ? editButtonHtml() : (withComment ? feedbackCommentButtonHtml() : '');
+                root.innerHTML = `<span class="answer-feedback-thanks" role="status">${message}</span>${control}`;
                 bindCommentButton();
+                bindEditButton();
+                if (hadFocus) (root.querySelector('button') || root).focus?.();
+            }
+
+            // The id came back after the thanks were drawn: offer Edit in place of
+            // the comment control without redrawing (and re-announcing) the thanks.
+            function offerEditWhenKnown() {
+                void ratingSaved.then(() => {
+                    if (!rowId || root.dataset.feedbackState !== 'done' || root.querySelector('.answer-feedback-edit')) return;
+                    const old = commentButton();
+                    const hadFocus = old && old === document.activeElement;
+                    old?.remove();
+                    root.insertAdjacentHTML('beforeend', editButtonHtml());
+                    bindEditButton();
+                    if (hadFocus) root.querySelector('.answer-feedback-edit').focus();
+                });
             }
 
             // The comment is a row of its own when the reader has not rated, and
-            // after a thumbs-up. After a thumbs-down it travels with that verdict
-            // (the original contract, so it still saves before the AI-notes
-            // migration has run).
+            // after a thumbs-up. After a rating with a known row it edits that
+            // row; without one it travels with the verdict as a second row (the
+            // original contract, so it still saves before the edit migration).
+            async function saveComment(text) {
+                if (rated) {
+                    await ratingSaved;
+                    if (rowId) return editFeedback(rated, text);
+                    return (await submitFeedback(rated === 'not_helpful' ? 'not_helpful' : 'comment', text)).ok;
+                }
+                const result = await submitFeedback('comment', text);
+                if (result.ok && result.id) rowId = result.id;
+                return result.ok;
+            }
+
             async function sendComment(row) {
                 const field = row.querySelector('textarea');
                 const text = field.value.trim();
@@ -12021,8 +12104,8 @@ function hasParenthetical(text) {
                 const problem = row.querySelector('.answer-feedback-error');
                 send.disabled = true;
                 problem.hidden = true;
-                const saved = await submitFeedback(rated === 'not_helpful' ? 'not_helpful' : 'comment', text);
-                if (saved) {
+                if (await saveComment(text)) {
+                    savedComment = text;
                     showThanks(false);
                     return;
                 }
@@ -12031,27 +12114,43 @@ function hasParenthetical(text) {
                 field.focus();
             }
 
+            function commentRowHtml({ edit = false, skip = false } = {}) {
+                return `
+                    <textarea maxlength="500" dir="auto"></textarea>
+                    <p class="answer-feedback-error" role="alert" hidden>${t('Could not send that. Please try again.', 'לא הצלחנו לשלוח. אפשר לנסות שוב.')}</p>
+                    <div class="answer-feedback-actions">
+                        <button type="button" class="answer-feedback-submit"></button>
+                        ${edit ? `<button type="button" class="answer-feedback-secondary answer-feedback-cancel">${t('Cancel', 'ביטול')}</button>` : ''}
+                        ${skip ? `<button type="button" class="answer-feedback-secondary answer-feedback-skip">${t('No thanks', 'לא תודה')}</button>` : ''}
+                    </div>
+                `;
+            }
+
             function openCommentRow() {
                 let row = root.querySelector('.answer-feedback-comment-row');
                 if (!row) {
                     row = document.createElement('div');
                     row.className = 'answer-feedback-comment-row';
-                    row.innerHTML = `
-                        <textarea maxlength="500" dir="auto"></textarea>
-                        <p class="answer-feedback-error" role="alert" hidden>${t('Could not send that. Please try again.', 'לא הצלחנו לשלוח. אפשר לנסות שוב.')}</p>
-                        <button type="button" class="answer-feedback-submit"></button>
-                    `;
+                    row.innerHTML = commentRowHtml({ skip: rated === 'not_helpful' });
                     root.appendChild(row);
                     row.querySelector('.answer-feedback-submit').addEventListener('click', () => { void sendComment(row); });
+                    row.querySelector('.answer-feedback-skip')?.addEventListener('click', () => showThanks(false));
                     row.querySelector('textarea').addEventListener('keydown', (event) => {
-                        if (event.key === 'Escape' && !rated) {
+                        if (event.key === 'Escape') {
                             event.preventDefault();
-                            closeCommentRow({ refocus: true });
+                            // Rated: the prompt is optional, so Escape is "No thanks".
+                            if (rated) showThanks(false);
+                            else closeCommentRow({ refocus: true });
                         } else if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
                             event.preventDefault();
                             void sendComment(row);
                         }
                     });
+                } else if (rated === 'not_helpful' && !row.querySelector('.answer-feedback-skip')) {
+                    // Thumbs-down while a comment was already open: it is now optional.
+                    row.querySelector('.answer-feedback-actions').insertAdjacentHTML('beforeend',
+                        `<button type="button" class="answer-feedback-secondary answer-feedback-skip">${t('No thanks', 'לא תודה')}</button>`);
+                    row.querySelector('.answer-feedback-skip').addEventListener('click', () => showThanks(false));
                 }
                 const field = row.querySelector('textarea');
                 const prompt = rated === 'not_helpful'
@@ -12067,8 +12166,64 @@ function hasParenthetical(text) {
                 return field;
             }
 
+            // Edit: the thumbs come back live with the saved one pressed, and the
+            // comment box holds what was sent. Save changes that row; Cancel (or
+            // Escape) leaves it exactly as it was.
+            function openEditor() {
+                let choice = rated;
+                root.dataset.feedbackState = 'editing';
+                root.innerHTML = `${feedbackThumbsHtml(choice)}<div class="answer-feedback-comment-row">${commentRowHtml({ edit: true })}</div>`;
+                const thumbs = Array.from(root.querySelectorAll('.answer-feedback-btn'));
+                const row = root.querySelector('.answer-feedback-comment-row');
+                const field = row.querySelector('textarea');
+                const save = row.querySelector('.answer-feedback-submit');
+                const problem = row.querySelector('.answer-feedback-error');
+                const label = t('Your comment (optional)', 'ההערה שלך (אופציונלי)');
+                field.value = savedComment;
+                field.placeholder = label;
+                field.setAttribute('aria-label', label);
+                save.textContent = t('Save', 'שמירה');
+                const cancel = () => showThanks(false);
+
+                thumbs.forEach((thumb) => thumb.addEventListener('click', () => {
+                    choice = thumb.dataset.verdict;
+                    thumbs.forEach((b) => b.setAttribute('aria-pressed', String(b === thumb)));
+                }));
+                row.querySelector('.answer-feedback-cancel').addEventListener('click', cancel);
+                field.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        event.preventDefault();
+                        cancel();
+                    }
+                });
+                save.addEventListener('click', async () => {
+                    const text = field.value.trim();
+                    const verdict = choice || 'comment';
+                    if (verdict === 'comment' && !text) {
+                        field.focus();
+                        return;
+                    }
+                    save.disabled = true;
+                    problem.hidden = true;
+                    if (await editFeedback(verdict, text)) {
+                        rated = choice;
+                        savedComment = text;
+                        showThanks(false, t('Your feedback was updated.', 'המשוב עודכן.'));
+                        return;
+                    }
+                    save.disabled = false;
+                    problem.hidden = false;
+                    field.focus();
+                });
+                (thumbs.find((b) => b.getAttribute('aria-pressed') === 'true') || thumbs[0]).focus();
+            }
+
+            function bindEditButton() {
+                root.querySelector('.answer-feedback-edit')?.addEventListener('click', openEditor);
+            }
+
             function bindCommentButton() {
-                const toggle = commentButton();
+                const toggle = root.querySelector('.answer-feedback-comment-btn:not(.answer-feedback-edit)');
                 if (!toggle) return;
                 toggle.addEventListener('click', () => {
                     if (root.querySelector('.answer-feedback-comment-row')) {
@@ -12081,6 +12236,7 @@ function hasParenthetical(text) {
             }
             bindCommentButton();
 
+            const buttons = Array.from(root.querySelectorAll('.answer-feedback-btn'));
             buttons.forEach((btn) => {
                 btn.addEventListener('click', () => {
                     if (rated) return;
@@ -12093,7 +12249,10 @@ function hasParenthetical(text) {
                     // fills in the optional comment (the common case) is still
                     // counted — waiting on the comment box risked losing the
                     // verdict entirely to abandonment.
-                    void submitFeedback(verdict, '');
+                    ratingSaved = submitFeedback(verdict, '').then((result) => {
+                        if (result.id) rowId = result.id;
+                        return result;
+                    });
 
                     const writing = root.querySelector('.answer-feedback-comment-row');
                     if (verdict === 'not_helpful') {
@@ -12107,6 +12266,7 @@ function hasParenthetical(text) {
                         openCommentRow();
                     } else {
                         showThanks(true);
+                        offerEditWhenKnown();
                     }
                 });
             });
@@ -12416,6 +12576,14 @@ function hasParenthetical(text) {
             // Already on screen (it is part of the HTML); fades out on either
             // choice instead of vanishing in a single frame.
             banner.classList.remove('hidden');
+            // Its height is the room the site footer leaves under its links
+            // while it is up (index.html .site-footer), so it never covers them.
+            const measureBanner = () => {
+                const height = Math.ceil(banner.getBoundingClientRect().height);
+                if (height > 0) document.documentElement.style.setProperty('--consent-banner-h', `${height}px`);
+            };
+            measureBanner();
+            if (typeof ResizeObserver === 'function') new ResizeObserver(measureBanner).observe(banner);
             document.getElementById('analyticsConsentAccept')?.addEventListener('click', () => {
                 localStorage.setItem(ANALYTICS_CONSENT_KEY, 'granted');
                 dismissEl(banner, { preset: 'fade' });

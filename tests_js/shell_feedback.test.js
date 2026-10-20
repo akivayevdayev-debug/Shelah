@@ -215,3 +215,153 @@ test('a rating that cannot be sent is not the reader\'s problem', async () => {
         page.close();
     }
 });
+
+// ── No thanks, and editing what was sent ─────────────────────────────────────
+
+const ROW_ID = '0b6a3f58-2f5e-4c1d-9a7e-3d2b1c0a9f88';
+const withRowId = { routes: { '/api/feedback': { success: true, id: ROW_ID } } };
+const editRequests = (calls) => calls.filter((request) => request.url === `/api/feedback/${ROW_ID}`);
+
+test('"No thanks" closes the comment prompt and keeps the thumbs-down', async () => {
+    const page = await openFeedbackPage(withRowId);
+    try {
+        render(page, {});
+        page.click(page.$$('.answer-feedback-btn')[1]);
+        await page.settle();
+        page.takeCalls();
+        const noThanks = page.$('.answer-feedback-skip');
+        assert.equal(noThanks.textContent.trim(), 'No thanks');
+        page.click(noThanks);
+        await page.settle();
+        assert.equal(page.$('.answer-feedback-comment-row'), null);
+        assert.equal(state(page), 'done');
+        assert.deepEqual(page.takeCalls().filter((r) => r.url.startsWith('/api/feedback')), [], 'nothing un-sent, nothing re-sent');
+        assert.equal(page.document.activeElement, page.$('.answer-feedback-edit'), 'focus lands on Edit, not the page');
+    } finally {
+        page.close();
+    }
+});
+
+test('Escape in the thumbs-down prompt is the same as No thanks', async () => {
+    const page = await openFeedbackPage(withRowId);
+    try {
+        render(page, {});
+        page.click(page.$$('.answer-feedback-btn')[1]);
+        await page.settle();
+        page.key(page.$('.answer-feedback-comment-row textarea'), 'Escape');
+        await page.settle();
+        assert.equal(state(page), 'done');
+    } finally {
+        page.close();
+    }
+});
+
+test('with a row id, the thumbs-down comment edits that row instead of adding a second one', async () => {
+    const page = await openFeedbackPage(withRowId);
+    try {
+        render(page, {});
+        page.click(page.$$('.answer-feedback-btn')[1]);
+        await page.settle();
+        page.takeCalls();
+        page.$('.answer-feedback-comment-row textarea').value = 'Wrong verse';
+        page.click(page.$('.answer-feedback-submit'));
+        await page.settle();
+        const calls = page.takeCalls();
+        assert.deepEqual(calls.filter((request) => request.url === '/api/feedback'), []);
+        const [edit] = editRequests(calls);
+        assert.equal(edit.init.method, 'PATCH');
+        assert.deepEqual(sent(edit), { verdict: 'not_helpful', comment: 'Wrong verse' });
+        assert.equal(state(page), 'done');
+    } finally {
+        page.close();
+    }
+});
+
+test('Edit reopens the rating and comment, and Save changes the same row', async () => {
+    const page = await openFeedbackPage(withRowId);
+    try {
+        render(page, {});
+        page.click(page.$$('.answer-feedback-btn')[1]);
+        await page.settle();
+        page.$('.answer-feedback-comment-row textarea').value = 'Too long';
+        page.click(page.$('.answer-feedback-submit'));
+        await page.settle();
+        page.takeCalls();
+
+        page.click(page.$('.answer-feedback-edit'));
+        assert.equal(state(page), 'editing');
+        const [up, down] = page.$$('.answer-feedback-btn');
+        assert.deepEqual([up.disabled, down.disabled], [false, false]);
+        assert.deepEqual([up.getAttribute('aria-pressed'), down.getAttribute('aria-pressed')], ['false', 'true']);
+        assert.equal(page.$('.answer-feedback-comment-row textarea').value, 'Too long');
+
+        page.click(up);
+        assert.deepEqual([up.getAttribute('aria-pressed'), down.getAttribute('aria-pressed')], ['true', 'false']);
+        page.$('.answer-feedback-comment-row textarea').value = 'Fine on a second read';
+        page.click(page.$('.answer-feedback-submit'));
+        await page.settle();
+        const [edit] = editRequests(page.takeCalls());
+        assert.deepEqual(sent(edit), { verdict: 'helpful', comment: 'Fine on a second read' });
+        assert.equal(state(page), 'done');
+
+        page.click(page.$('.answer-feedback-edit'));
+        assert.equal(page.$$('.answer-feedback-btn')[0].getAttribute('aria-pressed'), 'true', 'the edit is remembered');
+        assert.equal(page.$('.answer-feedback-comment-row textarea').value, 'Fine on a second read');
+    } finally {
+        page.close();
+    }
+});
+
+test('Cancel leaves the feedback as it was and sends nothing', async () => {
+    const page = await openFeedbackPage(withRowId);
+    try {
+        render(page, {});
+        page.click(page.$$('.answer-feedback-btn')[0]);
+        await page.settle();
+        page.takeCalls();
+        page.click(page.$('.answer-feedback-edit'));
+        page.click(page.$$('.answer-feedback-btn')[1]);
+        page.click(page.$('.answer-feedback-cancel'));
+        await page.settle();
+        assert.equal(state(page), 'done');
+        assert.deepEqual(page.takeCalls().filter((r) => r.url.startsWith('/api/feedback')), []);
+        page.click(page.$('.answer-feedback-edit'));
+        assert.equal(page.$$('.answer-feedback-btn')[0].getAttribute('aria-pressed'), 'true');
+    } finally {
+        page.close();
+    }
+});
+
+test('an edit the server refuses says so and stays open', async () => {
+    const page = await openFeedbackPage({ routes: {
+        '/api/feedback': (url) => (url === '/api/feedback'
+            ? { success: true, id: ROW_ID }
+            : { status: 404, body: { error: 'Not found' } }),
+    } });
+    try {
+        render(page, {});
+        page.click(page.$$('.answer-feedback-btn')[0]);
+        await page.settle();
+        page.click(page.$('.answer-feedback-edit'));
+        page.click(page.$$('.answer-feedback-btn')[1]);
+        page.click(page.$('.answer-feedback-submit'));
+        await page.settle();
+        assert.equal(state(page), 'editing');
+        assert.equal(page.$('.answer-feedback-error').hidden, false);
+    } finally {
+        page.close();
+    }
+});
+
+test('without a row id from the server there is no Edit, and the old comment flow still works', async () => {
+    const page = await openFeedbackPage();
+    try {
+        render(page, {});
+        page.click(page.$$('.answer-feedback-btn')[0]);
+        await page.settle();
+        assert.equal(page.$('.answer-feedback-edit'), null);
+        assert.ok(page.$('.answer-feedback-comment-btn'));
+    } finally {
+        page.close();
+    }
+});

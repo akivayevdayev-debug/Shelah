@@ -1493,6 +1493,44 @@ body.theme-dark .answer-link-btn {
     outline-offset: 2px;
 }
 
+/* Send / Save first, then the quiet way out: "No thanks" after a
+   thumbs-down (the rating stays), "Cancel" while editing. */
+.answer-feedback-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+}
+
+.answer-feedback-secondary {
+    min-height: 44px;
+    padding: var(--sp-2) var(--sp-3);
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--ink-secondary);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out),
+        color var(--motion-dur-fast) var(--motion-ease-out);
+}
+
+.answer-feedback-secondary:hover {
+    background: var(--ctrl-bg-hover);
+    color: var(--ink-primary);
+}
+
+.answer-feedback-secondary:focus-visible {
+    background: var(--ctrl-bg-hover);
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+.answer-feedback-submit:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
 .answer-feedback-thanks {
     font-size: var(--text-xs);
     color: var(--accent-green);
@@ -1508,7 +1546,8 @@ body.theme-dark .answer-link-btn {
 @media (prefers-reduced-motion: reduce) {
     .answer-feedback-btn,
     .answer-feedback-comment-btn,
-    .answer-feedback-submit {
+    .answer-feedback-submit,
+    .answer-feedback-secondary {
         transition: none;
     }
 }

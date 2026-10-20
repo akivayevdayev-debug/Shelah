@@ -39,7 +39,7 @@ Every route is served from one Vercel deployment. The base URL in production is 
 | [Prayers and siddur](#prayers-and-siddur) | `/api/prayers/list`, `/api/prayer/<name>`, `/api/siddur/v2/*`, `/api/siddur/full/*`, `/api/siddur/section-refs/*` |
 | [Calendar and location](#calendar-and-location) | `/set_location`, `/api/geocode`, `/api/zmanim` (+ `/month`, `/days`), `/api/daily-study`, `/api/holidays`, `/api/parasha` |
 | [Communities](#communities) | `/api/communities`, `/api/communities/list`, `/api/community/<name>` (+ `/timeline`) |
-| [Feedback](#feedback) | `POST /api/feedback` |
+| [Feedback](#feedback) | `POST /api/feedback`, `PATCH /api/feedback/<id>` |
 | [Account](#account) | `/api/auth/me`, `/api/user/preferences`, `/api/preferences`, `/api/bookmarks/semantic`, `/api/accept-legal` |
 | [Privacy](#privacy) | `GET /api/user/data-export`, `POST /api/user/delete-account` |
 | [Webhooks](#webhooks) | `POST /api/webhooks/clerk` |
@@ -678,7 +678,7 @@ Submit a thumbs up or down, a comment, or both, on an AI answer. A comment alone
 
 A search-bar answer sends `history_id` (or `share_token` on a shared link). A reply in a conversation thread (a follow-up, or a thread reopened from history) is a stored conversation message, not an `ask_history` row, so its rating is sent with neither link: the verdict, the comment and the hashed question still arrive, just not tied to a stored answer.
 
-**Response (200):** `{"success": true}`
+**Response (200):** `{"success": true, "id": "<the new row's uuid, or null>"}`. The id is what `PATCH /api/feedback/<id>` edits. A signed-out reader's row also stores `device_owner`, the hash of their `shelah_device` cookie (never the cookie), so the same browser can edit it later. Until `scripts/sql/migrate_answer_feedback_edit.sql` has run, the row is saved without that column and a guest can't edit it.
 
 `source` and the `ai_note` verdict are not client-writable: a body that sends them is ignored. The server writes its own one-line `ai_note` row for each answer it produces (`backend/ai_notes.py`: fixed wording and numbers such as how many sources it used or that it looked the web up, never the question, the answer or a source title; no user id; no extra model call; `AI_FEEDBACK_NOTES=0` turns it off). `/admin/feedback` shows those rows with an "AI" badge and keeps them out of the helpful / not helpful counts. Until `scripts/sql/migrate_answer_feedback_ai_notes.sql` has run, ratings behave as before, AI notes are skipped quietly, and a comment-only submission answers `500` (the reader can retry).
 
@@ -687,6 +687,24 @@ A search-bar answer sends `history_id` (or `share_token` on a shared link). A re
 | `400` | `verdict` missing or not `helpful`/`not_helpful`/`comment`, `question` missing, or `verdict: "comment"` with an empty comment |
 | `401` | No token and `CLERK_ENFORCE_AUTH` on, or a token that failed verification |
 | `500` | The insert into `answer_feedback` failed |
+| `503` | Supabase not configured |
+
+### `PATCH /api/feedback/<id>`
+
+Change the rating or comment on feedback the caller left: the widget's "Edit feedback", and a thumbs-down's follow-up comment, which edits the rating's row instead of adding a second one. Only whoever wrote the row may: the same account (`user_id`), or, signed out, the same device (`device_owner`). Once signed in the account is the owner, so a guest row from another browser stays out of reach. The ownership filter is on the `UPDATE` itself, not only on a lookup before it. The server's own `ai_note` rows are never editable.
+
+- **Auth:** Optional, as for `POST`.
+- **Rate-limit class:** `feedback` (shared with `POST`).
+
+**Request body:** `{"verdict": "'helpful' | 'not_helpful' | 'comment'", "comment": "string, optional, sanitised and capped at 500 characters"}`. `comment` replaces the stored comment; `verdict: "comment"` drops the rating and needs a non-empty comment.
+
+**Response (200):** `{"success": true, "id": "<id>"}`
+
+| Status | Meaning |
+|---|---|
+| `400` | `verdict` missing or not one of the three, or `verdict: "comment"` with an empty comment |
+| `404` | Not a uuid, no such row, not the caller's, or an `ai_note`. The response is the same in every case, so it never confirms that another reader's row exists |
+| `500` | The update failed |
 | `503` | Supabase not configured |
 
 ---

@@ -55,7 +55,9 @@
                 observer.unobserve(entry.target);
                 step += 1;
             });
-        }, { rootMargin: '0px 0px -6% 0px', threshold: 0.05 });
+        // threshold 0, not a fraction: a block taller than about twenty screens
+        // can never show 5% of itself at once, and would stay hidden for good.
+        }, { rootMargin: '0px 0px -6% 0px', threshold: 0 });
 
         let watched = 0;
         targets.forEach((el) => {

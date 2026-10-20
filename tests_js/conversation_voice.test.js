@@ -71,14 +71,14 @@ function fakeRecognizer() {
     return { Recognizer, instances };
 }
 
-async function setup({ value = '', lang = 'en', ctor = true } = {}) {
+async function setup({ value = '', lang = 'en', ctor = true, media } = {}) {
     const mod = await load();
     const { Recognizer, instances } = fakeRecognizer();
     const input = fakeInput(value);
     const button = fakeButton();
     const states = [];
     const errors = [];
-    const win = { Event: FakeEvent, ...(ctor ? { webkitSpeechRecognition: Recognizer } : {}) };
+    const win = { Event: FakeEvent, ...(ctor ? { webkitSpeechRecognition: Recognizer } : {}), ...(media ? { navigator: { mediaDevices: media } } : {}) };
     const voice = mod.createVoiceInput({
         input, button, win,
         getLang: () => lang,
@@ -238,4 +238,68 @@ test('destroy ends the session and unhooks the button and the box', async () => 
     assert.equal(instances[0].aborted, 1);
     assert.equal(button.listenerCount('click'), 0);
     assert.equal(input.listenerCount('input'), 0);
+});
+
+// getUserMedia from the click: the browser's permission prompt.
+function fakeMedia(outcome) {
+    const calls = [];
+    const tracks = [];
+    let settle;
+    return {
+        calls, tracks,
+        getUserMedia(constraints) {
+            calls.push(constraints);
+            return new Promise((resolve, reject) => {
+                settle = () => {
+                    if (outcome === 'grant') {
+                        const track = { stopped: false, stop() { this.stopped = true; } };
+                        tracks.push(track);
+                        resolve({ getTracks: () => [track] });
+                    } else {
+                        reject(Object.assign(new Error(outcome), { name: outcome }));
+                    }
+                };
+            });
+        },
+        answer() { settle(); return new Promise((r) => setTimeout(r, 0)); },
+    };
+}
+
+test('the click asks for the microphone first, then listens and releases the probe tracks', async () => {
+    const media = fakeMedia('grant');
+    const { voice, instances } = await setup({ media });
+    voice.toggle();
+    assert.deepEqual(media.calls, [{ audio: true }]);
+    assert.equal(instances.length, 0, 'no recognizer before the grant');
+    await media.answer();
+    assert.equal(instances.length, 1);
+    assert.equal(instances[0].started, 1);
+    assert.equal(media.tracks[0].stopped, true);
+});
+
+test('a refused microphone reports "denied" and never starts the recognizer', async () => {
+    const media = fakeMedia('NotAllowedError');
+    const { voice, instances, errors } = await setup({ media });
+    voice.toggle();
+    await media.answer();
+    assert.deepEqual(errors, ['denied']);
+    assert.equal(instances.length, 0);
+});
+
+test('no microphone at all reports "no-mic"', async () => {
+    const media = fakeMedia('NotFoundError');
+    const { voice, errors } = await setup({ media });
+    voice.toggle();
+    await media.answer();
+    assert.deepEqual(errors, ['no-mic']);
+});
+
+test('pressing the button again while the prompt is open cancels: a late grant does not start listening', async () => {
+    const media = fakeMedia('grant');
+    const { voice, instances } = await setup({ media });
+    voice.toggle();
+    voice.toggle();
+    await media.answer();
+    assert.equal(instances.length, 0);
+    assert.equal(media.tracks[0].stopped, true);
 });

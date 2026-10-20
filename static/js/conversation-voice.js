@@ -38,6 +38,19 @@ export function errorKind(code) {
     return ERROR_KINDS[code] || null;
 }
 
+// getUserMedia's DOMException names, folded the same way.
+const MEDIA_ERROR_KINDS = {
+    NotAllowedError: "denied",
+    SecurityError: "denied",
+    NotFoundError: "no-mic",
+    NotReadableError: "no-mic",
+    OverconstrainedError: "no-mic",
+};
+
+export function mediaErrorKind(error) {
+    return MEDIA_ERROR_KINDS[error?.name] || "denied";
+}
+
 // Joins dictated text onto what was typed: one space between them, none when
 // the box was empty or already ends in whitespace.
 export function joinSpoken(base, spoken) {
@@ -56,6 +69,10 @@ export function createVoiceInput({ input, button, getLang = () => "en", onState,
     let recognition = null;
     let base = "";
     let listening = false;
+    // Bumped by abort()/stop() so a permission prompt answered late cannot
+    // start a session the visitor has already given up on.
+    let attempt = 0;
+    let asking = false;
 
     function setListening(next) {
         if (listening === next) return;
@@ -84,7 +101,39 @@ export function createVoiceInput({ input, button, getLang = () => "en", onState,
         if (listening && event.isTrusted) stop();
     }
 
+    // Asks for the microphone first, from the visitor's click, so the browser
+    // shows its permission prompt (some engines never prompt from
+    // SpeechRecognition alone). The tracks are stopped at once: the grant is
+    // what matters, the recognizer opens its own capture.
     function start() {
+        if (listening || asking) return;
+        const media = win.navigator?.mediaDevices;
+        if (typeof media?.getUserMedia !== "function") {
+            begin();
+            return;
+        }
+        const mine = ++attempt;
+        asking = true;
+        let request;
+        try {
+            request = Promise.resolve(media.getUserMedia({ audio: true }));
+        } catch (error) {
+            request = Promise.reject(error);
+        }
+        request.then(
+            (stream) => {
+                asking = false;
+                stream?.getTracks?.().forEach((track) => track.stop());
+                if (mine === attempt) begin();
+            },
+            (error) => {
+                asking = false;
+                if (mine === attempt) onError?.(mediaErrorKind(error));
+            },
+        );
+    }
+
+    function begin() {
         if (listening) return;
         recognition = new Ctor();
         recognition.lang = voiceLang(getLang());
@@ -112,6 +161,7 @@ export function createVoiceInput({ input, button, getLang = () => "en", onState,
     }
 
     function stop() {
+        attempt++;
         const running = recognition;
         if (!running) {
             setListening(false);
@@ -128,6 +178,7 @@ export function createVoiceInput({ input, button, getLang = () => "en", onState,
     // Ends the session and drops anything still in flight: for when the box
     // has been sent or the panel closed, so a late result cannot type into it.
     function abort() {
+        attempt++;
         const running = recognition;
         recognition = null;
         if (running) {
@@ -144,7 +195,7 @@ export function createVoiceInput({ input, button, getLang = () => "en", onState,
     }
 
     function toggle() {
-        if (listening) stop();
+        if (listening || asking) stop();
         else start();
     }
 

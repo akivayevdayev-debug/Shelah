@@ -90,8 +90,11 @@ SECURITY_RESPONSE_HEADERS = {
     # geolocation=() — the app never calls navigator.geolocation (removed
     # 2026-08-21 in favor of the session-cookie + IP-geolocation fallback
     # already used server-side by get_engine() in app.py).
+    # microphone=(self) — the composer's dictation button (conversation-voice.js)
+    # needs the site's own origin allowed, or the browser refuses without ever
+    # showing its permission prompt. Third-party frames stay blocked.
     "Permissions-Policy": (
-        "geolocation=(), camera=(), microphone=(), payment=(), usb=(), "
+        "geolocation=(), camera=(), microphone=(self), payment=(), usb=(), "
         "magnetometer=(), gyroscope=(), interest-cohort=()"
     ),
     # HSTS: force HTTPS on every subsequent visit. Vercel terminates TLS in

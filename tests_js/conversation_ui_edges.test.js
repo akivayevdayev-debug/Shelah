@@ -430,7 +430,7 @@ test('storage that refuses writes costs nothing when a corner is picked or a dic
         await page.flush();
         globalThis.SpeechRecognition.instance.onerror?.({ error: 'not-allowed' });
         await page.flush();
-        assert.match(page.text('#convToastText'), /Microphone access is blocked/);
+        assert.match(page.text('#convToastText'), /Microphone is blocked/);
         assert.deepEqual(page.errors, []);
     } finally {
         delete globalThis.SpeechRecognition;

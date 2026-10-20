@@ -148,10 +148,9 @@ test('leaving the mini widget with the column open folds it away immediately', a
         w.widget.sync();
         assert.equal(w.widget.isHistoryOpen(), false);
         assert.equal('history' in w.panel.dataset, false);
-        // The running wipe is cancelled rather than left holding the panel clipped.
-        assert.ok(w.animations.filter((a) => a.target === 'panel').every((a) => a.cancelled));
+        // The running slide is cancelled rather than left holding the drawer.
+        assert.ok(w.animations.every((a) => a.cancelled));
         assert.equal(w.historyBtn.getAttribute('aria-controls'), 'convHistoryPop');
-        // And when the widget is a mini one again, the button is a disclosure again.
         w.state.active = true;
         w.widget.sync();
         assert.equal(w.historyBtn.getAttribute('aria-controls'), 'convSidebar');
@@ -160,7 +159,7 @@ test('leaving the mini widget with the column open folds it away immediately', a
     }
 });
 
-test('an immediate close skips the wipe even where animation is available', async () => {
+test('an immediate close skips the slide even where animation is available', async () => {
     const w = await openWidget({ animate: true });
     try {
         w.widget.openHistory();
@@ -173,57 +172,54 @@ test('an immediate close skips the wipe even where animation is available', asyn
     }
 });
 
-test('the column is revealed by a clip-path wipe from the chat edge, with the sidebar fading in', async () => {
+test('opening never animates or resizes the panel: the drawer slides in on transform and opacity only', async () => {
     const w = await openWidget({ animate: true });
     try {
+        const before = { w: cssVar(w, '--conv-mini-w'), h: cssVar(w, '--conv-mini-h'), style: w.panel.style.getPropertyValue('width') + w.panel.style.getPropertyValue('height') };
         w.widget.openHistory();
-        const wipes = w.animations.filter((a) => a.target === 'panel');
-        assert.equal(wipes.length, 1);
-        const [wipe] = wipes;
-        // The column sits to the right of the chat: shut hides everything from the chat's edge on.
-        assert.deepEqual(wipe.frames, [
-            { clipPath: 'inset(-80px 204px -80px -80px)' },
-            { clipPath: 'inset(-80px)' },
+        assert.equal(w.animations.filter((a) => a.target === 'panel').length, 0);
+        const [slide] = w.animations;
+        assert.equal(slide.target, 'sidebar');
+        // Bottom-right widget: the free side is the left, so it comes in from the left.
+        assert.deepEqual(slide.frames, [
+            { opacity: 0, transform: 'translateX(-16px)' },
+            { opacity: 1, transform: 'translateX(0)' },
         ]);
-        assert.equal(wipe.options.duration, 220);
-        assert.equal(wipe.options.fill, 'forwards');
-        const fade = w.animations.find((a) => a.target === 'sidebar');
-        assert.deepEqual(fade.frames, [{ opacity: 0 }, { opacity: 1 }]);
-
-        // Finishing hands the clip back to the stylesheet.
-        wipe.finish();
-        assert.equal(wipe.cancelled, true);
+        for (const frame of slide.frames) assert.deepEqual(Object.keys(frame).sort(), ['opacity', 'transform']);
+        assert.equal(slide.options.duration, 220);
+        slide.finish();
+        assert.equal(slide.cancelled, true);
         assert.equal(w.panel.dataset.history, 'open');
+        // Open and close again: nothing on the panel itself changed.
+        w.widget.closeHistory();
+        w.animations.at(-1).finish();
+        assert.deepEqual({ w: cssVar(w, '--conv-mini-w'), h: cssVar(w, '--conv-mini-h'), style: w.panel.style.getPropertyValue('width') + w.panel.style.getPropertyValue('height') }, before);
     } finally {
         w.page.close();
     }
 });
 
-test('a column on the left of the chat is clipped from the left', async () => {
-    const w = await openWidget({
-        animate: true,
-        rects: { sidebar: { left: 496, top: 300, width: 204, height: 400 }, main: { left: 700, top: 300, width: 340, height: 400 } },
-    });
+test('a widget on the left of the screen slides its drawer in from the right', async () => {
+    const w = await openWidget({ animate: true, corner: 'bl' });
     try {
         w.widget.openHistory();
-        assert.deepEqual(w.animations.find((a) => a.target === 'panel').frames[0], { clipPath: 'inset(-80px -80px -80px 204px)' });
+        assert.deepEqual(w.animations[0].frames[0], { opacity: 0, transform: 'translateX(16px)' });
     } finally {
         w.page.close();
     }
 });
 
-test('closing wipes back, and the panel drops its history mark only when the wipe is done', async () => {
+test('closing slides back, and the panel drops its history mark only when the slide is done', async () => {
     const w = await openWidget({ animate: true });
     try {
         w.widget.openHistory();
-        w.animations.find((a) => a.target === 'panel').finish();
+        w.animations[0].finish();
         w.widget.closeHistory();
-        const closing = w.animations.filter((a) => a.target === 'panel').at(-1);
+        const closing = w.animations.at(-1);
         assert.deepEqual(closing.frames, [
-            { clipPath: 'inset(-80px)' },
-            { clipPath: 'inset(-80px 204px -80px -80px)' },
+            { opacity: 1, transform: 'translateX(0)' },
+            { opacity: 0, transform: 'translateX(-16px)' },
         ]);
-        // Mid-wipe the column is still there to be seen, but the button already says closed.
         assert.equal(w.panel.dataset.history, 'open');
         assert.equal(w.historyBtn.getAttribute('aria-expanded'), 'false');
         closing.finish();
@@ -233,30 +229,30 @@ test('closing wipes back, and the panel drops its history mark only when the wip
     }
 });
 
-test('a toggle in mid-flight turns around from wherever the clip has got to', async () => {
+test('a toggle in mid-flight reverses the running slide instead of starting over', async () => {
     const w = await openWidget({ animate: true });
     try {
         w.widget.openHistory();
-        const opening = w.animations.find((a) => a.target === 'panel');
-        w.state.clip = 'inset(-80px 90px -80px -80px)';
+        const opening = w.animations[0];
+        let reversed = 0;
+        opening.reverse = () => { reversed += 1; };
         w.widget.closeHistory();
-        assert.equal(opening.cancelled, true);
-        const closing = w.animations.filter((a) => a.target === 'panel').at(-1);
-        assert.deepEqual(closing.frames[0], { clipPath: 'inset(-80px 90px -80px -80px)' });
-        // The finish of the cancelled wipe does not undo the new one.
+        assert.equal(reversed, 1);
+        assert.equal(w.animations.length, 1);
+        assert.equal(opening.cancelled, false);
+        // Its finish now lands closed.
         opening.finish();
-        assert.equal(w.panel.dataset.history, 'open');
+        assert.equal('history' in w.panel.dataset, false);
     } finally {
         w.page.close();
     }
 });
 
-test('with reduced motion the column only fades in and the close is immediate', async () => {
+test('with reduced motion the drawer only fades in and the close is immediate', async () => {
     const w = await openWidget({ animate: true, reduced: true });
     try {
         w.widget.openHistory();
-        assert.equal(w.animations.filter((a) => a.target === 'panel').length, 0);
-        const fade = w.animations.find((a) => a.target === 'sidebar');
+        const [fade] = w.animations;
         assert.deepEqual(fade.frames, [{ opacity: 0 }, { opacity: 1 }]);
         assert.equal(fade.options.duration, 120);
         w.widget.closeHistory();
@@ -352,18 +348,12 @@ test('the size stays inside the bounds however far the pointer goes', async () =
     }
 });
 
-test('with the column open a drag grows the chat by its share and the pair stays in the window', async () => {
+test('with the drawer open a drag resizes the widget exactly as with it closed', async () => {
     const w = await openWidget();
     try {
         w.widget.openHistory();
-        // The panel box includes the column: 340 + 204.
-        w.boxes.panel = { left: 496, top: 300, width: 544, height: 400 };
-        drag(w, w.cornerHandle, [700, 300], [620, 300]);
-        assert.equal(cssVar(w, '--conv-mini-w'), '390px');
-
-        w.state.viewport = { width: 700, height: 900 };
-        drag(w, w.cornerHandle, [700, 300], [-900, 300]);
-        assert.equal(cssVar(w, '--conv-mini-w'), `${Math.round((700 - 32) / 1.6)}px`);
+        drag(w, w.cornerHandle, [700, 300], [640, 300]);
+        assert.equal(cssVar(w, '--conv-mini-w'), '400px');
     } finally {
         w.page.close();
     }

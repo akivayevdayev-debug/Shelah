@@ -1664,6 +1664,15 @@
                     }
                 }
 
+                /* Until a visitor answers the analytics banner it is fixed over
+                   the bottom of the screen, where it covered the footer's links
+                   on a phone. The footer grows by the banner's height so they
+                   scroll clear of it (--consent-banner-h, measured in shell.js
+                   initAnalyticsConsent). */
+                html:not([data-consent-set]) body:has(#analyticsConsentBanner:not(.hidden)) .site-footer {
+                    padding-bottom: calc(var(--sp-2) + var(--consent-banner-h, 10rem) + var(--sp-4));
+                }
+
                 .site-footer-inner {
                     max-width: 1200px;
                     margin: 0 auto;

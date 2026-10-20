@@ -1,13 +1,13 @@
 // The two extras of the desktop mini widget (#convPanel[data-size="mini"]):
 //
-//   - History: the conversation list opens as a column fixed to the widget's
-//     free side (the side away from its screen corner), so the chat itself
-//     never moves. The widget gets that much wider and the column is revealed
-//     with a clip-path wipe from the chat's edge. Nothing animates width, and
-//     the column's text is never squashed, which a FLIP scale would do. Wider
-//     widget, wider list (conversation.css --conv-hist-w, MINI_HISTORY_RATIO).
-//     The full page keeps its permanent sidebar and the centred overlay keeps
-//     the history popover; only the mini widget uses this.
+//   - History: the conversation list opens as a drawer on the widget's free
+//     side (the side away from its screen corner), laid over the chat inside
+//     the widget's own box. The widget never changes width or height for it,
+//     so closing the drawer leaves the exact layout it found. It slides a few
+//     pixels in and fades (transform and opacity only); a toggle mid-slide
+//     turns the same animation around. The full page keeps its permanent
+//     sidebar and the centred overlay keeps the history popover; only the mini
+//     widget uses this.
 //
 //   - Resize: a corner handle (keyboard-operable) and two edge strips on the
 //     free edges. Width and height stay inside MINI_BOUNDS and the window; the
@@ -19,14 +19,13 @@
 // list's contents and the focus rules around it; this module owns the column
 // and the handles.
 
-import { clampMiniSize, dragMiniSize, miniKeyDelta, MINI_HISTORY_RATIO, parseMiniSize } from "./conversation-ui-helpers.js";
+import { clampMiniSize, dragMiniSize, miniKeyDelta, parseMiniSize } from "./conversation-ui-helpers.js";
 
 const SIZE_KEY = "shelah.conv.miniSize";
 // --motion-dur-base and --motion-ease-decel (tokens.css), as WAAPI needs numbers.
 const REVEAL = Object.freeze({ duration: 220, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
-// The wipe clips the panel, and the panel's shadow is part of what it clips: the
-// sides that keep their edge are let out by more than the shadow reaches.
-const SHADOW_BLEED = "-80px";
+// How far the drawer travels in from the free edge.
+const SLIDE_PX = 16;
 
 function readSize() {
     try {
@@ -56,8 +55,8 @@ export function createMiniWidget({
     reducedMotion = () => false,
     viewport = () => ({ width: window.innerWidth, height: window.innerHeight }),
 }) {
-    let open = false;     // what the user last asked for; the attribute lags a close wipe
-    let reveal = null;    // the running wipe
+    let open = false;     // what the user last asked for; the attribute lags a close slide
+    let reveal = null;    // the running slide
     let size = null;      // { w, h } once resized, else null (the CSS defaults)
 
     // ── history column ─────────────────────────────────────────────────
@@ -76,25 +75,8 @@ export function createMiniWidget({
         }
     }
 
-    // The clip that hides the column: everything on the column's side of the
-    // chat's edge. Measured, so it is right in either direction and for any
-    // width the widget has been given.
-    function wipeShapes() {
-        const column = sidebar.getBoundingClientRect();
-        const chat = main.getBoundingClientRect();
-        const width = Math.round(column.width);
-        const columnOnLeft = column.left < chat.left;
-        const bleed = SHADOW_BLEED;
-        return {
-            shut: columnOnLeft
-                ? `inset(${bleed} ${bleed} ${bleed} ${width}px)`
-                : `inset(${bleed} ${width}px ${bleed} ${bleed})`,
-            full: `inset(${bleed})`,
-        };
-    }
-
     function canAnimate() {
-        return typeof panel.animate === "function" && !reducedMotion();
+        return typeof sidebar.animate === "function" && !reducedMotion();
     }
 
     function settleClosed() {
@@ -103,18 +85,29 @@ export function createMiniWidget({
         delete panel.dataset.history;
     }
 
-    // One wipe at a time. A toggle in mid-flight starts the other way from
-    // wherever the clip has got to, rather than finishing first.
-    function wipe(opening) {
+    // The drawer comes in from the widget's free side: the left when the
+    // widget sits on the right of the screen, and the other way round.
+    function slideFrames() {
+        const offset = anchor().right ? -SLIDE_PX : SLIDE_PX;
+        return [
+            { opacity: 0, transform: `translateX(${offset}px)` },
+            { opacity: 1, transform: "translateX(0)" },
+        ];
+    }
+
+    // One slide at a time. A toggle in mid-flight reverses the running one from
+    // wherever it has got to, rather than finishing first.
+    function slide(opening) {
         const running = reveal;
-        const resting = running ? getComputedStyle(panel).clipPath : "none";
-        const from = resting && resting !== "none" ? resting : null;
+        if (running && running.opening !== opening && typeof running.reverse === "function") {
+            running.opening = opening;
+            running.reverse();
+            return;
+        }
         running?.cancel();
-        const { shut, full } = wipeShapes();
-        const frames = opening
-            ? [{ clipPath: from || shut }, { clipPath: full }]
-            : [{ clipPath: from || full }, { clipPath: shut }];
-        const animation = panel.animate(frames, { ...REVEAL, fill: "forwards" });
+        const frames = slideFrames();
+        const animation = sidebar.animate(opening ? frames : frames.reverse(), { ...REVEAL, fill: "both" });
+        animation.opening = opening;
         reveal = animation;
         animation.onfinish = () => {
             if (reveal !== animation) return;
@@ -127,11 +120,14 @@ export function createMiniWidget({
     function openHistory() {
         if (open || !isActive()) return false;
         open = true;
+        // The drawer starts under the header, which keeps the history button
+        // (and the rest of the header) where the visitor can reach it.
+        const header = main?.querySelector?.(".conv-header");
+        panel.style.setProperty("--conv-mini-head", `${Math.round(header?.getBoundingClientRect().height || 0)}px`);
         panel.dataset.history = "open";
         syncAria();
         if (canAnimate()) {
-            wipe(true);
-            sidebar.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: REVEAL.easing, fill: "backwards" });
+            slide(true);
         } else if (typeof sidebar.animate === "function") {
             // Reduced motion: no travel, just a gentle arrival.
             sidebar.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, easing: "linear", fill: "backwards" });
@@ -144,7 +140,7 @@ export function createMiniWidget({
         open = false;
         syncAria();
         if (immediate || !canAnimate() || !panel.dataset.history) settleClosed();
-        else wipe(false);
+        else slide(false);
     }
 
     function toggleHistory() {
@@ -167,8 +163,7 @@ export function createMiniWidget({
 
     function measure() {
         const rect = panel.getBoundingClientRect();
-        const span = open ? 1 + MINI_HISTORY_RATIO : 1;
-        return { w: rect.width / span, h: rect.height };
+        return { w: rect.width, h: rect.height };
     }
 
     // The size the next drag or key press starts from. A horizontal move
@@ -235,7 +230,6 @@ export function createMiniWidget({
                 dy: event.clientY - drag.y,
                 anchor: drag.anchor,
                 axes,
-                historyOpen: open,
             }, viewport()));
         });
         const end = (event) => {
@@ -261,7 +255,7 @@ export function createMiniWidget({
             if (!delta) return;
             event.preventDefault();
             const axes = delta.dx ? "x" : "y";
-            applySize(dragMiniSize({ start: startFor(axes, { fromState: true }), ...delta, anchor: anchor(), axes, historyOpen: open }, viewport()));
+            applySize(dragMiniSize({ start: startFor(axes, { fromState: true }), ...delta, anchor: anchor(), axes }, viewport()));
             writeSize(size);
         });
     }

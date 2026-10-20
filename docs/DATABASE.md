@@ -195,12 +195,13 @@ Per-call AI cost ledger and atomic per-caller daily-budget reservation bookkeepi
 
 ### `answer_feedback`
 
-Write-only thumbs up/down (plus an optional short comment) a reader leaves on an AI answer, accepted from signed-in and signed-out readers alike — `user_id` is nullable, so unlike `ask_history` there is no owner-per-row invariant to enforce with RLS. Written by `POST /api/feedback` (`backend/routes_feedback.py`); read by `GET /api/devtools/feedback-digest` (`backend/routes_devtools.py`), which is auth-gated (`@require_clerk_auth`) because comments are free-text supplied by readers and not meant for public display. Base table: [`scripts/sql/migrate_answer_feedback.sql`](../scripts/sql/migrate_answer_feedback.sql); comment-only feedback, the AI's own notes and the `source` column: [`scripts/sql/migrate_answer_feedback_ai_notes.sql`](../scripts/sql/migrate_answer_feedback_ai_notes.sql) (run it once in the SQL Editor). Grant hardening: [`scripts/sql/migrate_security_hardening.sql`](../scripts/sql/migrate_security_hardening.sql).
+Write-only thumbs up/down (plus an optional short comment) a reader leaves on an AI answer, accepted from signed-in and signed-out readers alike — `user_id` is nullable, so unlike `ask_history` there is no owner-per-row invariant to enforce with RLS. Written by `POST /api/feedback` (`backend/routes_feedback.py`); read by `GET /api/devtools/feedback-digest` (`backend/routes_devtools.py`), which is auth-gated (`@require_clerk_auth`) because comments are free-text supplied by readers and not meant for public display. Base table: [`scripts/sql/migrate_answer_feedback.sql`](../scripts/sql/migrate_answer_feedback.sql); comment-only feedback, the AI's own notes and the `source` column: [`scripts/sql/migrate_answer_feedback_ai_notes.sql`](../scripts/sql/migrate_answer_feedback_ai_notes.sql) (run it once in the SQL Editor). Editing your own feedback (`PATCH /api/feedback/<id>`) and the `device_owner` column: [`scripts/sql/migrate_answer_feedback_edit.sql`](../scripts/sql/migrate_answer_feedback_edit.sql) (run it once in the SQL Editor). Grant hardening: [`scripts/sql/migrate_security_hardening.sql`](../scripts/sql/migrate_security_hardening.sql).
 
 | Column | Type | Nullable | Default | Description |
 |---|---|---|---|---|
 | `id` | `uuid` | NOT NULL | `gen_random_uuid()` | Row ID |
 | `user_id` | `text` | YES | — | Clerk `sub` claim; null for signed-out feedback |
+| `device_owner` | `text` | YES | — | Signed-out feedback only: `device:<sha256 of the shelah_device cookie>` (`backend/device_identity.py`), never the cookie itself; lets the same browser edit the row. Null for signed-in feedback and AI notes (`migrate_answer_feedback_edit.sql`) |
 | `question_hash` | `text` | NOT NULL | — | SHA-256 of the question text |
 | `verdict` | `text` | NOT NULL | — | `helpful`, `not_helpful`, `comment` (a comment with no rating) or `ai_note` (the server's own note; `CHECK` constraint, widened by `migrate_answer_feedback_ai_notes.sql`) |
 | `source` | `text` | NOT NULL | `'reader'` | `reader` for anything a person submitted, `ai` for the server's note (`CHECK`); set by the server, never by the client |
@@ -211,7 +212,7 @@ Write-only thumbs up/down (plus an optional short comment) a reader leaves on an
 | `safety_class` | `text` | NOT NULL | `'ok'` | Safety-routing outcome (`ok`, `medical`, `mental_health_or_self_harm`, `abuse_or_minor_safety`, `dangerous_or_illegal`) |
 | `created_at` | `timestamptz` | NOT NULL | `now()` | Creation timestamp |
 
-**Primary key**: `id` · **Index**: `(created_at DESC)`
+**Primary key**: `id` · **Index**: `(created_at DESC)`, partial `(device_owner) WHERE device_owner IS NOT NULL`
 
 **RLS**: enabled. Policy `anyone_can_submit_feedback` (`FOR INSERT`, `WITH CHECK (true)`) lets both `anon` and `authenticated` insert rows — a deliberate public write-only form, not a per-user-owned resource. There is no `SELECT` policy for either role; only the backend's service-role client (which bypasses RLS) reads this table. The default `SELECT` grant `anon`/`authenticated` get on a new Supabase table was separately revoked (`migrate_security_hardening.sql`) to close a Supabase-linter-flagged schema-exposure gap, since a missing policy alone still let the table (and its column names) be discovered via GraphQL/PostgREST even with every row read blocked.
 
