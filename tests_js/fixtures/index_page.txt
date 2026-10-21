@@ -230,8 +230,9 @@
                             </div>
                             <!-- On-screen Hebrew/English keyboard (static/js/hebrew-keyboard.js):
                                  the button sits just inside the bar beside the search icon;
-                                 the panel opens under the bar at its full width. -->
-                            <button type="button" id="hebrewKeyboardBtn" class="search-kbd-btn"
+                                 the panel opens under the bar at its full width. Hidden until
+                                 the script sees a keyboard-less touch screen in touch use. -->
+                            <button type="button" id="hebrewKeyboardBtn" class="search-kbd-btn" hidden
                                 aria-label="Hebrew keyboard" aria-expanded="false" aria-controls="hebrewKeyboard"
                                 title="On-screen keyboard"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="18" height="18" fill="currentColor" class="h-[18px] w-[18px]" aria-hidden="true"><path d="M224,44H32A20,20,0,0,0,12,64V192a20,20,0,0,0,20,20H224a20,20,0,0,0,20-20V64A20,20,0,0,0,224,44Zm-4,144H36V68H220ZM52,128a12,12,0,0,1,12-12H192a12,12,0,0,1,0,24H64A12,12,0,0,1,52,128Zm0-36A12,12,0,0,1,64,80H192a12,12,0,0,1,0,24H64A12,12,0,0,1,52,92Zm0,72a12,12,0,0,1,12-12h8a12,12,0,0,1,0,24H64A12,12,0,0,1,52,164Zm108,0a12,12,0,0,1-12,12H108a12,12,0,0,1,0-24h40A12,12,0,0,1,160,164Zm44,0a12,12,0,0,1-12,12h-8a12,12,0,0,1,0-24h8A12,12,0,0,1,204,164Z"/></svg></button>
                             <!-- Real submit control for keyboard/AT users -- WCAG 2.1 AA
