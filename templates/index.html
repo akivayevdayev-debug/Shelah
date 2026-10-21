@@ -2127,7 +2127,8 @@
                                 <span id="convMinhagChipLabel">All</span>
                             </span>
                         </button>
-                        <fieldset id="convMenu" class="conv-menu hidden" aria-labelledby="convMenuHeading">
+                        <fieldset id="convMenu" class="conv-menu hidden">
+                            <legend class="sr-only" data-en="Conversation settings" data-he="הגדרות שיחה">Conversation settings</legend>
                             <p id="convMenuHeading" class="conv-eyebrow" data-en="Community" data-he="קהילה">Community</p>
                             <p id="convMenuMinhagLocked" class="conv-menu__note"></p>
                             <label id="convMenuMinhagDraft" class="conv-menu__field">
@@ -2417,8 +2418,8 @@
 
     <!-- Phone search tray: rises above the tab bar while search is open, with the
          AI conversation button and the history button side by side. -->
-    <fieldset id="mobileSearchTray" class="mobile-search-tray hidden" aria-label="Ask Sh'elah"
-        data-aria-en="Ask Sh'elah" data-aria-he="שאל את ש׳אלה">
+    <fieldset id="mobileSearchTray" class="mobile-search-tray hidden">
+        <legend class="sr-only" data-en="Ask Sh'elah" data-he="שאל את ש׳אלה">Ask Sh'elah</legend>
         <button type="button" id="mobileTrayAskBtn" class="mobile-search-tray__ask">
             {{ phosphor('chat-text', size=16, class='h-4 w-4') }}
             <span data-en="Ask Sh'elah" data-he="שאל את ש׳אלה">Ask Sh'elah</span>
