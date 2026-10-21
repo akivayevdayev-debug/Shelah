@@ -429,8 +429,9 @@
                             </div>
                             <!-- On-screen Hebrew/English keyboard (static/js/hebrew-keyboard.js):
                                  the button sits just inside the bar beside the search icon;
-                                 the panel opens under the bar at its full width. -->
-                            <button type="button" id="hebrewKeyboardBtn" class="search-kbd-btn"
+                                 the panel opens under the bar at its full width. Hidden until
+                                 the script sees a keyboard-less touch screen in touch use. -->
+                            <button type="button" id="hebrewKeyboardBtn" class="search-kbd-btn" hidden
                                 aria-label="Hebrew keyboard" aria-expanded="false" aria-controls="hebrewKeyboard"
                                 title="On-screen keyboard">{{ phosphor('keyboard', size=18, class='h-[18px] w-[18px]') }}</button>
                             <!-- Real submit control for keyboard/AT users -- WCAG 2.1 AA

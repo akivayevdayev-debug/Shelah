@@ -24,6 +24,17 @@
  * Shift is one-shot; tapping it twice quickly locks it (as Caps Lock).
  * Enter runs the search.
  *
+ * Both sizes have a symbols menu ("?123"): every digit and the symbols a
+ * search needs (₪ €, maqaf ־, quotation marks, dashes). The phone one has a
+ * second page ("#+=") for the rest, as phone keyboards do.
+ *
+ * Who gets it: only a touch screen that has no keyboard of its own, such as
+ * a touchscreen monitor, a touch laptop or a smartboard, and only while it is
+ * being used by touch. Phones and tablets have their own on-screen keyboard,
+ * so the button never shows there (keyboardDevice). On a touch laptop it
+ * shows after a tap or pen stroke and hides again once the mouse, trackpad
+ * or physical keys are used (an open panel closes then).
+ *
  * Closes on Escape, a click outside the search form, or the button again;
  * Escape and the button put focus back on the button. While it is open the
  * suggestions sit below it (--hebrew-kbd-h), never under it. On a touch
@@ -71,7 +82,26 @@ const COMPACT_ROWS = {
     sym: [
         { cells: [..."1234567890"] },
         { cells: ["@", "#", "₪", "_", "&", "-", "+", "(", ")", "/"] },
-        { cells: ["*", "\"", "'", ":", ";", "!", "?"], end: ["backspace"] },
+        { start: ["more"], cells: ["*", "\"", "'", ":", ";", "!", "?"], end: ["backspace"] },
+    ],
+};
+
+// The symbols menu. The full one is a single page; the phone one has two.
+const SYMBOL_ROWS = {
+    full: [
+        { cells: [..."1234567890"], end: ["backspace"] },
+        { cells: ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "₪", "€"] },
+        { cells: ["-", "_", "=", "+", "[", "]", "{", "}", "\\", "|", "~", "`"], end: ["enter"] },
+        { cells: [";", ":", "'", "\"", ",", ".", "<", ">", "/", "?", "…", "°"] },
+        { cells: ["־", "–", "—", "“", "”", "„", "«", "»", "£", "§", "•"] },
+    ],
+    compact: [
+        COMPACT_ROWS.sym,
+        [
+            { cells: ["[", "]", "{", "}", "<", ">", "\\", "|", "~", "`"] },
+            { cells: ["€", "$", "£", "%", "^", "=", "־", "…", "°", "§"] },
+            { start: ["more"], cells: ["“", "”", "„", "–", "—", "•"], end: ["backspace"] },
+        ],
     ],
 };
 
@@ -100,6 +130,31 @@ function previousCharStart(value, index) {
     return low && index >= 2 ? index - 2 : index - 1;
 }
 
+const MOBILE_UA = /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|PlayBook|BlackBerry|Opera Mini|IEMobile/i;
+// An Android screen at least this many CSS pixels on its short side is a
+// large display (a smartboard or touch monitor), not a tablet.
+const LARGE_DISPLAY_MIN_PX = 1000;
+
+/**
+ * Whether this device is a touch screen with no on-screen keyboard of its
+ * own: true for a touchscreen monitor, touch laptop or smartboard; false for
+ * a phone, a tablet (iPadOS reports itself as a Mac with touch points) and a
+ * screen with no touch at all.
+ */
+export function keyboardDevice({ nav = globalThis.navigator, win = globalThis.window } = {}) {
+    const touchPoints = Number(nav?.maxTouchPoints) || 0;
+    const touch = touchPoints > 0 || Boolean(win?.matchMedia?.("(any-pointer: coarse)")?.matches);
+    if (!touch) return false;
+    const ua = String(nav?.userAgent || "");
+    if (/Macintosh/.test(ua) && touchPoints > 1) return false;
+    if (nav?.userAgentData?.mobile) return false;
+    if (/Android/i.test(ua) && !/Mobile/i.test(ua)) {
+        const short = Math.min(Number(win?.screen?.width) || 0, Number(win?.screen?.height) || 0);
+        return short >= LARGE_DISPLAY_MIN_PX;
+    }
+    return !MOBILE_UA.test(ua);
+}
+
 /**
  * What a physical key types on the full keyboard. `shift` is Shift alone;
  * `caps` is Caps Lock (letters only, and it cancels against Shift).
@@ -126,12 +181,14 @@ export function installHebrewKeyboard({
     button = doc.getElementById("hebrewKeyboardBtn"),
     panel = doc.getElementById("hebrewKeyboard"),
     form = doc.getElementById("searchForm"),
+    touchDevice = keyboardDevice({ nav: win.navigator, win }),
 } = {}) {
     if (!input || !button || !panel) return null;
 
     let layout = null; // 'he' | 'en'; chosen on first open, then kept for the page's life
     let mode = "full"; // 'full' | 'compact', from the bar's width
-    let symbols = false; // the phone layouts' "?123" layer
+    let symbols = 0; // 0 letters, 1 the "?123" menu, 2 its second page (phone only)
+    let usingTouch = false; // the last pointer or key press was a finger or pen
     let shift = false;
     let caps = false;
     let lastShiftAt = 0;
@@ -174,6 +231,10 @@ export function installHebrewKeyboard({
                 const text = symbols ? (layout === "he" ? "אבג" : "ABC") : "?123";
                 return `<button type="button" class="${wide} kbd-layer" data-key="layer" aria-label="${escapeHtml(label)}"${symbols && layout === "he" ? ' lang="he"' : ""}>${text}</button>`;
             }
+            case "more": {
+                const label = symbols === 2 ? t("Numbers", "מספרים") : t("More symbols", "סימנים נוספים");
+                return `<button type="button" class="${wide} kbd-more" data-key="more" aria-label="${escapeHtml(label)}">${symbols === 2 ? "123" : "#+="}</button>`;
+            }
             case "space":
                 return `<button type="button" class="kbd-key kbd-key-space" data-key="space" data-text=" " aria-label="${escapeHtml(t("Space", "רווח"))}"><span aria-hidden="true">${escapeHtml(t("space", "רווח"))}</span></button>`;
             default:
@@ -197,9 +258,9 @@ export function installHebrewKeyboard({
     function bottomRow() {
         let keys;
         if (mode === "full") {
-            keys = layout === "he"
-                ? [specialKey("toggle"), markKey(HEBREW_MARKS[0]), specialKey("space"), markKey(HEBREW_MARKS[1])]
-                : [specialKey("toggle"), specialKey("space")];
+            keys = layout === "he" && !symbols
+                ? [specialKey("layer"), specialKey("toggle"), markKey(HEBREW_MARKS[0]), specialKey("space"), markKey(HEBREW_MARKS[1])]
+                : [specialKey("layer"), specialKey("toggle"), specialKey("space")];
         } else {
             const [left, right] = layout === "he" && !symbols
                 ? HEBREW_MARKS.map(markKey)
@@ -214,7 +275,10 @@ export function installHebrewKeyboard({
         const keysBefore = [...panel.querySelectorAll(".kbd-key")];
         const focusedIndex = keysBefore.indexOf(doc.activeElement);
         let rows;
-        if (mode === "full") {
+        if (symbols) {
+            const page = mode === "full" ? SYMBOL_ROWS.full : SYMBOL_ROWS.compact[symbols - 1];
+            rows = page.map((row) => rowHtml(row, (ch) => charKey(ch))).join("");
+        } else if (mode === "full") {
             rows = FULL_ROWS.map((row) => rowHtml(row, (physical) => {
                 const text = fullKeyChar(physical, layout, { shift, caps });
                 const sub = layout === "he" && isHebrewChar(text) ? physical.toUpperCase() : "";
@@ -222,7 +286,7 @@ export function installHebrewKeyboard({
             })).join("");
         } else {
             const upper = shift || caps;
-            rows = COMPACT_ROWS[symbols ? "sym" : layout]
+            rows = COMPACT_ROWS[layout]
                 .map((row) => rowHtml(row, (ch) => charKey(upper && isLatinLetter(ch) ? ch.toUpperCase() : ch)))
                 .join("");
         }
@@ -232,7 +296,16 @@ export function installHebrewKeyboard({
             : t("English keyboard", "מקלדת אנגלית"));
         panel.dataset.layout = layout;
         panel.dataset.mode = mode;
+        panel.dataset.symbols = String(symbols);
         if (focusedIndex >= 0) panel.querySelectorAll(".kbd-key")[focusedIndex]?.focus();
+    }
+
+    // The button shows only on a keyboard-less touch screen in touch use.
+    function syncAvailability() {
+        const available = touchDevice && usingTouch;
+        button.hidden = !available;
+        form?.classList.toggle("kbd-available", available);
+        if (!available && open) closeKeyboard();
     }
 
     function syncButton() {
@@ -304,7 +377,8 @@ export function installHebrewKeyboard({
             const next = currentMode();
             if (open && next !== mode) {
                 mode = next;
-                symbols = false;
+                // The symbols menu stays up; the full one has a single page.
+                symbols = Math.min(symbols, mode === "full" ? 1 : 2);
                 render();
             }
             form?.style.setProperty("--hebrew-kbd-h", `${panel.offsetHeight}px`);
@@ -322,7 +396,7 @@ export function installHebrewKeyboard({
         if (!layout) layout = pageLanguage(doc) === "he" ? "en" : "he";
         open = true;
         mode = currentMode();
-        symbols = false;
+        symbols = 0;
         shift = false;
         caps = false;
         render();
@@ -354,7 +428,7 @@ export function installHebrewKeyboard({
         win.ShelahMotion?.dismiss
             ? win.ShelahMotion.dismiss(panel, { preset: "popover" })
             : panel.classList.add("hidden");
-        if (restoreFocus) button.focus({ preventScroll: true });
+        if (restoreFocus) (button.hidden ? input : button).focus({ preventScroll: true });
     }
 
     button.addEventListener("click", () => {
@@ -380,14 +454,18 @@ export function installHebrewKeyboard({
         switch (key.dataset.key) {
             case "toggle":
                 layout = layout === "he" ? "en" : "he";
-                symbols = false;
+                symbols = 0;
                 shift = false;
                 caps = false;
                 render();
                 break;
             case "layer":
-                symbols = !symbols;
+                symbols = symbols ? 0 : 1;
                 shift = false;
+                render();
+                break;
+            case "more":
+                symbols = symbols === 2 ? 1 : 2;
                 render();
                 break;
             case "shift":
@@ -430,6 +508,23 @@ export function installHebrewKeyboard({
         closeKeyboard();
     });
 
+    // Touch or not, from the last press. Presses on the keyboard itself never
+    // count as the physical keyboard (a key focused and pressed with Enter).
+    doc.addEventListener("pointerdown", (event) => {
+        const next = event.pointerType === "touch" || event.pointerType === "pen";
+        if (event.pointerType && next !== usingTouch) {
+            usingTouch = next;
+            syncAvailability();
+        }
+    }, true);
+    doc.addEventListener("keydown", (event) => {
+        if (!usingTouch || event.isComposing) return;
+        if (panel.contains(event.target) || button.contains(event.target)) return;
+        if (event.key.length !== 1 && event.key !== "Backspace" && event.key !== "Enter") return;
+        usingTouch = false;
+        syncAvailability();
+    }, true);
+
     // The labels follow the site's language.
     if (typeof win.MutationObserver === "function") {
         new win.MutationObserver(() => {
@@ -438,6 +533,7 @@ export function installHebrewKeyboard({
         }).observe(doc.documentElement, { attributes: true, attributeFilter: ["lang"] });
     }
     syncButton();
+    syncAvailability();
 
     return {
         open: openKeyboard,
@@ -446,5 +542,6 @@ export function installHebrewKeyboard({
         isOpen: () => open,
         layout: () => layout,
         mode: () => mode,
+        available: () => !button.hidden,
     };
 }

@@ -837,12 +837,14 @@ html[dir="rtl"] #searchInput {
 
 /* On-screen keyboard (static/js/hebrew-keyboard.js). The button sits just
    inside the bar, before the search icon; it draws 32px but its ::before
-   reaches the 44px touch minimum. The input keeps room for both. */
-#searchForm #searchInput {
+   reaches the 44px touch minimum. It shows only on a keyboard-less touch
+   screen (the script sets .kbd-available on the form), and the input only
+   makes room for it then. */
+#searchForm.kbd-available #searchInput {
     padding-right: calc(var(--sp-12) * 2);
 }
 
-html[dir="rtl"] #searchForm #searchInput {
+html[dir="rtl"] #searchForm.kbd-available #searchInput {
     padding-left: calc(var(--sp-12) * 2);
     padding-right: var(--sp-4);
 }
@@ -862,6 +864,10 @@ html[dir="rtl"] #searchForm #searchInput {
     transform: translateY(-50%);
     transition: background-color var(--motion-dur-fast) var(--motion-ease-out),
         color var(--motion-dur-fast) var(--motion-ease-out);
+}
+
+.search-kbd-btn[hidden] {
+    display: none;
 }
 
 .search-kbd-btn::before {
@@ -889,7 +895,9 @@ html[dir="rtl"] .search-kbd-btn {
     transform: translateY(-50%) scale(0.94);
 }
 
-/* The panel: under the bar, its full width and left edge. */
+/* The panel: under the bar, its full width and left edge. A flat tray with
+   raised keys: letters on the light key surface, function keys (Shift, Caps,
+   Delete, the menus, Enter) a step darker, Enter's glyph in the accent. */
 .hebrew-kbd {
     position: absolute;
     top: calc(100% + var(--sp-2));
@@ -900,10 +908,10 @@ html[dir="rtl"] .search-kbd-btn {
     flex-direction: column;
     gap: var(--sp-1);
     padding: var(--sp-2);
-    background: var(--surface-elevated);
+    background: var(--surface-subtle);
     border: 1px solid var(--surface-border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
     transform-origin: top center;
     /* Keys sit where they are on a physical keyboard (ק under E, as on an
        Israeli one) whatever the page direction. */
@@ -920,8 +928,8 @@ html[dir="rtl"] .search-kbd-btn {
     gap: var(--sp-1);
 }
 
-
 .kbd-key {
+    position: relative;
     flex: 1 1 0;
     min-width: 0;
     max-width: var(--sp-12);
@@ -929,11 +937,14 @@ html[dir="rtl"] .search-kbd-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--control-border);
-    border-radius: var(--radius-sm);
-    background: var(--control-bg);
+    /* Transparent, so forced-colors mode still draws an outline. */
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--surface-elevated);
+    box-shadow: var(--shadow-sm);
     color: var(--control-text-strong);
     font-size: clamp(1rem, 0.9rem + 0.4vw, 1.2rem);
+    font-weight: 500;
     line-height: 1;
     user-select: none;
     -webkit-user-select: none;
@@ -946,40 +957,6 @@ html[dir="rtl"] .search-kbd-btn {
     font-family: var(--font-hebrew);
 }
 
-/* A Hebrew key's Latin letter, small in the corner as on a printed
-   Israeli keyboard. */
-.kbd-key {
-    position: relative;
-}
-
-.kbd-sub {
-    position: absolute;
-    right: var(--sp-1);
-    bottom: 2px;
-    font-family: var(--font-sans, sans-serif);
-    font-size: 0.625rem;
-    line-height: 1;
-    color: var(--ink-secondary);
-}
-
-/* Shift / Caps Lock while on: never colour alone, the border thickens too. */
-.kbd-key[aria-pressed="true"] {
-    background: var(--control-bg-hover);
-    border-color: var(--control-accent);
-    box-shadow: inset 0 0 0 1px var(--control-accent);
-    color: var(--ink-primary);
-}
-
-.kbd-enter {
-    background: var(--control-strong-bg);
-    border-color: var(--control-strong-bg);
-    color: var(--ink-on-accent);
-}
-
-.kbd-enter:hover {
-    background: var(--control-strong-bg-hover);
-}
-
 .kbd-key:hover {
     background: var(--control-bg-hover);
 }
@@ -988,11 +965,50 @@ html[dir="rtl"] .search-kbd-btn {
     transform: scale(0.94);
 }
 
+.kbd-key:focus-visible {
+    outline: 2px solid var(--control-accent);
+    outline-offset: 1px;
+}
+
+/* A Hebrew key's Latin letter, small in the corner as on a printed
+   Israeli keyboard. */
+.kbd-sub {
+    position: absolute;
+    right: var(--sp-1);
+    bottom: 2px;
+    font-family: var(--font-sans, sans-serif);
+    font-size: 0.625rem;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--ink-secondary);
+}
+
 .kbd-key-wide {
     flex: 1.6 1 0;
     max-width: calc(var(--sp-12) * 1.6);
+    background: var(--control-bg);
+    color: var(--ink-secondary);
     font-size: 0.875rem;
     font-weight: 600;
+}
+
+.kbd-key-wide:hover {
+    color: var(--ink-primary);
+}
+
+/* Shift / Caps Lock while on: never colour alone, a ring marks it too. */
+.kbd-key[aria-pressed="true"] {
+    background: var(--control-bg-hover);
+    box-shadow: inset 0 0 0 2px var(--control-accent);
+    color: var(--ink-primary);
+}
+
+/* Enter (search) stands out by its accent colour and weight; a filled
+   accent key falls under 4.5:1 for its glyph in dark mode. */
+.kbd-enter,
+.kbd-enter:hover {
+    color: var(--control-accent);
+    font-size: 1.125rem;
 }
 
 .kbd-key-space {
