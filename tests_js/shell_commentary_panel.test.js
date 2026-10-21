@@ -489,6 +489,22 @@ test('a passage with no linked commentaries says so instead of drawing an empty 
     }
 });
 
+test("on a Shulchan Arukh page Sephardi readers see the Kaf HaChayim before the Mishnah Berurah", async () => {
+    const page = await readGenesis();
+    try {
+        const refs = ['Mishnah Berurah 1:1', 'Kaf HaChayim on Shulchan Arukh, Orach Chayim 1:1', 'Magen Avraham 1:1'];
+        const order = (minhag) => {
+            page.window.ShelahState = { getMinhag: () => minhag };
+            return plain(page.call('groupCommentaryRefsByAuthor', refs)).map((g) => g.refs[0].split(/ on | \d/)[0]);
+        };
+        assert.deepEqual(order('sephardi'), ['Kaf HaChayim', 'Mishnah Berurah', 'Magen Avraham']);
+        assert.deepEqual(order('mizrahi'), ['Kaf HaChayim', 'Mishnah Berurah', 'Magen Avraham']);
+        assert.deepEqual(order('ashkenazi'), ['Mishnah Berurah', 'Magen Avraham', 'Kaf HaChayim']);
+    } finally {
+        page.close();
+    }
+});
+
 // --- intent prefetch -----------------------------------------------------------------
 
 async function openChooser(routes = {}, pageOptions = {}) {

@@ -711,6 +711,40 @@ class TestFollowUpHistoryCondensing:
         assert "20. The QUESTION may point back to the earlier turns of this conversation" in prompt
 
 
+class TestCommunitySettingInPrompt:
+    """The site's community setting (Sephardi / Mizrahi / Ashkenazi) reaches the
+    prompt as the Sefardic / Iraqi / Ashkenaz lens (static/js/state.js)."""
+
+    @pytest.mark.parametrize("lens", ["Sefardic", "Iraqi"])
+    def test_sephardi_and_mizrahi_weigh_their_poskim_in_order(self, lens):
+        text = claude._community_lens_instruction(lens)
+        order = text.split("Weigh the halachic sources in this order: ", 1)[1]
+        names = ["Shulchan Aruch", "Kaf HaChaim", "Yalkut Yosef", "Ben Ish Chai"]
+        assert [order.index(n) for n in names] == sorted(order.index(n) for n in names)
+
+    def test_ashkenazi_weighs_the_rema_then_mishnah_berurah_then_aruch_hashulchan(self):
+        order = claude._community_lens_instruction("Ashkenaz").split("in this order: ", 1)[1]
+        assert order.index("Rema") < order.index("Mishnah Berurah") < order.index("Aruch HaShulchan")
+
+    def test_other_communities_get_no_borrowed_order(self):
+        assert "in this order" not in claude._community_lens_instruction("Yemenite")
+
+    def test_a_named_community_says_which_custom_it_follows(self):
+        assert "which community's custom the answer follows" in claude._community_lens_instruction("Sefardic")
+        assert "which community's custom" not in claude._community_lens_instruction("All")
+
+    @pytest.mark.parametrize("lens", ["Sefardic", "Iraqi", "sephardi", "Moroccan"])
+    def test_sephardi_transliteration_for_english_answers(self, lens):
+        prompt = claude.build_prompt("What is Shabbat?", [], [], community_lens=lens, answer_language="en")
+        assert "Transliterate Hebrew the Sephardi way: Shabbat, Sukkot, Shavuot" in prompt
+        assert "never Shabbos, Sukkos, Shavuos, Bais, emes, Toras, bris" in prompt
+
+    @pytest.mark.parametrize("lens, language", [("Ashkenaz", "en"), ("ashkenazi", "en"), ("All", "en"), ("Sefardic", "he")])
+    def test_no_sephardi_transliteration_rule_otherwise(self, lens, language):
+        prompt = claude.build_prompt("What is Shabbat?", [], [], community_lens=lens, answer_language=language)
+        assert "Transliterate Hebrew the Sephardi way" not in prompt
+
+
 class TestCommunityLensInstruction:
     def test_named_community_is_answered_first_and_not_defaulted_to_ashkenazi(self):
         text = claude._community_lens_instruction("Sefardic")

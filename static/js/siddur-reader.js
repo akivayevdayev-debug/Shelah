@@ -160,6 +160,29 @@ export function landingMarkup(toc, { t, escapeHtml, isHebrew = false }) {
     </article>`;
 }
 
+// ─── Nusach for the reader's community ─────────────────────────────────────
+
+// The rite each community (state.js minhag) prays from. Sephardi readers get
+// Edot HaMizrach too: it is the Sephardi siddur (Nusach Sefard is the
+// Hasidic Ashkenazi rite, not a Sephardi one). The checked-in data has no
+// Nusach Ashkenaz, so an Ashkenazi reader is told so rather than shown
+// another rite silently.
+export const MINHAG_RITES = Object.freeze({
+    sephardi: "edot-hamizrach",
+    mizrahi: "edot-hamizrach",
+    ashkenazi: "ashkenaz",
+});
+
+export function nusachNoticeMarkup(toc, minhag, { t, escapeHtml }) {
+    const wanted = MINHAG_RITES[minhag];
+    if (!wanted || wanted === toc.rite.slug) return "";
+    const rite = toc.rite.title;
+    return `<p class="siddur-nusach-notice" role="note" data-siddur-nusach-notice>${escapeHtml(t(
+        `Nusach Ashkenaz isn't in this siddur yet. This is the ${rite.en} siddur.`,
+        `נוסח אשכנז עדיין אינו בסידור. זהו סידור ${rite.he}.`,
+    ))}</p>`;
+}
+
 // ─── Service page ───────────────────────────────────────────────────────────
 
 const LAYOUTS_WITH_ENGLISH = new Set(["bilingual", "bilingual-reverse", "interleaved", "english"]);

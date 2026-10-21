@@ -19,6 +19,7 @@
  */
 
 import { icon as phosphor } from './icons.js';
+import { haftarahFor } from './state.js';
 
 const SHEET_QUERY = '(max-width: 767px)';
 const ARROW = 8;              // how far the arrow protrudes past the panel edge (px)
@@ -502,10 +503,13 @@ function dateRow(ev, d, f) {
     return row(T.date, f.long(ev.key), hdate ? h('small', { text: hdate, dir }) : null);
 }
 
+// The haftarah follows the reader's community (state.js haftarahFor: the
+// Sephardi one, where Hebcal lists a different one, for Sephardi and Mizrahi).
 function readingRows(leyning) {
     if (!leyning) return [];
     const { T } = state.ctx;
-    return ['torah', 'haftarah', 'maftir'].filter((key) => leyning[key]).map((key) => readingRow(T[key], leyning[key]));
+    const readings = { ...leyning, haftarah: haftarahFor(leyning) };
+    return ['torah', 'haftarah', 'maftir'].filter((key) => readings[key]).map((key) => readingRow(T[key], readings[key]));
 }
 
 function footNode(url) {

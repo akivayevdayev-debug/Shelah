@@ -314,6 +314,21 @@
 
 /* ── Today card ───────────────────────────────────────────────────────── */
 
+/* The reader's community prays a nusach this siddur doesn't have
+   (siddur-reader.js nusachNoticeMarkup). */
+.siddur-nusach-notice {
+    margin: 0 0 var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--surface-border);
+    border-inline-start: 3px solid var(--control-accent);
+    border-radius: var(--radius-md);
+    background: var(--surface-subtle);
+    color: var(--ink-primary);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    text-align: start;
+}
+
 .siddur-today-slot:empty {
     display: none;
 }

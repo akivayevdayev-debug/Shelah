@@ -15,6 +15,8 @@ Hebcal and Sefaria outbound calls are intercepted by the autouse
 
 from __future__ import annotations
 
+import pytest
+
 
 class TestZmanimHappyPath:
     def test_zmanim_with_coords_returns_200(self, test_client):
@@ -124,6 +126,49 @@ class TestParasha:
         response = test_client.get("/api/parasha")
         body = response.get_json()
         assert "title" in body
+
+
+class TestParashaMinhag:
+    """/api/parasha asks Sefaria for the reader's community (custom=) and
+    returns that community's haftarah. Sefaria data below is the real
+    2026-11-21 (Vayetzei) answer, trimmed."""
+
+    @staticmethod
+    def _calendar(haftarah_title, haftarah_ref):
+        return {"calendar_items": [
+            {"title": {"en": "Parashat Hashavua"}, "displayValue": {"en": "Vayetzei", "he": "ויצא"},
+             "ref": "Genesis 28:10-32:3"},
+            {"title": {"en": haftarah_title}, "displayValue": {"en": haftarah_ref, "he": haftarah_ref},
+             "ref": haftarah_ref},
+        ]}
+
+    @pytest.fixture
+    def sefaria(self, monkeypatch):
+        import backend.sefaria_library as sl
+        calls = []
+
+        def fake_get(url, ttl=None):
+            calls.append(url)
+            if url.endswith("custom=ashkenazi"):
+                return self._calendar("Haftarah (A)", "Hosea 12:13-14:10")
+            return self._calendar("Haftarah (S)", "Hosea 11:7-12:12")
+
+        monkeypatch.setattr(sl, "_cached_get", fake_get)
+        return calls
+
+    @pytest.mark.parametrize("query, custom, ref, applied", [
+        ("", "sephardi", "Hosea 11:7-12:12", "sephardi"),
+        ("?minhag=mizrahi", "sephardi", "Hosea 11:7-12:12", "mizrahi"),
+        ("?minhag=ashkenazi", "ashkenazi", "Hosea 12:13-14:10", "ashkenazi"),
+        ("?minhag=../../evil", "sephardi", "Hosea 11:7-12:12", "sephardi"),
+    ])
+    def test_haftarah_follows_minhag(self, test_client, sefaria, query, custom, ref, applied):
+        body = test_client.get(f"/api/parasha{query}").get_json()
+        assert sefaria == [f"https://www.sefaria.org/api/calendars?custom={custom}"]
+        assert body["title"] == "Vayetzei"
+        assert body["ref"] == "Genesis 28:10-32:3"
+        assert body["haftarah"]["ref"] == ref
+        assert body["minhag"] == applied
 
 
 class TestHolidays:

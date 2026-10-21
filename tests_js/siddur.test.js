@@ -184,6 +184,22 @@ test('open draws a service with its Today card, fetched once per data version', 
     assert.match(fetch.calls.find((u) => u.startsWith('/api/siddur/v2/service/')), new RegExp(`\\?v=${TOC.version}$`));
 });
 
+test('an Ashkenazi reader is told the siddur has no Nusach Ashkenaz; others are not', async () => {
+    for (const [minhag, expected] of [['ashkenazi', true], ['sephardi', false], ['mizrahi', false], [undefined, false]]) {
+        const { siddur } = await makeSiddur({ deps: { getMinhag: () => minhag } });
+        for (const page of ['edot-hamizrach', 'edot-hamizrach/arbit']) {
+            const container = fakeContainer();
+            await siddur.open(page, { container });
+            const shown = /data-siddur-nusach-notice/.test(container.html);
+            assert.equal(shown, expected, `${minhag} on ${page}`);
+            if (shown) {
+                assert.match(container.html, /Nusach Ashkenaz isn't in this siddur yet\. This is the .+ siddur\./);
+                assert.ok(container.html.indexOf('data-siddur-nusach-notice') < container.html.indexOf('data-siddur-today'));
+            }
+        }
+    }
+});
+
 test('opening pages asks the service worker to keep the siddur once per data version', async () => {
     const posted = [];
     const nav = { serviceWorker: { ready: Promise.resolve({ active: { postMessage: (message) => posted.push(message) } }) } };

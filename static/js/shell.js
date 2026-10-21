@@ -887,12 +887,20 @@ function hasParenthetical(text) {
                         ]
                     },
                     {
+                        // Ordered by the reader's community (orderedLibraryItems):
+                        // Sephardi and Mizrahi readers see their poskim first.
                         title: 'Later Authorities (Achronim)', titleHe: 'אחרונים',
+                        minhagOrder: {
+                            sephardi: ['Kaf HaChayim', 'Ben Ish Hai', 'Mishnah Berurah', 'Kitzur Shulchan Arukh', 'Aruch HaShulchan', 'Chayei Adam'],
+                            ashkenazi: ['Mishnah Berurah', 'Aruch HaShulchan', 'Kitzur Shulchan Arukh', 'Chayei Adam', 'Kaf HaChayim', 'Ben Ish Hai'],
+                        },
                         items: [
                             { label: 'Mishnah Berurah', labelHe: 'משנה ברורה', ref: 'Mishnah Berurah 1', useRefGrid: true },
                             { label: 'Kitzur Shulchan Arukh', labelHe: 'קיצור שולחן ערוך', ref: 'Kitzur Shulchan Arukh 1', useRefGrid: true },
                             { label: 'Aruch HaShulchan', labelHe: 'ערוך השולחן', ref: 'Aruch HaShulchan, Orach Chayim 1', useRefGrid: true },
                             { label: 'Chayei Adam', labelHe: 'חיי אדם', ref: 'Chayei Adam 1', useRefGrid: true },
+                            { label: 'Kaf HaChayim', labelHe: 'כף החיים', ref: 'Kaf HaChayim on Shulchan Arukh, Orach Chayim 1', useRefGrid: true },
+                            { label: 'Ben Ish Hai', labelHe: 'בן איש חי', ref: 'Ben Ish Hai, Halachot 1st Year, Bereshit 1', useRefGrid: true },
                         ]
                     }
                 ]
@@ -1004,6 +1012,22 @@ function hasParenthetical(text) {
             return btn;
         }
 
+        // A section's items in the order its `minhagOrder` gives the reader's
+        // community (Mizrahi readers share the Sephardi order); anything the
+        // order doesn't name keeps its place after the named ones.
+        function orderedLibraryItems(sec) {
+            if (!sec.minhagOrder) return sec.items;
+            const minhag = window.ShelahState?.getMinhag?.() || 'sephardi';
+            const order = sec.minhagOrder[minhag === 'ashkenazi' ? 'ashkenazi' : 'sephardi'] || [];
+            const rank = (item) => {
+                const index = order.indexOf(item.label);
+                return index === -1 ? order.length : index;
+            };
+            return sec.items.map((item, index) => ({ item, index }))
+                .sort((a, b) => (rank(a.item) - rank(b.item)) || (a.index - b.index))
+                .map(({ item }) => item);
+        }
+
         function openLibraryCategory(key) {
             const cat = HOME_LIBRARY_CATEGORIES[key];
             if (!cat) return;
@@ -1030,7 +1054,7 @@ function hasParenthetical(text) {
                 const grid = document.createElement('div');
                 grid.className = 'chapter-grid-section-items';
 
-                sec.items.forEach(item => grid.appendChild(libraryItemButton(item, isHe)));
+                orderedLibraryItems(sec).forEach(item => grid.appendChild(libraryItemButton(item, isHe)));
 
                 secDiv.appendChild(grid);
                 bodyEl.appendChild(secDiv);
@@ -3212,6 +3236,7 @@ function hasParenthetical(text) {
                 applyShulMode();
                 renderPersonalShelf();
                 updateBookmarkButton();
+                window.ShelahState?.announceMinhag?.();
                 logReliability('prefs-synced-from-server');
             } catch {
                 // Keep local preferences if remote sync is unavailable.
@@ -5488,6 +5513,18 @@ function hasParenthetical(text) {
         ];
         const COMMENTARY_PRIORITY_RANK = new Map(COMMENTARY_PRIORITY.map((name, index) => [name.toLowerCase(), index]));
 
+        // Sephardi and Mizrahi readers see the Kaf HaChayim just ahead of the
+        // Mishnah Berurah on a Shulchan Arukh page (an Ashkenazi reader keeps
+        // the shared order, which the server's preload also follows).
+        const SEPHARDI_HALACHA_FIRST = ['kaf hachayim', 'ben ish hai'];
+        function commentaryRank(base) {
+            if ((window.ShelahState?.getMinhag?.() || 'sephardi') !== 'ashkenazi') {
+                const early = SEPHARDI_HALACHA_FIRST.indexOf(base);
+                if (early !== -1) return COMMENTARY_PRIORITY_RANK.get('mishnah berurah') - 1 + (early + 1) / 10;
+            }
+            return COMMENTARY_PRIORITY_RANK.has(base) ? COMMENTARY_PRIORITY_RANK.get(base) : Infinity;
+        }
+
         function getCommentaryAuthorBase(ref) {
             const raw = String(ref || '').trim();
             const sefariaTitle = commentaryRefMeta.get(raw)?.en;
@@ -5737,7 +5774,7 @@ function hasParenthetical(text) {
                     byAuthor.set(authorKey, {
                         author,
                         refs: [],
-                        rank: COMMENTARY_PRIORITY_RANK.has(base) ? COMMENTARY_PRIORITY_RANK.get(base) : Infinity,
+                        rank: commentaryRank(base),
                         bucket: commentaryBucket(ref),
                     });
                 }
@@ -7624,6 +7661,13 @@ function hasParenthetical(text) {
             if (legacyCommunityMap[appState.prefs.community]) {
                 appState.prefs.community = legacyCommunityMap[appState.prefs.community];
             }
+            // The community setting (state.js getMinhag): only a known value is kept.
+            const normalizeMinhag = window.ShelahState?.normalizeMinhag;
+            if (normalizeMinhag) {
+                const minhag = normalizeMinhag(appState.prefs.minhag);
+                if (minhag) appState.prefs.minhag = minhag;
+                else delete appState.prefs.minhag;
+            }
 
             const legacyShowSidebars = appState.prefs.showSidebars !== false;
             if (typeof appState.prefs.showLeftSidebar !== 'boolean') {
@@ -7669,6 +7713,7 @@ function hasParenthetical(text) {
             updateBookmarkButton();
 
             preferencesHydrated = true;
+            window.ShelahState?.announceMinhag?.();
             if (pendingInitialRoute) {
                 const route = pendingInitialRoute;
                 pendingInitialRoute = null;
@@ -7725,6 +7770,10 @@ function hasParenthetical(text) {
                 const valid = key === 'webSearch' ? typeof value === 'boolean' : ['mode', 'community'].includes(key);
                 if (!valid || appState.prefs[key] === value) return;
                 appState.prefs[key] = value;
+                savePrefs();
+            },
+            // state.js setMinhag() has already updated appState.prefs.
+            save() {
                 savePrefs();
             },
         };
@@ -10087,7 +10136,7 @@ function hasParenthetical(text) {
 
                 const data = await panel.askFromSearch(question, {
                     mode: appState.prefs.mode,
-                    community: appState.prefs.community,
+                    community: window.ShelahState?.aiCommunityLens?.(appState.prefs.community) ?? appState.prefs.community,
                     language: isHebrewMode() ? 'he' : 'en',
                 }, { followUp, surface });
                 // Another question or answer replaced this one meanwhile.

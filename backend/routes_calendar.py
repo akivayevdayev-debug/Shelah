@@ -17,6 +17,7 @@ from backend import sefaria
 from backend.data_service import ShelahEngine
 from backend.health_check import health
 from backend.helpers import _is_same_origin_request, _coerce_int, _json_object_body
+from backend.minhag import resolve_minhag, sefaria_custom
 
 from app import (
     app,
@@ -293,7 +294,9 @@ def _holidays_fallback_chain(year, reason):
 
 
 _HEBCAL_LINK_HOSTS = frozenset({"hebcal.com", "www.hebcal.com"})
-_HEBCAL_LEYNING_KEYS = ("torah", "haftarah", "maftir")
+# haftarah_sephardic is only present in weeks where it differs; the client
+# picks it for Sephardi and Mizrahi readers (backend/minhag.py).
+_HEBCAL_LEYNING_KEYS = ("torah", "haftarah", "haftarah_sephardic", "maftir")
 
 
 def _safe_hebcal_link(value):
@@ -401,6 +404,36 @@ def get_holidays():
         return _holidays_fallback_chain(year, str(e))
 
 
+def _calendar_item_fields(item):
+    display = item.get("displayValue") or {}
+    return {
+        "title": (display.get("en") or "").strip(),
+        "heTitle": (display.get("he") or "").strip(),
+        "ref": str(item.get("ref") or "").strip(),
+    }
+
+
+def _parasha_from_sefaria_calendar(data):
+    """The week's parasha (and its haftarah when listed) from Sefaria's
+    calendars payload, or None when no parasha item is there."""
+    parasha = haftarah = None
+    for item in data.get("calendar_items", []) if isinstance(data, dict) else []:
+        if not isinstance(item, dict):
+            continue
+        title_en = (item.get("title") or {}).get("en", "")
+        if parasha is None and ("Parashat" in title_en or "Parasha" in title_en):
+            parasha = _calendar_item_fields(item)
+            parasha["title"] = parasha["title"] or title_en
+        elif haftarah is None and title_en.startswith("Haftarah"):
+            haftarah = _calendar_item_fields(item)
+    if parasha is None:
+        return None
+    payload = {**parasha, "source": "sefaria-calendars"}
+    if haftarah and haftarah["ref"]:
+        payload["haftarah"] = haftarah
+    return payload
+
+
 @routes_calendar.route("/api/parasha")
 def get_parasha():
     """Return current weekly Parasha information for the Torah section."""
@@ -412,20 +445,16 @@ def get_parasha():
         # at all (~1.8s per hit, the single slowest hot-path endpoint on
         # the homepage). Route through the same memory+disk TTLCache every
         # other Sefaria fetch in this codebase already uses.
-        data = _cached_get("https://www.sefaria.org/api/calendars", ttl=3600) or {}
-
-        for item in data.get("calendar_items", []):
-            title_en = (item.get("title", {}) or {}).get("en", "")
-            if "Parashat" in title_en or "Parasha" in title_en:
-                display_en = (item.get("displayValue", {}) or {}).get("en", "")
-                display_he = (item.get("displayValue", {}) or {}).get("he", "")
-                ref = item.get("ref") or ""
-                return jsonify({
-                    "title": display_en or title_en,
-                    "heTitle": display_he,
-                    "ref": ref,
-                    "source": "sefaria-calendars",
-                })
+        # The haftarah differs by community in some weeks; Sefaria picks it
+        # by `custom` (backend/minhag.py). An unknown ?minhag= falls back to
+        # the default rather than reaching Sefaria's URL.
+        minhag = resolve_minhag(request.args.get("minhag"))
+        url = f"https://www.sefaria.org/api/calendars?custom={sefaria_custom(minhag)}"
+        data = _cached_get(url, ttl=3600) or {}
+        payload = _parasha_from_sefaria_calendar(data)
+        if payload:
+            payload["minhag"] = minhag
+            return jsonify(payload)
     except Exception:
         pass
 

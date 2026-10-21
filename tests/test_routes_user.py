@@ -269,6 +269,34 @@ class TestUserPreferences:
         upsert_payload = fake_client._query.upsert_calls[0][0][0]
         assert upsert_payload["user_id"] == FAKE_USER_ID
 
+    def _stored_prefs_after_put(self, test_client, monkeypatch, prefs):
+        fake_client = _FakeSupabaseClient(data=[])
+        monkeypatch.setattr(
+            routes_user_module, "_get_user_scoped_supabase_client", lambda: fake_client
+        )
+        response = test_client.put(
+            "/api/user/preferences",
+            json={"prefs": prefs},
+            headers=AUTH_HEADERS,
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        return fake_client._query.upsert_calls[0][0][0]["prefs"]["prefs"]
+
+    def test_put_preferences_keeps_a_known_minhag(self, test_client, authed, monkeypatch):
+        stored = self._stored_prefs_after_put(
+            test_client, monkeypatch, {"theme": "dark", "minhag": " Ashkenazi "})
+        assert stored == {"theme": "dark", "minhag": "ashkenazi"}
+
+    def test_put_preferences_drops_an_unknown_minhag(self, test_client, authed, monkeypatch):
+        stored = self._stored_prefs_after_put(
+            test_client, monkeypatch, {"theme": "dark", "minhag": "<script>"})
+        assert stored == {"theme": "dark"}
+
+    def test_put_preferences_without_minhag_is_unchanged(self, test_client, authed, monkeypatch):
+        stored = self._stored_prefs_after_put(test_client, monkeypatch, {"theme": "dark"})
+        assert stored == {"theme": "dark"}
+
     def test_put_preferences_authed_defaults_optional_fields(
         self, test_client, authed, monkeypatch
     ):

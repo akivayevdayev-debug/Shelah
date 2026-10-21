@@ -46,6 +46,7 @@
 // showPublicConversation.
 
 import { createConversationStore, MESSAGE_STATUS } from "./conversation-store.js";
+import { aiCommunityLens, onMinhagChange } from "./state.js";
 import { isSignedIn } from "./conversation-entry.js";
 import { closeOverlay, pushRoute, readRoute, routeUrl } from "./router.js";
 import { icon as phosphorIcon } from "./icons.js";
@@ -205,9 +206,10 @@ function currentMode() {
 }
 
 // The community a new thread starts with: a link's community, else the
-// visitor's own preference (which the link never overwrites).
+// visitor's own preference (which the link never overwrites). "All" (shown
+// as "My community") means the community picked in the site settings.
 function defaultMinhag() {
-    return ui.routeMinhag || window.appState?.prefs?.community;
+    return ui.routeMinhag || aiCommunityLens(window.appState?.prefs?.community);
 }
 
 function effectiveLayout() {
@@ -2720,8 +2722,14 @@ function bindEvents() {
     }
     els.minhagSelect.addEventListener("change", () => {
         ui.routeMinhag = null;
-        store.setDraftMinhag(els.minhagSelect.value);
+        store.setDraftMinhag(aiCommunityLens(els.minhagSelect.value));
         savePref("community", els.minhagSelect.value);
+    });
+    // A new community in the site settings reaches a thread not yet asked
+    // (a locked thread keeps its own).
+    onMinhagChange(() => {
+        if (ui.routeMinhag) return;
+        if (store.setDraftMinhag(defaultMinhag())) scheduleRender();
     });
     els.themeBtn?.addEventListener("click", () => {
         const dark = document.documentElement.dataset.theme === "dark";

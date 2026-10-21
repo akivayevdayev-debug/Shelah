@@ -217,7 +217,7 @@ const shared = (async () => {
         requestAnimationFrame: () => 1,
         cancelAnimationFrame() {},
     });
-    return { api: window.ShelahCalendarDetail, document };
+    return { api: window.ShelahCalendarDetail, document, window };
 })();
 
 async function loadCard({ sheet = false, fetchImpl = null, hebrewRef = null } = {}) {
@@ -270,6 +270,38 @@ test('each Torah / Haftarah reference becomes its own button that opens the read
     ]);
     refs[2].click();
     assert.deepEqual(opened, ['I Samuel 1:1-2:10']);
+});
+
+// Vayetzei 5787 (21 Nov 2026), Hebcal's real leyning: Sephardim read a different haftarah.
+const VAYETZEI = {
+    key: '2026-11-21', title: 'Parashat Vayetzei', category: 'parashat',
+    detail: {
+        subcat: 'parashat',
+        leyning: {
+            torah: 'Genesis 28:10-32:3',
+            haftarah: 'Hosea 12:13-14:10',
+            haftarah_sephardic: 'Hosea 11:7-12:12',
+            maftir: 'Genesis 32:1-32:3',
+        },
+    },
+};
+
+test('the haftarah follows the community setting', async () => {
+    const { window } = await shared;
+    const haftarahFor = async (minhag) => {
+        if (minhag) window.appState.prefs.minhag = minhag;
+        else delete window.appState.prefs.minhag;
+        const { api, scroll } = await loadCard();
+        api.open({ anchor: null, dateKey: VAYETZEI.key, events: [VAYETZEI], allEvents: [VAYETZEI], openText: () => {} });
+        return scroll.querySelectorAll('.cal-detail__ref').map((b) => b.getAttribute('aria-label'))[1];
+    };
+    try {
+        assert.equal(await haftarahFor(null), 'Read: Hosea 11:7-12:12');
+        assert.equal(await haftarahFor('mizrahi'), 'Read: Hosea 11:7-12:12');
+        assert.equal(await haftarahFor('ashkenazi'), 'Read: Hosea 12:13-14:10');
+    } finally {
+        delete window.appState.prefs.minhag;
+    }
 });
 
 test('a trailing "| label" on a reading is shown as a note, not linked', async () => {

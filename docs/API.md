@@ -637,11 +637,11 @@ Today's daily refs (Daf Yomi, Rambam and related), straight from Sefaria's daily
 
 ### `GET /api/holidays`
 
-Jewish holiday events for the calendar, from Hebcal. Query: `year` (default the current year, 1583–3000). Returns a JSON array of calendar events: `title` (emoji-prefixed), `start`, `allDay`, `display`, `category`, `color`, `textColor` and `detail`. If Hebcal is down or its circuit is open, a fallback chain answers instead of an error.
+Jewish holiday events for the calendar, from Hebcal. Query: `year` (default the current year, 1583–3000). Returns a JSON array of calendar events: `title` (emoji-prefixed), `start`, `allDay`, `display`, `category`, `color`, `textColor` and `detail`. A `detail.leyning` object carries `torah`, `haftarah`, `maftir` and, only in weeks where the Sephardi reading differs, `haftarah_sephardic`; the client shows that one to Sephardi and Mizrahi readers (`backend/minhag.py`). If Hebcal is down or its circuit is open, a fallback chain answers instead of an error.
 
 ### `GET /api/parasha`
 
-The current weekly portion. Returns `{"title", "heTitle", "ref", "source"}`, where `source` is `sefaria-calendars`, `calendar-fallback` or `default-fallback` depending on what answered.
+The current weekly portion. Query: `minhag` (`sephardi`, the default, `mizrahi` or `ashkenazi`; anything else means the default). Returns `{"title", "heTitle", "ref", "source"}`, where `source` is `sefaria-calendars`, `calendar-fallback` or `default-fallback` depending on what answered. The `sefaria-calendars` answer also has `minhag` (the one applied) and, when Sefaria lists one, `haftarah: {"title", "heTitle", "ref"}`: the week's haftarah for that community (Sefaria's `custom=sephardi` for Sephardi and Mizrahi, `custom=ashkenazi` for Ashkenazi).
 
 ---
 
@@ -729,7 +729,7 @@ Change the rating or comment on feedback the caller left: the widget's "Edit fee
 **Clerk.** Cross-device sync of the caller's UI state, stored in `user_preferences` through the RLS-scoped client (service-role fallback only when `STRICT_SUPABASE_RLS` is off; in strict mode with no Supabase session the answer is `403`). `GET /api/preferences` and `PUT /api/preferences` are an alias kept for older clients.
 
 - `GET` returns `{"prefs", "shelf", "notes", "reading_state", "updated_at"}`, each `null` when nothing is stored.
-- `PUT` takes `{"prefs": object (required), "shelf": object, "notes": object, "reading_state": object}` (the last three default to `{}`) and returns `{"ok": true, "updated_at"}`. A non-object value is a `400`.
+- `PUT` takes `{"prefs": object (required), "shelf": object, "notes": object, "reading_state": object}` (the last three default to `{}`) and returns `{"ok": true, "updated_at"}`. A non-object value is a `400`. `prefs.minhag` is stored only when it is `sephardi`, `mizrahi` or `ashkenazi` (lower-cased); any other value is dropped, so the default (Sephardi) applies.
 - `500` when the sync fails; `503` when Supabase is not configured.
 
 ### `GET /api/bookmarks/semantic`, `POST /api/bookmarks/semantic`

@@ -2369,6 +2369,40 @@ _COMMUNITY_ALIASES = {
 _NO_COMMUNITY_KEYS = frozenset({"", "all", "standard", "any", "none", "general"})
 _UNKNOWN_COMMUNITY_MAX_CHARS = 40
 
+# The halachic authorities to weigh, in order, for the three communities the
+# site's community setting offers (static/js/state.js: Sephardi -> sefardic,
+# Mizrahi -> iraqi, Ashkenazi -> ashkenaz). Other communities keep only their
+# own file's baseline.
+_SEPHARDI_AUTHORITIES = "the Shulchan Aruch (Maran), then the Kaf HaChaim, Yalkut Yosef and Ben Ish Chai"
+_COMMUNITY_AUTHORITIES = {
+    "sefardic": _SEPHARDI_AUTHORITIES,
+    "iraqi": _SEPHARDI_AUTHORITIES,
+    "ashkenaz": "the Rema, then the Mishnah Berurah and Aruch HaShulchan",
+}
+# Communities whose English answers use Sephardi (Modern Hebrew)
+# transliteration; an Ashkenazi reader keeps Ashkenazi forms.
+_ASHKENAZI_TRANSLITERATION_KEYS = frozenset({"ashkenaz"})
+_SEPHARDI_TRANSLITERATION = (
+    "Transliterate Hebrew the Sephardi way: Shabbat, Sukkot, Shavuot, Beit, emet, Torat, berit "
+    "(never Shabbos, Sukkos, Shavuos, Bais, emes, Toras, bris)."
+)
+
+
+def _community_lens_key(community_lens) -> str:
+    key = re.sub(r"[\s_]+", "-", str(community_lens or "").strip().lower())
+    return _COMMUNITY_ALIASES.get(key, key)
+
+
+def _transliteration_instruction(community_lens, answer_language="en") -> str:
+    """The English transliteration rule for this community ("" for Hebrew
+    answers, no community, or an Ashkenazi reader, who keeps their forms)."""
+    if str(answer_language or "en").strip().lower() == "he":
+        return ""
+    key = _community_lens_key(community_lens)
+    if key in _NO_COMMUNITY_KEYS or key in _ASHKENAZI_TRANSLITERATION_KEYS:
+        return ""
+    return _SEPHARDI_TRANSLITERATION
+
 
 def _community_lens_instruction(community_lens) -> str:
     """The text of build_prompt()'s community-lens instruction.
@@ -2379,8 +2413,7 @@ def _community_lens_instruction(community_lens) -> str:
     word-characters-only, length-capped label for an unknown one.
     """
     raw = str(community_lens or "").strip()
-    key = re.sub(r"[\s_]+", "-", raw.lower())
-    key = _COMMUNITY_ALIASES.get(key, key)
+    key = _community_lens_key(raw)
     if key in _NO_COMMUNITY_KEYS:
         return (
             "no community selected. Do not assume one. Where practice splits by community "
@@ -2396,14 +2429,24 @@ def _community_lens_instruction(community_lens) -> str:
     else:
         basis = config.get("practice_baseline") or _CODE_ONLY_BASELINES.get(key) or _GENERIC_BASELINE
     basis = re.sub(r"\s+", " ", basis).strip().rstrip(".")
+    authorities = _COMMUNITY_AUTHORITIES.get(key)
+    order = f" Weigh the halachic sources in this order: {authorities}." if authorities else ""
     return (
         f"{name}. Answer for a {name} reader first and treat that community's practice as the "
         f"ruling. What that practice rests on: {basis}. Mention another community's practice "
         "only where it differs in a way that changes what this reader should do, and name which "
         "community it is. Never present Ashkenazi practice as the default for a non-Ashkenazi "
         f"reader (or the reverse). If the provided sources do not settle {name} custom, say so "
-        "plainly rather than guessing."
+        f"plainly rather than guessing.{order} Say in a few words which community's custom the "
+        "answer follows."
     )
+
+
+def _community_lens_line(community_lens, answer_language="en") -> str:
+    """build_prompt()'s community-lens instruction plus its transliteration rule."""
+    translit = _transliteration_instruction(community_lens, answer_language)
+    lens = _community_lens_instruction(community_lens)
+    return f"{lens} {translit}" if translit else lens
 
 
 def build_prompt(question, sefaria_sources, wiki, halachipedia=None, mode="balanced", community_lens="All", answer_language="en", conversation_history=None, history_as_turns=False, web_lookup_available=False, web_findings=None):
@@ -2552,7 +2595,7 @@ PRIMARY SOURCES (SEFARIA SNIPPETS):
 
 INSTRUCTIONS:
 1. Response mode requested: {mode}
-2. Community lens: {_community_lens_instruction(community_lens)}
+2. Community lens: {_community_lens_line(community_lens, answer_language)}
 3. Answer language requested: {"Hebrew" if str(answer_language).strip().lower() == "he" else "English"}.
     - If Hebrew is requested, write ruling, practical_steps, summary, and sources in natural Hebrew.
     - If Hebrew is requested and source snippets include Hebrew, prefer Hebrew phrasing/citations over English.

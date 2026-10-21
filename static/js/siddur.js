@@ -207,7 +207,7 @@ export function createSiddur({ fetchImpl = globalThis.fetch, deps, storage = glo
         stopTracking();
         const escapeHtml = deps.escapeHtml;
         const prefs = deps.getPrefs?.() || {};
-        container.innerHTML = where.service
+        const markup = where.service
             ? reader.serviceMarkup(toc, where, payload, {
                 layout: prefs.readerLayout || "hebrew",
                 applyHebrew: (html) => deps.applyHebrewDisplaySettings?.(html) ?? html,
@@ -215,6 +215,9 @@ export function createSiddur({ fetchImpl = globalThis.fetch, deps, storage = glo
                 t, escapeHtml, isHebrew: isHebrew(),
             })
             : reader.landingMarkup(toc, { t, escapeHtml, isHebrew: isHebrew() });
+        // Above the Today card: the reader's nusach, when this siddur lacks it.
+        const notice = reader.nusachNoticeMarkup(toc, deps.getMinhag?.() || "sephardi", { t, escapeHtml });
+        container.innerHTML = notice ? markup.replace('<div class="siddur-today-slot"', `${notice}<div class="siddur-today-slot"`) : markup;
         const root = container.firstElementChild;
         shown = { root, prepared, container };
         wire(root, { toc, where, kind });

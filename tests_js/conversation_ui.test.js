@@ -55,7 +55,8 @@ test('installing twice returns the same API', async () => {
             assert.equal(typeof first[name], 'function', name);
         }
         assert.equal(first.isShowingAnswer(), false);
-        assert.deepEqual({ ...first.aiRoute() }, { minhag: 'All', mode: 'balanced' });
+        // "All" ("My community") is the site's community setting: Sephardi by default.
+        assert.deepEqual({ ...first.aiRoute() }, { minhag: 'Sefardic', mode: 'balanced' });
     } finally {
         page.close();
     }
@@ -340,8 +341,8 @@ test('a question creates the conversation and shows both turns, locked to its co
         assert.equal(page.$('#convSendBtn').disabled, true);
 
         await page.ask('When do we light candles?');
-        // "All communities" is the absence of a lock, not a community of its own.
-        assert.deepEqual(page.api.calls.filter(([name]) => name === 'create').map(([, options]) => options.minhag), [null]);
+        // "My community" locks the thread to the site's community setting (Sephardi by default).
+        assert.deepEqual(page.api.calls.filter(([name]) => name === 'create').map(([, options]) => options.minhag), ['Sefardic']);
         assert.equal(turns(page).length, 2);
         assert.match(turns(page)[0].textContent, /When do we light candles\?/);
         assert.ok(turns(page)[1].querySelector('.conv-answer'));
@@ -725,9 +726,39 @@ test('a new conversation from the popover starts a fresh draft', async () => {
         await page.flush();
         assert.equal(page.store.getState().conversation, null);
         assert.equal(turns(page).length, 0);
-        assert.equal(page.store.getState().draftMinhag, 'All');
+        assert.equal(page.store.getState().draftMinhag, 'Sefardic');
         // The phone's search bar folds away so the fresh panel is not under it.
         assert.equal(collapsed, 1);
+    } finally {
+        page.close();
+    }
+});
+
+test("a new thread follows the site's community setting, live until its first question", async () => {
+    const page = await openAsk({ prefs: { minhag: 'ashkenazi' } });
+    try {
+        assert.equal(page.store.getState().draftMinhag, 'Ashkenaz');
+        page.window.ShelahState.setMinhag('mizrahi');
+        await page.flush();
+        assert.equal(page.store.getState().draftMinhag, 'Iraqi');
+        await page.ask('A question');
+        assert.deepEqual(page.api.calls.filter(([name]) => name === 'create').map(([, options]) => options.minhag), ['Iraqi']);
+        page.window.ShelahState.setMinhag('sephardi');
+        await page.flush();
+        assert.equal(page.store.getState().minhagLocked, true, 'an asked thread keeps its community');
+        assert.equal(page.store.getState().draftMinhag, 'Iraqi');
+    } finally {
+        page.close();
+    }
+});
+
+test('a community picked in the chat wins over the site setting', async () => {
+    const page = await openAsk({ prefs: { community: 'Yemenite', minhag: 'ashkenazi' } });
+    try {
+        assert.equal(page.store.getState().draftMinhag, 'Yemenite');
+        page.window.ShelahState.setMinhag('sephardi');
+        await page.flush();
+        assert.equal(page.store.getState().draftMinhag, 'Yemenite');
     } finally {
         page.close();
     }

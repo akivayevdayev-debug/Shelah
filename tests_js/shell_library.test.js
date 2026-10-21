@@ -74,6 +74,30 @@ test('every home library category opens a modal whose buttons do what they say',
     }
 });
 
+test("the Halakhah later authorities lead with the reader's community's poskim", async () => {
+    const page = await open();
+    try {
+        const achronim = (minhag) => {
+            page.window.ShelahState = { getMinhag: () => minhag };
+            page.eval(`displayedLanguage = 'en'`);
+            page.eval(`openLibraryCategory('halakhah')`);
+            const blocks = [...page.$('#libraryCategoryBody').querySelectorAll('.chapter-grid-section-block')];
+            const block = blocks.find((b) => /Later Authorities/.test(b.textContent));
+            return [...block.querySelectorAll('button')].map((b) => b.textContent.trim().split('\n')[0].trim());
+        };
+        const sephardi = achronim('sephardi');
+        assert.deepEqual(sephardi.slice(0, 3).map((t) => t.replace(/\s+/g, ' ')).map((t) => /Kaf HaChayim|Ben Ish Hai|Mishnah Berurah/.exec(t)?.[0]),
+            ['Kaf HaChayim', 'Ben Ish Hai', 'Mishnah Berurah']);
+        assert.deepEqual(achronim('mizrahi'), sephardi);
+        const ashkenazi = achronim('ashkenazi').map((t) => /Mishnah Berurah|Aruch HaShulchan|Kaf HaChayim/.exec(t)?.[0]);
+        assert.deepEqual(ashkenazi.slice(0, 2), ['Mishnah Berurah', 'Aruch HaShulchan']);
+        assert.ok(ashkenazi.indexOf('Kaf HaChayim') > 2);
+        assert.deepEqual(page.errors, []);
+    } finally {
+        page.close();
+    }
+});
+
 test('the customs modal groups a community\'s rulings by category', async () => {
     const page = await open();
     try {

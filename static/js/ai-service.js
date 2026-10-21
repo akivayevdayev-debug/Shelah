@@ -1,4 +1,4 @@
-import { getState, setState } from "./state.js";
+import { aiCommunityLens, getState, setState } from "./state.js";
 import { ACCEPT_PROGRESS, isProgressResponse, readProgressStream } from "./ask-progress.js";
 
 // This module is the canonical POST /ask implementation. It absorbed the
@@ -116,7 +116,7 @@ function askSettings(options) {
         : [];
     return {
         mode: String(options.mode || state?.prefs?.mode || "balanced"),
-        community: String(options.community || state?.prefs?.community || "All"),
+        community: String(options.community || aiCommunityLens(state?.prefs?.community)),
         language: String(options.language || state?.prefs?.language || "en"),
         onRetry: typeof options.onRetry === "function" ? options.onRetry : null,
         onProgress: typeof options.onProgress === "function" ? options.onProgress : null,

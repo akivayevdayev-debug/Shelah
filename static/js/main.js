@@ -1,4 +1,4 @@
-import { getState, setState, subscribe } from "./state.js";
+import { getMinhag, getState, onMinhagChange, setState, subscribe } from "./state.js";
 import { askAi } from "./ai-service.js";
 import {
     installGlobalErrorBoundary,
@@ -27,6 +27,7 @@ import { createAnswerShare, installShareState } from "./answer-share.js";
 import * as askHistory from "./ask-history.js";
 import { createSiddur } from "./siddur.js";
 import { installHebrewKeyboard } from "./hebrew-keyboard.js";
+import { installMinhagSetting } from "./minhag-setting.js";
 
 // Source-card markup for the conversation panel (and any classic-script caller).
 window.ShelahSourceCards = sourceCards;
@@ -83,6 +84,7 @@ function buildSiddurDeps() {
         escapeHtml: (text) => window.escapeHtml(text),
         applyHebrewDisplaySettings: (text) => window.applyHebrewDisplaySettings?.(text) ?? text,
         getPrefs: () => window.appState?.prefs || {},
+        getMinhag,
         getSunset,
         getLocation: getZmanimLocation,
         reduceMotion: () => Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches),
@@ -127,12 +129,15 @@ function initModules() {
     installConversationUI();
     // The on-screen Hebrew/English keyboard under the search bar.
     installHebrewKeyboard();
+    installMinhagSetting();
     // "Copy link" on a stored answer: conversation-ui.js moves the control
     // into the answer turn showing it and calls .show per answer. The copied
     // link is public (/a/<token>, static/js/answer-share.js).
     const answerShare = createAnswerShare();
     // The siddur view (index.html displaySiddur) and its menus.
     window.ShelahSiddur = createSiddur({ deps: buildSiddurDeps() });
+    // A new community setting redraws the siddur page on screen (its nusach notice).
+    onMinhagChange(() => window.ShelahSiddur?.rerender?.());
     window.renderSiddurMenus?.();
 
     window.ShelahAnswerLink = {

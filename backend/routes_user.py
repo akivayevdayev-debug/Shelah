@@ -25,6 +25,7 @@ from backend.auth import (
 )
 from backend.device_identity import filter_owner, require_history_owner
 from backend.helpers import _json_object_body
+from backend.minhag import normalize_minhag
 
 from app import (
     STRICT_SUPABASE_RLS,
@@ -226,6 +227,11 @@ def _user_preferences_put_response(table, user_id):
     prefs = payload.get("prefs")
     if not isinstance(prefs, dict):
         return jsonify({"error": "prefs must be an object"}), 400
+    if "minhag" in prefs:
+        # Read back by the calendar, siddur and AI: only a known community
+        # is stored (anything else is dropped, so the default applies).
+        minhag = normalize_minhag(prefs.get("minhag"))
+        prefs = {**prefs, "minhag": minhag} if minhag else {k: v for k, v in prefs.items() if k != "minhag"}
 
     shelf = payload.get("shelf")
     notes = payload.get("notes")
