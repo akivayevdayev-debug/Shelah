@@ -120,13 +120,13 @@ export function createCommentaryPreloader(options) {
             .map((row) => resolveRef(row))
             .filter((nextRef, i, all) => nextRef && nextRef !== ref && all.indexOf(nextRef) === i);
         if (!nextRefs.length) return;
-        neighborTimer = setTimer(async () => {
-            for (const [i, nextRef] of nextRefs.entries()) {
-                if (staleFor(ref)) return;
-                await guarded(loadLinks, nextRef);
-                if (i === 0 && !staleFor(ref)) await guarded(loadTexts, nextRef);
-            }
-        }, neighborMs);
+        const preloadNeighbor = async (i) => {
+            if (i >= nextRefs.length || staleFor(ref)) return;
+            await guarded(loadLinks, nextRefs[i]);
+            if (i === 0 && !staleFor(ref)) await guarded(loadTexts, nextRefs[i]);
+            await preloadNeighbor(i + 1);
+        };
+        neighborTimer = setTimer(() => preloadNeighbor(0), neighborMs);
     }
 
     function evaluate() {

@@ -747,9 +747,10 @@ test('the settings menu changes the mode and community and remembers both as the
         assert.ok(page.$('#convMinhagSelect').options.length > 3);
 
         const deep = page.$('[data-conv-mode="sources"]');
-        assert.ok(deep, 'a Deep mode button exists');
-        page.click(deep);
-        assert.equal(deep.getAttribute('aria-checked'), 'true');
+        assert.ok(deep, 'a Deep mode option exists');
+        page.click(deep.querySelector('input'));
+        assert.equal(deep.querySelector('input').checked, true);
+        assert.equal(page.$('[data-conv-mode="balanced"] input').checked, false);
 
         const select = page.$('#convMinhagSelect');
         select.value = 'Ashkenaz';

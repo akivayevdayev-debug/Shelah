@@ -91,7 +91,11 @@ export async function startServer(env, { attempts = 120, waitMs = 500 } = {}) {
         stdio: "ignore",
     });
     const base = `http://127.0.0.1:${port}`;
-    for (let i = 0; i < attempts; i += 1) {
+    const probe = async (attempt) => {
+        if (attempt >= attempts) {
+            child.kill("SIGTERM");
+            throw new Error("the server did not start");
+        }
         try {
             const res = await fetch(`${base}/`);
             if (res.ok) return { base, stop: () => child.kill("SIGTERM") };
@@ -99,9 +103,9 @@ export async function startServer(env, { attempts = 120, waitMs = 500 } = {}) {
             /* not up yet */
         }
         await new Promise((r) => setTimeout(r, waitMs));
-    }
-    child.kill("SIGTERM");
-    throw new Error("the server did not start");
+        return probe(attempt + 1);
+    };
+    return probe(0);
 }
 
 export function chromePath() {
@@ -154,16 +158,20 @@ export async function openPage(browser, base, route, cell, { blockScripts, onReq
 export async function pool(tasks, n) {
     const out = new Array(tasks.length);
     let next = 0;
-    await Promise.all(
-        Array.from({ length: n }, async () => {
-            while (next < tasks.length) {
-                const i = next;
-                next += 1;
-                out[i] = await tasks[i]();
-            }
-        }),
-    );
+    const work = async () => {
+        if (next >= tasks.length) return;
+        const i = next;
+        next += 1;
+        out[i] = await tasks[i]();
+        await work();
+    };
+    await Promise.all(Array.from({ length: n }, work));
     return out;
+}
+
+/** Awaits task(item) for each item, one after the other. */
+export function inSequence(items, task) {
+    return items.reduce((chain, item) => chain.then(() => task(item)), Promise.resolve());
 }
 
 // ── in-page: which rules of the page's own stylesheets match the first paint ──
@@ -326,22 +334,18 @@ export function pageSerialize(keepByHref) {
 // The rule paths each stylesheet keeps, over every route and matrix cell of a kind.
 export async function collectKept(browser, base, kind) {
     const union = {}; // href -> Set(rule paths)
-    for (const [route, matrix] of KINDS[kind]) {
-        const cells = cellsFor(matrix);
-        const results = await pool(
-            cells.map((cell) => async () => {
-                const { page, close } = await openPage(browser, base, route, cell, { blockScripts: true });
-                const kept = await page.evaluate(pageKeepRules);
-                await close();
-                return kept;
-            }),
-            4,
-        );
-        for (const kept of results) {
-            for (const [key, paths] of Object.entries(kept)) {
-                if (!union[key]) union[key] = new Set();
-                for (const p of paths) union[key].add(p);
-            }
+    const tasks = KINDS[kind].flatMap(([route, matrix]) =>
+        cellsFor(matrix).map((cell) => async () => {
+            const { page, close } = await openPage(browser, base, route, cell, { blockScripts: true });
+            const kept = await page.evaluate(pageKeepRules);
+            await close();
+            return kept;
+        }),
+    );
+    for (const kept of await pool(tasks, 4)) {
+        for (const [key, paths] of Object.entries(kept)) {
+            if (!union[key]) union[key] = new Set();
+            for (const p of paths) union[key].add(p);
         }
     }
     return union;
@@ -469,7 +473,7 @@ export async function main({ argv = process.argv, puppeteer = require("puppeteer
     try {
         if (!verifyOnly) {
             const critical = {};
-            for (const kind of Object.keys(KINDS)) {
+            await inSequence(Object.keys(KINDS), async (kind) => {
                 const started = Date.now();
                 const { code, order, routes } = await extractKind(browser, source.base, kind);
                 const file = `css/critical-${kind}.css`;
@@ -477,7 +481,7 @@ export async function main({ argv = process.argv, puppeteer = require("puppeteer
                 fs.writeFileSync(path.join(MIN, file), code);
                 critical[kind] = { file, sourcesHash: manifest.css.sourcesHash, routes };
                 console.log(`${kind.padEnd(5)} ${(code.length / 1024).toFixed(1)} KB from ${order.length} sheets, ${routes.length} route(s) (${((Date.now() - started) / 1000).toFixed(0)} s)`);
-            }
+            });
             manifest.css.critical = critical;
             fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
         }
@@ -491,12 +495,12 @@ export async function main({ argv = process.argv, puppeteer = require("puppeteer
     const browser2 = await puppeteer.launch({ executablePath: chromePath(), headless: true });
     let failed = 0;
     try {
-        for (const kind of Object.keys(KINDS)) {
+        await inSequence(Object.keys(KINDS), async (kind) => {
             const { bad, cells } = await verifyKind(browser2, shipped.base, kind);
             const outcome = bad ? `${bad} of ${cells} cells differ` : `all ${cells} cells identical`;
             console.log(`verify ${kind.padEnd(5)} ${outcome}`);
             failed += bad;
-        }
+        });
     } finally {
         await browser2.close();
         shipped.stop();

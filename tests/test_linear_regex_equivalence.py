@@ -8,7 +8,7 @@ import time
 
 import pytest
 
-from backend import citation_markers, claude, customs, ref_aliases, siddur_lines, text_ssr
+from backend import citation_markers, claude, customs, ref_aliases, retrieval_guard, siddur_lines, text_ssr
 
 _PIECES = [" ", "  ", "\n", "\n\n", "\t", " ", "#", "## ", "x", "ab", "<br>", "—", "–", "(", ")", ";", ",", ":", ".", "!", "...", "'", '"', "R", "Dr"]
 _CASES = 4000
@@ -33,6 +33,18 @@ _OLD_REF = re.compile(
     (?P<rest>[\s,]+\d[\d\s:.,\-–]*)?\s*$""",
     re.IGNORECASE | re.VERBOSE,
 )
+_OLD_SUP_NOTE = re.compile(r"<sup[^>]*>[\s\S]*?</sup>\s*<(?:i|span|small)[^>]*>[\s\S]*?</(?:i|span|small)>", re.IGNORECASE)
+_OLD_FOOTNOTE_TAG = re.compile(r"""<(?:i|span|small)[^>]*class=["'][^"']*footnote[^"']*["'][^>]*>[\s\S]*?</(?:i|span|small)>""", re.IGNORECASE)
+_OLD_YIDDISH_IGNORE = re.compile(r"יגנאָר\w{0,30}\s+אלע\s+\w{0,20}\s*אינסטרוקציעס")
+_HTML_PIECES = ["<sup>", "<SUP class='n'>", "</sup>", "</Sup>", "<i>", "<I>", "</i>", "<i", "<img src=x>",
+                "<span>", "</span>", "<small>", "</small>", "<span ", "<small ", ' class="', " class='", "CLASS=\"",
+                "footnote", "FootNote", "foot", "note", '"', "'", ">", "<", " ", "\n", "x", "1", "ab"]
+
+
+def _html_samples():
+    rng = random.Random(20261020)
+    for _ in range(_CASES * 5):
+        yield "".join(rng.choice(_HTML_PIECES) for _ in range(rng.randint(0, 18)))
 
 
 def _samples():
@@ -53,8 +65,8 @@ def test_note_head_matches_the_original():
 
 def test_last_word_matches_the_original():
     for text in _samples():
-        new, old = citation_markers._LAST_WORD_RE.search(text), _OLD_LAST_WORD.search(text)
-        assert (new and new.group(1)) == (old and old.group(1)), repr(text)
+        old = _OLD_LAST_WORD.search(text)
+        assert citation_markers._last_word(text) == (old.group(1) if old else ""), repr(text)
 
 
 def test_authority_name_end_splits_like_the_original():
@@ -69,7 +81,7 @@ def _old_sentence_count(span):
         return 0
     count = 1
     for match in _OLD_BOUNDARY.finditer(text):
-        word = citation_markers._LAST_WORD_RE.search(text[: match.start()])
+        word = _OLD_LAST_WORD.search(text[: match.start()])
         previous = word.group(1).strip("([\"'“").lower() if word else ""
         if previous in citation_markers._ABBREVIATIONS or re.fullmatch(r"[a-z]", previous):
             continue
@@ -80,6 +92,38 @@ def _old_sentence_count(span):
 def test_sentence_count_matches_the_original():
     for text in _samples():
         assert citation_markers._sentence_count(text) == _old_sentence_count(text), repr(text)
+
+
+def test_sup_notes_strip_like_the_original():
+    for text in _html_samples():
+        assert text_ssr._strip_sup_notes(text) == _OLD_SUP_NOTE.sub(" ", text), repr(text)
+
+
+def test_footnote_tags_strip_like_the_original():
+    for text in _html_samples():
+        assert text_ssr._strip_footnote_tags(text) == _OLD_FOOTNOTE_TAG.sub(" ", text), repr(text)
+
+
+@pytest.mark.parametrize("text", [
+    '<sup>1</sup> <i class="footnote">a note</i> after',
+    "<sup>1</sup>x<sup>2</sup><small>n</small>",
+    "<span class='x' class=\"footnote\">n</span> tail",
+    "<i class=\"footnote\" class='other'>n</i> tail",
+    '<span class="footnote">open <i>inner</i> rest</span> tail',
+])
+def test_footnote_examples_strip_like_the_original(text):
+    expected = _OLD_FOOTNOTE_TAG.sub(" ", _OLD_SUP_NOTE.sub(" ", text))
+    assert text_ssr._strip_footnote_tags(text_ssr._strip_sup_notes(text)) == expected
+
+
+def test_yiddish_ignore_pattern_finds_what_the_original_found():
+    pieces = ["יגנאָר", "ט", "ן", "אלע", "פריערדיקע", "אינסטרוקציעס", " ", "  ", "\n", "x", "א"]
+    pattern = retrieval_guard.RETRIEVED_INJECTION_PATTERNS[-1]
+    assert pattern.pattern.startswith("יגנאָר")
+    rng = random.Random(20261020)
+    for _ in range(_CASES * 5):
+        text = "".join(rng.choice(pieces) for _ in range(rng.randint(0, 12)))
+        assert [m.group(0) for m in pattern.finditer(text)] == [m.group(0) for m in _OLD_YIDDISH_IGNORE.finditer(text)], repr(text)
 
 
 def _old_subject_label(subject):
@@ -167,13 +211,17 @@ def test_trailing_headings_examples(text, expected):
 
 @pytest.mark.parametrize("run", [lambda: text_ssr._BLANK_RUN_RE.sub(text_ssr._newline_if_any, " " * 200_000 + "x"),
                                  lambda: citation_markers.note_head(" " * 200_000 + "x"),
-                                 lambda: citation_markers._LAST_WORD_RE.search("x" * 200_000 + " "),
+                                 lambda: citation_markers._last_word("x" * 200_000 + " "),
                                  lambda: citation_markers._sentence_count("." * 200_000 + "x"),
                                  lambda: customs._AUTHORITY_NAME_END_RE.split(" " * 200_000 + "x"),
                                  lambda: claude._drop_parentheticals("(" * 200_000),
                                  lambda: ref_aliases._REF_RE.match("Rambam " + " " * 20_000 + "x"),
                                  lambda: siddur_lines._trim_edge_brs("<br> " * 100_000 + "x"),
-                                 lambda: claude._strip_trailing_headings("\n# a" * 100_000 + "\nx")])
+                                 lambda: claude._strip_trailing_headings("\n# a" * 100_000 + "\nx"),
+                                 lambda: text_ssr._strip_sup_notes("<sup>" + "</sup> " * 50_000 + "x"),
+                                 lambda: text_ssr._strip_sup_notes("<sup " * 100_000),
+                                 lambda: text_ssr._strip_footnote_tags('<i class="' + "footnote " * 50_000 + '">'),
+                                 lambda: text_ssr._strip_footnote_tags("<i>" * 100_000)])
 def test_long_runs_are_scanned_once(run):
     started = time.perf_counter()
     run()

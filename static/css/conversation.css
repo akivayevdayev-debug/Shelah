@@ -524,7 +524,7 @@ body.conv-modal-open {
 }
 
 :is(.conv-icon-btn, .conv-new-btn, .conv-pop__new, .conv-list__item, .conv-send,
-    .conv-mode-opt, .conv-web-opt, .conv-menu__item, .conv-link-btn, .conv-jump, .conv-turn__retry,
+    .conv-web-opt, .conv-menu__item, .conv-link-btn, .conv-jump, .conv-turn__retry,
     .topbar-ask-btn, .ai-tip__try, .ai-tip__dismiss, .conv-signin-follow__btn,
     .conv-cite__preview > summary, .mobile-search-tray__ask, .conv-pip__open, .conv-cite a,
     .conv-select, .conv-mic, .conv-sharepop__btn, .conv-toast__action, .conv-toast__close,
@@ -611,7 +611,12 @@ body.conv-modal-open {
 .conv-panel[data-layout="mobile"] .conv-header { position: relative; }
 .conv-panel[data-layout="mobile"] .conv-menu-wrap { position: static; }
 .conv-panel[data-layout="mobile"] .conv-menu { inset-inline-end: var(--sp-4); }
+/* A <fieldset>: drop its margin and min-content minimum, and isolate its
+   text direction as the <div> it replaced did. */
 .conv-menu {
+    margin: 0;
+    min-inline-size: 0;
+    unicode-bidi: isolate;
     position: absolute;
     inset-block-start: calc(100% + var(--sp-1));
     inset-inline-end: 0;
@@ -692,7 +697,12 @@ body.conv-modal-open {
     grid-template-columns: 1fr 1fr;
     gap: var(--sp-1);
 }
+/* A label around a visually hidden radio, laid out like the buttons it replaced. */
 .conv-mode-opt {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     min-height: var(--hit-min);
     padding: var(--sp-1) var(--sp-2);
     border-radius: var(--radius-inner);
@@ -705,13 +715,17 @@ body.conv-modal-open {
     transition: background-color var(--motion-dur-fast) var(--motion-ease-out);
 }
 .conv-mode-opt:hover { background: var(--ctrl-bg-hover); }
+.conv-mode-opt:has(:focus-visible) {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
 /* Selected: filled + a check glyph, not colour alone. */
-.conv-mode-opt[aria-checked="true"] {
+.conv-mode-opt:has(:checked) {
     background: var(--accent-primary);
     border-color: var(--accent-primary);
     color: var(--conv-on-accent);
 }
-.conv-mode-opt[aria-checked="true"]::before {
+.conv-mode-opt:has(:checked)::before {
     content: '';
     display: inline-block;
     inline-size: 1em;
@@ -2126,7 +2140,10 @@ body.conv-modal-open {
 
 /* ── Mobile search tray: a floating pill that rises from behind the tab
    bar while search is open ── */
+/* A <fieldset>: no min-content minimum, and the <div>'s bidi isolation. */
 .mobile-search-tray {
+    min-inline-size: 0;
+    unicode-bidi: isolate;
     position: fixed;
     z-index: var(--conv-z-bar);
     inset-inline: 0;
@@ -2169,7 +2186,7 @@ body.conv-modal-open {
 }
 @media (min-width: 1024px) {
     .mobile-search-tray,
-    .conv-pip { display: none !important; }
+    .conv-pip { display: none; }
 }
 
 /* ── Topbar "Ask AI" (desktop, beside the search bar) ─────────────── */

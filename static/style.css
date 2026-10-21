@@ -86,6 +86,25 @@ body {
     position: relative;
 }
 
+/* Popovers and panels marked up as an always-open <dialog> (shown and hidden
+   by their own classes, never show()/showModal()): undo the browser's dialog
+   box so they lay out like the plain blocks their own rules expect. :where()
+   keeps this at zero specificity, so any of their rules wins. */
+:where(dialog.dialog-box-reset) {
+    position: static;
+    inset: auto;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+    background: transparent;
+    color: inherit;
+    unicode-bidi: isolate;
+}
+
 h1,
 h2,
 h3,
@@ -447,7 +466,6 @@ h6 {
     justify-content: center;
     position: relative; /* anchors the ::after touch-target hit-slop below */
     border-radius: 0.35rem;
-    transition: background var(--motion-dur-fast) var(--motion-ease-out), border-color var(--motion-dur-fast) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 /* 2026-09 revision: the translucent warm-stone chip this rule used to draw
@@ -557,8 +575,6 @@ html.rtl #hebrewDateDisplay {
 .topbar-user-menu-btn {
     font-family: Georgia, "Times New Roman", serif;
     color: var(--control-text-strong);
-    border-color: var(--control-border);
-    background: #fff;
 }
 
 /* Same 18px line box as the other top-bar buttons (Tailwind's text-xs,
@@ -571,7 +587,6 @@ html.rtl #hebrewDateDisplay {
 
 .topbar-user-menu-btn:hover,
 .topbar-user-menu-btn:focus-visible {
-    background: var(--control-bg-hover);
     color: var(--control-text-strong);
 }
 
@@ -603,10 +618,8 @@ html.rtl #hebrewDateDisplay {
     font-family: Georgia, "Times New Roman", serif;
     line-height: 1.25;
     color: #334155;
-    display: flex !important;
     align-items: center;
     min-height: 1.5rem;
-    padding: var(--sp-1) var(--sp-3) !important;
     border-radius: var(--radius-sm);
     visibility: visible;
     opacity: 1;
@@ -615,14 +628,29 @@ html.rtl #hebrewDateDisplay {
     text-decoration: none;
 }
 
+/* Layout and hover fill are qualified by the element type: the rows also
+   carry the block / px-3 / py-1.5 / hover:bg-slate-100 utilities, which load
+   after this sheet and would win a tie with the bare class. */
+a.topbar-user-menu-item,
+button.topbar-user-menu-item {
+    display: flex;
+    padding: var(--sp-1) var(--sp-3);
+}
+
 @media (pointer: coarse) {
     .topbar-user-menu-item { min-height: var(--hit-min); }
 }
 
 .topbar-user-menu-item:hover,
 .topbar-user-menu-item:focus-visible {
-    background: #f4eee2 !important;
     color: #223e5a;
+}
+
+a.topbar-user-menu-item:hover,
+a.topbar-user-menu-item:focus-visible,
+button.topbar-user-menu-item:hover,
+button.topbar-user-menu-item:focus-visible {
+    background: #f4eee2;
 }
 
 :is([data-theme="dark"], body.theme-dark) #userProfileMenu {
@@ -637,7 +665,7 @@ html.rtl #hebrewDateDisplay {
 :is([data-theme="dark"], body.theme-dark) .topbar-user-menu-item:hover,
 :is([data-theme="dark"], body.theme-dark) .topbar-user-menu-item:focus-visible {
     background: var(--control-bg-hover) !important;
-    color: var(--control-text-strong) !important;
+    color: var(--control-text-strong);
 }
 
 /* Settings Panel & General Button Styling for Tailwind Compatibility */
@@ -864,24 +892,34 @@ html[dir="rtl"] #searchInput {
 .menu-parasha-quick-link {
     border: 1px solid #c8b79d;
     background: linear-gradient(180deg, #fffaf1 0%, #f4ebdb 100%);
-    color: #1f3f63 !important;
     border-radius: 0.55rem;
-    padding: 0.28rem 0.55rem !important;
     font-weight: 700;
     letter-spacing: 0.01em;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+/* Colour and padding sit one id higher than the class above: the link also
+   carries the text-[#1f3f63] / hover:text-[#102b45] / py-0.5 utilities, which
+   load after this sheet and would otherwise win the tie. */
+#leftSidebar .menu-parasha-quick-link {
+    color: #1f3f63;
+    padding: 0.28rem 0.55rem;
 }
 
 .menu-parasha-quick-link:hover,
 .menu-parasha-quick-link:focus-visible {
     background: #efe3d0;
     border-color: #a59072;
-    color: #16324f !important;
 }
 
 /* The lift is a mouse gesture: a tap on a touch screen would leave it stuck. */
 @media (hover: hover) and (pointer: fine) {
     .menu-parasha-quick-link:hover { transform: translateY(-1px); }
+}
+
+#leftSidebar .menu-parasha-quick-link:hover,
+#leftSidebar .menu-parasha-quick-link:focus-visible {
+    color: #16324f;
 }
 
 .segment-row {
@@ -1291,7 +1329,7 @@ html[dir="rtl"] #searchInput {
    of #prayer-display after each render (so the reader's font-size control
    reaches nested markup), which would otherwise always beat this rule. */
 #reader .prayer-clean-lines small {
-    font-size: 0.83em !important;
+    font-size: 0.83em;
     font-style: italic;
     text-decoration: underline dotted;
     text-underline-offset: 0.15em;
@@ -1395,7 +1433,7 @@ html.theme-dark::-webkit-scrollbar-thumb,
 html.theme-dark::-webkit-scrollbar-thumb:hover,
 :is([data-theme="dark"], body.theme-dark)::-webkit-scrollbar-thumb:hover,
 :is([data-theme="dark"], body.theme-dark) ::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--control-border) 150%, var(--surface-elevated)) !important;
+    background: color-mix(in srgb, var(--control-border) 150%, var(--surface-elevated));
 }
 
 /* Dark mode: sidebar scrollbars use a lighter thumb for contrast */
@@ -1419,7 +1457,7 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar::-webkit-scrollbar-thumb:hover,
 :is([data-theme="dark"], body.theme-dark) #rightSidebar::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--text-muted) 60%, var(--control-border)) !important;
+    background: color-mix(in srgb, var(--text-muted) 60%, var(--control-border));
 }
 
 /* ═══════════════════════════════════════════════════════════════════ */
@@ -1452,7 +1490,7 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
 .fc-col-header-cell-cushion,
 .fc-daygrid-day-number {
     color: #475569;
-    text-decoration: none !important;
+    text-decoration: none;
 }
 
 .fc-day-today {
@@ -1593,8 +1631,8 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
 
     #leftSidebar,
     #rightSidebar {
-        width: 16rem !important;
-        min-width: 16rem !important;
+        width: 16rem;
+        min-width: 16rem;
         padding-inline-start: 0.9rem;
         padding-inline-end: 0.9rem;
     }
@@ -1604,8 +1642,8 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
 
     #leftSidebar,
     #rightSidebar {
-        width: 14.75rem !important;
-        min-width: 14.75rem !important;
+        width: 14.75rem;
+        min-width: 14.75rem;
     }
 }
 
@@ -1908,11 +1946,11 @@ html.rtl #readerTopBar .reader-topbar-settings-label {
        topbar with no margin hack needed. #mainContainer's padding-top makes
        up the space this bar now occupies over the reader column only. */
     position: absolute;
-    top: var(--reader-topbar-offset, 4.35rem) !important;
+    top: var(--reader-topbar-offset, 4.35rem);
     border-top: 1px solid #d8cfbe;
     border-bottom: 1px solid #d8cfbe;
-    border-inline-start: 0 !important;
-    border-inline-end: 0 !important;
+    border-inline-start: 0;
+    border-inline-end: 0;
     /* Very subtle translucency: the reader column scrolls underneath this
        bar (#mainContainer's padding-top sits under it), so a ~93% surface
        mix plus a soft blur lets the text shadow through without costing
@@ -2300,8 +2338,8 @@ body.shul-mode #reader #readerContent,
 body.shul-mode #reader .source-he,
 body.shul-mode #reader .source-en,
 body.shul-mode #reader #prayer-display {
-    font-size: calc(var(--reader-font-size) + 6px) !important;
-    line-height: calc(var(--reader-line-height) + 0.15) !important;
+    font-size: calc(var(--reader-font-size) + 6px);
+    line-height: calc(var(--reader-line-height) + 0.15);
 }
 
 @media (max-width: 1024px) {
@@ -2662,7 +2700,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 
 .today-zmanim-list [data-zman-row] {
     background: transparent;
-    border-radius: 0 !important;
+    border-radius: 0;
     padding-inline-start: 0;
     padding-inline-end: 0;
 }
@@ -2670,7 +2708,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 .today-zmanim-list [data-zman-row].zman-next-highlight {
     background: #f2eadb;
     border: 1px solid #d7c7ae;
-    border-radius: 0.45rem !important;
+    border-radius: 0.45rem;
     padding-inline-start: 0.45rem;
     padding-inline-end: 0.45rem;
 }
@@ -2697,12 +2735,12 @@ html.rtl .home-main-layout #popularTextsGrid {
         padding-inline-end: max(0.5rem, env(safe-area-inset-right));
     }
 
-    .topbar-search-wrap {
-        display: none !important;
+    .topbar .topbar-search-wrap {
+        display: none;
     }
 
-    body.mobile-search-open .topbar-search-wrap {
-        display: flex !important;
+    body.mobile-search-open .topbar .topbar-search-wrap {
+        display: flex;
         grid-column: 1 / -1;
         order: 5;
         margin-top: 0.35rem;
@@ -3256,7 +3294,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 }
 
 .library-shell .library-node-open.library-node-active:hover {
-    background: #ede2d0 !important;
+    background: #ede2d0;
     color: #433728;
 }
 
@@ -3273,7 +3311,7 @@ html.rtl .home-main-layout #popularTextsGrid {
     }
 }
 
-.library-shell :where(button, [role="button"], input, select, textarea, .mobile-tab-btn, .sidebar-show-tab, .suggestion-item) {
+.library-shell :where(button, [role="button"], input, select, textarea, .mobile-tab-btn, .sidebar-show-tab, .suggestion-item, .conv-mode-opt) {
     transition:
         background-color var(--motion-dur-base) var(--motion-ease-out),
         color var(--motion-dur-base) var(--motion-ease-out),
@@ -3457,7 +3495,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .text-slate-700 {
-    color: var(--tw-dark-text-slate-700) !important;
+    color: var(--tw-dark-text-slate-700);
 }
 
 :is([data-theme="dark"], body.theme-dark) .text-slate-600 {
@@ -3727,7 +3765,7 @@ html.theme-dark,
 :is([data-theme="dark"], body.theme-dark) #readerSettingsPanel select {
     background-color: var(--surface-pill) !important;
     border-color: var(--conv-edge);
-    color: var(--accent-cream) !important;
+    color: var(--accent-cream);
 }
 
 /* Dark overlay backgrounds - neutralize to prevent color bleed */
@@ -3769,12 +3807,12 @@ html.theme-dark,
 
 /* Dark calendar button active states */
 :is([data-theme="dark"], body.theme-dark) .fc .fc-button-primary:not(:disabled).fc-button-active {
-    background-color: var(--control-bg-hover) !important;
-    border-color: var(--surface-border) !important;
+    background-color: var(--control-bg-hover);
+    border-color: var(--surface-border);
 }
 
 :is([data-theme="dark"], body.theme-dark) .fc .fc-button-primary:not(:disabled).fc-button-active:focus {
-    background-color: var(--control-bg) !important;
+    background-color: var(--control-bg);
 }
 
 /* Per-category event backgrounds now come from calendar.css's .fc-event.cal-cat-*
@@ -3823,12 +3861,6 @@ html.theme-dark,
    controls placed on top of them (--surface-2/--ctrl-bg, via --surface-elevated
    elsewhere), so the panel itself reads as a distinct backdrop instead of
    blending into its own contents. */
-:is([data-theme="dark"], body.theme-dark) #selectionInsights {
-    background: var(--surface-elevated);
-    border-color: var(--surface-border);
-    color: var(--accent-cream);
-}
-
 :is([data-theme="dark"], body.theme-dark) #aiTrustSection {
     background: var(--surface-pill);
     border-color: var(--surface-border);
@@ -3941,13 +3973,6 @@ html.theme-dark,
 
 :is([data-theme="dark"], body.theme-dark) .chapter-grid-parasha-meta {
     color: var(--text-muted);
-}
-
-:is([data-theme="dark"], body.theme-dark) .menu-parasha-quick-link:hover,
-:is([data-theme="dark"], body.theme-dark) .menu-parasha-quick-link:focus-visible {
-    background: var(--control-strong-bg);
-    border-color: color-mix(in srgb, var(--gold) 50%, var(--control-border));
-    color: var(--control-text-strong);
 }
 
 :is([data-theme="dark"], body.theme-dark) .chapter-grid-group-label {
@@ -4088,7 +4113,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) #rightSidebar::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--text-muted) 60%, var(--control-border)) !important;
+    background: color-mix(in srgb, var(--text-muted) 60%, var(--control-border));
 }
 
 :is([data-theme="dark"], body.theme-dark) .home-section-label,
@@ -4199,7 +4224,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .today-zmanim-list [data-zman-row] b {
-    color: var(--accent-cream) !important;
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) .today-zmanim-list [data-zman-row].zman-next-highlight {
@@ -4223,7 +4248,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .library-node-open.library-node-active {
-    background: transparent !important;
+    background: transparent;
     border: 0;
     border-inline-start: 3px solid var(--gold);
     color: var(--accent-cream);
@@ -4231,7 +4256,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .library-node-open.library-node-active:hover {
-    background: rgba(68, 60, 48, 0.35) !important;
+    background: rgba(68, 60, 48, 0.35);
     color: var(--control-text-strong);
 }
 
@@ -4254,7 +4279,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) #searchSuggestions .suggestion-item[class*="bg-[#efe5d4]"] .text-slate-800 {
-    color: var(--accent-cream) !important;
+    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) .shelf-open:focus-visible,
@@ -4361,7 +4386,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="hover:bg-[#"]:hover {
-    background-color: var(--control-bg-hover) !important;
+    background-color: var(--control-bg-hover);
 }
 
 :is([data-theme="dark"], body.theme-dark) #leftSidebar [class*="hover:text-[#"]:hover,
@@ -4517,7 +4542,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: var(--control-bg-hover) !important;
+    background: var(--control-bg-hover);
 }
 
 /* RTL Overrides for Mobile Drawers */
@@ -4641,11 +4666,11 @@ html[dir="rtl"] .mobile-drawer-right.mobile-open {
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody .text-slate-700,
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody .text-slate-800 {
-    color: var(--text-main) !important;
+    color: var(--text-main);
 }
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody .text-slate-500 {
-    color: var(--text-muted) !important;
+    color: var(--text-muted);
 }
 
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody .border-slate-100,
@@ -4674,8 +4699,8 @@ html.rtl #readerTopBar #readerLibraryTopBarBtn {
 
 /* dark mode - menu parasha quick link fix */
 :is([data-theme="dark"], body.theme-dark) .menu-parasha-quick-link {
-    background: linear-gradient(180deg, var(--surface-elevated) 0%, var(--surface-pill) 100%) !important;
-    border-color: var(--control-border) !important;
+    background: linear-gradient(180deg, var(--surface-elevated) 0%, var(--surface-pill) 100%);
+    border-color: var(--control-border);
     color: var(--accent-cream);
     box-shadow: inset 0 0 0 1px rgba(201, 168, 78, 0.18);
 }
@@ -4739,7 +4764,7 @@ html.rtl #readerTopBar #readerLibraryTopBarBtn {
 
 :is([data-theme="dark"], body.theme-dark) #holidayName,
 :is([data-theme="dark"], body.theme-dark) #shabbatWeekName,
-:is([data-theme="dark"], body.theme-dark) #omerCount { color: var(--accent-cream) !important; }
+:is([data-theme="dark"], body.theme-dark) #omerCount { color: var(--accent-cream); }
 
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .text-slate-400,
 :is([data-theme="dark"], body.theme-dark) #settingsPanel p.text-\[11px\],
@@ -4755,7 +4780,7 @@ html.rtl #readerTopBar #readerLibraryTopBarBtn {
 
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .text-slate-700,
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .text-slate-600,
-:is([data-theme="dark"], body.theme-dark) #settingsPanel .text-slate-500 { color: var(--accent-cream) !important; }
+:is([data-theme="dark"], body.theme-dark) #settingsPanel .text-slate-500 { color: var(--accent-cream); }
 
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .border-slate-100,
 :is([data-theme="dark"], body.theme-dark) #settingsPanel .border-slate-200 { border-color: var(--surface-border); }

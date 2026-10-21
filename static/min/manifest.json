@@ -4,34 +4,34 @@
   "css": {
     "sources": {
       "css/tokens.css": "sha256:7b01e9225f66c026bcd37f3a33955c310b1dd82a3ae45e30e71fb0659e595bb7",
-      "style.css": "sha256:0de83527661a7ee83494d0677478f029c2d48829cc5a35ecbe24821620c14cfa",
+      "style.css": "sha256:c7f8f0550656583949546f6c5a6352d33434012aa8c1bb18c92cd64d562a3ccb",
       "css/typography.css": "sha256:8cc5129450f6f17c2825dc900a5ab184de1b6900bcb9175d4c92ee2eadbdb772",
-      "css/reader.css": "sha256:51e699b6fcc6602c111dc9ecdb42474c60f0ebf846639e099fb916e7279dd5ce",
-      "css/sidebar.css": "sha256:f1f3bb78011922187d3d84a2b2de426d099b37880e2730035c86245c595c4744",
+      "css/reader.css": "sha256:58663fd76b75281605d3ea852d2c973db5f1bd611ee2796a1b7eef773d035fce",
+      "css/sidebar.css": "sha256:465efac7a72b08fd377521dfc69571c6e80f4ee2d7fe5d473c8fc6641dbe434c",
       "css/halacha.css": "sha256:d56991aac19afaa3175434312588862a5a63b32c46d7d07d2f70e23fd9e049bf",
       "css/prayer.css": "sha256:70cf28909030c0816176889df96729aca7618f9088de74d324f9c9a38812c78d",
       "css/siddur.css": "sha256:a0f9ff9421234014d4b6db03e9728e67a1ff2a4a26d1b523143f2e10d6852804",
-      "css/ai.css": "sha256:05f8d0b60417edc567326e29d5499a58de2017e3fa5ddb89b19e8f9f3e9777bc",
-      "css/conversation.css": "sha256:4c5923399e803bede595f14eeb46f6a7a9ce32be5c1996efeee53aa454b5820c",
+      "css/ai.css": "sha256:42455413aaf552a740ccfd493d56b8db8dc0b641934329139a4fe03d371156b6",
+      "css/conversation.css": "sha256:806ccda84b6750ca70c035325fa135c75a99761417bfdf08f6c38c42d01d83bd",
       "css/history.css": "sha256:ff1556ed62eceadb953ed9a9b4325d70410a97e1bceff2271a07b5ebe213218c",
-      "css/calendar.css": "sha256:dcc8a5e0d31c1becb85bdeb64e3bbae0a9655d4ea8a5bf458e9a6a04b6b54885",
+      "css/calendar.css": "sha256:a945342013952570f32e29075fbe95163f4d92ecafd9c6fd789e4d58414ad038",
       "css/calendar-detail.css": "sha256:d14b9c9ed0a63a3d7f396d41e264781bf319897b773fd2ea2e7d7189cafed9ed",
       "css/loading.css": "sha256:10eaad855917d62df7a5d396c0bbb8a487d529d846bc3233637e7eb42e5a3211",
       "css/tailwind.css": "sha256:f72a1c23017da8c8925e8004c0d6b85d73ee8ee7b23f76f812a891f14ea63613"
     },
-    "sourcesHash": "1a6098cba2f22fdf611de90fa8c1db73a0446449647677a0e8e236788be6784f",
+    "sourcesHash": "0f3caec23b5402e5a5e940e37442cc062ab9edd295b9cedcbd775142561d62a4",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "1a6098cba2f22fdf611de90fa8c1db73a0446449647677a0e8e236788be6784f",
+        "sourcesHash": "0f3caec23b5402e5a5e940e37442cc062ab9edd295b9cedcbd775142561d62a4",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "1a6098cba2f22fdf611de90fa8c1db73a0446449647677a0e8e236788be6784f",
+        "sourcesHash": "0f3caec23b5402e5a5e940e37442cc062ab9edd295b9cedcbd775142561d62a4",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "1a6098cba2f22fdf611de90fa8c1db73a0446449647677a0e8e236788be6784f",
+        "sourcesHash": "0f3caec23b5402e5a5e940e37442cc062ab9edd295b9cedcbd775142561d62a4",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
@@ -78,7 +78,7 @@
         "source": "sha256:eb2bad4c77b42cee50161aed9d4b0832ab6fb83a3ee2d65a353298f9751d60f7"
       },
       "shell.js": {
-        "source": "sha256:4ca2c4b7bce342f46919551ac641f4a538475b3ec0628492e86d835558632460"
+        "source": "sha256:a459841187af660c9fb89bfa39f265bc244d437e8359bd00c99b7205dbe9a752"
       },
       "topbar_shared.js": {
         "source": "sha256:27a797b3deffea688349051bba6539490d19d018205f4c9721cd4d69e0bb17c3"
@@ -99,14 +99,14 @@
         "calendar-detail.js": "sha256:c387bbef34e9aadd7ef5bae9c92600cb986a3652ac923967da6c45023921831d",
         "citation-markers.js": "sha256:4a6039289400517dfa19bb0fff4aa4971c3e1191371ecd20b814f98e90693e6e",
         "citation-popover.js": "sha256:2452698153bb4f782f2787f88ec31a17633c5004c2a7627d8038de30491586e5",
-        "commentary-preload.js": "sha256:4c616d94e2898761172ecedf51b9c2019f6fbeeb10fca6d033af4976248683f7",
+        "commentary-preload.js": "sha256:cf65eaeb787cf274935198f04b0272ea693fef7c565c5516c3fd6bf203e706ff",
         "conversation-api.js": "sha256:90e204fc21e4d650d8209f53b4196d27c49a5b3abf33aefd32f550b8450d508a",
         "conversation-entry.js": "sha256:25f9b62da24bcf0965429fa8162bc3b9dfa348b17ce0fdfa0d898ef945d24677",
         "conversation-mini.js": "sha256:7bfc8667bd3450b352041f8ab7a06e07351db19bcfb44e68e9cb1b1f0fbe149f",
         "conversation-share.js": "sha256:558e3e593caba8f29042c936d285ff8eb1564712f1d44255b92d651f3b0faa08",
-        "conversation-store.js": "sha256:fe916eafa985be1bcd8d1a25f27309d69e7190df9c108c5fb19a6e0f6c411d91",
+        "conversation-store.js": "sha256:6036610b2a46e85e05f491dadefb245799dc6c2f388ae69424355c0a83c64a3e",
         "conversation-ui-helpers.js": "sha256:707d151c8ebb6fe0b3d2d21f9d85d0240627683df8d17a1cd0b5de9080cb5add",
-        "conversation-ui.js": "sha256:4e8557e27ab4b18a8ecb4b433564370894423f81210f3c90cd3e3c3399625b7e",
+        "conversation-ui.js": "sha256:8b037a1f0e1795bc8d349d1930c9c2a9d3c53807524030343c4fbf8539d004f0",
         "conversation-voice.js": "sha256:332db925ab4ba23df1815de3d434ff61c9cb68948bd44a01ddbb46f577bb4e31",
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
         "main.js": "sha256:f2f8344c40e23c295f9b9211f253a6e8aae7b45356af70a8bfc6445a7b48ef91",
@@ -130,11 +130,11 @@
         "js/community-labels.js": "87dfbcba156b",
         "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/load-region.js": "2833ed602bea",
-        "js/main.js": "b5dcd08149a1",
+        "js/main.js": "e8883479536e",
         "js/motion.js": "247715a0f89d",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "5f32eede1174",
-        "js/shell.js": "ebed08b08e10",
+        "js/shell.js": "e572645a7e23",
         "js/topbar_shared.js": "55aa1d245dcc"
       },
       "unreached": []

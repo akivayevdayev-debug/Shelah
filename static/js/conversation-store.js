@@ -212,6 +212,17 @@ function errorInfo(error) {
     };
 }
 
+// errorInfo() for a one-shot /ask failure. A guest-limit refusal also
+// carries which limit it was and the counters, for the modal.
+function searchErrorInfo(error) {
+    const info = { ...errorInfo(error), code: searchErrorCode(error) };
+    if (info.code === SEARCH_ERROR_CODES.GUEST_CAP) {
+        info.reason = error.reason || "thread_questions";
+        info.usage = error.usage || null;
+    }
+    return info;
+}
+
 function viewFor(data, request = null) {
     const id = String(data?.history_id || data?.id || "").trim();
     return { historyId: data?.public ? null : id || null, isPublic: Boolean(data?.public), request };
@@ -250,17 +261,6 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
     function nextLocalId() {
         localCounter += 1;
         return `${LOCAL_ID_PREFIX}${localCounter}`;
-    }
-
-    // errorInfo() for a one-shot /ask failure. A guest-limit refusal also
-    // carries which limit it was and the counters, for the modal.
-    function searchErrorInfo(error) {
-        const info = { ...errorInfo(error), code: searchErrorCode(error) };
-        if (info.code === SEARCH_ERROR_CODES.GUEST_CAP) {
-            info.reason = error.reason || "thread_questions";
-            info.usage = error.usage || null;
-        }
-        return info;
     }
 
     // The onProgress hook handed to the ask clients. Steps from a request the

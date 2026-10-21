@@ -429,7 +429,6 @@
 
 #popularTextsGrid button { --hover-lift-shadow: 0 4px 12px rgba(0, 0, 0, 0.09); }
 .home-calendar-btn { --hover-lift-shadow: 0 3px 10px rgba(78, 64, 30, 0.18); }
-.sidebar-show-tab { --hover-lift-shadow: 0 6px 18px rgba(15, 23, 42, 0.08); }
 
 #popularTextsGrid button::after,
 .home-calendar-btn::after,
@@ -551,13 +550,18 @@
     transform: scale(0.97);
 }
 
-.topbar-flat-btn {
+/* `#authControls > .topbar-flat-btn` is the Sign In button: style.css fades
+   every direct child of the auth slot with an ID rule (#authControls > *), and
+   that opacity fade is only meant for the pages that never load this file
+   (the legal pages), so it must not win here. */
+.topbar-flat-btn,
+#authControls > .topbar-flat-btn {
     transition: background-color var(--motion-dur-fast) var(--motion-ease-out), color var(--motion-dur-fast) var(--motion-ease-out), border-color var(--motion-dur-fast) var(--motion-ease-out),
-        transform var(--motion-dur-fast) var(--motion-ease-out) !important;
+        transform var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 .topbar-flat-btn:active {
-    transform: scale(0.94) !important;
+    transform: scale(0.94);
 }
 
 /* Touch: the home "this week's parasha" link and the search field are a
@@ -621,7 +625,7 @@
 }
 
 #mobileDrawerBackdrop.hidden {
-    opacity: 0 !important;
+    opacity: 0;
     pointer-events: none;
 }
 
@@ -839,8 +843,9 @@ body.search-loading .search-liftoff-underlay::before {
 
 /* ── Library sidebar tab ─────────────────────────────────── */
 .sidebar-show-tab {
+    --hover-lift-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
     transition: opacity var(--motion-dur-base) var(--motion-ease-out), transform var(--motion-dur-base) var(--motion-ease-decel),
-        background var(--motion-dur-fast) var(--motion-ease-out) !important;
+        background var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1320,6 +1325,9 @@ body.theme-dark .answer-link-btn {
 .answer-link-btn svg {
     flex-shrink: 0;
 }
+
+/* An <output>: keep the bidi behaviour of the <span> it replaced. */
+.answer-link-status { unicode-bidi: normal; }
 
 /* Announced to screen readers always; shown on screen only when it's an
    error or the manual-copy hint (the button itself says "Copied!"). */
