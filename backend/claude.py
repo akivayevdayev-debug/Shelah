@@ -140,6 +140,13 @@ _MIN_MODEL_CALL_SECONDS = 1.0
 # budget -- and a retry that much plus its longest backoff wait.
 _GEMINI_MIN_TIMEOUT_SECONDS = 10.0
 _GEMINI_RETRY_WAIT_MAX_SECONDS = 4.0
+# The Claude fallback is all that stands between a failed Gemini call and the
+# reader's error message, so Gemini does not get to spend the last stretch of the
+# budget: no attempt or retry is sized to leave Claude less than this (an attempt
+# still gets its own 10s minimum). Before, a Gemini 504 DEADLINE_EXCEEDED after a
+# full 30s attempt left 15s, which looked like room for a retry; the retry then
+# ran into the end of the budget and Claude was skipped ("ai_budget_exhausted").
+_CLAUDE_FALLBACK_RESERVE_SECONDS = 15.0
 
 # time.monotonic() deadline for the model calls of the current /ask synthesis,
 # set by _call_primary_model(). A contextvar rather than a parameter so the
@@ -168,6 +175,22 @@ def _model_call_timeout() -> float:
     if remaining is None:
         return float(MODEL_REQUEST_TIMEOUT_SECONDS)
     return min(float(MODEL_REQUEST_TIMEOUT_SECONDS), remaining)
+
+
+def _gemini_call_timeout() -> float:
+    """HTTP timeout for the next Gemini attempt: _model_call_timeout() less the
+    reserve kept for the Claude fallback, but never under Gemini's own minimum
+    deadline (when the budget is too short for that, the caller declines the
+    attempt)."""
+    remaining = _remaining_model_budget()
+    if remaining is None:
+        return float(MODEL_REQUEST_TIMEOUT_SECONDS)
+    if remaining < _GEMINI_MIN_TIMEOUT_SECONDS:
+        return remaining
+    return min(
+        float(MODEL_REQUEST_TIMEOUT_SECONDS),
+        max(remaining - _CLAUDE_FALLBACK_RESERVE_SECONDS, _GEMINI_MIN_TIMEOUT_SECONDS),
+    )
 
 # Agentic tool-use gate. Unconditionally OFF by
 # default in every environment -- unlike CLERK_ENFORCE_AUTH's prod-aware
@@ -758,14 +781,17 @@ def _extract_gemini_response_text(response: Any) -> str:
 
 
 def _is_retryable_gemini_error(exc: BaseException) -> bool:
-    """True only for a rate-limit/overload response (see
-    _RETRYABLE_GEMINI_STATUS_CODES) -- and only while the backoff wait plus
-    a full minimum-length attempt still fit in the remaining budget."""
+    """True only for a rate-limit/overload/deadline response (see
+    _RETRYABLE_GEMINI_STATUS_CODES) -- and only while the backoff wait plus a
+    full minimum-length attempt still fit in the remaining budget with the
+    Claude fallback's reserve left over."""
     if getattr(exc, "code", None) not in _RETRYABLE_GEMINI_STATUS_CODES:
         return False
     remaining = _remaining_model_budget()
     return remaining is None or (
-        remaining >= _GEMINI_MIN_TIMEOUT_SECONDS + _GEMINI_RETRY_WAIT_MAX_SECONDS)
+        remaining >= _GEMINI_MIN_TIMEOUT_SECONDS
+        + _GEMINI_RETRY_WAIT_MAX_SECONDS
+        + _CLAUDE_FALLBACK_RESERVE_SECONDS)
 
 
 # Status codes that say this request was bad, not that Gemini is down. A 400
@@ -844,8 +870,9 @@ def _generate_gemini_content_with_retry(
     history_turns: Optional[List[Dict[str, str]]] = None,
 ) -> Any:
     """Gemini content generation, retried only on 429/503/504, with each
-    attempt's HTTP timeout clamped to the remaining synthesis budget."""
-    timeout = _model_call_timeout()
+    attempt's HTTP timeout clamped to the remaining synthesis budget less the
+    Claude fallback's reserve."""
+    timeout = _gemini_call_timeout()
     if timeout < _GEMINI_MIN_TIMEOUT_SECONDS:
         raise TimeoutError("ai_budget_exhausted")
     config = None
@@ -3117,7 +3144,11 @@ async def _call_anthropic_httpx_model(
 
     def _error_result(error: str) -> Dict[str, Any]:
         if gemini_error:
-            error = f"gemini_error: {gemini_error}; {error}"
+            # _call_gemini_model already tagged a real Gemini failure
+            # "gemini_error: ...", so tag only the bare reasons (a closed circuit,
+            # a missing key) to avoid "gemini_error: gemini_error: ...".
+            tag = "" if gemini_error.startswith("gemini_error:") else "gemini_error: "
+            error = f"{tag}{gemini_error}; {error}"
         return {
             "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
             "confidence": 0,
