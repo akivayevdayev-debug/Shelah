@@ -78,6 +78,7 @@ _CORPUS_EXACT = {
     "/api/word/meaning",
     "/api/library/search",
     "/api/search/suggest",
+    "/api/search/verses",
     "/api/geocode",
 }
 _CORPUS_PREFIX = "/api/community/"  # /api/community/<name> and /api/community/<name>/timeline

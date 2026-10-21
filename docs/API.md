@@ -35,7 +35,7 @@ Every route is served from one Vercel deployment. The base URL in production is 
 | [Ask](#ask-pipeline) | `POST /ask` |
 | [Conversations](#conversations) | `/api/conversations` (+ `/<id>`, `/<id>/messages`, `/<id>/restore`, `/<id>/ask`, `/<id>/share`) |
 | [History and sharing](#answer-history-and-sharing) | `/api/user/history` (+ `/<id>`, `/<id>/share`), `/api/public/answer/<token>`; [conversation sharing](#conversation-sharing) and [device identity](#device-identity) |
-| [Library and texts](#library-and-texts) | `/api/library/*`, `/api/texts-index`, `/api/text/<ref>` (+ `/links`, `/graph`), `/api/sidebar/<ref>`, `/api/search/suggest`, `/api/word/meaning`, `/api/export/chapter`, `/api/diagnostics/sefaria` |
+| [Library and texts](#library-and-texts) | `/api/library/*`, `/api/texts-index`, `/api/text/<ref>` (+ `/links`, `/graph`), `/api/sidebar/<ref>`, `/api/search/suggest`, `/api/search/verses`, `/api/word/meaning`, `/api/export/chapter`, `/api/diagnostics/sefaria` |
 | [Prayers and siddur](#prayers-and-siddur) | `/api/prayers/list`, `/api/prayer/<name>`, `/api/siddur/v2/*`, `/api/siddur/full/*`, `/api/siddur/section-refs/*` |
 | [Calendar and location](#calendar-and-location) | `/set_location`, `/api/geocode`, `/api/zmanim` (+ `/month`, `/days`), `/api/daily-study`, `/api/holidays`, `/api/parasha` |
 | [Communities](#communities) | `/api/communities`, `/api/communities/list`, `/api/community/<name>` (+ `/timeline`) |
@@ -328,7 +328,7 @@ Each route is classified by path prefix (first match wins; a route pattern for `
 |---|---|---|---|
 | `llm` | 20 anonymous, 40 signed in, plus 200/day signed in | fails **closed** | `/ask`, `/api/conversations/<id>/ask` |
 | `heavy` | 10 | open | `/api/export/chapter`, `/api/siddur/full/*` |
-| `fanout` | 30 | open | `/api/library/search`, `/api/text/*`, `/api/word/meaning`, `/api/geocode`, `/api/public/answer/*` |
+| `fanout` | 30 | open | `/api/library/search`, `/api/search/verses`, `/api/text/*`, `/api/word/meaning`, `/api/geocode`, `/api/public/answer/*` |
 | `sidebar` | 90 | open | `/api/sidebar/*` |
 | `feedback` | 10 | open | `/api/feedback` |
 | `telemetry` | 10 | open | `/api/client-errors` |
@@ -542,6 +542,13 @@ Omnibox suggestions: popular Torah aliases, communities, prayer books, text hits
 
 - **Query:** `q` (empty returns `[]`), `size` (default 8, 1–20).
 - **Response (200):** an array, best first, of `{"type": "text" | "prayer" | "community" | "ask", "label", "label_he", "value", "subtitle", "subtitle_he", "score"}`.
+
+### `GET /api/search/verses`
+
+Verses whose words match the query, for the search bar's "Verses" group (backend/verse_search.py). Hebrew is matched with or without nikud and te'amim, English too, and a phrase from the middle of a verse finds it. Uses Sefaria's full-text index (`/api/search-wrapper`), Tanakh first (the books themselves, not commentary filed under them), then the rest of the library. When no verse matches as typed (a typo), each word is left out in turn and the rest searched with a little slack; those results are marked `"match": "close"` and take the top half. Class `fanout`. Cache: corpus-derived tier, and the server memoises each normalised query for ten minutes.
+
+- **Query:** `q` (empty, or fewer than 3 letters, returns no results without searching), `size` (default 6, 1–12).
+- **Response (200):** `{"query": "<normalised>", "close": <bool>, "results": [{"ref", "heRef", "categories", "tanakh", "lang": "he" | "en", "match": "exact" | "close", "parts": [{"text", "match"}]}]}`. `close` is `true` when nothing matched exactly. `parts` is the verse snippet as plain text, with `match: true` on the matched words; upstream HTML is never passed through. Sefaria unavailable → an empty `results`, not an error.
 
 ### `GET /api/word/meaning`
 
@@ -948,7 +955,7 @@ Nothing here is meant for end users. Gating matters because several of these rev
 |---|---|---|
 | Immutable | `public, s-maxage=86400, stale-while-revalidate=604800` | `/api/library/index`, `/api/library/leaf-refs`, `/api/library/popular`, `/api/library/category/*`, `/api/texts-index`, `/api/text/*`, `/api/prayer/*`, `/api/siddur/full/*`, `/api/siddur/section-refs/*`, `/api/siddur/v2/day`, `/api/siddur/v2/service/*` |
 | Deterministic by date | `public, s-maxage=3600, stale-while-revalidate=86400` | `/api/zmanim`, `/api/zmanim/month`, `/api/zmanim/days`, `/api/daily-study`, `/api/holidays`, `/api/parasha` |
-| Corpus-derived | `public, s-maxage=3600, stale-while-revalidate=86400` | `/api/communities/list`, `/api/communities`, `/api/prayers/list`, `/api/word/meaning`, `/api/library/search`, `/api/search/suggest`, `/api/geocode`, `/api/community/*`, `/api/siddur/v2/toc/*` |
+| Corpus-derived | `public, s-maxage=3600, stale-while-revalidate=86400` | `/api/communities/list`, `/api/communities`, `/api/prayers/list`, `/api/word/meaning`, `/api/library/search`, `/api/search/suggest`, `/api/search/verses`, `/api/geocode`, `/api/community/*`, `/api/siddur/v2/toc/*` |
 | Private | `private, no-store` | `/ask`, `/set_location`, and every other `/api/*` route; an unclassified route is never accidentally made public |
 
 `/api/zmanim` and `/api/zmanim/month` drop to `private` when they fall back to the session location. `docs/VERCEL_COST_OPTIMIZATION.md` explains why the tiers exist and what they save.

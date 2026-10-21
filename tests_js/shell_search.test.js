@@ -52,7 +52,7 @@ const suggestions = (page) => page.$$('#searchSuggestions .suggestion-item').map
     label: item.querySelector('.text-sm').textContent,
     subtitle: item.querySelector('.text-xs').textContent,
     badge: item.querySelector('span')?.textContent ?? '',
-    active: item.classList.contains('bg-[#efe5d4]'),
+    active: item.getAttribute('aria-selected') === 'true',
 }));
 /** The lookups a search makes (the page's own background requests are not its business). */
 const searchRequests = (page) => page.takeCalls().filter((request) => /^\/api\/(text\/|library\/search|search\/)/.test(request.url));
@@ -317,7 +317,7 @@ test('typing asks the server once the typing has paused', async () => {
         page.type('#searchInput', 'gen');
         page.type('#searchInput', 'gene');
         assert.deepEqual(searchRequests(page), [], 'nothing yet while the keys are still going');
-        await sleep(260);
+        await sleep(320);
         await page.settle();
         const asked = searchRequests(page).map((request) => new URL(request.url, 'https://shelah.org').searchParams.get('q'));
         assert.deepEqual(asked, ['gene'], 'one request, for the final text');
@@ -1267,6 +1267,289 @@ test('Enter in the city box searches; Escape and a click outside close the popov
         assert.equal(page.$('#citySearchPopover').classList.contains('hidden'), false, 'the button opens it, and is not an outside click');
         page.click(page.$('#citySearchBtn'));
         assert.equal(page.$('#citySearchPopover').classList.contains('hidden'), true, 'and closes it again');
+    } finally {
+        page.close();
+    }
+});
+
+// ── Verse search (GET /api/search/verses, backend/verse_search.py) ─────────
+
+const VERSES = {
+    query: 'שמע ישראל',
+    close: false,
+    results: [
+        {
+            ref: 'Deuteronomy 6:4', heRef: 'דברים ו׳:ד׳', lang: 'he', tanakh: true, match: 'exact',
+            parts: [{ text: 'שְׁמַע יִשְׂרָאֵל', match: true }, { text: ' יְהוָה אֱלֹהֵינוּ', match: false }],
+        },
+        {
+            ref: 'Rashi on Deuteronomy 6:4:1', heRef: 'רש״י על דברים ו׳:ד׳:א׳', lang: 'he', tanakh: false, match: 'exact',
+            parts: [{ text: 'שמע ישראל', match: true }],
+        },
+    ],
+};
+const REFS = [
+    { type: 'text', value: 'Shema', label: 'Shema', subtitle: 'Liturgy' },
+    { type: 'ask', value: 'שמע ישראל', label: 'שמע ישראל' },
+];
+
+/** Answers suggest with `refs` and verses with `verses` (a value, or a function of the url). */
+function answerBoth(page, { refs = REFS, verses = VERSES } = {}) {
+    const calls = [];
+    page.window.fetch = (input, init) => {
+        const url = String(input);
+        calls.push({ url, init });
+        if (url.startsWith('/api/search/suggest')) return Promise.resolve(reply(refs));
+        if (url.startsWith('/api/search/verses')) {
+            return typeof verses === 'function' ? verses(url, init) : Promise.resolve(reply(verses));
+        }
+        return Promise.resolve({ ok: false, status: 404, json: async () => ({}), text: async () => '' });
+    };
+    return calls;
+}
+
+const groupHeading = (page) => page.$('#searchSuggestions [role="group"] .suggestion-group-heading')?.textContent ?? null;
+const verseOptions = (page) => page.$$('#searchSuggestions [role="group"] [role="option"]');
+
+test('words of a verse ask for verses too: references first, then the verses, then the offer to ask', async () => {
+    const page = await openPage();
+    try {
+        page.eval('suppressSuggestionMenu = false');
+        const calls = answerBoth(page);
+        await page.call('fetchOmniboxSuggestions', 'שמע ישראל');
+        const urls = calls.map((call) => call.url).filter((url) => url.startsWith('/api/search/'));
+        assert.equal(urls.length, 2);
+        assert.match(urls[0], /^\/api\/search\/suggest\?/, 'the quick list is asked first');
+        assert.equal(new URL(urls[1], 'https://shelah.org').searchParams.get('q'), 'שמע ישראל');
+        assert.deepEqual(suggestions(page).map((item) => item.label), [
+            'Shema', 'Deuteronomy 6:4', 'Rashi on Deuteronomy 6:4:1', "Ask Sh'elah: שמע ישראל",
+        ]);
+        assert.equal(groupHeading(page), 'Verses');
+        assert.equal(verseOptions(page).length, 2);
+        assert.deepEqual(suggestions(page).slice(1, 3).map((item) => item.badge), ['Verse', 'Text'],
+            'a verse of Tanakh is a verse; a commentary is a text');
+        assert.equal(status(page), '4 suggestions');
+    } finally {
+        page.close();
+    }
+});
+
+test('the verse shows in its own script and direction, with the matched words marked', async () => {
+    const page = await openPage();
+    try {
+        page.eval('suppressSuggestionMenu = false');
+        answerBoth(page);
+        await page.call('fetchOmniboxSuggestions', 'שמע ישראל');
+        const snippet = verseOptions(page)[0].querySelector('.suggestion-verse-snippet');
+        assert.equal(snippet.getAttribute('lang'), 'he');
+        assert.equal(snippet.getAttribute('dir'), 'rtl');
+        assert.deepEqual(Array.from(snippet.querySelectorAll('mark')).map((m) => m.textContent), ['שְׁמַע יִשְׂרָאֵל']);
+        assert.equal(snippet.textContent, 'שְׁמַע יִשְׂרָאֵל יְהוָה אֱלֹהֵינוּ');
+    } finally {
+        page.close();
+    }
+});
+
+test('a snippet is shown as text, whatever it contains', async () => {
+    const page = await openPage();
+    try {
+        page.eval('suppressSuggestionMenu = false');
+        answerBoth(page, {
+            verses: { close: false, results: [{ ref: 'Genesis 1:3', lang: 'en', tanakh: true, parts: [{ text: '<img src=x onerror=alert(1)>', match: true }] }] },
+        });
+        await page.call('fetchOmniboxSuggestions', 'let there be light');
+        const snippet = verseOptions(page)[0].querySelector('.suggestion-verse-snippet');
+        assert.equal(snippet.querySelector('img'), null);
+        assert.equal(snippet.textContent, '<img src=x onerror=alert(1)>');
+        assert.equal(snippet.getAttribute('dir'), 'ltr');
+    } finally {
+        page.close();
+    }
+});
+
+test('while the verses load, the references show above a skeleton that the verses replace', async () => {
+    const page = await openPage();
+    try {
+        page.eval('suppressSuggestionMenu = false');
+        let release;
+        answerBoth(page, { verses: () => new Promise((resolve) => { release = () => resolve(reply(VERSES)); }) });
+        const pending = page.call('fetchOmniboxSuggestions', 'שמע ישראל');
+        await page.settle();
+        assert.equal(listVisible(page), true);
+        assert.deepEqual(suggestions(page).map((item) => item.label), ['Shema', "Ask Sh'elah: שמע ישראל"]);
+        assert.equal(page.$$('#searchSuggestions .suggestion-skeleton').length, 2);
+        assert.equal(page.$('#searchSuggestions .suggestion-skeleton').getAttribute('aria-hidden'), 'true');
+        release();
+        await pending;
+        assert.equal(page.$$('#searchSuggestions .suggestion-skeleton').length, 0);
+        assert.equal(verseOptions(page).length, 2);
+    } finally {
+        page.close();
+    }
+});
+
+test('the highlight stays on the same suggestion when the verses arrive', async () => {
+    const page = await openPage();
+    try {
+        page.eval('suppressSuggestionMenu = false');
+        let release;
+        answerBoth(page, { verses: () => new Promise((resolve) => { release = () => resolve(reply(VERSES)); }) });
+        const pending = page.call('fetchOmniboxSuggestions', 'שמע ישראל');
+        await page.settle();
+        page.key('#searchInput', 'ArrowDown');
+        page.key('#searchInput', 'ArrowDown');
+        assert.equal(suggestions(page).find((item) => item.active).label, "Ask Sh'elah: שמע ישראל");
+        release();
+        await pending;
+        assert.equal(suggestions(page).find((item) => item.active).label, "Ask Sh'elah: שמע ישראל");
+    } finally {
+        page.close();
+    }
+});
+
+test('nothing exact: the group says these are close matches', async () => {
+    const page = await openPage();
+    try {
+        page.eval('suppressSuggestionMenu = false');
+        answerBoth(page, { refs: [], verses: { ...VERSES, close: true } });
+        await page.call('fetchOmniboxSuggestions', 'שמע ישרל');
+        assert.equal(groupHeading(page), 'Close matches');
+    } finally {
+        page.close();
+    }
+});
+
+test('a verse search that fails leaves the references, quietly', async () => {
+    const page = await openPage();
+    try {
+        page.eval('suppressSuggestionMenu = false');
+        answerBoth(page, { verses: () => Promise.reject(new Error('offline')) });
+        await page.call('fetchOmniboxSuggestions', 'שמע ישראל');
+        assert.deepEqual(suggestions(page).map((item) => item.label), ['Shema', "Ask Sh'elah: שמע ישראל"]);
+        assert.equal(groupHeading(page), null);
+        assert.equal(page.reliability.some((line) => line.includes('suggestions-error')), false);
+    } finally {
+        page.close();
+    }
+});
+
+test('one word or a reference with numbers does not search verses', async () => {
+    const page = await openPage();
+    try {
+        page.eval('suppressSuggestionMenu = false');
+        const calls = answerBoth(page);
+        await page.call('fetchOmniboxSuggestions', 'Shema');
+        await page.call('fetchOmniboxSuggestions', 'Genesis 1:3');
+        assert.equal(calls.filter((call) => call.url.startsWith('/api/search/verses')).length, 0);
+    } finally {
+        page.close();
+    }
+});
+
+test('the same words again, with or without nikud, come from the cache', async () => {
+    const page = await openPage();
+    try {
+        page.eval('suppressSuggestionMenu = false');
+        const calls = answerBoth(page);
+        await page.call('fetchOmniboxSuggestions', 'שמע ישראל');
+        await page.call('fetchOmniboxSuggestions', 'שְׁמַע   יִשְׂרָאֵל');
+        assert.equal(calls.filter((call) => call.url.startsWith('/api/search/verses')).length, 1);
+        assert.equal(verseOptions(page).length, 2);
+    } finally {
+        page.close();
+    }
+});
+
+test('a newer query cancels the older one\'s requests', async () => {
+    const page = await openPage();
+    try {
+        page.eval('suppressSuggestionMenu = false');
+        const calls = answerBoth(page, { verses: () => new Promise(() => {}) });
+        void page.call('fetchOmniboxSuggestions', 'שמע ישראל');
+        await page.settle();
+        const first = calls.filter((call) => call.url.startsWith('/api/search/'));
+        assert.equal(first.every((call) => call.init?.signal?.aborted === false), true);
+        void page.call('fetchOmniboxSuggestions', 'ואהבת את');
+        await page.settle();
+        assert.equal(first.every((call) => call.init.signal.aborted), true);
+    } finally {
+        page.close();
+    }
+});
+
+test('the field is a combobox: expanded with the list, naming the highlighted option', async () => {
+    const page = await openPage();
+    try {
+        page.eval('suppressSuggestionMenu = false');
+        answerBoth(page);
+        const input = page.$('#searchInput');
+        assert.equal(input.getAttribute('role'), 'combobox');
+        assert.equal(input.getAttribute('aria-controls'), 'searchSuggestions');
+        assert.equal(input.getAttribute('aria-expanded'), 'false');
+        await page.call('fetchOmniboxSuggestions', 'שמע ישראל');
+        assert.equal(page.$('#searchSuggestions').getAttribute('role'), 'listbox');
+        assert.equal(input.getAttribute('aria-expanded'), 'true');
+        assert.equal(input.hasAttribute('aria-activedescendant'), false);
+        page.key('#searchInput', 'ArrowDown');
+        page.key('#searchInput', 'ArrowDown');
+        const id = input.getAttribute('aria-activedescendant');
+        assert.equal(page.document.getElementById(id).textContent.includes('Deuteronomy 6:4'), true);
+        assert.equal(page.document.getElementById(id).getAttribute('aria-selected'), 'true');
+        assert.equal(page.$$('#searchSuggestions [aria-selected="true"]').length, 1);
+        page.key('#searchInput', 'Escape');
+        assert.equal(input.getAttribute('aria-expanded'), 'false');
+        assert.equal(input.hasAttribute('aria-activedescendant'), false);
+    } finally {
+        page.close();
+    }
+});
+
+test('pressing an option keeps focus in the field', async () => {
+    const page = await openPage();
+    try {
+        await showItems(page);
+        const event = new page.window.MouseEvent('mousedown', { bubbles: true, cancelable: true });
+        page.$('#searchSuggestions .suggestion-item').dispatchEvent(event);
+        assert.equal(event.defaultPrevented, true);
+    } finally {
+        page.close();
+    }
+});
+
+test('a verse opens its chapter at the verse, marked, and clears the search', async () => {
+    const page = await openPage();
+    try {
+        page.eval(`
+            window.__reads = [];
+            readText = async (ref, options) => {
+                window.__reads.push([ref, JSON.parse(JSON.stringify(options || {}))]);
+                const sources = document.getElementById('readerSources');
+                sources.innerHTML = '<div class="reader-source-clean" data-text-chunk-ref="' + getRefTrackingKey(ref) + '">'
+                    + '<div class="segment-row" data-segment="3">a</div><div class="segment-row" data-segment="4">b</div></div>';
+            };
+        `);
+        page.$('#searchInput').value = 'שמע ישראל';
+        const opened = await page.call('openSearchTarget', { type: 'verse', value: 'Deuteronomy 6:4' });
+        assert.equal(opened, true);
+        const [[ref, options]] = plain(page.eval('window.__reads'));
+        assert.equal(ref, 'Deuteronomy 6');
+        assert.equal(options.restoreScroll.view, 'text');
+        assert.equal(options.restoreScroll.anchor.segment, '4');
+        assert.equal(options.restoreScroll.anchor.ref, page.call('getRefTrackingKey', 'Deuteronomy 6'));
+        const rows = page.$$('#readerSources .segment-row');
+        assert.deepEqual(rows.map((row) => row.classList.contains('verse-target')), [false, true]);
+        assert.equal(page.$('#searchInput').value, '', 'the search is cleared after the jump');
+    } finally {
+        page.close();
+    }
+});
+
+test('a verse ref without a trailing number opens as it is', async () => {
+    const page = await openPage();
+    try {
+        const nav = recordNavigation(page);
+        await page.call('openSearchTarget', { type: 'verse', value: 'Introduction to Zohar' });
+        assert.deepEqual(nav(), [['text', 'Introduction to Zohar']]);
     } finally {
         page.close();
     }

@@ -401,3 +401,32 @@ body.theme-dark .reader-source-clean+.reader-source-clean {
         transition: none;
     }
 }
+
+/* The verse opened from the search list (shell.js revealVerse): a tint that
+   holds, then fades (opacity only, on an overlay). With reduced motion it
+   stays still and goes when the class is removed. */
+.segment-row.verse-target {
+    position: relative;
+}
+
+.segment-row.verse-target::after {
+    content: '';
+    position: absolute;
+    inset: -2px -4px;
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--accent-gold) 24%, transparent);
+    box-shadow: inset 3px 0 0 var(--accent-gold);
+    pointer-events: none;
+    animation: shelah-cite-highlight 2.4s var(--motion-ease-out) both;
+}
+
+html.rtl .segment-row.verse-target::after {
+    box-shadow: inset -3px 0 0 var(--accent-gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .segment-row.verse-target::after {
+        animation: none;
+        opacity: 1;
+    }
+}

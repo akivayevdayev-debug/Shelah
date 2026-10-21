@@ -750,6 +750,193 @@ html[dir="rtl"] #searchInput {
     padding-right: var(--sp-4);
 }
 
+/* On-screen keyboard (static/js/hebrew-keyboard.js). The button sits just
+   inside the bar, before the search icon; it draws 32px but its ::before
+   reaches the 44px touch minimum. The input keeps room for both. */
+#searchForm #searchInput {
+    padding-right: calc(var(--sp-12) * 2);
+}
+
+html[dir="rtl"] #searchForm #searchInput {
+    padding-left: calc(var(--sp-12) * 2);
+    padding-right: var(--sp-4);
+}
+
+.search-kbd-btn {
+    position: absolute;
+    top: 50%;
+    right: calc(var(--sp-12) + var(--sp-2));
+    width: var(--sp-8);
+    height: var(--sp-8);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    color: var(--ink-secondary);
+    background: transparent;
+    transform: translateY(-50%);
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out),
+        color var(--motion-dur-fast) var(--motion-ease-out);
+}
+
+.search-kbd-btn::before {
+    content: "";
+    position: absolute;
+    inset: calc((var(--sp-8) - var(--hit-min)) / 2);
+}
+
+html[dir="rtl"] .search-kbd-btn {
+    right: auto;
+    left: calc(var(--sp-12) + var(--sp-2));
+}
+
+.search-kbd-btn:hover,
+.search-kbd-btn[aria-expanded="true"] {
+    background: var(--control-bg-hover);
+    color: var(--ink-primary);
+}
+
+.search-kbd-btn[aria-expanded="true"] {
+    color: var(--control-accent);
+}
+
+.search-kbd-btn:active {
+    transform: translateY(-50%) scale(0.94);
+}
+
+/* The panel: under the bar, its full width and left edge. */
+.hebrew-kbd {
+    position: absolute;
+    top: calc(100% + var(--sp-2));
+    left: 0;
+    right: 0;
+    z-index: 81;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    padding: var(--sp-2);
+    background: var(--surface-elevated);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    transform-origin: top center;
+    /* Keys sit where they are on a physical keyboard (ק under E, as on an
+       Israeli one) whatever the page direction. */
+    direction: ltr;
+}
+
+.hebrew-kbd.hidden {
+    display: none;
+}
+
+.kbd-row {
+    display: flex;
+    justify-content: center;
+    gap: var(--sp-1);
+}
+
+
+.kbd-key {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: var(--sp-12);
+    height: var(--hit-min);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--control-border);
+    border-radius: var(--radius-sm);
+    background: var(--control-bg);
+    color: var(--control-text-strong);
+    font-size: clamp(1rem, 0.9rem + 0.4vw, 1.2rem);
+    line-height: 1;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out),
+        transform var(--motion-dur-fast) var(--motion-ease-out);
+}
+
+.kbd-key[lang="he"] {
+    font-family: var(--font-hebrew);
+}
+
+/* A Hebrew key's Latin letter, small in the corner as on a printed
+   Israeli keyboard. */
+.kbd-key {
+    position: relative;
+}
+
+.kbd-sub {
+    position: absolute;
+    right: var(--sp-1);
+    bottom: 2px;
+    font-family: var(--font-sans, sans-serif);
+    font-size: 0.625rem;
+    line-height: 1;
+    color: var(--ink-secondary);
+}
+
+/* Shift / Caps Lock while on: never colour alone, the border thickens too. */
+.kbd-key[aria-pressed="true"] {
+    background: var(--control-bg-hover);
+    border-color: var(--control-accent);
+    box-shadow: inset 0 0 0 1px var(--control-accent);
+    color: var(--ink-primary);
+}
+
+.kbd-enter {
+    background: var(--control-strong-bg);
+    border-color: var(--control-strong-bg);
+    color: var(--ink-on-accent);
+}
+
+.kbd-enter:hover {
+    background: var(--control-strong-bg-hover);
+}
+
+.kbd-key:hover {
+    background: var(--control-bg-hover);
+}
+
+.kbd-key:active {
+    transform: scale(0.94);
+}
+
+.kbd-key-wide {
+    flex: 1.6 1 0;
+    max-width: calc(var(--sp-12) * 1.6);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.kbd-key-space {
+    flex: 4 1 0;
+    max-width: calc(var(--sp-12) * 6);
+    font-size: 0.8125rem;
+    color: var(--ink-secondary);
+}
+
+/* While the panel is open the suggestions sit below it, never under it. */
+#searchForm.kbd-open #searchSuggestions {
+    margin-top: calc(var(--hebrew-kbd-h, 0px) + var(--sp-2) * 2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kbd-key,
+    .search-kbd-btn {
+        transition: none;
+    }
+
+    .search-kbd-btn:active {
+        transform: translateY(-50%);
+    }
+
+    .kbd-key:active {
+        transform: none;
+    }
+}
+
 .search-icon-glass {
     display: inline-flex;
     transition: opacity var(--motion-dur-base) var(--motion-ease-out);
@@ -1602,6 +1789,78 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
 /* Omnibox suggestion list */
 #searchSuggestions .suggestion-item {
     transition: background-color var(--motion-dur-base) var(--motion-ease-out);
+}
+
+#searchSuggestions .suggestion-item {
+    cursor: pointer;
+    min-height: var(--hit-min);
+}
+
+#searchSuggestions .suggestion-item:not([aria-selected="true"]):hover {
+    background: var(--surface-subtle);
+}
+
+/* Verse results (backend/verse_search.py): the group's heading, the verse
+   as a two-line snippet in its own script, matched words marked by weight
+   and a tint (never the tint alone), and a skeleton of the same height
+   while they load. */
+#searchSuggestions .suggestion-group-heading {
+    padding-block: var(--sp-2) var(--sp-1);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-top: 1px solid var(--surface-border);
+}
+
+#searchSuggestions .suggestion-verse-snippet {
+    color: var(--text-muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+
+#searchSuggestions .suggestion-verse-snippet[dir="rtl"] {
+    text-align: right;
+    font-family: var(--font-hebrew);
+    font-size: 0.875rem;
+}
+
+#searchSuggestions .suggestion-verse-snippet[dir="ltr"] {
+    text-align: left;
+}
+
+#searchSuggestions .suggestion-verse-match {
+    background: color-mix(in srgb, var(--accent-gold) 22%, transparent);
+    color: var(--ink-primary);
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    padding-inline: 1px;
+}
+
+#searchSuggestions .suggestion-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    min-height: 4.25rem;
+    justify-content: center;
+}
+
+#searchSuggestions .suggestion-skeleton-title {
+    display: block;
+    height: 0.75rem;
+    width: 30%;
+}
+
+#searchSuggestions .suggestion-skeleton-text {
+    display: block;
+    height: 0.75rem;
+    width: 85%;
 }
 
 #searchSuggestions .suggestion-item:focus {
@@ -3284,7 +3543,13 @@ html.rtl .home-main-layout #popularTextsGrid {
 }
 
 .library-shell #searchSuggestions .suggestion-item[aria-selected="true"] {
-    background: #f4efe3;
+    background: var(--control-bg-hover);
+    /* Not colour alone: the highlighted option also carries an inline bar. */
+    box-shadow: inset 3px 0 0 var(--control-accent);
+}
+
+html.rtl .library-shell #searchSuggestions .suggestion-item[aria-selected="true"] {
+    box-shadow: inset -3px 0 0 var(--control-accent);
 }
 
 .library-shell .library-node-open.library-node-active {
@@ -4272,14 +4537,6 @@ html.theme-dark,
 
 :is([data-theme="dark"], body.theme-dark) .shelf-open.shelf-open-active span:last-child {
     color: var(--gold);
-}
-
-:is([data-theme="dark"], body.theme-dark) #searchSuggestions .suggestion-item[class*="bg-[#efe5d4]"] {
-    background: var(--surface-pill);
-}
-
-:is([data-theme="dark"], body.theme-dark) #searchSuggestions .suggestion-item[class*="bg-[#efe5d4]"] .text-slate-800 {
-    color: var(--accent-cream);
 }
 
 :is([data-theme="dark"], body.theme-dark) .shelf-open:focus-visible,

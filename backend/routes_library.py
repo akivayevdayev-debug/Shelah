@@ -844,6 +844,20 @@ def _collect_text_hit_suggestions(query, size, metadata_filters, suggestions, se
             )
 
 
+@routes_library.route("/api/search/verses")
+def search_verses_route():
+    """Verses whose words match the query (backend/verse_search.py): Hebrew
+    with or without nikud, or English; Tanakh first, close matches when
+    nothing matches exactly. Snippets are plain-text parts, never HTML."""
+    from backend.verse_search import search_verses
+
+    query = (request.args.get("q", "") or "").strip()
+    size = _coerce_int(request.args.get("size"), 6, min_value=1, max_value=12)
+    if not query:
+        return jsonify({"query": "", "close": False, "results": []})
+    return jsonify(search_verses(query, size))
+
+
 @routes_library.route("/api/search/suggest")
 def search_suggest():
     """Omnibox suggestions: texts, prayers, communities, and AI query option."""

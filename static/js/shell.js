@@ -1216,6 +1216,9 @@ function hasParenthetical(text) {
         const appState = {
             suggestionItems: [],
             activeSuggestionIndex: -1,
+            // The verse group under the references: 'loading' shows its
+            // skeleton; `close` when nothing matched exactly (verse_search.py).
+            verseSearch: { state: 'idle', close: false, items: [] },
             // The page on screen under any overlay (see routeViewOnScreen):
             // { type, value, view } with `view` the currentView it goes with.
             // null while a page is loading in its place.
@@ -1396,8 +1399,8 @@ function hasParenthetical(text) {
         }
 
         const UI_TYPE_LABELS = {
-            en: { text: 'Text', prayer: 'Prayer', community: 'Community', ask: 'Ask', history: 'History' },
-            he: { text: 'טקסט', prayer: 'תפילה', community: 'קהילה', ask: 'שאלה', history: 'היסטוריה' },
+            en: { text: 'Text', verse: 'Verse', prayer: 'Prayer', community: 'Community', ask: 'Ask', history: 'History' },
+            he: { text: 'טקסט', verse: 'פסוק', prayer: 'תפילה', community: 'קהילה', ask: 'שאלה', history: 'היסטוריה' },
         };
 
         const CATEGORY_HE_MAP = {
@@ -4629,65 +4632,147 @@ function hasParenthetical(text) {
             });
         }
 
+        // The list is a listbox the search field controls (WAI-ARIA combobox):
+        // the highlight is aria-selected on an option, named to screen readers
+        // by aria-activedescendant, while focus stays in the field.
+        const suggestionOptionId = (index) => `searchOption-${index}`;
+
+        function suggestionOptionHtml(item, index, typeLabels) {
+            const isActive = index === appState.activeSuggestionIndex;
+            const itemAlignClass = isHebrewMode() ? 'text-end' : 'text-start';
+            const itemDir = isHebrewMode() ? 'rtl' : 'ltr';
+            const baseLabel = String((isHebrewMode() ? item.label_he : item.label) || item.label || '').trim();
+            const typePrefix = (item.type === 'text' || item.type === 'verse')
+                ? ''
+                : (typeLabels[item.type] || item.type || '');
+            const hasPrefix = typePrefix
+                && baseLabel.toLowerCase().startsWith(`${typePrefix.toLowerCase()} `);
+            let displayLabel = hasPrefix
+                ? baseLabel
+                : `${typePrefix} ${baseLabel}`.trim();
+
+            if (item.type === 'ask') {
+                const askValue = String(item.value || '').trim();
+                displayLabel = isHebrewMode()
+                    ? `שאל את ש'אלה: ${askValue}`
+                    : `Ask Sh'elah: ${askValue}`;
+            }
+
+            let subtitleHtml;
+            if (item.type === 'verse') {
+                // The verse itself, in its own language and direction, with
+                // the words that matched in <mark> (text only: the server
+                // sends plain-text parts, and each is escaped here).
+                const lang = item.lang === 'he' ? 'he' : 'en';
+                const parts = Array.isArray(item.parts) ? item.parts : [];
+                const snippet = parts.map((part) => {
+                    const text = escapeHtml(String(part?.text || ''));
+                    return part?.match ? `<mark class="suggestion-verse-match">${text}</mark>` : text;
+                }).join('');
+                subtitleHtml = `<div class="suggestion-verse-snippet text-xs" lang="${lang}" dir="${lang === 'he' ? 'rtl' : 'ltr'}">${snippet}</div>`;
+            } else {
+                const subtitle = isHebrewMode()
+                    ? (item.subtitle_he || translateSuggestionSubtitle(item.subtitle, item.type))
+                    : (item.subtitle || '');
+                subtitleHtml = `<div class="text-xs text-slate-500 truncate">${escapeHtml(subtitle)}</div>`;
+            }
+
+            let typeBadge = item.type === 'text' ? '' : (typeLabels[item.type] || item.type || '');
+            if (item.type === 'verse' && !item.tanakh) typeBadge = typeLabels.text;
+            return `
+                <div role="option" id="${suggestionOptionId(index)}" aria-selected="${isActive ? 'true' : 'false'}" dir="${itemDir}"
+                    class="suggestion-item w-full ${itemAlignClass} px-4 py-3 border-b border-slate-100 last:border-b-0"
+                    data-index="${index}">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="text-sm text-slate-800 font-medium truncate">${escapeHtml(displayLabel)}</div>
+                            ${subtitleHtml}
+                        </div>
+                        ${typeBadge
+                    ? `<span class="suggestion-badge text-[10px] uppercase tracking-widest text-slate-400">${escapeHtml(typeBadge)}</span>`
+                    : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Two rows the height of verse results while the verse search runs,
+        // so the list does not jump when they arrive. Hidden from screen
+        // readers; the status line says "Searching…" if it is slow.
+        const VERSE_SKELETON_HTML = Array.from({ length: 2 }, () => `
+            <div class="suggestion-skeleton px-4 py-3" aria-hidden="true">
+                <span class="sk-line suggestion-skeleton-title"></span>
+                <span class="sk-line suggestion-skeleton-text"></span>
+            </div>`).join('');
+
+        function verseGroupHtml(verseHtml) {
+            const close = appState.verseSearch?.close;
+            const heading = close
+                ? t('Close matches', 'התאמות קרובות')
+                : t('Verses', 'פסוקים');
+            const align = isHebrewMode() ? 'text-end' : 'text-start';
+            return `
+                <div role="group" aria-labelledby="searchVerseHeading" class="suggestion-group">
+                    <div id="searchVerseHeading" role="presentation" class="suggestion-group-heading ${align} px-4">${escapeHtml(heading)}</div>
+                    ${verseHtml}
+                </div>`;
+        }
+
         function renderSearchSuggestions() {
-            if (!appState.suggestionItems.length) {
+            const verseLoading = appState.verseSearch?.state === 'loading';
+            if (!appState.suggestionItems.length && !verseLoading) {
                 dismissSearchSuggestions();
                 return;
             }
 
-            const lang = getCurrentLanguage();
-            const typeLabels = UI_TYPE_LABELS[lang] || UI_TYPE_LABELS.en;
-            const itemAlignClass = isHebrewMode() ? 'text-end' : 'text-start';
-            const itemDir = isHebrewMode() ? 'rtl' : 'ltr';
+            const typeLabels = UI_TYPE_LABELS[getCurrentLanguage()] || UI_TYPE_LABELS.en;
+            const items = appState.suggestionItems;
+            const options = items.map((item, index) => suggestionOptionHtml(item, index, typeLabels));
+            const firstVerse = items.findIndex((item) => item.type === 'verse');
+            const firstAsk = items.findIndex((item) => item.type === 'ask');
+            const verseStart = firstVerse >= 0 ? firstVerse : (firstAsk >= 0 ? firstAsk : items.length);
+            const verseEnd = firstVerse >= 0
+                ? verseStart + items.slice(verseStart).filter((item) => item.type === 'verse').length
+                : verseStart;
+            const verseHtml = options.slice(verseStart, verseEnd).join('') || (verseLoading ? VERSE_SKELETON_HTML : '');
 
-            searchSuggestions.innerHTML = appState.suggestionItems.map((item, index) => {
-                const isActive = index === appState.activeSuggestionIndex;
-                const baseLabel = String((isHebrewMode() ? item.label_he : item.label) || item.label || '').trim();
-                const typePrefix = item.type === 'text'
-                    ? ''
-                    : (typeLabels[item.type] || item.type || '');
-                const hasPrefix = typePrefix
-                    && baseLabel.toLowerCase().startsWith(`${typePrefix.toLowerCase()} `);
-                let displayLabel = hasPrefix
-                    ? baseLabel
-                    : `${typePrefix} ${baseLabel}`.trim();
+            searchSuggestions.setAttribute('role', 'listbox');
+            searchSuggestions.setAttribute('aria-label', t('Search suggestions', 'הצעות חיפוש'));
+            searchSuggestions.innerHTML = options.slice(0, verseStart).join('')
+                + (verseHtml ? verseGroupHtml(verseHtml) : '')
+                + options.slice(verseEnd).join('');
 
-                if (item.type === 'ask') {
-                    const askValue = String(item.value || '').trim();
-                    displayLabel = isHebrewMode()
-                        ? `שאל את ש'אלה: ${askValue}`
-                        : `Ask Sh'elah: ${askValue}`;
-                }
-
-                const subtitle = isHebrewMode()
-                    ? (item.subtitle_he || translateSuggestionSubtitle(item.subtitle, item.type))
-                    : (item.subtitle || '');
-
-                const typeBadge = item.type === 'text'
-                    ? ''
-                    : (typeLabels[item.type] || item.type || '');
-                return `
-                    <button type="button" dir="${itemDir}" class="suggestion-item w-full ${itemAlignClass} px-4 py-3 border-b border-slate-100 last:border-b-0 ${isActive ? 'bg-[#efe5d4]' : 'hover:bg-slate-50'}"
-                        data-index="${index}">
-                        <div class="flex items-center justify-between gap-3">
-                            <div class="min-w-0">
-                                <div class="text-sm text-slate-800 font-medium truncate">${escapeHtml(displayLabel)}</div>
-                                <div class="text-xs text-slate-500 truncate">${escapeHtml(subtitle)}</div>
-                            </div>
-                            ${typeBadge
-                        ? `<span class="text-[10px] uppercase tracking-widest text-slate-400">${escapeHtml(typeBadge)}</span>`
-                        : ''}
-                        </div>
-                    </button>
-                `;
-            }).join('');
+            const active = appState.activeSuggestionIndex;
+            searchInput.setAttribute('aria-expanded', 'true');
+            if (active >= 0 && active < items.length) {
+                searchInput.setAttribute('aria-activedescendant', suggestionOptionId(active));
+                keepOptionInView(document.getElementById(suggestionOptionId(active)));
+            } else {
+                searchInput.removeAttribute('aria-activedescendant');
+            }
 
             presentEl(searchSuggestions, { preset: 'popover', origin: searchInput });
+        }
+
+        // The highlighted option scrolls into the list's own view, never the
+        // page's (scrollIntoView would move the page too).
+        function keepOptionInView(option) {
+            if (!option) return;
+            const top = option.offsetTop;
+            const bottom = top + option.offsetHeight;
+            if (top < searchSuggestions.scrollTop) {
+                searchSuggestions.scrollTop = top;
+            } else if (bottom > searchSuggestions.scrollTop + searchSuggestions.clientHeight) {
+                searchSuggestions.scrollTop = bottom - searchSuggestions.clientHeight;
+            }
         }
 
         function hideSearchSuggestions() {
             appState.suggestionItems = [];
             appState.activeSuggestionIndex = -1;
+            appState.verseSearch = { state: 'idle', close: false, items: [] };
+            searchInput?.setAttribute('aria-expanded', 'false');
+            searchInput?.removeAttribute('aria-activedescendant');
             dismissSearchSuggestions();
             setSuggestStatus('');
         }
@@ -4703,9 +4788,69 @@ function hasParenthetical(text) {
             return t(`${n} suggestions`, `${n} הצעות`);
         }
 
+        // Words of a verse, not a reference or a name: two or more words, no
+        // digits ("Genesis 1:3" is a reference the suggest list already has).
+        function wantsVerseSearch(q) {
+            const words = q.split(/\s+/).filter(Boolean);
+            return words.length >= 2 && !/\d/.test(q) && (q.match(/\p{L}/gu) || []).length >= 3;
+        }
+
+        // Verse results per query, for this page's life: retyping or going
+        // back a word is instant. Pointing is ignored, as the server does.
+        const verseSearchCache = new Map();
+        const VERSE_CACHE_MAX = 40;
+        const verseCacheKey = (q) => q.normalize('NFC').replace(/[֑-ׇ]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+        async function fetchVerseResults(q, signal) {
+            const key = verseCacheKey(q);
+            if (verseSearchCache.has(key)) return verseSearchCache.get(key);
+            const params = new URLSearchParams({ q, size: '5' });
+            const resp = await fetch(`/api/search/verses?${params.toString()}`, signal ? { signal } : undefined);
+            if (!resp.ok) return null;
+            const body = await resp.json();
+            const data = {
+                close: Boolean(body?.close),
+                results: Array.isArray(body?.results) ? body.results.filter((r) => r?.ref) : [],
+            };
+            if (verseSearchCache.size >= VERSE_CACHE_MAX) verseSearchCache.delete(verseSearchCache.keys().next().value);
+            verseSearchCache.set(key, data);
+            return data;
+        }
+
+        const toVerseItem = (result) => ({
+            type: 'verse',
+            value: String(result.ref),
+            label: String(result.ref),
+            label_he: String(result.heRef || result.ref),
+            lang: result.lang === 'he' ? 'he' : 'en',
+            parts: Array.isArray(result.parts) ? result.parts : [],
+            match: result.match === 'close' ? 'close' : 'exact',
+            tanakh: Boolean(result.tanakh),
+        });
+
+        // References first, then verses, then the offer to ask; the
+        // highlight stays on the same suggestion when the verses arrive.
+        function showSuggestionItems(base) {
+            const previous = appState.suggestionItems[appState.activeSuggestionIndex];
+            const references = base.filter((item) => item.type !== 'ask');
+            const asks = base.filter((item) => item.type === 'ask');
+            const shown = new Set(references.filter((item) => item.type === 'text').map((item) => String(item.value)));
+            const verses = (appState.verseSearch?.items || []).filter((item) => !shown.has(item.value));
+            appState.suggestionItems = [...references, ...verses, ...asks];
+            appState.activeSuggestionIndex = previous
+                ? appState.suggestionItems.findIndex((item) => item.type === previous.type && item.value === previous.value)
+                : -1;
+            renderSearchSuggestions();
+        }
+
+        let suggestionAbort = null;
+
         async function fetchOmniboxSuggestions(query) {
             const q = (query || '').trim();
             const fetchSerial = ++suggestionFetchSerial;
+            // A newer query: the older one's requests are no longer wanted.
+            suggestionAbort?.abort();
+            suggestionAbort = null;
 
             if (suppressSuggestionMenu) {
                 hideSearchSuggestions();
@@ -4717,31 +4862,56 @@ function hasParenthetical(text) {
                 return;
             }
 
+            const controller = typeof AbortController === 'function' ? new AbortController() : null;
+            suggestionAbort = controller;
+            const init = controller ? { signal: controller.signal } : undefined;
+            const isCurrent = () => !suppressSuggestionMenu && fetchSerial === suggestionFetchSerial;
+
             // Said only when the answer is slow, so fast typing stays quiet.
             const searchingNote = setTimeout(() => {
                 if (fetchSerial === suggestionFetchSerial) setSuggestStatus(t('Searching…', 'מחפש…'));
             }, 400);
+            const versesWanted = wantsVerseSearch(q);
             try {
                 const params = appendMetadataFilters(new URLSearchParams({ q, size: '8' }));
-                const resp = await fetch(`/api/search/suggest?${params.toString()}`);
-                if (!resp.ok) {
+                const suggestRequest = fetch(`/api/search/suggest?${params.toString()}`, init);
+                const verseRequest = versesWanted
+                    ? fetchVerseResults(q, controller?.signal).catch(() => null)
+                    : Promise.resolve(null);
+
+                const resp = await suggestRequest;
+                if (!resp.ok && !versesWanted) {
                     hideSearchSuggestions();
                     return;
                 }
-                const results = await resp.json();
-                if (suppressSuggestionMenu || fetchSerial !== suggestionFetchSerial) {
+                const results = resp.ok ? await resp.json() : [];
+                if (!isCurrent()) return;
+                const base = Array.isArray(results) ? results : [];
+                appState.activeSuggestionIndex = -1;
+                appState.verseSearch = { state: versesWanted ? 'loading' : 'idle', close: false, items: [] };
+                appState.suggestionItems = [];
+                showSuggestionItems(base);
+                if (!versesWanted) {
+                    setSuggestStatus(suggestCountLabel(base.length));
                     return;
                 }
-                const rawItems = Array.isArray(results) ? results : [];
-                appState.suggestionItems = rawItems;
-                appState.activeSuggestionIndex = -1;
-                renderSearchSuggestions();
-                setSuggestStatus(suggestCountLabel(rawItems.length));
-            } catch {
+
+                const verses = await verseRequest;
+                if (!isCurrent()) return;
+                appState.verseSearch = {
+                    state: 'done',
+                    close: Boolean(verses?.close),
+                    items: (verses?.results || []).map(toVerseItem),
+                };
+                showSuggestionItems(base);
+                setSuggestStatus(suggestCountLabel(appState.suggestionItems.length));
+            } catch (error) {
+                if (!isCurrent() || error?.name === 'AbortError') return;
                 hideSearchSuggestions();
                 logReliability('suggestions-error');
             } finally {
                 clearTimeout(searchingNote);
+                if (suggestionAbort === controller) suggestionAbort = null;
             }
         }
 
@@ -9695,6 +9865,43 @@ function hasParenthetical(text) {
             return (await resolveDirectRef(query)) || resolveLibraryHit(query);
         }
 
+        // A verse from the search list: its chapter, scrolled so the verse
+        // sits near the top, and marked for a moment (.verse-target). "Genesis
+        // 1:3" opens "Genesis 1" at segment 3; a ref without a trailing
+        // segment opens as it is.
+        const VERSE_TARGET_MS = 2400;
+
+        function verseTargetOffset() {
+            return Math.min(160, Math.round((window.innerHeight || 800) * 0.2));
+        }
+
+        async function openVerse(ref) {
+            const match = /^(.+?)\s*:\s*(\d+)$/.exec(String(ref || '').trim());
+            if (!match) {
+                await readText(ref);
+                return;
+            }
+            const [, chapterRef, segment] = match;
+            const anchor = { ref: getRefTrackingKey(chapterRef), segment, offset: verseTargetOffset() };
+            await readText(chapterRef, { restoreScroll: { view: 'text', top: 0, anchor } });
+            revealVerse(anchor);
+        }
+
+        function revealVerse(anchor) {
+            const chunks = readerAnchorElements();
+            const chunk = chunks.find((el) => el.dataset.textChunkRef === anchor.ref) || chunks[0];
+            const row = chunk
+                ? Array.from(chunk.querySelectorAll('.segment-row[data-segment]')).find((el) => el.dataset.segment === anchor.segment)
+                : null;
+            if (!row) return false;
+            restoreReaderChunkAnchor({ ...anchor, ref: chunk.dataset.textChunkRef });
+            row.classList.remove('verse-target');
+            row.getBoundingClientRect(); // restart the fade when the same verse is opened twice
+            row.classList.add('verse-target');
+            window.setTimeout(() => row.classList.remove('verse-target'), VERSE_TARGET_MS);
+            return true;
+        }
+
         async function openSearchTarget(target, fallbackQuestion = '') {
             if (!target) return false;
 
@@ -9730,6 +9937,12 @@ function hasParenthetical(text) {
 
             if (target.type === 'text') {
                 await readText(target.value);
+                clearSearchAfterNavigation();
+                return true;
+            }
+
+            if (target.type === 'verse') {
+                await openVerse(target.value);
                 clearSearchAfterNavigation();
                 return true;
             }
@@ -11781,7 +11994,7 @@ function hasParenthetical(text) {
         });
         // ─────────────────────────────────────────────────────────
 
-        const debouncedSuggestionFetch = debounce(fetchOmniboxSuggestions, 180);
+        const debouncedSuggestionFetch = debounce(fetchOmniboxSuggestions, 250);
 
         searchInput.addEventListener('input', () => {
             suppressSuggestionMenu = false;
@@ -11842,6 +12055,12 @@ function hasParenthetical(text) {
             }
             savePrefs();
             applyShulMode();
+        });
+
+        // Pressing an option must not take focus from the field: the list
+        // stays a popup of the input (and the phone keyboard stays up).
+        searchSuggestions.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.suggestion-item')) e.preventDefault();
         });
 
         searchSuggestions.addEventListener('click', async (e) => {

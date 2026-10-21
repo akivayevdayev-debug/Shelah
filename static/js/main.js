@@ -26,6 +26,7 @@ import { installAnswerLink, answerIdOf } from "./answer-link.js";
 import { createAnswerShare, installShareState } from "./answer-share.js";
 import * as askHistory from "./ask-history.js";
 import { createSiddur } from "./siddur.js";
+import { installHebrewKeyboard } from "./hebrew-keyboard.js";
 
 // Source-card markup for the conversation panel (and any classic-script caller).
 window.ShelahSourceCards = sourceCards;
@@ -124,6 +125,8 @@ function initModules() {
     // popstate never fires for that first load.
     // Before the initial hydrate, so a /chat/<id> link finds the UI ready.
     installConversationUI();
+    // The on-screen Hebrew/English keyboard under the search bar.
+    installHebrewKeyboard();
     // "Copy link" on a stored answer: conversation-ui.js moves the control
     // into the answer turn showing it and calls .show per answer. The copied
     // link is public (/a/<token>, static/js/answer-share.js).

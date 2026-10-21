@@ -120,6 +120,7 @@ _ROUTE_CLASSES: list[tuple[str, str]] = [
     ("/api/export/chapter", "heavy"),
     ("/api/siddur/full/", "heavy"),
     ("/api/library/search", "fanout"),
+    ("/api/search/verses", "fanout"),
     ("/api/sidebar/", "sidebar"),
     ("/api/text/", "fanout"),
     ("/api/word/meaning", "fanout"),
