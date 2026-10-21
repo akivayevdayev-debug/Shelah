@@ -231,6 +231,141 @@ class TestCaptureBackendError:
 
         assert posted == ["https://example.com/webhook"]
 
+    @staticmethod
+    def _watch_alert_channels(monkeypatch):
+        """(errors, warnings, posted, sentry): everything an alert would touch."""
+        import app as flask_app_module
+        import requests
+        errors, warnings, posted, sentry = [], [], [], []
+        monkeypatch.setattr(flask_app_module.app.logger, "error", lambda msg, *a, **k: errors.append(msg))
+        monkeypatch.setattr(
+            flask_app_module.app.logger, "warning",
+            lambda msg, *a, **k: warnings.append(msg % a if a else msg),
+        )
+        monkeypatch.setenv("ERROR_LOG_WEBHOOK_URL", "https://example.com/webhook")
+        monkeypatch.setattr(requests, "post", lambda url, json=None, timeout=None: posted.append(url))
+        monkeypatch.setattr(logging_setup, "_forward_error_to_sentry", lambda *a, **k: sentry.append(a))
+        return errors, warnings, posted, sentry
+
+    @pytest.mark.parametrize("make_error", [
+        lambda jwt: jwt.DecodeError("Not enough segments"),
+        lambda jwt: jwt.ExpiredSignatureError("Signature has expired"),
+        lambda jwt: jwt.ImmatureSignatureError("The token is not yet valid (iat)"),
+    ])
+    def test_unusable_bearer_token_is_logged_not_alerted(self, monkeypatch, make_error):
+        """A bearer string that is not a JWT, or an expired one, is the caller's
+        problem: a warning in the log, no webhook post, no Sentry event."""
+        import jwt
+        errors, warnings, posted, sentry = self._watch_alert_channels(monkeypatch)
+
+        logging_setup._capture_backend_error(
+            "clerk_auth_verify_failed", make_error(jwt), {"path": "/api/user/history"})
+
+        assert (errors, posted, sentry) == ([], [], [])
+        assert len(warnings) == 1
+        assert warnings[0].startswith("OBS_EVENT_QUIET ")
+        assert "clerk_auth_verify_failed" in warnings[0]
+
+    def test_a_string_that_is_not_a_jwt_raises_the_quiet_error(self):
+        """The exact exception behind the "Not enough segments" alerts: PyJWT
+        reads the header before it ever asks the JWKS endpoint for a key."""
+        import jwt
+        client = jwt.PyJWKClient("https://clerk.invalid/.well-known/jwks.json")
+        with pytest.raises(jwt.DecodeError, match="Not enough segments") as caught:
+            client.get_signing_key_from_jwt("not-a-jwt")
+        assert logging_setup._is_unusable_bearer_token(caught.value) is True
+
+    @pytest.mark.parametrize("make_error", [
+        lambda jwt: jwt.InvalidAudienceError("Audience doesn't match"),
+        lambda jwt: jwt.MissingRequiredClaimError("aud"),
+        lambda jwt: jwt.InvalidIssuerError("Invalid issuer"),
+        lambda jwt: jwt.InvalidSignatureError("Signature verification failed"),
+        lambda jwt: jwt.PyJWKClientError("Unable to find a signing key that matches"),
+        lambda jwt: ValueError("Server missing CLERK_JWT_ISSUER"),
+    ])
+    def test_token_failures_that_point_at_our_setup_still_alert(self, monkeypatch, make_error):
+        """Wrong audience/issuer, a missing claim, a signature that does not
+        match and an unreachable key set are setup problems, not a bad caller."""
+        import jwt
+        errors, warnings, posted, sentry = self._watch_alert_channels(monkeypatch)
+
+        logging_setup._capture_backend_error("clerk_auth_verify_failed", make_error(jwt))
+
+        assert len(errors) == 1
+        assert posted == ["https://example.com/webhook"]
+        assert len(sentry) == 1
+
+    @staticmethod
+    def _offline_error():
+        import socket
+        import httpx
+        try:
+            try:
+                raise socket.gaierror(8, "nodename nor servname provided, or not known")
+            except socket.gaierror as gai:
+                raise httpx.ConnectError("[Errno 8] nodename nor servname provided, or not known") from gai
+        except httpx.ConnectError as connect_error:
+            return connect_error
+
+    def test_a_dev_machine_that_is_offline_is_logged_not_alerted(self, monkeypatch):
+        """The conversations_list_failed alert of 10/2: the laptop lost DNS, which
+        is not a Supabase incident, and the local .env shares the prod channel."""
+        monkeypatch.delenv("VERCEL", raising=False)
+        monkeypatch.setenv("FLASK_ENV", "development")
+        errors, warnings, posted, sentry = self._watch_alert_channels(monkeypatch)
+
+        logging_setup._capture_backend_error(
+            "conversations_list_failed", self._offline_error(), {"user_id_hash": "h"})
+
+        assert (errors, posted, sentry) == ([], [], [])
+        assert len(warnings) == 1
+        assert warnings[0].startswith("OBS_EVENT_QUIET ")
+
+    def test_a_bare_dns_failure_is_quiet_locally_too(self, monkeypatch):
+        import socket
+        monkeypatch.delenv("VERCEL", raising=False)
+        monkeypatch.setenv("FLASK_ENV", "development")
+        errors, warnings, posted, sentry = self._watch_alert_channels(monkeypatch)
+
+        logging_setup._capture_backend_error(
+            "conversations_list_failed", socket.gaierror(8, "nodename nor servname provided, or not known"))
+
+        assert (errors, posted, sentry) == ([], [], [])
+
+    @pytest.mark.parametrize("env", [{"VERCEL": "1"}, {"FLASK_ENV": "production"}])
+    def test_the_same_outage_on_the_deployment_still_alerts(self, monkeypatch, env):
+        monkeypatch.delenv("VERCEL", raising=False)
+        monkeypatch.setenv("FLASK_ENV", "development")
+        for name, value in env.items():
+            monkeypatch.setenv(name, value)
+        errors, warnings, posted, sentry = self._watch_alert_channels(monkeypatch)
+
+        logging_setup._capture_backend_error("conversations_list_failed", self._offline_error())
+
+        assert len(errors) == 1
+        assert posted == ["https://example.com/webhook"]
+
+    def test_other_local_errors_still_alert(self, monkeypatch):
+        monkeypatch.delenv("VERCEL", raising=False)
+        monkeypatch.setenv("FLASK_ENV", "development")
+        errors, warnings, posted, sentry = self._watch_alert_channels(monkeypatch)
+
+        logging_setup._capture_backend_error("conversations_list_failed", RuntimeError("relation does not exist"))
+
+        assert len(errors) == 1
+        assert posted == ["https://example.com/webhook"]
+
+    def test_an_error_given_as_a_plain_string_still_alerts(self, monkeypatch):
+        """Some call sites report a message, not an exception."""
+        monkeypatch.delenv("VERCEL", raising=False)
+        monkeypatch.setenv("FLASK_ENV", "development")
+        errors, warnings, posted, sentry = self._watch_alert_channels(monkeypatch)
+
+        logging_setup._capture_backend_error("client_error", "TypeError: x is not a function")
+
+        assert len(errors) == 1
+        assert posted == ["https://example.com/webhook"]
+
     def test_webhook_failure_is_swallowed(self, monkeypatch):
         import app as flask_app_module
         monkeypatch.setattr(flask_app_module.app.logger, "error", lambda *a, **k: None)

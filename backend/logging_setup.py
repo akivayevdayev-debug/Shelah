@@ -16,6 +16,7 @@ import hashlib
 import json
 import logging
 import os
+import socket
 import time
 import uuid
 from collections import OrderedDict
@@ -28,6 +29,16 @@ try:
     import sentry_sdk
 except Exception:  # pragma: no cover
     sentry_sdk = None
+
+try:
+    import httpx
+except Exception:  # pragma: no cover
+    httpx = None
+
+try:
+    import jwt as _jwt
+except Exception:  # pragma: no cover
+    _jwt = None
 
 _request_id_var: ContextVar[str] = ContextVar('request_id', default='')
 _user_id_var: ContextVar[str] = ContextVar('user_id', default='')
@@ -542,6 +553,49 @@ def _is_token_timing_rejection(error) -> bool:
     )
 
 
+def _is_unusable_bearer_token(error) -> bool:
+    """PyJWT turning down the caller's own token: a bearer string that is not
+    a JWT at all ("Not enough segments"), or one that has expired or is not yet
+    valid. That is the caller's problem and the next request carries a fresh
+    token, so it is logged as a warning, not alerted (the same call as the
+    PostgREST timing rejections above). Everything about the server's setup
+    still alerts: a wrong audience or issuer, a missing claim, a signature that
+    does not match (InvalidSignatureError is a DecodeError, so it is excluded
+    by name), an unreachable JWKS."""
+    if _jwt is None or isinstance(error, _jwt.InvalidSignatureError):
+        return False
+    return isinstance(error, (
+        _jwt.DecodeError, _jwt.ExpiredSignatureError, _jwt.ImmatureSignatureError))
+
+
+def _in_production_runtime() -> bool:
+    """Same test as backend/auth.py's CLERK_ENFORCE_AUTH default."""
+    return (
+        os.environ.get("VERCEL") == "1"
+        or os.environ.get("FLASK_ENV", "").strip().lower() == "production"
+    )
+
+
+def _is_local_network_outage(error) -> bool:
+    """A machine that is not the production deployment could not resolve or
+    reach a host (a laptop that went offline: macOS reports "[Errno 8] nodename
+    nor servname provided, or not known"). The local .env posts to the same
+    Discord channel as production, so such an outage used to look like a
+    Supabase incident. On the deployment the same error still alerts."""
+    if _in_production_runtime():
+        return False
+    unreachable = (socket.gaierror,) + (
+        (httpx.ConnectError, httpx.ConnectTimeout) if httpx is not None else ())
+    seen = set()
+    # Callers also pass plain strings (a failure message with no exception).
+    while isinstance(error, BaseException) and id(error) not in seen:
+        if isinstance(error, unreachable):
+            return True
+        seen.add(id(error))
+        error = error.__cause__ or error.__context__
+    return False
+
+
 def _capture_backend_error(event_name, error, context=None):
     """Sentry-style structured logger for backend failures and AI prompt issues.
 
@@ -562,7 +616,9 @@ def _capture_backend_error(event_name, error, context=None):
         "ts": int(time.time()),
     }
 
-    if _is_token_timing_rejection(error):
+    if (_is_token_timing_rejection(error)
+            or _is_unusable_bearer_token(error)
+            or _is_local_network_outage(error)):
         # Still visible in the server log; no webhook, no Sentry event.
         _flask_app.app.logger.warning(
             "OBS_EVENT_QUIET %s", json.dumps(payload, ensure_ascii=True))

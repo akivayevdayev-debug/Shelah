@@ -40,18 +40,30 @@ def _gemini_503():
     return genai_errors.APIError(503, {"error": {"code": 503, "message": "overloaded", "status": "UNAVAILABLE"}})
 
 
+def _gemini_504():
+    from google.genai import errors as genai_errors
+
+    return genai_errors.APIError(
+        504,
+        {"error": {"code": 504, "message": "Deadline expired before operation could complete.",
+                   "status": "DEADLINE_EXCEEDED"}},
+    )
+
+
 class _HangingGeminiModels:
     """generate_content blocks for exactly the HTTP timeout it was handed
-    (what a hung connection does), then fails with a retryable 503."""
+    (what a hung connection does), then fails with a retryable 503 (or whatever
+    ``failure`` builds)."""
 
-    def __init__(self):
+    def __init__(self, failure=_gemini_503):
         self.timeouts = []
+        self.failure = failure
 
     def generate_content(self, *, model, contents, config):
         timeout = config.http_options.timeout / 1000
         self.timeouts.append(timeout)
         time.sleep(timeout)
-        raise _gemini_503()
+        raise self.failure()
 
 
 class _HangingAnthropicMessages:
@@ -79,6 +91,7 @@ def hanging_providers(monkeypatch):
     # test runs in ~3s; the ratios are what matter.
     monkeypatch.setattr(claude, "_GEMINI_MIN_TIMEOUT_SECONDS", 0.5)
     monkeypatch.setattr(claude, "_GEMINI_RETRY_WAIT_MAX_SECONDS", 0.2)
+    monkeypatch.setattr(claude, "_CLAUDE_FALLBACK_RESERVE_SECONDS", 1.4)
     return gemini_models, anthropic_messages
 
 
@@ -92,12 +105,30 @@ def test_sync_synthesis_is_bounded_by_the_total_budget(hanging_providers):
     # Before: 3 Gemini attempts x 50s + backoff, then Claude 50s x 3 -- minutes.
     assert elapsed < 3.4
     assert result["error"].startswith("gemini_error:")
-    assert result["error"].endswith("ai_budget_exhausted")
-    # The 503 was retried while backoff + a minimum attempt still fit (1.8s
-    # left after the first), but not a third time with only ~0.6s left...
-    assert gemini_models.timeouts == [pytest.approx(1.2, abs=0.05)] * 2
-    # ...and the Claude leg wasn't started on the scraps.
-    assert anthropic_messages.timeouts == []
+    # The 503 is not retried: 1.8s are left after the first attempt, and a retry
+    # (backoff 0.2 + a 0.5 minimum attempt) would eat into the 1.4s kept back
+    # for Claude...
+    assert gemini_models.timeouts == [pytest.approx(1.2, abs=0.05)]
+    # ...so the Claude leg gets a window of its own, up to the per-request cap.
+    assert anthropic_messages.timeouts == [pytest.approx(1.2, abs=0.05)]
+    assert "anthropic_sdk_error:" in result["error"]
+
+
+def test_a_gemini_504_after_a_full_attempt_still_leaves_claude_a_window(hanging_providers):
+    """Production alert: a 504 DEADLINE_EXCEEDED after a full-length attempt
+    left what looked like room for a retry, the retry ran the budget out, and
+    Claude was skipped ("ai_budget_exhausted") -- with the reader getting an
+    error and the tag doubled ("gemini_error: gemini_error: 504 ...")."""
+    gemini_models, anthropic_messages = hanging_providers
+    gemini_models.failure = _gemini_504
+
+    result = claude._call_primary_model_sync("prompt text")
+
+    assert len(gemini_models.timeouts) == 1
+    assert anthropic_messages.timeouts, "Claude was never tried"
+    assert "ai_budget_exhausted" not in result["error"]
+    assert "504 DEADLINE_EXCEEDED" in result["error"]
+    assert "gemini_error: gemini_error:" not in result["error"]
 
 
 def test_claude_leg_gets_the_remaining_budget_as_its_timeout(monkeypatch):
@@ -127,7 +158,8 @@ def test_claude_leg_is_skipped_when_no_budget_is_left(monkeypatch):
 
     result = asyncio.run(_run())
 
-    assert result["error"] == "gemini_error: gemini_error: x; ai_budget_exhausted"
+    # A Gemini failure already arrives tagged; the tag isn't doubled.
+    assert result["error"] == "gemini_error: x; ai_budget_exhausted"
     assert messages.timeouts == []
     # Running out of budget isn't a provider failure.
     assert health_check.health._circuits["claude"].failures == 0
@@ -170,14 +202,16 @@ def test_gemini_attempt_timeout_is_clamped_to_the_remaining_budget():
         assert claude._generate_gemini_content_with_retry(SimpleNamespace(models=_Models()), "m", "p") == "ok"
     finally:
         claude._model_deadline.reset(token)
-    assert 11_000 < seen[0] <= 12_000
+    # 12s left is under the reserve, but an attempt is never sized below
+    # Gemini's own 10s minimum.
+    assert seen[0] == 10_000
 
 
 def test_a_retry_needs_room_for_backoff_plus_a_minimum_attempt():
     from google.genai import errors as genai_errors
 
     exc = genai_errors.APIError(429, {"error": {"code": 429, "message": "q", "status": "RESOURCE_EXHAUSTED"}})
-    for seconds_left, expected in ((15, True), (13, False)):
+    for seconds_left, expected in ((30, True), (28, False)):
         token = claude._model_deadline.set(time.monotonic() + seconds_left)
         try:
             assert claude._is_retryable_gemini_error(exc) is expected
