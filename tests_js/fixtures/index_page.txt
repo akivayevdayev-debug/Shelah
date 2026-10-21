@@ -310,8 +310,35 @@
                                 </span>
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="12" height="12" fill="currentColor" class="h-3 w-3 shrink-0 ai-settings-caret" aria-hidden="true"><path d="M184.49,136.49l-80,80a12,12,0,0,1-17-17L159,128,87.51,56.49a12,12,0,1,1,17-17l80,80A12,12,0,0,1,184.49,136.49Z"/></svg>
                             </button>
+                            <div class="border-t border-slate-100 pt-2">
+                                <fieldset id="minhagSetting" class="minhag-setting" aria-describedby="minhagSettingHint">
+                                    <legend class="minhag-setting__legend" data-en="Community" data-he="קהילה">Community</legend>
+                                    <p id="minhagSettingHint" class="minhag-setting__hint" data-en="Sets the haftarah, siddur, halacha sources and AI answers." data-he="קובע את ההפטרה, הסידור, מקורות ההלכה ותשובות הבינה המלאכותית.">Sets the haftarah, siddur, halacha sources and AI answers.</p>
+                                    <label class="minhag-option">
+                                        <input type="radio" name="minhag" value="sephardi" class="minhag-option__input" checked>
+                                        <span class="minhag-option__text">
+                                            <span class="minhag-option__name" data-en="Sephardi" data-he="ספרדי">Sephardi</span>
+                                            <span class="minhag-option__desc" data-en="Shulchan Aruch and the Sephardi poskim" data-he="השולחן ערוך ופוסקי ספרד">Shulchan Aruch and the Sephardi poskim</span>
+                                        </span>
+                                    </label>
+                                    <label class="minhag-option">
+                                        <input type="radio" name="minhag" value="mizrahi" class="minhag-option__input">
+                                        <span class="minhag-option__text">
+                                            <span class="minhag-option__name" data-en="Mizrahi (Edot HaMizrach)" data-he="עדות המזרח">Mizrahi (Edot HaMizrach)</span>
+                                            <span class="minhag-option__desc" data-en="Middle Eastern customs: Ben Ish Chai, Kaf HaChaim" data-he="מנהגי עדות המזרח: בן איש חי, כף החיים">Middle Eastern customs: Ben Ish Chai, Kaf HaChaim</span>
+                                        </span>
+                                    </label>
+                                    <label class="minhag-option">
+                                        <input type="radio" name="minhag" value="ashkenazi" class="minhag-option__input">
+                                        <span class="minhag-option__text">
+                                            <span class="minhag-option__name" data-en="Ashkenazi" data-he="אשכנזי">Ashkenazi</span>
+                                            <span class="minhag-option__desc" data-en="Rema and the Mishnah Berurah" data-he="הרמ״א והמשנה ברורה">Rema and the Mishnah Berurah</span>
+                                        </span>
+                                    </label>
+                                </fieldset>
+                            </div>
                             <template id="communityOptions">
-                                <option value="All" data-en="All" data-he="הכל">All</option>
+                                <option value="All" data-en="My community" data-he="הקהילה שלי">My community</option>
                                 <option value="Ashkenaz" data-en="Ashkenaz" data-he="אשכנז">Ashkenaz</option>
                                 <option value="Sefardic" data-en="Sefardic" data-he="ספרדי">Sefardic</option>
                                 <option value="Bukharian" data-en="Bukharian" data-he="בוכרי">Bukharian</option>
