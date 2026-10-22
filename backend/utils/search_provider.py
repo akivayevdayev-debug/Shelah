@@ -58,6 +58,9 @@ HEBREW_WORD_GLOSSARY = {
     "אמת": "Truth.",
     "יראה": "Awe or reverence.",
     "אהבה": "Love.",
+    "ויאמר": "And he said.",
+    "ויאמרו": "And they said.",
+    "ויהי": "And it was.",
 }
 
 # Domain-term literals reused across HALAKHIC_CORPUS_ALIASES,

@@ -567,7 +567,8 @@ Verses whose words match the query, for the search bar's "Verses" group (backend
 A best-effort meaning for a highlighted Hebrew or English word. Class `fanout`. Cache: corpus-derived tier.
 
 - **Query:** `word` (required; `400` when missing) and `lang` (`en` or `he`; a Hebrew source word always answers in English).
-- **Response (200):** the primary meaning, any alternatives, the `source`, `lang`, `status: "ok"`, and `machine_translated`, which is `true` when the definition came from an online translation fallback so the client never presents it as a curated entry.
+- **Response (200):** the primary meaning (a short English gloss of at most 90 characters), up to two other options, the `source` (`local-hebrew-glossary`, or Sefaria's `Klein Dictionary`, `BDB Augmented Strong`, `Jastrow Dictionary` or `BDB Dictionary`), `lang`, `status: "ok"`, and `machine_translated`. A Hebrew word is looked up as written and then by its base form (prefix and ending removed), and a word written with vowel points prefers the lexicon entry pointed the same way. A Hebrew word is never machine-translated, so `machine_translated` is `false` for it.
+- **Response (404):** `status: "not_found"` with an empty `meaning`, when the glossary and the lexicons have no entry. The client shows "No definition found".
 
 ### `POST /api/export/chapter`
 

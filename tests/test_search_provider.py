@@ -124,7 +124,7 @@ def test_query_stopwords_contains_expected_bilingual_terms():
 def test_hebrew_word_glossary_has_expected_entries():
     assert HEBREW_WORD_GLOSSARY["שבת"] == "Shabbat, the seventh day of rest."
     assert HEBREW_WORD_GLOSSARY["תורה"] == "Torah, the Five Books of Moses and Torah teaching."
-    assert len(HEBREW_WORD_GLOSSARY) == 18
+    assert len(HEBREW_WORD_GLOSSARY) == 21
 
 
 def test_halakhic_corpus_aliases_has_expected_keys():

@@ -187,17 +187,6 @@ class TestIsSameOriginRequest:
             assert helpers._is_same_origin_request() is False
 
 
-class TestStripCommonHebrewPrefix:
-    def test_strips_a_leading_prefix_letter_from_a_long_word(self):
-        assert helpers._strip_common_hebrew_prefix("ושמר") == "שמר"
-
-    def test_leaves_a_long_word_without_a_prefix_letter_unchanged(self):
-        assert helpers._strip_common_hebrew_prefix("אבגד") == "אבגד"
-
-    def test_leaves_a_short_word_unchanged_even_with_a_prefix_letter(self):
-        assert helpers._strip_common_hebrew_prefix("ושם") == "ושם"
-
-
 class TestCollectWordMeaningAlternativesBlankCandidates:
     def test_a_meaning_that_is_only_punctuation_yields_no_options(self):
         assert helpers._collect_word_meaning_alternatives("word", " . ", False) == []
@@ -207,20 +196,16 @@ class TestCollectWordMeaningAlternativesBlankCandidates:
         result = helpers._collect_word_meaning_alternatives("word", "fast; .", False)
         assert result == ["fast"]
 
-    def test_hebrew_word_with_nothing_found_online_yields_no_options(self, monkeypatch):
+    def test_hebrew_word_with_nothing_found_yields_no_options(self, monkeypatch):
         monkeypatch.setattr(helpers, "HEBREW_INTERPRETIVE_GLOSSARY", {})
-        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon", lambda variant: ("", ""))
-        translated_variants = []
+        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon_glosses", lambda variant: ([], ""))
 
-        def _no_translation(text, try_fallback=True):
-            translated_variants.append(text)
-            return "", ""
+        def _never(*args, **kwargs):
+            raise AssertionError("machine translation must not be consulted")
 
-        monkeypatch.setattr(helpers, "_translate_hebrew_text_online", _no_translation)
+        monkeypatch.setattr(helpers, "_translate_hebrew_text_online", _never)
 
         assert helpers._collect_word_meaning_alternatives("שבת", "", True) == []
-        # The online translation was actually consulted for the word.
-        assert translated_variants == ["שבת"]
 
 
 class TestTranslateLineIfMissingEnglish:

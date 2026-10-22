@@ -6,8 +6,8 @@ the full _lookup_hebrew_word_meaning fallback chain, _collect_word_meaning_alter
 branches, _fill_missing_english_lines translation loop, _compact_ai_sources
 long-line truncation, and _canonicalize_community_name's canonical-name match.
 
-Lower-level network-touching dependencies (_lookup_sefaria_lexicon,
-_translate_hebrew_text_online, _translate_text_google/_mymemory) are
+Lower-level network-touching dependencies (_lookup_sefaria_lexicon_glosses,
+_translate_text_google/_mymemory) are
 monkeypatched directly rather than mocked at the HTTP layer, since these
 tests target orchestration/branching logic in the callers, not the
 lower-level functions themselves (already covered elsewhere).
@@ -111,42 +111,6 @@ class TestCompactAiSourceLines:
         assert len(result) == 2
 
 
-class TestCleanLexiconDefinitionText:
-    def test_strips_html_tags(self):
-        assert helpers._clean_lexicon_definition_text("<i>rest</i>") == "rest"
-
-    def test_extracts_from_dict_shape(self):
-        assert helpers._clean_lexicon_definition_text({"definition": "rest"}) == "rest"
-
-    def test_collapses_whitespace_and_caps_length(self):
-        result = helpers._clean_lexicon_definition_text("a  b" + "c" * 300)
-        assert result == ("a b" + "c" * 300)[:280]
-
-
-class TestCollectNonEchoDefinitions:
-    def test_filters_out_echo_of_original(self):
-        result = helpers._collect_non_echo_definitions(["שבת", "rest"], "שבת")
-        assert result == ["rest"]
-
-    def test_filters_out_blank_entries(self):
-        result = helpers._collect_non_echo_definitions(["", "rest"], "שבת")
-        assert result == ["rest"]
-
-
-class TestCandidateDefinitionsFromLexiconEntry:
-    def test_uses_definitions_list_when_present(self):
-        entry = {"content": {"definitions": [{"definition": "rest"}]}}
-        assert helpers._candidate_definitions_from_lexicon_entry(entry, "שבת") == ["rest"]
-
-    def test_falls_back_to_top_level_definition(self):
-        entry = {"content": {"definition": "rest"}}
-        assert helpers._candidate_definitions_from_lexicon_entry(entry, "שבת") == ["rest"]
-
-    def test_no_usable_content_returns_empty(self):
-        entry = {"content": {}}
-        assert helpers._candidate_definitions_from_lexicon_entry(entry, "שבת") == []
-
-
 class TestLookupHebrewWordInLocalGlossary:
     def test_glossary_hit_returns_local_source(self, monkeypatch):
         monkeypatch.setitem(helpers.HEBREW_WORD_GLOSSARY, "שבת", "Sabbath")
@@ -157,41 +121,6 @@ class TestLookupHebrewWordInLocalGlossary:
     def test_no_match_returns_blank(self):
         definition, source = helpers._lookup_hebrew_word_in_local_glossary(["זזזזזזז"])
         assert (definition, source) == ("", "")
-
-
-class TestLookupHebrewWordInSefariaLexicon:
-    def test_lexicon_hit_returns_definition_and_source(self, monkeypatch):
-        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon", lambda v: ("Sabbath", "jastrow"))
-        definition, source = helpers._lookup_hebrew_word_in_sefaria_lexicon(["שבת"])
-        assert (definition, source) == ("Sabbath", "jastrow")
-
-    def test_missing_source_defaults_to_sefaria_lexicon(self, monkeypatch):
-        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon", lambda v: ("Sabbath", ""))
-        definition, source = helpers._lookup_hebrew_word_in_sefaria_lexicon(["שבת"])
-        assert (definition, source) == ("Sabbath", "sefaria-lexicon")
-
-    def test_no_hit_returns_blank(self, monkeypatch):
-        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon", lambda v: ("", ""))
-        assert helpers._lookup_hebrew_word_in_sefaria_lexicon(["שבת"]) == ("", "")
-
-
-class TestLookupHebrewWordViaOnlineTranslation:
-    def test_transliteration_result_is_rejected_and_falls_through(self, monkeypatch):
-        monkeypatch.setattr(helpers, "_translate_hebrew_text_online", lambda w: ("shabbat", "google"))
-        definition, source = helpers._lookup_hebrew_word_via_online_translation(["שבת"], "שבת")
-        assert (definition, source) == ("", "")
-
-    def test_real_translation_is_returned_with_source(self, monkeypatch):
-        monkeypatch.setattr(helpers, "_translate_hebrew_text_online", lambda w: ("Sabbath", "google"))
-        definition, source = helpers._lookup_hebrew_word_via_online_translation(["שבת"], "שבת")
-        assert definition == "Sabbath"
-        assert source == "google"
-
-    def test_missing_source_defaults_to_automatic_translation(self, monkeypatch):
-        monkeypatch.setattr(helpers, "_translate_hebrew_text_online", lambda w: ("Sabbath", ""))
-        definition, source = helpers._lookup_hebrew_word_via_online_translation([], "שבת")
-        assert definition == "Sabbath"
-        assert source == "automatic-translation"
 
 
 class TestFirstDefinitionTextInMeanings:
@@ -275,33 +204,28 @@ class TestLookupHebrewWordMeaningFullChain:
         assert "rest" in meaning.lower()
 
     def test_falls_through_to_sefaria_lexicon(self, monkeypatch):
-        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon", lambda variant: ("Lexicon meaning", "sefaria-lexicon"))
+        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon_glosses", lambda variant: (["Lexicon meaning"], "Klein Dictionary"))
         meaning, source = helpers._lookup_hebrew_word_meaning("לגמגם")
         assert meaning == "Lexicon meaning"
-        assert source == "sefaria-lexicon"
+        assert source == "Klein Dictionary"
 
-    def test_falls_through_to_online_translation(self, monkeypatch):
-        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon", lambda variant: ("", ""))
-        monkeypatch.setattr(helpers, "_translate_hebrew_text_online", lambda variant: ("A translated meaning", "google-translate"))
-        monkeypatch.setattr(helpers, "_looks_like_transliteration", lambda text: False)
-        meaning, _ = helpers._lookup_hebrew_word_meaning("לגמגם")
-        assert meaning == "A translated meaning"
+    def test_machine_translation_is_never_consulted(self, monkeypatch):
+        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon_glosses", lambda variant: ([], ""))
 
-    def test_all_sources_fail_returns_empty(self, monkeypatch):
-        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon", lambda variant: ("", ""))
-        monkeypatch.setattr(helpers, "_translate_hebrew_text_online", lambda variant: ("", ""))
-        meaning, _ = helpers._lookup_hebrew_word_meaning("לגמגם")
-        assert meaning == ""
+        def _fail(*args, **kwargs):
+            raise AssertionError("a word with no lexicon entry must not be machine-translated")
+
+        monkeypatch.setattr(helpers, "_translate_hebrew_text_online", _fail)
+        assert helpers._lookup_hebrew_word_meaning("לגמגם") == ("", "")
 
     def test_multi_word_hebrew_input_generates_prefix_variants(self, monkeypatch):
         seen_variants = []
 
         def fake_lexicon(variant):
             seen_variants.append(variant)
-            return ("", "")
+            return [], ""
 
-        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon", fake_lexicon)
-        monkeypatch.setattr(helpers, "_translate_hebrew_text_online", lambda v: ("", ""))
+        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon_glosses", fake_lexicon)
         # Neither word nor its stripped-prefix form is a glossary key, so the
         # local-glossary loop can't short-circuit before the lexicon loop runs.
         helpers._lookup_hebrew_word_meaning("ולגמגם המדברים")
@@ -312,8 +236,7 @@ class TestCollectWordMeaningAlternatives:
     def test_hebrew_word_uses_interpretive_glossary(self, monkeypatch):
         monkeypatch.setattr(helpers, "_hebrew_word_variant_candidates", lambda raw: ["ברא"])
         monkeypatch.setattr(helpers, "_parse_meaning_candidates", lambda meaning: [])
-        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon", lambda variant: ("", ""))
-        monkeypatch.setattr(helpers, "_translate_hebrew_text_online", lambda variant: ("", ""))
+        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon_glosses", lambda variant: ([], ""))
         result = helpers._collect_word_meaning_alternatives(
             raw_word="ברא", primary_meaning="create", word_is_hebrew=True,
         )
@@ -335,15 +258,14 @@ class TestCollectWordMeaningAlternatives:
         )
         assert result.count("Rest") == 1
 
-    def test_lexicon_fallback_to_translation_when_few_options(self, monkeypatch):
+    def test_lexicon_glosses_fill_the_options(self, monkeypatch):
         monkeypatch.setattr(helpers, "_hebrew_word_variant_candidates", lambda raw: ["שבת"])
         monkeypatch.setattr(helpers, "_parse_meaning_candidates", lambda meaning: [])
-        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon", lambda variant: ("", ""))
-        monkeypatch.setattr(helpers, "_translate_hebrew_text_online", lambda variant: ("Rest day", "google"))
+        monkeypatch.setattr(helpers, "_lookup_sefaria_lexicon_glosses", lambda variant: (["to rest", "week"], "Klein Dictionary"))
         result = helpers._collect_word_meaning_alternatives(
             raw_word="שבת", primary_meaning="", word_is_hebrew=True,
         )
-        assert "Rest day" in result
+        assert "to rest" in result and "week" in result
 
     def test_non_hebrew_word_only_uses_parsed_candidates(self, monkeypatch):
         monkeypatch.setattr(helpers, "_parse_meaning_candidates", lambda meaning: ["definition one", "definition two"])

@@ -123,6 +123,33 @@ test('a lookup that fails or answers nothing for the word still shows the commen
     }
 });
 
+test('a word the lexicon does not know says "No definition found" beside the commentators, and opens nothing alone', async () => {
+    const notFound = { status: 404, body: { word: 'beginning', meaning: '', alternatives: [], status: 'not_found' } };
+    const page = await readGenesis({ [SIDEBAR_VERSE_1]: RASHI_LINKS, '/api/word/meaning': notFound });
+    try {
+        select(page, 'beginning');
+        await lookup(page);
+        assert.match(body(page), /Word Meaning/);
+        assert.match(body(page), /beginning: No definition found/);
+        assert.match(body(page), /Linked Commentaries/);
+    } finally {
+        page.close();
+    }
+
+    const daf = textPayload('Berakhot 2a', [['1', 'מאימתי', 'From when']], { categories: ['Talmud', 'Bavli'] });
+    const bare = await openShellPage({ fetch: { '/api/text/Berakhot%202a': daf, '/api/word/meaning': notFound } });
+    try {
+        await bare.eval(`readText('Berakhot 2a', { skipNavigationGrid: true })`);
+        await bare.settle();
+        select(bare, 'From');
+        await lookup(bare);
+        assert.equal(panelHidden(bare), true);
+        assert.doesNotMatch(body(bare), /No definition found/);
+    } finally {
+        bare.close();
+    }
+});
+
 test('the commentators appear without waiting for a slow word meaning, which joins them when it lands', async () => {
     let release;
     const gate = new Promise((resolve) => { release = resolve; });

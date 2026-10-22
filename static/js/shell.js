@@ -5919,6 +5919,14 @@ function hasParenthetical(text) {
             }
 
             let html = '';
+            if (!hasWordMeaning && selectionCommentaryState.wordInfo?.notFound) {
+                html += `
+                    <div class="rounded-lg border border-[#d7c8ad] bg-[#f2eadc] px-3 py-2">
+                        <p class="text-[11px] uppercase tracking-widest text-[#5d4c36] font-bold">${t('Word Meaning', 'משמעות מילה')}</p>
+                        <p class="text-sm text-[#4f4130] mt-1"><span class="font-semibold">${escapeHtml(selectionCommentaryState.wordInfo.word || '')}</span>: ${t('No definition found', 'לא נמצאה הגדרה')}</p>
+                    </div>
+                `;
+            }
             if (hasWordMeaning) {
                 const primaryMeaning = String(selectionCommentaryState.wordInfo?.meaning || '').trim().toLowerCase();
                 const altMeanings = Array.isArray(selectionCommentaryState.wordInfo?.alternatives)
@@ -6388,6 +6396,9 @@ function hasParenthetical(text) {
             const lang = !containsHebrewLetters(cleanWord) && isHebrewMode() ? 'he' : 'en';
             return fetch(`/api/word/meaning?word=${encodeURIComponent(cleanWord)}&lang=${encodeURIComponent(lang)}`)
                 .then(async (resp) => {
+                    // A word with no lexicon entry is a result, not a failure:
+                    // the panel says so instead of staying silent.
+                    if (resp.status === 404) return { word: cleanWord, meaning: '', alternatives: [], notFound: true };
                     if (!resp.ok) return null;
                     return await resp.json();
                 })
@@ -6399,12 +6410,13 @@ function hasParenthetical(text) {
                 word: info.word || cleanWord,
                 meaning: info.meaning || '',
                 alternatives: Array.isArray(info.alternatives) ? info.alternatives : [],
+                notFound: Boolean(info.notFound) && !info.meaning,
             };
         }
 
         function mergeLateWordMeaning(wordPromise, cleanWord, isCurrent) {
             void wordPromise.then((lateWordInfo) => {
-                if (!isCurrent() || !lateWordInfo?.meaning) return;
+                if (!isCurrent() || !(lateWordInfo?.meaning || lateWordInfo?.notFound)) return;
                 selectionCommentaryState.wordInfo = normalizeWordInfo(lateWordInfo, cleanWord);
                 // Only re-render the list view; an open commentary keeps
                 // the meaning for when the reader goes back to the list.
@@ -6463,7 +6475,8 @@ function hasParenthetical(text) {
             }
 
             selectionCommentaryState.groupedCommentaries = groupedCommentaries;
-            selectionCommentaryState.wordInfo = hasWordMeaning ? normalizeWordInfo(wordInfo, cleanWord) : null;
+            const wordNotFound = Boolean(cleanWord && wordInfo?.notFound);
+            selectionCommentaryState.wordInfo = hasWordMeaning || wordNotFound ? normalizeWordInfo(wordInfo, cleanWord) : null;
             selectionCommentaryState.selectedText = selectedText;
             setCommentaryAvailability(true);
 

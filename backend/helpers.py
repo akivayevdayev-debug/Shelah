@@ -11,8 +11,10 @@ Alternatives pipeline:
   (falls back to Google Translate only when Sefaria has no result)
 """
 
+import html
 import re
 import time
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import unquote, quote, urlparse
 
@@ -454,79 +456,118 @@ def _translate_english_text_online(text):
     return (translated, source) if translated else ("", "")
 
 
-# ── Sefaria BDB/Jastrow lexicon ───────────────────────────────────────────────
+# ── Sefaria lexicon (Klein, BDB, Jastrow) ─────────────────────────────────────
 
 _SEFARIA_LEXICON_BASE = "https://www.sefaria.org/api/words/"
-_PREFERRED_LEXICONS = ("brown-driver-briggs", "bdb", "jastrow", "sefaria")
+# The lexicons a word meaning may come from, best first. Klein gives plain
+# English glosses ("king, sovereign"); Jastrow and BDB are denser and only
+# fill in when Klein has nothing. Everything else Sefaria returns for a word
+# (Ben Yehuda's Hebrew prose with its footnotes, the Aramaic BDB) is commentary
+# on the word, not a gloss, and is never shown.
+_PREFERRED_LEXICONS = ("klein dictionary", "bdb augmented strong", "jastrow dictionary", "bdb dictionary")
+_DENSE_LEXICONS = frozenset({"jastrow dictionary", "bdb dictionary"})
+LEXICON_GLOSS_MAX_CHARS = 90
+LEXICON_SENSES_PER_GLOSS = 3
+LEXICON_GLOSSES_PER_WORD = 3
+
+_PAREN_GROUP_RE = re.compile(r"\([^()]*\)|\[[^\[\]]*\]")
+# Part-of-speech tags a dense entry opens with ("n.m.", "v. intr.").
+_LEXICON_POS_RE = re.compile(
+    r"^\s*(?:(?:n|v|adj|adv|prep|conj|pron|interj|vb|pr|denom|intr|tr|pl|sing)\.\s*|[mf]\.\s*)+", re.IGNORECASE)
+_LEXICON_SPACE_BEFORE_PUNCT_RE = re.compile(r"\s+([,;:.])")
+_NOT_A_GLOSS_RE = re.compile(r"^(?:=|see\b|v\.|cf\.|prefix\b|abbr)", re.IGNORECASE)
 
 
-def _rank_key_for_lexicon_entry(entry):
-    name = str((entry or {}).get("lexicon_name", "")).lower()
-    for i, pref in enumerate(_PREFERRED_LEXICONS):
-        if pref in name:
-            return i
-    return len(_PREFERRED_LEXICONS)
+def _clean_lexicon_gloss(raw_definition, dense=False):
+    """One lexicon sense as a short English gloss, or "". Tags, parentheses
+    and part-of-speech labels go; a dense (BDB, Jastrow) sense is cut at its
+    first clause. A sense that is a cross-reference, or mostly Hebrew, is not
+    a gloss."""
+    text = re.sub(r"<[^>]+>", "", str(raw_definition or ""))
+    text = html.unescape(text)
+    for _ in range(2):
+        text = _PAREN_GROUP_RE.sub(" ", text)
+    text = _LEXICON_SPACE_BEFORE_PUNCT_RE.sub(r"\1", " ".join(text.split()))
+    text = _LEXICON_POS_RE.sub("", text)
+    text = re.split(r"[;—]| - " if dense else r"\.\s", text, maxsplit=1)[0].strip(" .;,:")
+    if not re.search(r"[A-Za-z]", text) or _NOT_A_GLOSS_RE.match(text):
+        return ""
+    if len(HEBREW_LETTER_RE.findall(text)) * 4 > len(text):
+        return ""
+    if len(text) > LEXICON_GLOSS_MAX_CHARS:
+        text = text[:LEXICON_GLOSS_MAX_CHARS].rsplit(" ", 1)[0].strip(" .;,:")
+    return text
 
 
-def _clean_lexicon_definition_text(raw_definition):
-    """Strip HTML tags/whitespace and cap the length of one raw definition
-    value (a str, or a {"definition": ...} dict). Split out of
-    _candidate_definitions_from_lexicon_entry() (SonarCloud python:S3776).
-    """
-    raw = str(
-        (raw_definition.get("definition") if isinstance(raw_definition, dict) else raw_definition) or ""
-    ).strip()
-    raw = re.sub(r"<[^>]+>", "", raw).strip()
-    return re.sub(r"\s+", " ", raw)[:280]
+def _gloss_from_lexicon_entry(entry, dense):
+    """The first few senses of one lexicon entry joined into one gloss
+    ("that; because; when, while, as"), or ""."""
+    senses = ((entry or {}).get("content") or {}).get("senses")
+    if not isinstance(senses, list):
+        return ""
+    parts = []
+    for sense in senses:
+        gloss = _clean_lexicon_gloss(sense.get("definition") if isinstance(sense, dict) else "", dense)
+        if gloss and gloss.lower() not in {part.lower() for part in parts}:
+            parts.append(gloss)
+        if len(parts) == LEXICON_SENSES_PER_GLOSS:
+            break
+    joined = "; ".join(parts)
+    if len(joined) > LEXICON_GLOSS_MAX_CHARS:
+        joined = joined[:LEXICON_GLOSS_MAX_CHARS].rsplit(";", 1)[0].strip(" .;,:") or parts[0]
+    return joined
 
 
-def _collect_non_echo_definitions(defs, original_value):
-    """Clean and filter a list of raw definition entries down to
-    non-blank, non-echo candidate strings. Split out of
-    _candidate_definitions_from_lexicon_entry() (SonarCloud python:S3776).
-    """
+_VOCALIZATION_KEEP_RE = re.compile(r"[^\u05B0-\u05BC\u05C1\u05C2\u05D0-\u05EA]")
+
+
+def _vocalization_key(text):
+    """A Hebrew word's letters and vowel points, without cantillation marks or
+    anything else, so a pointed word can be matched to a lexicon headword."""
+    return _VOCALIZATION_KEEP_RE.sub("", unicodedata.normalize("NFC", str(text or "")))
+
+
+def _lexicon_candidates(entries, consonants):
+    """(lexicon, vocalization, gloss) for each entry of a preferred lexicon
+    that is exactly this word, in Sefaria's order. Entries for other headwords,
+    which Sefaria also returns, are skipped."""
     candidates = []
-    for raw_definition in defs:
-        raw = _clean_lexicon_definition_text(raw_definition)
-        if raw and not _is_translation_echo(original_value, raw):
-            candidates.append(raw)
-    return candidates
+    for entry in entries:
+        lexicon = str((entry or {}).get("parent_lexicon") or "").strip()
+        if lexicon.lower() not in _PREFERRED_LEXICONS:
+            continue
+        headword = str(entry.get("headword") or "")
+        if re.sub(r"[^א-ת]", "", headword) != consonants:
+            continue
+        gloss = _gloss_from_lexicon_entry(entry, lexicon.lower() in _DENSE_LEXICONS)
+        if gloss:
+            candidates.append((lexicon, _vocalization_key(headword), gloss))
+    return tuple(candidates)
 
 
-def _candidate_definitions_from_lexicon_entry(entry, original_value):
-    """Collect non-blank, non-echo definition candidates from one lexicon
-    entry's content, falling back to its single top-level `definition`
-    field if the `definitions` list yields none. Split out of
-    _best_definition_from_lexicon_entries() (SonarCloud python:S3776).
-    """
-    content = (entry or {}).get("content") or {}
-    defs = content.get("definitions") or []
-    candidates = _collect_non_echo_definitions(defs, original_value)
-    if not candidates and content.get("definition"):
-        raw = re.sub(r"<[^>]+>", "", str(content["definition"])).strip()[:280]
-        if raw:
-            candidates.append(raw)
-    return candidates
-
-
-def _best_definition_from_lexicon_entries(entries, original_value):
-    """Find the first usable, non-echo definition across lexicon entries,
-    preferring entries in _PREFERRED_LEXICONS order. Returns
-    (definition, lexicon_name) or ("", ""). Split out of
-    _lookup_sefaria_lexicon() to keep this loop out of that function's own
-    complexity count (SonarCloud python:S3776).
-    """
-    for entry in sorted(entries, key=_rank_key_for_lexicon_entry):
-        candidates = _candidate_definitions_from_lexicon_entry(entry, original_value)
-        if candidates:
-            return candidates[0], str(entry.get("lexicon_name", "sefaria-lexicon"))
-    return "", ""
+def _pick_lexicon_glosses(candidates, vocalized=""):
+    """(glosses, lexicon_name) from the best lexicon: one gloss per entry
+    (homographs give one each), at most LEXICON_GLOSSES_PER_WORD. A pointed
+    word (בָּרָא, "created") has the entries pointed the same way first, so it
+    is not answered with its homograph בְּרָא, "son"; the lexicon is the best one
+    that has such an entry."""
+    exact = [candidate for candidate in candidates if vocalized and candidate[1] == vocalized]
+    ordered = exact + [candidate for candidate in candidates if candidate not in exact]
+    by_lexicon = {}
+    for lexicon, _, gloss in ordered:
+        by_lexicon.setdefault(lexicon, []).append(gloss)
+    ranked = sorted(by_lexicon, key=lambda name: _PREFERRED_LEXICONS.index(name.lower()))
+    exact_lexicons = {candidate[0] for candidate in exact}
+    if not ranked:
+        return [], ""
+    lexicon = next((name for name in ranked if name in exact_lexicons), ranked[0])
+    return list(dict.fromkeys(by_lexicon[lexicon]))[:LEXICON_GLOSSES_PER_WORD], lexicon
 
 
 def _parse_sefaria_lexicon_response(resp):
     """Validate and parse one Sefaria lexicon HTTP response into an
     entries list, or None if the response wasn't usable (non-OK status or
-    an unexpected payload shape). Split out of _lookup_sefaria_lexicon()
+    an unexpected payload shape). Split out of _lookup_sefaria_lexicon_glosses()
     (SonarCloud python:S3776).
     """
     if not resp.ok:
@@ -537,17 +578,20 @@ def _parse_sefaria_lexicon_response(resp):
     return entries
 
 
-def _lookup_sefaria_lexicon(word):
-    """Look up a Hebrew word in Sefaria's BDB/Jastrow lexicon.
-    Returns (definition, lexicon_name) or ("", "")."""
+def _lookup_sefaria_lexicon_glosses(word):
+    """Short glosses for a Hebrew word from Sefaria's Klein, BDB or Jastrow
+    lexicon. Returns (glosses, lexicon_name) or ([], ""). A word written with
+    vowel points is matched to the lexicon entries pointed the same way."""
     value = str(word or "").strip()
     if not value or not _contains_hebrew_letters(value):
-        return "", ""
+        return [], ""
 
-    consonants = re.sub(r"[֑-ׇ]", "", value).strip() or value
-    cache_key = f"sefaria-lex::{consonants[:80]}"
+    consonants = re.sub(r"[^א-ת]", "", value)
+    vocalized = _vocalization_key(value)
+    vocalized = vocalized if vocalized != consonants else ""
+    cache_key = f"sefaria-gloss::{consonants[:80]}"
     if cache_key in TRANSLATION_CACHE:
-        return TRANSLATION_CACHE.get(cache_key, ""), TRANSLATION_SOURCE_CACHE.get(cache_key, "")
+        return _pick_lexicon_glosses(TRANSLATION_CACHE[cache_key], vocalized)
 
     try:
         resp = _requests.get(
@@ -557,17 +601,18 @@ def _lookup_sefaria_lexicon(word):
             timeout=3.0,
         )
         entries = _parse_sefaria_lexicon_response(resp)
-        if entries is None:
-            _bounded_cache_set(TRANSLATION_CACHE, cache_key, "")
-            return "", ""
-
-        definition, lex_name = _best_definition_from_lexicon_entries(entries, value)
-
-        _bounded_cache_set(TRANSLATION_CACHE, cache_key, definition)
-        _bounded_cache_set(TRANSLATION_SOURCE_CACHE, cache_key, lex_name if definition else "")
-        return definition, lex_name
+        candidates = _lexicon_candidates(entries or [], consonants)
+        _bounded_cache_set(TRANSLATION_CACHE, cache_key, candidates)
+        return _pick_lexicon_glosses(candidates, vocalized)
     except Exception:
-        return "", ""
+        return [], ""
+
+
+def _lookup_sefaria_lexicon(word):
+    """Look up a Hebrew word in Sefaria's lexicon.
+    Returns (gloss, lexicon_name) or ("", "")."""
+    glosses, lex_name = _lookup_sefaria_lexicon_glosses(word)
+    return (glosses[0], lex_name) if glosses else ("", "")
 
 
 # ── English dictionary lookup ─────────────────────────────────────────────────
@@ -660,42 +705,55 @@ def _parse_meaning_candidates(raw_meaning):
 # ── Hebrew word lookup (full chain) ──────────────────────────────────────────
 
 
-def _strip_common_hebrew_prefix(token):
-    value = str(token or "").strip()
-    if len(value) < 4:
-        return value
-    if value and value[0] in {"ו", "ה", "ב", "כ", "ל", "מ", "ש"}:
-        return value[1:]
-    return value
+_HEBREW_PREFIX_LETTERS = frozenset("והבכלמש")
+_HEBREW_VERB_PREFIX_LETTERS = frozenset("יתנא")
+_HEBREW_ENDINGS = ("ים", "ות", "תי", "תם", "נו", "כם", "הם", "ו", "ה", "ך", "ת", "י")
+
+
+def _hebrew_word_forms(token):
+    """The word as written, then with its prefix letters (ו ה ב כ ל מ ש)
+    taken off one at a time, each followed by the same form without its
+    plural, possessive or verb ending. A lexicon is indexed by the base form, so "ושמרו"
+    is looked up as ושמרו, ושמר, שמרו, שמר."""
+    forms = []
+
+    def add(form):
+        if len(form) >= 2 and form not in forms:
+            forms.append(form)
+
+    current = token
+    for _ in range(3):
+        add(current)
+        for ending in _HEBREW_ENDINGS:
+            if current.endswith(ending) and len(current) - len(ending) >= 2:
+                add(current[:-len(ending)])
+                break
+        if len(current) < 3 or current[0] not in _HEBREW_PREFIX_LETTERS:
+            break
+        current = current[1:]
+    # A future-tense verb (ויאמר, "and he said") is indexed under its root, so
+    # the leading י ת נ א comes off last, after every other form has had its
+    # turn. A plural noun keeps it: ימים is "days", not מים, "water".
+    for form in list(forms):
+        if len(form) >= 4 and form[0] in _HEBREW_VERB_PREFIX_LETTERS and not form.endswith(("ים", "ות")):
+            add(form[1:])
+    return forms
 
 
 def _hebrew_word_variants(raw_word):
-    """Candidate Hebrew word forms (letters-only, prefix-stripped,
-    split-on-space) for glossary/lexicon/translation lookup. Moved to
-    module level (out of _lookup_hebrew_word_meaning()) since nested
+    """Candidate Hebrew word forms for glossary and lexicon lookup: the word
+    without nikud, teamim or other marks, then its base forms (see
+    _hebrew_word_forms); a phrase also tries its first words one by one.
+    Moved to module level (out of _lookup_hebrew_word_meaning()) since nested
     closures' own branches count against the enclosing function's
     complexity, but top-level functions' don't (SonarCloud python:S3776).
     """
-    normalized = _normalize_lookup_word(raw_word)
-    variants = []
-
-    def add_variant(candidate):
-        value = str(candidate or "").strip()
-        if value and value not in variants:
-            variants.append(value)
-
-    add_variant(normalized)
-    letters_only = re.sub(r"[^א-ת\s]", "", normalized).strip()
-    add_variant(letters_only)
-
-    if " " in letters_only:
-        for part in letters_only.split():
-            add_variant(part)
-            add_variant(_strip_common_hebrew_prefix(part))
-    else:
-        add_variant(_strip_common_hebrew_prefix(letters_only))
-
-    return variants[:8]
+    letters_only = re.sub(r"[^א-ת\s]", "", _normalize_lookup_word(raw_word)).strip()
+    words = letters_only.split()
+    candidates = [letters_only] if len(words) > 1 else []
+    for token in words[:3]:
+        candidates.extend(_hebrew_word_forms(token))
+    return list(dict.fromkeys(form for form in candidates if form))[:8]
 
 
 def _lookup_hebrew_word_in_local_glossary(variants):
@@ -749,43 +807,26 @@ def _first_hit(fn, candidates, is_hit, max_workers):
     return None
 
 
-def _lookup_hebrew_word_in_sefaria_lexicon(variants):
-    """Stage 2 of _lookup_hebrew_word_meaning(): Sefaria lexicon lookup.
-    Split out (SonarCloud python:S3776). See _first_hit()'s docstring for
-    why this is bounded, early-exiting concurrency rather than a plain loop
-    or an uncapped gather.
-    """
-    result = _first_hit(_lookup_sefaria_lexicon, variants, lambda r: bool(r[0]), max_workers=6)
-    if not result:
-        return "", ""
-    lex_def, lex_src = result
-    return lex_def, lex_src or "sefaria-lexicon"
+def _first_lexicon_glosses(variants, written=""):
+    """(glosses, lexicon_name) for the first variant the lexicon knows. `written`
+    is the word as the reader selected it, vowel points included: it stands in
+    for the variant of the same letters so the lexicon can match its pointing.
+    See _first_hit()'s docstring for why this is bounded, early-exiting
+    concurrency rather than a plain loop or an uncapped gather."""
+    written_letters = re.sub(r"[^א-ת]", "", written)
 
+    def lookup(variant):
+        return _lookup_sefaria_lexicon_glosses(written if variant == written_letters else variant)
 
-def _lookup_hebrew_word_via_online_translation(variants, clean_word):
-    """Stages 3-4 of _lookup_hebrew_word_meaning(): online machine
-    translation, tried per-variant and then against the full clean word,
-    rejecting results that look like transliteration rather than an actual
-    English meaning. Split out (SonarCloud python:S3776).
-
-    max_workers=2: see _first_hit()'s docstring -- this is the stage that
-    shares a circuit breaker with every other translation caller in the
-    process, so concurrency here stays deliberately gentle.
-    """
-    candidates = [*variants, clean_word]
-    result = _first_hit(
-        _translate_hebrew_text_online,
-        candidates,
-        lambda r: bool(r[0]) and not _looks_like_transliteration(r[0]),
-        max_workers=2,
-    )
-    if not result:
-        return "", ""
-    generated, source = result
-    return generated, source or "automatic-translation"
+    result = _first_hit(lookup, variants, lambda r: bool(r[0]), max_workers=6)
+    return result or ([], "")
 
 
 def _lookup_hebrew_word_meaning(word):
+    """A short gloss for a Hebrew word: the curated glossary, then Sefaria's
+    Klein, BDB or Jastrow lexicon. Nothing else: no machine translation and no
+    commentary, so a word with no entry is reported as not found rather than
+    answered with a guess."""
     clean_word = _normalize_lookup_word(word)
     if not clean_word:
         return "", ""
@@ -796,11 +837,8 @@ def _lookup_hebrew_word_meaning(word):
     if definition:
         return definition, source
 
-    definition, source = _lookup_hebrew_word_in_sefaria_lexicon(variants)
-    if definition:
-        return definition, source
-
-    return _lookup_hebrew_word_via_online_translation(variants, clean_word)
+    glosses, lex_name = _first_lexicon_glosses(variants, word)
+    return (glosses[0], lex_name) if glosses else ("", "")
 
 
 # ── Word meaning alternatives (Sefaria-first for Hebrew variants) ─────────────
@@ -822,38 +860,25 @@ def _collect_hebrew_word_meaning_options(raw_word, primary_meaning, options, add
     for candidate in _parse_meaning_candidates(primary_meaning):
         add_option(candidate)
 
-    probe_variants = variants[:2]
-    if not probe_variants:
-        return
-
-    # Same fan-out as the primary lookup's stages above: the two lexicon
-    # probes don't depend on each other, so run them together instead of
-    # one after another.
-    with ThreadPoolExecutor(max_workers=len(probe_variants)) as pool:
-        lex_results = list(pool.map(_lookup_sefaria_lexicon, probe_variants))
-
-    pending_translation = []
-    for variant, (lex_def, _) in zip(probe_variants, lex_results):
-        if lex_def:
-            add_option(lex_def)
-        elif len(options) < 2:
-            pending_translation.append(variant)
-
-    if pending_translation:
-        with ThreadPoolExecutor(max_workers=len(pending_translation)) as pool:
-            translations = list(pool.map(_translate_hebrew_text_online, pending_translation))
-        for translated, _ in translations:
-            add_option(translated)
+    # A lexicon gloss is real English ("sheep", "week", "three"), so it skips
+    # the transliteration check that screens glossary and machine output.
+    glosses, _ = _first_lexicon_glosses(_hebrew_word_variants(raw_word), raw_word)
+    for gloss in glosses:
+        shown = {option.lower() for option in options}
+        parts = _parse_meaning_candidates(gloss)
+        # The first gloss is also the primary meaning, already split into options.
+        if not (parts and all(part.lower() in shown for part in parts)):
+            add_option(gloss, check_transliteration=False)
 
 
 def _collect_word_meaning_alternatives(raw_word, primary_meaning, word_is_hebrew):
     options = []
 
-    def add_option(candidate):
+    def add_option(candidate, check_transliteration=True):
         normalized = re.sub(r"\s+", " ", str(candidate or "").strip(" ."))
         if not normalized:
             return
-        if word_is_hebrew and _looks_like_transliteration(normalized):
+        if word_is_hebrew and check_transliteration and _looks_like_transliteration(normalized):
             return
         if normalized.lower() in {item.lower() for item in options}:
             return

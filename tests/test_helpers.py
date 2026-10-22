@@ -562,32 +562,35 @@ class TestTranslateEnglishTextOnline:
 
 
 class TestLookupSefariaLexicon:
+    @staticmethod
+    def _klein(headword, *definitions):
+        return {
+            "headword": headword,
+            "parent_lexicon": "Klein Dictionary",
+            "content": {"senses": [{"definition": d} for d in definitions]},
+        }
+
     def test_returns_empty_for_non_hebrew_word(self, mock_outbound_http):
         assert helpers._lookup_sefaria_lexicon("hello") == ("", "")
 
     def test_returns_empty_for_empty_word(self, mock_outbound_http):
         assert helpers._lookup_sefaria_lexicon("") == ("", "")
 
-    def test_success_returns_definition_and_lexicon_name(self, mock_outbound_http):
+    def test_success_returns_gloss_and_lexicon_name(self, mock_outbound_http):
         helpers.TRANSLATION_CACHE.clear()
         helpers.TRANSLATION_SOURCE_CACHE.clear()
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
             rsps.add(
                 responses_lib.GET,
                 re.compile(r"https://www\.sefaria\.org/api/words/.*"),
-                json=[
-                    {
-                        "lexicon_name": "BDB Dictionary",
-                        "content": {"definitions": [{"definition": "to create, fashion"}]},
-                    }
-                ],
+                json=[self._klein("בָּרָא", "to create")],
                 status=200,
             )
-            definition, lex_name = helpers._lookup_sefaria_lexicon("ברא")
-        assert definition == "to create, fashion"
-        assert lex_name == "BDB Dictionary"
+            gloss, lex_name = helpers._lookup_sefaria_lexicon("ברא")
+        assert gloss == "to create"
+        assert lex_name == "Klein Dictionary"
 
-    def test_prefers_bdb_over_other_lexicon(self, mock_outbound_http):
+    def test_prefers_klein_over_the_denser_lexicons(self, mock_outbound_http):
         helpers.TRANSLATION_CACHE.clear()
         helpers.TRANSLATION_SOURCE_CACHE.clear()
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
@@ -596,21 +599,18 @@ class TestLookupSefariaLexicon:
                 re.compile(r"https://www\.sefaria\.org/api/words/.*"),
                 json=[
                     {
-                        "lexicon_name": "Some Other Lexicon",
-                        "content": {"definitions": [{"definition": "other definition"}]},
+                        "headword": "שָׁלוֹם",
+                        "parent_lexicon": "Jastrow Dictionary",
+                        "content": {"senses": [{"definition": "<b>peace</b>, welfare; greeting"}]},
                     },
-                    {
-                        "lexicon_name": "Brown-Driver-Briggs",
-                        "content": {"definitions": [{"definition": "preferred definition"}]},
-                    },
+                    self._klein("שָׁלוֹם", "peace, well-being"),
                 ],
                 status=200,
             )
-            definition, lex_name = helpers._lookup_sefaria_lexicon("שלום")
-        assert definition == "preferred definition"
-        assert lex_name == "Brown-Driver-Briggs"
+            gloss, lex_name = helpers._lookup_sefaria_lexicon("שלום")
+        assert (gloss, lex_name) == ("peace, well-being", "Klein Dictionary")
 
-    def test_strips_html_tags_from_definition(self, mock_outbound_http):
+    def test_strips_html_tags_from_a_dense_lexicon_gloss(self, mock_outbound_http):
         helpers.TRANSLATION_CACHE.clear()
         helpers.TRANSLATION_SOURCE_CACHE.clear()
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
@@ -619,17 +619,17 @@ class TestLookupSefariaLexicon:
                 re.compile(r"https://www\.sefaria\.org/api/words/.*"),
                 json=[
                     {
-                        "lexicon_name": "Jastrow",
-                        "content": {"definitions": [{"definition": "<b>bold</b> meaning"}]},
+                        "headword": "אַהֲבָה",
+                        "parent_lexicon": "Jastrow Dictionary",
+                        "content": {"senses": [{"definition": "<b>love</b> &amp; affection; desire"}]},
                     }
                 ],
                 status=200,
             )
-            definition, _ = helpers._lookup_sefaria_lexicon("אהבה")
-        assert definition == "bold meaning"
-        assert "<b>" not in definition
+            gloss, _ = helpers._lookup_sefaria_lexicon("אהבה")
+        assert gloss == "love & affection"
 
-    def test_falls_back_to_content_definition_field(self, mock_outbound_http):
+    def test_prose_lexicons_are_never_shown(self, mock_outbound_http):
         helpers.TRANSLATION_CACHE.clear()
         helpers.TRANSLATION_SOURCE_CACHE.clear()
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
@@ -638,16 +638,28 @@ class TestLookupSefariaLexicon:
                 re.compile(r"https://www\.sefaria\.org/api/words/.*"),
                 json=[
                     {
-                        "lexicon_name": "sefaria",
-                        "content": {"definition": "fallback content definition"},
+                        "headword": "חֶסֶד",
+                        "parent_lexicon": "Ben Yehuda Dictionary",
+                        "content": {"definition": ["a long Hebrew explanation, with footnotes"]},
                     }
                 ],
                 status=200,
             )
-            definition, _ = helpers._lookup_sefaria_lexicon("חסד")
-        assert definition == "fallback content definition"
+            assert helpers._lookup_sefaria_lexicon("חסד") == ("", "")
 
-    def test_upstream_failure_status_returns_empty_and_caches(self, mock_outbound_http):
+    def test_an_entry_for_a_different_headword_is_skipped(self, mock_outbound_http):
+        helpers.TRANSLATION_CACHE.clear()
+        helpers.TRANSLATION_SOURCE_CACHE.clear()
+        with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+            rsps.add(
+                responses_lib.GET,
+                re.compile(r"https://www\.sefaria\.org/api/words/.*"),
+                json=[self._klein("חֲסִידָה", "stork")],
+                status=200,
+            )
+            assert helpers._lookup_sefaria_lexicon("חסד") == ("", "")
+
+    def test_upstream_failure_status_returns_empty(self, mock_outbound_http):
         helpers.TRANSLATION_CACHE.clear()
         helpers.TRANSLATION_SOURCE_CACHE.clear()
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
@@ -656,10 +668,7 @@ class TestLookupSefariaLexicon:
                 re.compile(r"https://www\.sefaria\.org/api/words/.*"),
                 status=404,
             )
-            definition, lex_name = helpers._lookup_sefaria_lexicon("ירושלים")
-        assert (definition, lex_name) == ("", "")
-        # cached as empty
-        assert helpers.TRANSLATION_CACHE.get("sefaria-lex::ירושלים") == ""
+            assert helpers._lookup_sefaria_lexicon("ירושלים") == ("", "")
 
     def test_non_list_payload_returns_empty(self, mock_outbound_http):
         helpers.TRANSLATION_CACHE.clear()
@@ -673,14 +682,14 @@ class TestLookupSefariaLexicon:
             )
             assert helpers._lookup_sefaria_lexicon("אמת") == ("", "")
 
-    def test_no_candidates_returns_empty(self, mock_outbound_http):
+    def test_entry_without_senses_returns_empty(self, mock_outbound_http):
         helpers.TRANSLATION_CACHE.clear()
         helpers.TRANSLATION_SOURCE_CACHE.clear()
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
             rsps.add(
                 responses_lib.GET,
                 re.compile(r"https://www\.sefaria\.org/api/words/.*"),
-                json=[{"lexicon_name": "jastrow", "content": {}}],
+                json=[{"headword": "יִרְאָה", "parent_lexicon": "Klein Dictionary", "content": {}}],
                 status=200,
             )
             assert helpers._lookup_sefaria_lexicon("יראה") == ("", "")
@@ -703,18 +712,13 @@ class TestLookupSefariaLexicon:
             rsps.add(
                 responses_lib.GET,
                 re.compile(r"https://www\.sefaria\.org/api/words/.*"),
-                json=[
-                    {
-                        "lexicon_name": "bdb",
-                        "content": {"definitions": [{"definition": "cached definition"}]},
-                    }
-                ],
+                json=[self._klein("בְּרָכָה", "blessing")],
                 status=200,
             )
             first = helpers._lookup_sefaria_lexicon("ברכה")
         # second call should hit cache, no network mock needed at all
         second = helpers._lookup_sefaria_lexicon("ברכה")
-        assert second == first == ("cached definition", "bdb")
+        assert second == first == ("blessing", "Klein Dictionary")
 
 
 # ── English dictionary lookup ─────────────────────────────────────────────────
