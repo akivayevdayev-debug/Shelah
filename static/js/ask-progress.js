@@ -60,7 +60,8 @@ const DETAIL_KINDS = Object.freeze(["refs", "community", "times", "tool", "step"
 
 function withoutDetail(details, stage) {
     if (!Object.hasOwn(details, stage)) return details;
-    const { [stage]: _gone, ...rest } = details;
+    const rest = { ...details };
+    delete rest[stage];
     return rest;
 }
 
@@ -168,10 +169,12 @@ function refsLabel(detail, lang, names) {
     const refs = shown.map((r) => (names.ref ? names.ref(r) : r));
     const more = Math.max(0, (Number(detail.count) || shown.length) - shown.length);
     if (isHebrew(lang)) {
-        return `קוראים ${refs.join(", ")}${more ? ` ועוד ${more}` : ""}`;
+        const extraHe = more ? ` ועוד ${more}` : "";
+        return `קוראים ${refs.join(", ")}${extraHe}`;
     }
     const list = refs.length > 1 && !more ? `${refs.slice(0, -1).join(", ")} and ${refs.at(-1)}` : refs.join(", ");
-    return `Reading ${list}${more ? ` and ${more} more` : ""}`;
+    const extraEn = more ? ` and ${more} more` : "";
+    return `Reading ${list}${extraEn}`;
 }
 
 function toolLabel(detail, lang, names) {

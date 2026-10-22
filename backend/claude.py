@@ -2309,6 +2309,25 @@ def _trim_history_turns(turns: List[Dict[str, str]], max_total_chars: int) -> Li
     return turns
 
 
+def _add_history_turn(turns, turn, user_chars, assistant_chars) -> None:
+    """Add one earlier turn to ``turns``: a refusal removes the question it
+    answered, an empty turn adds nothing, a neighbour of the same role is joined."""
+    if turn.get("role") != "user" and _is_scope_refusal(str(turn.get("content") or "")):
+        # A refused question leaves the thread with its refusal: the model would
+        # otherwise read "that is outside what I can help with" as its own earlier answer.
+        if turns and turns[-1]["role"] == "user":
+            turns.pop()
+        return
+    parsed = _history_turn(turn, user_chars, assistant_chars)
+    if parsed is None:
+        return
+    role, text = parsed
+    if turns and turns[-1]["role"] == role:
+        turns[-1]["text"] = f"{turns[-1]['text']}\n{text}"
+    else:
+        turns.append({"role": role, "text": text})
+
+
 def build_history_turns(conversation_history, *, max_turns=HISTORY_MAX_TURNS,
                         user_chars=HISTORY_USER_TURN_CHARS,
                         assistant_chars=HISTORY_ASSISTANT_TURN_CHARS,
@@ -2326,20 +2345,7 @@ def build_history_turns(conversation_history, *, max_turns=HISTORY_MAX_TURNS,
     first when the thread is longer than ``max_total_chars``."""
     turns: List[Dict[str, str]] = []
     for turn in [t for t in (conversation_history or []) if isinstance(t, dict)][-max_turns:]:
-        if turn.get("role") != "user" and _is_scope_refusal(str(turn.get("content") or "")):
-            # A refused question leaves the thread with its refusal: the model would
-            # otherwise read "that is outside what I can help with" as its own earlier answer.
-            if turns and turns[-1]["role"] == "user":
-                turns.pop()
-            continue
-        parsed = _history_turn(turn, user_chars, assistant_chars)
-        if parsed is None:
-            continue
-        role, text = parsed
-        if turns and turns[-1]["role"] == role:
-            turns[-1]["text"] = f"{turns[-1]['text']}\n{text}"
-        else:
-            turns.append({"role": role, "text": text})
+        _add_history_turn(turns, turn, user_chars, assistant_chars)
     return _trim_history_turns(turns, max_total_chars)
 
 
@@ -2553,6 +2559,57 @@ def _community_lens_line(community_lens, answer_language="en") -> str:
     return f"{lens} {translit}" if translit else lens
 
 
+def _format_instruction(simple: bool, study: bool, long_request: bool) -> str:
+    """Instruction 17b of build_prompt(): the answer shape for this kind of question."""
+    if simple:
+        return (
+            "17b. SIMPLE QUESTION FORMAT: This is a simple, direct question. "
+            "Write the ruling as one short paragraph: the direct answer in the first sentence, then only "
+            "the reasoning needed to trust it (usually 2-5 sentences in all, each under 25 words: end a "
+            "sentence and start another instead of adding a second \"because\" or \"which\") — do NOT use "
+            "separate section headings inside ruling. "
+            "Set practical_steps to [] and summary to an empty string. "
+            "Keep sources brief (1-3 items), each marked right after the sentence that rests on it."
+        )
+    elif study:
+        return (
+            "17b. STUDY FORMAT: The reader asked to LEARN a text or topic, not for a ruling: do not frame the "
+            "answer as a halachic ruling, and set is_prohibited to false. Put the whole guide in ruling: two or "
+            "three sentences of orientation first, then one section per item the question lists (or per natural "
+            "part of the text), in the order asked, each starting with a markdown `### Heading` line. Answer every "
+            "item with its specifics — who, what happened, numbers, verses, and what the text, Chazal and the "
+            "commentators you are certain of say and where they differ — never a general remark in its place; if "
+            "you cannot answer an item, say so in one sentence. Paragraphs of 2-5 sentences, a bulleted list only "
+            "for parallel items; no dense block, no restating the question, nothing said twice. "
+            "Set practical_steps to [] and summary to an empty string. "
+            "Cite up to 10 specific sources, each marked right after the sentence that rests on it."
+            + (f" The reader also asked for length: write at least {LONG_ANSWER_MIN_WORDS} words." if long_request else "")
+        )
+    elif long_request:
+        return (
+            f"17b. LONG ANSWER FORMAT: The reader asked for a long, detailed answer and must get one: write at "
+            f"least {LONG_ANSWER_MIN_WORDS} words in ruling. Open with the direct answer in one or two sentences, "
+            "then develop it under short `### Heading` lines in a natural order: the source or background, what "
+            "each authority or commentator says (the specifics, not a general remark), where they differ and "
+            "why, and what follows for the reader. A request for more depth redoes the subject of the "
+            "earlier answer in full, adding what that answer left out instead of repeating it. Paragraphs of "
+            "2-5 sentences, nothing said twice, no padding. Set practical_steps to [] unless there is a real "
+            "procedure, and summary to an empty string. Cite up to 8 specific sources, each marked right "
+            "after the sentence that rests on it."
+        )
+    else:
+        return (
+            "17b. COMPLEX QUESTION FORMAT: This is a multi-part or analytical question. "
+            "The ruling field starts with the DIRECT ANSWER (1-3 sentences), then gives the reasoning "
+            "the question needs without restating it. If the question has several parts, answer each part in order "
+            "under its own short `### Heading`; a single-point question gets no headings. "
+            "Use practical_steps (at most 6) only for a procedure the reader must carry out that ruling does not already "
+            "spell out; otherwise []. "
+            "Set summary to an empty string unless it adds a takeaway ruling does not contain. "
+            "Cite the specific primary sources you rely on (usually 2-6), each marked right after the sentence it supports."
+        )
+
+
 def build_prompt(question, sefaria_sources, wiki, halachipedia=None, mode="balanced", community_lens="All", answer_language="en", conversation_history=None, history_as_turns=False, web_lookup_available=False, web_findings=None):
     """Build compact user prompt for token-light Claude calls.
 
@@ -2618,53 +2675,7 @@ def build_prompt(question, sefaria_sources, wiki, halachipedia=None, mode="balan
     simple, study, _ = question_profile(question)
     long_request = wants_long_answer(question)
 
-    if simple:
-        format_instruction = (
-            "17b. SIMPLE QUESTION FORMAT: This is a simple, direct question. "
-            "Write the ruling as one short paragraph: the direct answer in the first sentence, then only "
-            "the reasoning needed to trust it (usually 2-5 sentences in all, each under 25 words: end a "
-            "sentence and start another instead of adding a second \"because\" or \"which\") — do NOT use "
-            "separate section headings inside ruling. "
-            "Set practical_steps to [] and summary to an empty string. "
-            "Keep sources brief (1-3 items), each marked right after the sentence that rests on it."
-        )
-    elif study:
-        format_instruction = (
-            "17b. STUDY FORMAT: The reader asked to LEARN a text or topic, not for a ruling: do not frame the "
-            "answer as a halachic ruling, and set is_prohibited to false. Put the whole guide in ruling: two or "
-            "three sentences of orientation first, then one section per item the question lists (or per natural "
-            "part of the text), in the order asked, each starting with a markdown `### Heading` line. Answer every "
-            "item with its specifics — who, what happened, numbers, verses, and what the text, Chazal and the "
-            "commentators you are certain of say and where they differ — never a general remark in its place; if "
-            "you cannot answer an item, say so in one sentence. Paragraphs of 2-5 sentences, a bulleted list only "
-            "for parallel items; no dense block, no restating the question, nothing said twice. "
-            "Set practical_steps to [] and summary to an empty string. "
-            "Cite up to 10 specific sources, each marked right after the sentence that rests on it."
-            + (f" The reader also asked for length: write at least {LONG_ANSWER_MIN_WORDS} words." if long_request else "")
-        )
-    elif long_request:
-        format_instruction = (
-            f"17b. LONG ANSWER FORMAT: The reader asked for a long, detailed answer and must get one: write at "
-            f"least {LONG_ANSWER_MIN_WORDS} words in ruling. Open with the direct answer in one or two sentences, "
-            "then develop it under short `### Heading` lines in a natural order: the source or background, what "
-            "each authority or commentator says (the specifics, not a general remark), where they differ and "
-            "why, and what follows for the reader. A request for more depth redoes the subject of the "
-            "earlier answer in full, adding what that answer left out instead of repeating it. Paragraphs of "
-            "2-5 sentences, nothing said twice, no padding. Set practical_steps to [] unless there is a real "
-            "procedure, and summary to an empty string. Cite up to 8 specific sources, each marked right "
-            "after the sentence that rests on it."
-        )
-    else:
-        format_instruction = (
-            "17b. COMPLEX QUESTION FORMAT: This is a multi-part or analytical question. "
-            "The ruling field starts with the DIRECT ANSWER (1-3 sentences), then gives the reasoning "
-            "the question needs without restating it. If the question has several parts, answer each part in order "
-            "under its own short `### Heading`; a single-point question gets no headings. "
-            "Use practical_steps (at most 6) only for a procedure the reader must carry out that ruling does not already "
-            "spell out; otherwise []. "
-            "Set summary to an empty string unless it adds a takeaway ruling does not contain. "
-            "Cite the specific primary sources you rely on (usually 2-6), each marked right after the sentence it supports."
-        )
+    format_instruction = _format_instruction(simple, study, long_request)
 
     follow_up_instruction = (
         '20. The QUESTION may point back to the earlier turns of this conversation ("that", "it", "the second one", '
@@ -3390,6 +3401,23 @@ def _anthropic_usage_tokens(usage: Any) -> Tuple[int, int]:
     return equivalent, count("output_tokens")
 
 
+def _anthropic_error_result(error: str, gemini_error: str, model_name: str) -> Dict[str, Any]:
+    """The result of an Anthropic fallback that did not run, carrying the Gemini error that sent it here."""
+    if gemini_error:
+        # _call_gemini_model already tagged a real Gemini failure
+        # "gemini_error: ...", so tag only the bare reasons (a closed circuit,
+        # a missing key) to avoid "gemini_error: gemini_error: ...".
+        tag = "" if gemini_error.startswith("gemini_error:") else "gemini_error: "
+        error = f"{tag}{gemini_error}; {error}"
+    return {
+        "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
+        "confidence": 0,
+        "error": error,
+        "is_fallback": True,
+        "model": model_name,
+    }
+
+
 async def _call_anthropic_httpx_model(
     prompt: str,
     dynamic_system_context: str = "",
@@ -3403,21 +3431,6 @@ async def _call_anthropic_httpx_model(
     """
     model_name = _CLAUDE_FALLBACK_MODEL
 
-    def _error_result(error: str) -> Dict[str, Any]:
-        if gemini_error:
-            # _call_gemini_model already tagged a real Gemini failure
-            # "gemini_error: ...", so tag only the bare reasons (a closed circuit,
-            # a missing key) to avoid "gemini_error: gemini_error: ...".
-            tag = "" if gemini_error.startswith("gemini_error:") else "gemini_error: "
-            error = f"{tag}{gemini_error}; {error}"
-        return {
-            "answer": _ERR_AI_PROVIDER_UNAVAILABLE,
-            "confidence": 0,
-            "error": error,
-            "is_fallback": True,
-            "model": model_name,
-        }
-
     # Circuit-broken like the Gemini primary, and gated ahead
     # of _get_async_client() so an open circuit skips client construction too.
     # Checked off-loop because is_healthy() re-probes inline (a blocking
@@ -3426,17 +3439,17 @@ async def _call_anthropic_httpx_model(
     if not await asyncio.to_thread(health.is_healthy, 'claude'):
         logger.warning(
             "Claude circuit is open — skipping the Anthropic fallback call.")
-        return _error_result("anthropic_circuit_open")
+        return _anthropic_error_result("anthropic_circuit_open", gemini_error, model_name)
 
     client = _get_async_client()
     if not client:
-        return _error_result("anthropic_api_key_missing")
+        return _anthropic_error_result("anthropic_api_key_missing", gemini_error, model_name)
 
     # Whatever the Gemini leg left of the synthesis budget. Not a provider
     # failure, so the circuit is left alone.
     timeout = _model_call_timeout()
     if timeout < _MIN_MODEL_CALL_SECONDS:
-        return _error_result("ai_budget_exhausted")
+        return _anthropic_error_result("ai_budget_exhausted", gemini_error, model_name)
 
     answer_ceiling = max_tokens or COMPLEX_ANSWER_MAX_TOKENS
     is_study_ceiling = answer_ceiling >= STUDY_ANSWER_MAX_TOKENS
@@ -3468,7 +3481,7 @@ async def _call_anthropic_httpx_model(
         # A safeguard refusal is a normal 200 with no usable content and no
         # server-side fallback: the provider is up, so the circuit is untouched.
         if getattr(message, "stop_reason", None) == "refusal":
-            return _error_result("anthropic_refusal")
+            return _anthropic_error_result("anthropic_refusal", gemini_error, model_name)
         if getattr(message, "stop_reason", None) == "max_tokens":
             logger.warning("Claude answer hit max_tokens (%d); salvaging the finished part.", answer_ceiling)
 
@@ -3497,7 +3510,7 @@ async def _call_anthropic_httpx_model(
         }
     except Exception as exc:
         health.record_failure('claude')
-        return _error_result(f"anthropic_sdk_error: {exc}")
+        return _anthropic_error_result(f"anthropic_sdk_error: {exc}", gemini_error, model_name)
 
 
 def _split_agentic_content(content: Any) -> Tuple[List[str], List[Dict[str, Any]]]:
@@ -3749,6 +3762,18 @@ async def _web_second_pass_async(first, started, answer_again, answer_language):
     return _finish_web_lookup(second, query, found)
 
 
+async def _scope_second_look_async(result, started, sanitized_query, has_history, ask_again):
+    """When the model flagged the question out of scope and the budget allows, ask
+    once more with a note (scope_second_look_note) and return the new result.
+    A second call that fails or runs out of time must not replace the refusal the
+    first one gave, or the reader gets a sources-only fallback instead."""
+    if not (flagged_out_of_scope(result) and _second_look_budget_left(started)):
+        return result
+    ask_progress.step(ask_progress.STEP_SECOND_LOOK)
+    second = await ask_again(scope_second_look_note(sanitized_query, has_history))
+    return result if second.get("error") else second
+
+
 async def ask_ai_async(
     question,
     sefaria_sources,
@@ -3834,14 +3859,9 @@ async def ask_ai_async(
     if max_tokens >= LONG_ANSWER_MAX_TOKENS:
         ask_progress.step(ask_progress.STEP_LONG)
     result = await _generate(_prompt())
-    if flagged_out_of_scope(result) and _second_look_budget_left(started):
-        second_look = scope_second_look_note(sanitized_query, bool(build_history_turns(conversation_history)))
-        ask_progress.step(ask_progress.STEP_SECOND_LOOK)
-        second = await _generate(_prompt() + second_look)
-        # A second call that fails or runs out of time must not replace the refusal
-        # the first one gave, or the reader gets a sources-only fallback instead.
-        if not second.get("error"):
-            result = second
+    result = await _scope_second_look_async(
+        result, started, sanitized_query, bool(build_history_turns(conversation_history)),
+        lambda note: _generate(_prompt() + note))
     result = (
         await _web_second_pass_async(
             result, started, lambda found: _generate(_prompt(found)), answer_language)

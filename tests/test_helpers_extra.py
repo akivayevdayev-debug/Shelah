@@ -265,7 +265,8 @@ class TestCollectWordMeaningAlternatives:
         result = helpers._collect_word_meaning_alternatives(
             raw_word="שבת", primary_meaning="", word_is_hebrew=True,
         )
-        assert "to rest" in result and "week" in result
+        assert "to rest" in result
+        assert "week" in result
 
     def test_non_hebrew_word_only_uses_parsed_candidates(self, monkeypatch):
         monkeypatch.setattr(helpers, "_parse_meaning_candidates", lambda meaning: ["definition one", "definition two"])

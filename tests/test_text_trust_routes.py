@@ -142,7 +142,8 @@ def test_denied_content_never_reaches_a_route(test_client, poisoned_sefaria, pat
 @pytest.mark.parametrize("path", DIRECT_ROUTES)
 def test_asking_for_a_denied_work_returns_nothing_of_it(test_client, poisoned_sefaria, path):
     body = test_client.get(path).get_data(as_text=True)
-    assert DENIED_TEXT not in body and DENIED_VERSION not in body
+    assert DENIED_TEXT not in body
+    assert DENIED_VERSION not in body
     payload = json.loads(body)
     for key in ("he", "en", "refs", "texts", "sections"):
         assert not payload.get(key), f"{path} returned {key}: {payload.get(key)!r}"

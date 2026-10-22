@@ -60,6 +60,9 @@ _COMMUNITY_ORDER = {
 # `actualLanguage` says what the text really is.
 _SHOWN_LANGUAGES = {"he": {"he", "arc", ""}, "en": {"en", ""}}
 
+_BIALIK_COMMENTARY = "Commentary on Bialik's secular essay above."
+_RECONSTRUCTIONIST = "Reconstructionist movement."
+
 # Works hidden everywhere. match "exact" compares the whole title; "prefix"
 # also catches the work's per-book parts ("English Explanation of Mishnah
 # Berakhot"). Titles are Sefaria index titles.
@@ -89,13 +92,13 @@ DENIED_WORKS = (
     {"title": "Halakhah and Aggadah", "match": "exact",
      "reason": "Essay by the secular poet H. N. Bialik, not a religious source."},
     {"title": "Bein HaShitin on Halakhah and Aggadah", "match": "exact",
-     "reason": "Commentary on Bialik's secular essay above."},
+     "reason": _BIALIK_COMMENTARY},
     {"title": "Revealment and Concealment in Language", "match": "exact",
      "reason": "Essay by the secular poet H. N. Bialik."},
     {"title": "Ali Be'er on Revealment and Concealment in Language", "match": "exact",
-     "reason": "Commentary on Bialik's secular essay above."},
+     "reason": _BIALIK_COMMENTARY},
     {"title": "Commentaries on Revealment and Concealment in Language", "match": "exact",
-     "reason": "Commentary on Bialik's secular essay above."},
+     "reason": _BIALIK_COMMENTARY},
     {"title": "The Five Books of Moses, by Everett Fox", "match": "exact",
      "reason": "Academic, non-Orthodox literary translation."},
     {"title": "The Early Prophets, by Everett Fox", "match": "exact",
@@ -115,7 +118,7 @@ DENIED_SOURCE_DOMAINS = {
     "urj.org": "Union for Reform Judaism.",
     "ccarnet.org": "Central Conference of American Rabbis (Reform).",
     "ccarpress.org": "CCAR Press (Reform).",
-    "reconstructingjudaism.org": "Reconstructionist movement.",
+    "reconstructingjudaism.org": _RECONSTRUCTIONIST,
     "rrc.edu": "Reconstructionist Rabbinical College.",
     "ritualwell.org": "Reconstructionist ritual site.",
     "aleph.org": "ALEPH: Alliance for Jewish Renewal.",
@@ -171,8 +174,8 @@ DENIED_SOURCE_NAMES = {
     "Reform Responsa": "Reform movement responsa.",
     "Union for Reform Judaism": "Reform movement.",
     "Hebrew Union College": "Reform movement's seminary.",
-    "Reconstructionist": "Reconstructionist movement.",
-    "Reconstructing Judaism": "Reconstructionist movement.",
+    "Reconstructionist": _RECONSTRUCTIONIST,
+    "Reconstructing Judaism": _RECONSTRUCTIONIST,
 }
 _DENIED_SOURCE_NAMES_RE = re.compile(
     r"\b(?:" + "|".join(re.escape(name) for name in DENIED_SOURCE_NAMES) + r")\b",

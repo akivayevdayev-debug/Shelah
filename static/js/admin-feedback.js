@@ -27,7 +27,7 @@
     // "comment" is a reader's note with no rating; "ai_note" is the server's own
     // one-line note on an answer (backend/ai_notes.py), never a reader's verdict.
     const VERDICT_LABEL = { helpful: 'Helpful', not_helpful: 'Not helpful', comment: 'Comment only', ai_note: 'AI note', unknown: 'Unrated' };
-    const RATING_VERDICTS = ['helpful', 'not_helpful', 'comment'];
+    const RATING_VERDICTS = new Set(['helpful', 'not_helpful', 'comment']);
 
     // ── Rows ─────────────────────────────────────────────────────────────
 
@@ -57,7 +57,7 @@
                 const fromAi = row.source === 'ai' || row.verdict === 'ai_note';
                 let verdict = 'unknown';
                 if (fromAi) verdict = 'ai_note';
-                else if (RATING_VERDICTS.includes(row.verdict)) verdict = row.verdict;
+                else if (RATING_VERDICTS.has(row.verdict)) verdict = row.verdict;
                 return {
                     index,
                     ts,
@@ -189,11 +189,11 @@
 
     /** A round axis maximum and step for counts up to `max` (three or four gridlines). */
     function niceScale(max) {
-        if (!(max > 0)) return { max: 2, step: 1 };
+        if (Number.isNaN(max) || max <= 0) return { max: 2, step: 1 };
         const rough = max / 3;
         const magnitude = 10 ** Math.floor(Math.log10(rough));
         const norm = rough / magnitude;
-        const factor = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+        const factor = [1, 2, 5].find((candidate) => norm <= candidate) ?? 10;
         const step = Math.max(1, factor * magnitude);
         return { max: Math.ceil(max / step) * step, step };
     }
@@ -229,7 +229,7 @@
     function csvCell(value) {
         let cell = value == null ? '' : String(value);
         if (/^[=+\-@\t\r]/.test(cell)) cell = `'${cell}`;
-        return `"${cell.replace(/"/g, '""')}"`;
+        return `"${cell.replaceAll('"', '""')}"`;
     }
 
     function toCsv(rows) {
@@ -338,7 +338,7 @@
             const toggle = body.nextElementSibling;
             if (!toggle) continue;
             if (body.classList.contains('is-expanded')) continue;
-            toggle.hidden = !(body.scrollHeight > body.clientHeight + 1);
+            toggle.hidden = body.scrollHeight <= body.clientHeight + 1;
         }
     }
 
@@ -663,15 +663,19 @@
         }
 
         // ── Data ──
-        async function waitForClerk() {
-            if (!root.Clerk) return null;
+        function waitForClerk() {
+            if (!root.Clerk) return Promise.resolve(null);
             const deadline = Date.now() + CLERK_WAIT_MS;
             // legal_scripts.html calls Clerk.load() once the page is parsed; wait for
             // it rather than loading a second time.
-            while (!root.Clerk.loaded && Date.now() < deadline) {
-                await new Promise((resolve) => setTimeout(resolve, 100));
-            }
-            return root.Clerk.loaded ? root.Clerk : null;
+            return new Promise((resolve) => {
+                const check = () => {
+                    if (root.Clerk.loaded) resolve(root.Clerk);
+                    else if (Date.now() >= deadline) resolve(null);
+                    else setTimeout(check, 100);
+                };
+                check();
+            });
         }
 
         async function fetchDigest(token) {
@@ -712,7 +716,7 @@
                     return fail('error', `The server answered with HTTP ${response.status}.${hint}`);
                 }
                 const data = await response.json();
-                ui.all = normalizeRows(data && data.rows);
+                ui.all = normalizeRows(data?.rows);
                 ui.loaded = ui.all.length > 0;
                 clock = Date.now();
                 if (!ui.all.length) return showState('empty');
@@ -725,7 +729,7 @@
                 say(`Loaded ${loaded.total} from readers and ${loaded.aiNotes} AI notes.`);
                 if (restoreFocus) refs.content.focus({ preventScroll: true });
             } catch (error) {
-                fail('error', error && error.name === 'AbortError' ? 'The request took too long.' : undefined);
+                fail('error', error?.name === 'AbortError' ? 'The request took too long.' : undefined);
             } finally {
                 ui.loading = false;
                 delete refs.shell.dataset.refreshing;
@@ -741,7 +745,8 @@
                 pair[0].textContent = value;
                 pair[1].textContent = note;
             };
-            const aiNote = summary.aiNotes ? ` · ${formatCount(summary.aiNotes)} AI ${summary.aiNotes === 1 ? 'note' : 'notes'}` : '';
+            const aiNoteWord = summary.aiNotes === 1 ? 'note' : 'notes';
+            const aiNote = summary.aiNotes ? ` · ${formatCount(summary.aiNotes)} AI ${aiNoteWord}` : '';
             set(refs.tiles.total, formatCount(summary.total), `${formatCount(summary.withComment)} with a comment${aiNote}`);
             set(refs.tiles.helpful, formatCount(summary.helpful), 'thumbs up');
             set(refs.tiles.notHelpful, formatCount(summary.notHelpful), 'thumbs down');
@@ -768,11 +773,12 @@
             renderRows(refs.tbody, shown, clock);
             // A different set of rows (a new verdict, sort or page size) settles in;
             // typing in the search box or showing more does not flicker.
-            if (options && options.settle) settleRows(refs.tbody);
+            if (options?.settle) settleRows(refs.tbody);
             const total = ui.filtered.length;
             refs.tableEmpty.hidden = total > 0;
+            const matching = total === ui.all.length ? '' : ` matching (${formatCount(ui.all.length)} loaded)`;
             refs.count.textContent = total
-                ? `Showing ${formatCount(shown.length)} of ${formatCount(total)}${total === ui.all.length ? '' : ` matching (${formatCount(ui.all.length)} loaded)`}`
+                ? `Showing ${formatCount(shown.length)} of ${formatCount(total)}${matching}`
                 : `Nothing matches (${formatCount(ui.all.length)} loaded)`;
             const rest = total - shown.length;
             refs.more.hidden = rest <= 0;
@@ -822,7 +828,7 @@
             if (previous) previous.classList.remove('is-active');
             ui.activeDay = index;
             const col = cols.children[index];
-            if (!col || !ui.buckets || !ui.buckets[index]) {
+            if (!col || !ui.buckets?.[index]) {
                 tip.hidden = true;
                 plot.removeAttribute('aria-activedescendant');
                 return;

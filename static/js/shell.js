@@ -4759,7 +4759,7 @@ function hasParenthetical(text) {
             const options = items.map((item, index) => suggestionOptionHtml(item, index, typeLabels));
             const firstVerse = items.findIndex((item) => item.type === 'verse');
             const firstAsk = items.findIndex((item) => item.type === 'ask');
-            const verseStart = firstVerse >= 0 ? firstVerse : (firstAsk >= 0 ? firstAsk : items.length);
+            const verseStart = [firstVerse, firstAsk].find((index) => index >= 0) ?? items.length;
             const verseEnd = firstVerse >= 0
                 ? verseStart + items.slice(verseStart).filter((item) => item.type === 'verse').length
                 : verseStart;
@@ -6116,8 +6116,9 @@ function hasParenthetical(text) {
             const hebrewMarkup = he
                 ? `<p dir="rtl" lang="he" class="font-hebrew text-start text-[1.05rem] leading-[1.9] text-slate-800">${he.replaceAll('\n', '<br>')}</p>`
                 : '';
+            const englishGap = he ? ' mt-2' : '';
             const englishMarkup = en
-                ? `<p dir="ltr" class="font-serif text-start text-sm leading-relaxed text-slate-700${he ? ' mt-2' : ''}">${en.replaceAll('\n', '<br>')}</p>`
+                ? `<p dir="ltr" class="font-serif text-start text-sm leading-relaxed text-slate-700${englishGap}">${en.replaceAll('\n', '<br>')}</p>`
                 : '';
             return `<div class="commentary-part">${hebrewMarkup}${englishMarkup}</div>`;
         }
@@ -6171,9 +6172,10 @@ function hasParenthetical(text) {
             const heTitle = String(data?.heRef || commentaryRefMeta.get(commentaryRef)?.heRef || data?.heTitle || '').trim();
             // The Hebrew half is isolated so its run keeps its own direction
             // inside the English heading.
+            const heTitleSuffix = heTitle ? ` · <bdi lang="he">${escapeHtml(heTitle)}</bdi>` : '';
             const displayTitle = isHebrewMode()
                 ? escapeHtml(heTitle || enTitle)
-                : escapeHtml(enTitle) + (heTitle ? ` · <bdi lang="he">${escapeHtml(heTitle)}</bdi>` : '');
+                : escapeHtml(enTitle) + heTitleSuffix;
 
             // Keep the reader's place when the translated payload replaces
             // the plain one in place.
@@ -10635,7 +10637,8 @@ function hasParenthetical(text) {
 
                 try {
                     const versionQuery = currentTextQuery(candidate);
-                    const resp = await fetch(`/api/text/${encodeURIComponent(candidate)}?autotranslate=0${versionQuery ? `&${versionQuery}` : ''}`);
+                    const versionSuffix = versionQuery ? `&${versionQuery}` : '';
+                    const resp = await fetch(`/api/text/${encodeURIComponent(candidate)}?autotranslate=0${versionSuffix}`);
                     const payload = await resp.json();
                     reachedServer = true;
                     if (!payload?.error) {
@@ -12525,7 +12528,8 @@ function hasParenthetical(text) {
             function showThanks(withComment, message = t('Thank you for your feedback!', 'תודה על המשוב!')) {
                 const hadFocus = root.contains(document.activeElement);
                 root.dataset.feedbackState = 'done';
-                const control = rowId ? editButtonHtml() : (withComment ? feedbackCommentButtonHtml() : '');
+                const commentControl = withComment ? feedbackCommentButtonHtml() : '';
+                const control = rowId ? editButtonHtml() : commentControl;
                 root.innerHTML = `<span class="answer-feedback-thanks" role="status">${message}</span>${control}`;
                 bindCommentButton();
                 bindEditButton();

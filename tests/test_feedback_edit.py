@@ -149,7 +149,8 @@ def test_the_account_that_wrote_it_can_change_rating_and_comment(test_client, db
     assert (row["verdict"], row["comment"]) == ("helpful", "Actually clear")
     # The update itself is scoped to the owner, not only the pre-check.
     filters, _ = db.updates[-1]
-    assert ("id", ROW) in filters and ("user_id", "user_me") in filters
+    assert ("id", ROW) in filters
+    assert ("user_id", "user_me") in filters
 
 
 def test_adding_a_comment_keeps_the_rating(test_client, db, monkeypatch):

@@ -66,7 +66,7 @@ export function textQuery(ref, { minhag, picks, defaultMinhag = "sephardi" } = {
 // `picks` with `book`'s pick for `lang` set (or cleared when `title` is "").
 export function withPick(picks, book, lang, title) {
     const next = { ...picks };
-    const entry = { ...(next[book] || {}) };
+    const entry = { ...next[book] };
     if (title) entry[lang] = title;
     else delete entry[lang];
     delete next[book];

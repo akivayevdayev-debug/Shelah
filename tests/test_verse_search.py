@@ -90,7 +90,9 @@ def test_the_opening_words_of_genesis_find_genesis_1_1_once(sefaria):
     out = vs.search_verses("בְּרֵאשִׁית בָּרָא אֱלֹהִים")
     assert [r["ref"] for r in out["results"]] == ["Genesis 1:1"]
     first = out["results"][0]
-    assert first["tanakh"] and first["match"] == "exact" and not out["close"]
+    assert first["tanakh"]
+    assert first["match"] == "exact"
+    assert not out["close"]
     # The Hebrew edition without te'amim is the snippet; matched words marked.
     assert first["lang"] == "he"
     assert _matched(first) == ["בְּרֵאשִׁית בָּרָא אֱלֹהִים"]
@@ -172,7 +174,8 @@ def test_an_outage_is_not_cached(sefaria, monkeypatch):
 def test_snippet_markup_from_upstream_is_dropped():
     parts = vs.snippet_parts('<b>שמע</b> <script>alert(1)</script><i onclick="x">ישראל</i> &lt;img&gt;')
     joined = "".join(p["text"] for p in parts)
-    assert "<script>" not in joined and "onclick" not in joined
+    assert "<script>" not in joined
+    assert "onclick" not in joined
     assert joined == "שמע alert(1)ישראל <img>"
     assert parts[0] == {"text": "שמע", "match": True}
 
@@ -187,7 +190,9 @@ def test_a_long_snippet_is_trimmed_around_the_match():
     parts = vs.snippet_parts(text)
     joined = "".join(p["text"] for p in parts)
     assert len(joined) <= vs._SNIPPET_CHARS + 4
-    assert "שמע" in joined and joined.startswith("…") and joined.endswith("…")
+    assert "שמע" in joined
+    assert joined.startswith("…")
+    assert joined.endswith("…")
 
 
 # --- the HTTP call ------------------------------------------------------------

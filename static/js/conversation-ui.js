@@ -989,7 +989,7 @@ function skeletonGhost(entry, message, li) {
     ghost.innerHTML = li.innerHTML;
     // A copy must not answer the status updates meant for the live line.
     ghost.querySelectorAll("[data-conv-status]").forEach((node) => {
-        node.removeAttribute("data-conv-status");
+        delete node.dataset.convStatus;
         node.removeAttribute("role");
     });
     return ghost;

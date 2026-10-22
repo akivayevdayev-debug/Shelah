@@ -33,7 +33,8 @@ def test_the_third_turn_reaches_both_providers_with_the_first_two_turns(monkeypa
     assert [name for name, _ in seen] == ["gemini", "claude"]
     for _name, turns in seen:
         assert [t["role"] for t in turns] == ["user", "assistant", "user", "assistant"]
-        assert "wine" in turns[0]["text"] and "grape juice" in turns[2]["text"]
+        assert "wine" in turns[0]["text"]
+        assert "grape juice" in turns[2]["text"]
     assert seen[0][1] == seen[1][1]
 
 
@@ -52,7 +53,8 @@ def test_the_hebrew_refusal_leaves_the_thread_too():
     refusal = claude._off_topic_refusal_message("x", "he")
     history = THREAD[:2] + [{"role": "user", "content": "מי כתב המלט"}, {"role": "assistant", "content": refusal}]
     turns = claude.build_history_turns(history)
-    assert len(turns) == 2 and "המלט" not in turns[0]["text"]
+    assert len(turns) == 2
+    assert "המלט" not in turns[0]["text"]
 
 
 def test_a_thread_that_opens_with_a_refusal_is_just_empty():
@@ -66,7 +68,8 @@ def test_the_claude_messages_keep_the_roles_and_cache_the_thread():
     messages = claude._anthropic_messages("What about on the second one?", turns)
     assert [m["role"] for m in messages] == ["user", "assistant", "user", "assistant", "user"]
     cached = messages[-2]["content"][0]
-    assert cached["cache_control"] == {"type": "ephemeral"} and "Borei pri hagafen" in cached["text"]
+    assert cached["cache_control"] == {"type": "ephemeral"}
+    assert "Borei pri hagafen" in cached["text"]
     assert messages[-1] == {"role": "user", "content": "What about on the second one?"}
 
 

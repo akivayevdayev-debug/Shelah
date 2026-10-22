@@ -107,6 +107,43 @@ def _insert(supabase, table: str, record: Dict[str, Any], link: Dict[str, Any]) 
         supabase.table(table).insert(record).execute()
 
 
+def _note_row(question, result, structured, mode, language, community, source_count, fallback) -> Dict[str, Any]:
+    """The answer_feedback row for one answer's note."""
+    web = web_lookup_summary(result)
+    return {
+        "user_id": None,
+        "question_hash": hashlib.sha256(str(question).strip().encode("utf-8")).hexdigest(),
+        "verdict": AI_NOTE_VERDICT,
+        "source": AI_NOTE_SOURCE,
+        "comment": compose_note(
+            fallback=fallback,
+            source_count=int(source_count or 0),
+            mode=str(mode or "balanced")[:32],
+            community=str(community or "All")[:40],
+            safety_class=str(structured.get("safety_class") or "ok")[:32],
+            out_of_scope=bool(structured.get("out_of_scope")),
+            web_used=web["used"],
+            web_pages=web["pages"],
+        ),
+        "mode": str(mode or "balanced")[:32],
+        "language": str(language or "en")[:16],
+        "fallback": bool(fallback),
+        "safety_class": str(structured.get("safety_class") or "ok")[:32],
+    }
+
+
+def _report_note_failure(error: Exception) -> None:
+    """Report a failed note unless it is only the migration not being applied yet."""
+    if str(getattr(error, "code", "") or "") in _MIGRATION_PENDING:
+        return
+    try:
+        import app as _app
+
+        _app._capture_backend_error("ai_note_persist_failed", error, {})
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def record_ai_note(
     question: str,
     *,
@@ -129,37 +166,12 @@ def record_ai_note(
         supabase = _app._get_supabase_client()
         if not supabase:
             return False
-        structured = structured if isinstance(structured, dict) else {}
-        web = web_lookup_summary(result)
-        record = {
-            "user_id": None,
-            "question_hash": hashlib.sha256(str(question).strip().encode("utf-8")).hexdigest(),
-            "verdict": AI_NOTE_VERDICT,
-            "source": AI_NOTE_SOURCE,
-            "comment": compose_note(
-                fallback=fallback,
-                source_count=int(source_count or 0),
-                mode=str(mode or "balanced")[:32],
-                community=str(community or "All")[:40],
-                safety_class=str(structured.get("safety_class") or "ok")[:32],
-                out_of_scope=bool(structured.get("out_of_scope")),
-                web_used=web["used"],
-                web_pages=web["pages"],
-            ),
-            "mode": str(mode or "balanced")[:32],
-            "language": str(language or "en")[:16],
-            "fallback": bool(fallback),
-            "safety_class": str(structured.get("safety_class") or "ok")[:32],
-        }
+        record = _note_row(
+            question, result, structured if isinstance(structured, dict) else {},
+            mode, language, community, source_count, fallback)
         link = {"history_id": history_id, "shared_view": False} if history_id else {}
         _insert(supabase, _app.SUPABASE_ANSWER_FEEDBACK_TABLE, record, link)
         return True
     except Exception as e:  # noqa: BLE001 - a note must never break an answer
-        if str(getattr(e, "code", "") or "") not in _MIGRATION_PENDING:
-            try:
-                import app as _app
-
-                _app._capture_backend_error("ai_note_persist_failed", e, {})
-            except Exception:  # noqa: BLE001
-                pass
+        _report_note_failure(e)
         return False

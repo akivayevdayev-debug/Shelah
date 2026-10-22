@@ -88,7 +88,8 @@ def test_picker_lists_only_reviewed_versions(book):
     rows = text_trust.picker_versions(versions_of(book), "sephardi")
     assert rows, book
     for row in rows:
-        assert row["label"] and row["label"] != text_trust.UNLABELLED, row
+        assert row["label"], row
+        assert row["label"] != text_trust.UNLABELLED, row
         assert row["title"] not in DENIED_EXAMPLES, row
         assert 1 <= len(row["label"].split()) <= 4, row
 
@@ -168,7 +169,8 @@ def test_every_mapping_entry_has_a_reason_and_valid_fields():
             assert entry["community"] in ("sephardi", "mizrahi", "ashkenazi", "chabad", "general"), entry
             assert entry["label"], entry
     for work in text_trust.DENIED_WORKS:
-        assert work["reason"].strip() and work["match"] in ("exact", "prefix"), work
+        assert work["reason"].strip(), work
+        assert work["match"] in ("exact", "prefix"), work
 
 
 # ─── get_text: the fetch layer applies the policy ────────────────────────────
@@ -229,7 +231,8 @@ def test_a_second_chapter_asks_for_the_chosen_versions_directly(sefaria):
     sefaria.calls.reset()
     sl.get_text("Genesis 2")
     urls = [call.request.url for call in sefaria.calls]
-    assert len(urls) == 1 and "Koren" in urls[0]
+    assert len(urls) == 1
+    assert "Koren" in urls[0]
 
 
 def test_ashkenazi_reader_gets_metsudah(sefaria):

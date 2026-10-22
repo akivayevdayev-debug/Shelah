@@ -116,16 +116,23 @@ const isHebrewChar = (ch) => /[֐-׿]/.test(ch);
 
 function escapeHtml(text) {
     return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+}
+
+function charKey(text, sub = "") {
+    const lang = isHebrewChar(text) ? ' lang="he"' : "";
+    const subHtml = sub ? `<span class="kbd-sub" aria-hidden="true">${escapeHtml(sub)}</span>` : "";
+    return `<button type="button" class="kbd-key" data-key="char" data-text="${escapeHtml(text)}"${lang}>`
+        + `<span class="kbd-main">${escapeHtml(text)}</span>${subHtml}</button>`;
 }
 
 /** One character back from `index` (a whole surrogate pair, never half). */
 function previousCharStart(value, index) {
     if (index <= 0) return 0;
-    const code = value.charCodeAt(index - 1);
+    const code = value.codePointAt(index - 1);
     const low = code >= 0xdc00 && code <= 0xdfff;
     return low && index >= 2 ? index - 2 : index - 1;
 }
@@ -202,13 +209,6 @@ export function installHebrewKeyboard({
         return width > 0 && width < COMPACT_BELOW_PX ? "compact" : "full";
     }
 
-    function charKey(text, sub = "") {
-        const lang = isHebrewChar(text) ? ' lang="he"' : "";
-        const subHtml = sub ? `<span class="kbd-sub" aria-hidden="true">${escapeHtml(sub)}</span>` : "";
-        return `<button type="button" class="kbd-key" data-key="char" data-text="${escapeHtml(text)}"${lang}>`
-            + `<span class="kbd-main">${escapeHtml(text)}</span>${subHtml}</button>`;
-    }
-
     function specialKey(kind) {
         const wide = "kbd-key kbd-key-wide";
         switch (kind) {
@@ -228,7 +228,8 @@ export function installHebrewKeyboard({
             }
             case "layer": {
                 const label = symbols ? t("Letters", "אותיות") : t("Numbers and symbols", "מספרים וסימנים");
-                const text = symbols ? (layout === "he" ? "אבג" : "ABC") : "?123";
+                const lettersText = layout === "he" ? "אבג" : "ABC";
+                const text = symbols ? lettersText : "?123";
                 return `<button type="button" class="${wide} kbd-layer" data-key="layer" aria-label="${escapeHtml(label)}"${symbols && layout === "he" ? ' lang="he"' : ""}>${text}</button>`;
             }
             case "more": {

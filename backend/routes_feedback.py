@@ -189,6 +189,18 @@ def submit_feedback():
     return jsonify({"success": True, "id": row_id}), 200
 
 
+def _validated_edit(payload):
+    """``((verdict, comment), None)`` for an acceptable edit, else ``(None, (response, status))``."""
+    verdict = str(payload.get("verdict") or "").strip()
+    if verdict not in _EDIT_VERDICTS:
+        return None, (jsonify({"error": "verdict must be 'helpful', 'not_helpful' or 'comment'"}), 400)
+    comment = sanitize_user_query(
+        str(payload.get("comment") or ""), max_chars=_MAX_COMMENT_CHARS)
+    if verdict == "comment" and not comment:
+        return None, (jsonify({"error": "comment is required"}), 400)
+    return (verdict, comment), None
+
+
 @routes_feedback.route("/api/feedback/<row_id>", methods=["PATCH"])
 @maybe_require_clerk_auth
 def edit_feedback(row_id):
@@ -197,13 +209,10 @@ def edit_feedback(row_id):
         return not_found
     payload = _json_object_body()
 
-    verdict = str(payload.get("verdict") or "").strip()
-    if verdict not in _EDIT_VERDICTS:
-        return jsonify({"error": "verdict must be 'helpful', 'not_helpful' or 'comment'"}), 400
-    comment = sanitize_user_query(
-        str(payload.get("comment") or ""), max_chars=_MAX_COMMENT_CHARS)
-    if verdict == "comment" and not comment:
-        return jsonify({"error": "comment is required"}), 400
+    fields, invalid = _validated_edit(payload)
+    if invalid:
+        return invalid
+    verdict, comment = fields
 
     owner = _owner_filter(_get_request_user_id())
     if not owner:

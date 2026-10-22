@@ -105,7 +105,8 @@ def test_a_question_with_a_jewish_angle_that_the_model_flags_gets_a_second_look(
     monkeypatch.setattr(claude, "_call_gemini_httpx_model", _fake_gemini([REFUSED, ANSWERED], prompts))
     result = asyncio.run(claude.ask_ai_async("Who was King David?", [], [], web_search=False))
     assert len(prompts) == 2
-    assert "SCOPE CHECK" not in prompts[0] and "SCOPE CHECK" in prompts[1]
+    assert "SCOPE CHECK" not in prompts[0]
+    assert "SCOPE CHECK" in prompts[1]
     assert not str(result.get("error") or "").startswith("security_blocked")
     assert "second king" in result["structured"]["ruling"]
 

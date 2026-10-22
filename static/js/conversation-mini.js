@@ -106,7 +106,8 @@ export function createMiniWidget({
         }
         running?.cancel();
         const frames = slideFrames();
-        const animation = sidebar.animate(opening ? frames : frames.reverse(), { ...REVEAL, fill: "both" });
+        if (!opening) frames.reverse();
+        const animation = sidebar.animate(frames, { ...REVEAL, fill: "both" });
         animation.opening = opening;
         reveal = animation;
         animation.onfinish = () => {

@@ -110,7 +110,8 @@ class TestSearchResult:
     def test_the_prompt_text_names_pages_by_title_only(self):
         found = web_lookup._result_from("gum kosher", _search_response())
         text = web_lookup.format_findings(found)
-        assert "Search: gum kosher" in text and "Pages: OU Kosher FAQ" in text
+        assert "Search: gum kosher" in text
+        assert "Pages: OU Kosher FAQ" in text
         assert "https://" not in text
 
     @pytest.mark.parametrize("url", [
@@ -209,13 +210,18 @@ class TestLookupCalls:
         [call] = search_client.messages.calls
         assert call["model"] == "claude-haiku-5-5"
         [tool] = call["tools"]
-        assert tool["type"] == "web_search_20250305" and tool["name"] == "web_search"
-        assert tool["allowed_domains"] == list(web_lookup.ALLOWED_DOMAINS) and tool["max_uses"] == web_lookup.MAX_SEARCHES
-        assert call["thinking"] == {"type": "disabled"} and call["output_config"] == {"effort": "low"}
+        assert tool["type"] == "web_search_20250305"
+        assert tool["name"] == "web_search"
+        assert tool["allowed_domains"] == list(web_lookup.ALLOWED_DOMAINS)
+        assert tool["max_uses"] == web_lookup.MAX_SEARCHES
+        assert call["thinking"] == {"type": "disabled"}
+        assert call["output_config"] == {"effort": "low"}
         assert call["messages"] == [{"role": "user", "content": call["messages"][0]["content"]}]
-        assert "Trident" in call["messages"][0]["content"] and "English" in call["messages"][0]["content"]
+        assert "Trident" in call["messages"][0]["content"]
+        assert "English" in call["messages"][0]["content"]
         [cost] = search_client.cost
-        assert cost["provider"] == "anthropic" and cost["extra_cost_usd"] == pytest.approx(0.01)
+        assert cost["provider"] == "anthropic"
+        assert cost["extra_cost_usd"] == pytest.approx(0.01)
 
     def test_the_sync_lookup_runs_the_same_search(self, search_client):
         assert web_lookup.lookup_sync("is Trident gum kosher", "en")["sources"][0]["url"] == OU
@@ -319,7 +325,8 @@ class TestSecondPassAsync:
         result, prompts = self._run(monkeypatch, first=_result("trident gum kosher"))
 
         assert len(prompts) == 2
-        assert "Findings: Certified OU." in prompts[1] and "Findings" not in prompts[0]
+        assert "Findings: Certified OU." in prompts[1]
+        assert "Findings" not in prompts[0]
         assert result["structured"]["ruling"] == "Grounded."
         assert "web_query" not in result["structured"]
         assert result["used_web_search"] is True
@@ -330,8 +337,10 @@ class TestSecondPassAsync:
         lookups = []
         result, prompts = self._run(monkeypatch, first=_result(), lookups=lookups)
 
-        assert len(prompts) == 1 and lookups == []
-        assert "used_web_search" not in result and "web_lookup" not in result
+        assert len(prompts) == 1
+        assert lookups == []
+        assert "used_web_search" not in result
+        assert "web_lookup" not in result
         assert "WEB LOOKUP" in prompts[0]
 
     def test_the_reader_switching_it_off_removes_the_offer_and_ignores_a_request(self, monkeypatch):
@@ -339,7 +348,8 @@ class TestSecondPassAsync:
         result, prompts = self._run(
             monkeypatch, first=_result("trident gum kosher"), web_search=False, lookups=lookups)
 
-        assert lookups == [] and len(prompts) == 1
+        assert lookups == []
+        assert len(prompts) == 1
         assert "WEB LOOKUP" not in prompts[0]
         assert "web_query" not in result["structured"]
         assert "used_web_search" not in result
@@ -359,7 +369,8 @@ class TestSecondPassAsync:
         monkeypatch.setattr(web_lookup, "lookup_async", lookup)
         result = asyncio.run(claude.ask_ai_async("Is Trident gum kosher?", [], []))
 
-        assert lookups == [] and "web_query" not in result["structured"]
+        assert lookups == []
+        assert "web_query" not in result["structured"]
 
     def test_a_lookup_that_finds_nothing_keeps_the_first_answer(self, monkeypatch):
         result, prompts = self._run(monkeypatch, first=_result("trident gum kosher"), found=None)
@@ -368,7 +379,8 @@ class TestSecondPassAsync:
         assert result["structured"]["ruling"] == "Provisional."
         assert "web_query" not in result["structured"]
         assert "used_web_search" not in result
-        assert result["web_lookup"]["used"] is False and result["web_lookup"]["queried"] is True
+        assert result["web_lookup"]["used"] is False
+        assert result["web_lookup"]["queried"] is True
 
     def test_a_failed_second_answer_keeps_the_first(self, monkeypatch):
         async def claude_down(prompt, **kwargs):
@@ -387,7 +399,8 @@ class TestSecondPassAsync:
         lookups = []
         result, prompts = self._run(monkeypatch, first=_result("trident gum kosher"), lookups=lookups)
 
-        assert lookups == [] and len(prompts) == 1
+        assert lookups == []
+        assert len(prompts) == 1
         assert "web_query" not in result["structured"]
 
     def test_a_declined_question_never_looks_anything_up(self, monkeypatch):
@@ -415,7 +428,8 @@ class TestSecondPassSync:
     def test_the_sync_path_answers_again_from_the_findings(self, monkeypatch):
         result, prompts = self._ask(monkeypatch, first=_result("trident gum kosher"))
 
-        assert len(prompts) == 2 and "Findings: Certified OU." in prompts[1]
+        assert len(prompts) == 2
+        assert "Findings: Certified OU." in prompts[1]
         assert result["structured"]["ruling"] == "Grounded."
         assert result["used_web_search"] is True
         assert result["is_simple"] in (True, False)
@@ -423,13 +437,15 @@ class TestSecondPassSync:
     def test_the_sync_path_honours_the_readers_switch(self, monkeypatch):
         result, prompts = self._ask(monkeypatch, first=_result("trident gum kosher"), web_search=False)
 
-        assert len(prompts) == 1 and "WEB LOOKUP" not in prompts[0]
+        assert len(prompts) == 1
+        assert "WEB LOOKUP" not in prompts[0]
         assert "web_query" not in result["structured"]
 
     def test_a_missing_lookup_keeps_the_first_answer(self, monkeypatch):
         result, prompts = self._ask(monkeypatch, first=_result("trident gum kosher"), found=False)
 
-        assert len(prompts) == 1 and result["structured"]["ruling"] == "Provisional."
+        assert len(prompts) == 1
+        assert result["structured"]["ruling"] == "Provisional."
 
 
 class TestWebSourcesInTheAnswer:

@@ -370,7 +370,8 @@ class TestCollectContextReportsSteps:
         finally:
             ask_progress.unbind(token)
         details = [e for e in events if e["type"] == "detail" and e["stage"] == "times"]
-        assert details and details[0]["detail"] == {"kind": "times", "topic": "shabbat"}
+        assert details
+        assert details[0]["detail"] == {"kind": "times", "topic": "shabbat"}
         # said before the step opens, so the line never shows the generic words first
         first_times = next(i for i, e in enumerate(events) if e.get("stage") == "times")
         assert events[first_times]["type"] == "detail"

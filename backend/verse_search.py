@@ -60,7 +60,7 @@ _cache_lock = threading.Lock()
 
 # Cantillation (te'amim), vowels (nikud) and the other pointing marks, plus
 # paseq and sof pasuq. Letters (U+05D0-U+05EA) are kept.
-_HEBREW_MARKS_RE = re.compile("[֑-ֽֿ-ׂׄ-ׇ׀׃]")
+_HEBREW_MARKS_RE = re.compile("[\u0591-\u05bd\u05bf-\u05c2\u05c4-\u05c7\u05c3]")
 _TEAMIM_RE = re.compile("[֑-ֽ֯׀׃]")
 _HEBREW_LETTER_RE = re.compile("[א-ת]")
 # Anything that is not a letter, digit or space becomes a space (maqaf,
@@ -245,9 +245,9 @@ def _hit_allowed(source) -> bool:
     return text_trust.is_version_shown(version)
 
 
-def _fold_hits(hits, hebrew_query, match) -> list:
-    """One result per ref, in first-seen order, with the best edition's
-    snippet."""
+def _best_hit_per_ref(hits, hebrew_query):
+    """``(refs in first-seen order, {ref: (version rank, hit rank, hit)})`` with
+    the best edition of each ref kept."""
     by_ref, order = {}, []
     for rank, hit in enumerate(hits or []):
         source = (hit or {}).get("_source") or {}
@@ -260,22 +260,29 @@ def _fold_hits(hits, hebrew_query, match) -> list:
             by_ref[ref] = candidate
         elif candidate[:2] < by_ref[ref][:2]:
             by_ref[ref] = candidate
-    results = []
-    for ref in order:
-        _, _, hit = by_ref[ref]
-        source = hit.get("_source") or {}
-        highlight = hit.get("highlight") or {}
-        marked = next((v[0] for v in highlight.values() if isinstance(v, list) and v), "")
-        results.append({
-            "ref": ref,
-            "heRef": str(source.get("heRef") or ""),
-            "categories": _categories(source)[:3],
-            "tanakh": _is_tanakh(source),
-            "lang": "he" if str(source.get("lang")) == "he" else "en",
-            "parts": snippet_parts(marked, source.get("naive_lemmatizer") or source.get("exact") or ""),
-            "match": match,
-        })
-    return results
+    return order, by_ref
+
+
+def _result_row(ref, hit, match) -> dict:
+    source = hit.get("_source") or {}
+    highlight = hit.get("highlight") or {}
+    marked = next((v[0] for v in highlight.values() if isinstance(v, list) and v), "")
+    return {
+        "ref": ref,
+        "heRef": str(source.get("heRef") or ""),
+        "categories": _categories(source)[:3],
+        "tanakh": _is_tanakh(source),
+        "lang": "he" if str(source.get("lang")) == "he" else "en",
+        "parts": snippet_parts(marked, source.get("naive_lemmatizer") or source.get("exact") or ""),
+        "match": match,
+    }
+
+
+def _fold_hits(hits, hebrew_query, match) -> list:
+    """One result per ref, in first-seen order, with the best edition's
+    snippet."""
+    order, by_ref = _best_hit_per_ref(hits, hebrew_query)
+    return [_result_row(ref, by_ref[ref][2], match) for ref in order]
 
 
 def _merge(*groups) -> list:

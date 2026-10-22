@@ -473,8 +473,10 @@ LEXICON_GLOSSES_PER_WORD = 3
 _PAREN_GROUP_RE = re.compile(r"\([^()]*\)|\[[^\[\]]*\]")
 # Part-of-speech tags a dense entry opens with ("n.m.", "v. intr.").
 _LEXICON_POS_RE = re.compile(
-    r"^\s*(?:(?:n|v|adj|adv|prep|conj|pron|interj|vb|pr|denom|intr|tr|pl|sing)\.\s*|[mf]\.\s*)+", re.IGNORECASE)
+    r"^\s*(?:(?:n|v|adj|adv|prep|conj|pron|interj|vb|pr|denom|intr|tr|pl|sing|[mf])\.\s*)+", re.IGNORECASE)
 _LEXICON_SPACE_BEFORE_PUNCT_RE = re.compile(r"\s+([,;:.])")
+_GLOSS_TRIM_CHARS = " .;,:"
+_NOT_HEBREW_LETTER_RE = re.compile(r"[^א-ת]")
 _NOT_A_GLOSS_RE = re.compile(r"^(?:=|see\b|v\.|cf\.|prefix\b|abbr)", re.IGNORECASE)
 
 
@@ -489,13 +491,13 @@ def _clean_lexicon_gloss(raw_definition, dense=False):
         text = _PAREN_GROUP_RE.sub(" ", text)
     text = _LEXICON_SPACE_BEFORE_PUNCT_RE.sub(r"\1", " ".join(text.split()))
     text = _LEXICON_POS_RE.sub("", text)
-    text = re.split(r"[;—]| - " if dense else r"\.\s", text, maxsplit=1)[0].strip(" .;,:")
+    text = re.split(r"[;—]| - " if dense else r"\.\s", text, maxsplit=1)[0].strip(_GLOSS_TRIM_CHARS)
     if not re.search(r"[A-Za-z]", text) or _NOT_A_GLOSS_RE.match(text):
         return ""
     if len(HEBREW_LETTER_RE.findall(text)) * 4 > len(text):
         return ""
     if len(text) > LEXICON_GLOSS_MAX_CHARS:
-        text = text[:LEXICON_GLOSS_MAX_CHARS].rsplit(" ", 1)[0].strip(" .;,:")
+        text = text[:LEXICON_GLOSS_MAX_CHARS].rsplit(" ", 1)[0].strip(_GLOSS_TRIM_CHARS)
     return text
 
 
@@ -514,7 +516,7 @@ def _gloss_from_lexicon_entry(entry, dense):
             break
     joined = "; ".join(parts)
     if len(joined) > LEXICON_GLOSS_MAX_CHARS:
-        joined = joined[:LEXICON_GLOSS_MAX_CHARS].rsplit(";", 1)[0].strip(" .;,:") or parts[0]
+        joined = joined[:LEXICON_GLOSS_MAX_CHARS].rsplit(";", 1)[0].strip(_GLOSS_TRIM_CHARS) or parts[0]
     return joined
 
 
@@ -537,7 +539,7 @@ def _lexicon_candidates(entries, consonants):
         if lexicon.lower() not in _PREFERRED_LEXICONS:
             continue
         headword = str(entry.get("headword") or "")
-        if re.sub(r"[^א-ת]", "", headword) != consonants:
+        if _NOT_HEBREW_LETTER_RE.sub("", headword) != consonants:
             continue
         gloss = _gloss_from_lexicon_entry(entry, lexicon.lower() in _DENSE_LEXICONS)
         if gloss:
@@ -586,7 +588,7 @@ def _lookup_sefaria_lexicon_glosses(word):
     if not value or not _contains_hebrew_letters(value):
         return [], ""
 
-    consonants = re.sub(r"[^א-ת]", "", value)
+    consonants = _NOT_HEBREW_LETTER_RE.sub("", value)
     vocalized = _vocalization_key(value)
     vocalized = vocalized if vocalized != consonants else ""
     cache_key = f"sefaria-gloss::{consonants[:80]}"
@@ -710,6 +712,15 @@ _HEBREW_VERB_PREFIX_LETTERS = frozenset("יתנא")
 _HEBREW_ENDINGS = ("ים", "ות", "תי", "תם", "נו", "כם", "הם", "ו", "ה", "ך", "ת", "י")
 
 
+def _without_hebrew_ending(word):
+    """The word with its first matching ending taken off, or "" when no ending
+    leaves at least two letters."""
+    for ending in _HEBREW_ENDINGS:
+        if word.endswith(ending) and len(word) - len(ending) >= 2:
+            return word[:-len(ending)]
+    return ""
+
+
 def _hebrew_word_forms(token):
     """The word as written, then with its prefix letters (ו ה ב כ ל מ ש)
     taken off one at a time, each followed by the same form without its
@@ -724,10 +735,9 @@ def _hebrew_word_forms(token):
     current = token
     for _ in range(3):
         add(current)
-        for ending in _HEBREW_ENDINGS:
-            if current.endswith(ending) and len(current) - len(ending) >= 2:
-                add(current[:-len(ending)])
-                break
+        stem = _without_hebrew_ending(current)
+        if stem:
+            add(stem)
         if len(current) < 3 or current[0] not in _HEBREW_PREFIX_LETTERS:
             break
         current = current[1:]
@@ -813,7 +823,7 @@ def _first_lexicon_glosses(variants, written=""):
     for the variant of the same letters so the lexicon can match its pointing.
     See _first_hit()'s docstring for why this is bounded, early-exiting
     concurrency rather than a plain loop or an uncapped gather."""
-    written_letters = re.sub(r"[^א-ת]", "", written)
+    written_letters = _NOT_HEBREW_LETTER_RE.sub("", written)
 
     def lookup(variant):
         return _lookup_sefaria_lexicon_glosses(written if variant == written_letters else variant)

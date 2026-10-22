@@ -107,12 +107,14 @@ class TestRecordAiNote:
         assert stored is True
         [record] = client.inserted
         assert record["user_id"] is None
-        assert record["verdict"] == "ai_note" and record["source"] == "ai"
+        assert record["verdict"] == "ai_note"
+        assert record["source"] == "ai"
         assert record["question_hash"] == hashlib.sha256(b"Is this gum kosher?").hexdigest()
         assert record["history_id"] == "11111111-2222-3333-4444-555555555555"
         assert record["shared_view"] is False
         # Fixed wording only: nothing of the question or a page title.
-        assert "gum" not in record["comment"] and "ou.org" not in record["comment"]
+        assert "gum" not in record["comment"]
+        assert "ou.org" not in record["comment"]
         assert "Looked the web up as a last resort (1 page)." in record["comment"]
 
     def test_without_a_history_id_there_is_no_link(self, monkeypatch, app_module):
@@ -128,7 +130,8 @@ class TestRecordAiNote:
 
         assert ai_notes.record_ai_note("Q?", history_id="11111111-2222-3333-4444-555555555555") is True
         [record] = client.inserted
-        assert "history_id" not in record and record["source"] == "ai"
+        assert "history_id" not in record
+        assert record["source"] == "ai"
 
     @pytest.mark.parametrize("code", ["42703", "PGRST204", "23514"])
     def test_before_the_migration_runs_the_note_is_skipped_quietly(self, monkeypatch, app_module, code):

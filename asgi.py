@@ -1138,6 +1138,24 @@ async def ask_async(
     return result
 
 
+def _ask_async_cache_key(question, answer_language, mode, canonical_lens, user_id, guest, web_search) -> str:
+    """Identical key formula to app.py's (dead, unreachable-in-production)
+    ask_question() route -- not read/written by that route today, but keeping
+    one formula rather than two avoids a divergent-duplication trap if that
+    route is ever revived."""
+    key = "|".join([
+        question.lower(), answer_language, mode, canonical_lens.lower(), user_id or "anon",
+    ])
+    if guest is not None and guest.rows:
+        # A follow-up's answer depends on the turns before it.
+        key += f"|thread:{guest.cache_scope}"
+    if web_search is False:
+        # Same split as app.py: an answer written with a web lookup is not
+        # served to a reader who switched Web search off.
+        key += "|noweb"
+    return key
+
+
 async def _ask_async_impl(
     request: Request,
     payload: AskRequest,
@@ -1171,20 +1189,8 @@ async def _ask_async_impl(
     # The texts the AI quotes use this community's versions (backend/text_trust.py).
     # Set on this request's own task context, so it ends with the request.
     text_trust.use_community(text_trust.minhag_for_lens(canonical_lens))
-    # Identical key formula to app.py's (dead,
-    # unreachable-in-production) ask_question() route -- not read/written by
-    # that route today, but keeping one formula rather than two avoids a
-    # divergent-duplication trap if that route is ever revived.
-    ask_cache_key = "|".join([
-        question.lower(), answer_language, mode, canonical_lens.lower(), user_id or "anon",
-    ])
-    if guest is not None and guest.rows:
-        # A follow-up's answer depends on the turns before it.
-        ask_cache_key += f"|thread:{guest.cache_scope}"
-    if payload.web_search is False:
-        # Same split as app.py: an answer written with a web lookup is not
-        # served to a reader who switched Web search off.
-        ask_cache_key += "|noweb"
+    ask_cache_key = _ask_async_cache_key(
+        question, answer_language, mode, canonical_lens, user_id, guest, payload.web_search)
 
     try:
         prayer_result = _ask_async_prayer_result(question, mode, canonical_lens)
