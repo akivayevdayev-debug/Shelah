@@ -5459,11 +5459,60 @@ function hasParenthetical(text) {
             setSidebarVisibility('right', false);
         }
 
+        // Sefaria links a commentary one passage at a time ("Rashi on Genesis
+        // 1:1:1", ":2", ":3"), but those passages are one comment on the verse.
+        // It is listed once, under the ref without the passage number ("Rashi
+        // on Genesis 1:1"), and that ref's own text holds all of its passages.
+        const COMMENTARY_PASSAGE_RE = /^(\d+[ab]?:\d+)((?::\d+(?:-\d+)?)+)$/;
+        const COMMENTARY_PASSAGE_RANGE_LIMIT = 1000;
+
+        // The ref a passage belongs to, how many numbers it dropped, and the
+        // passage numbers it names (a ":9-11" range names three; null for a ref
+        // that is not a passage or for one nested deeper than a single number).
+        function splitCommentaryPassage(raw) {
+            const cut = raw.lastIndexOf(' ') + 1;
+            const match = COMMENTARY_PASSAGE_RE.exec(raw.slice(cut));
+            if (!match) return { ref: raw, depth: 0, passages: null };
+            const tail = match[2].slice(1).split(':');
+            let passages = null;
+            if (tail.length === 1) {
+                const [from, to = from] = tail[0].split('-').map(Number);
+                passages = to >= from && to - from < COMMENTARY_PASSAGE_RANGE_LIMIT
+                    ? Array.from({ length: to - from + 1 }, (_, index) => from + index)
+                    : [from];
+            }
+            return { ref: raw.slice(0, cut) + match[1], depth: tail.length, passages };
+        }
+
+        // ref -> the passage numbers the links name (a Set), or null when the
+        // ref is linked whole. A section can hold passages that belong to other
+        // verses, so a view shows only the ones that were linked.
+        const commentaryLinkedPassages = new Map();
+
+        function noteLinkedPassages(linked, ref, passages) {
+            if (passages === null) {
+                linked.set(ref, null);
+                return;
+            }
+            if (linked.get(ref) === null) return;
+            const known = linked.get(ref) || new Set();
+            passages.forEach((number) => known.add(number));
+            linked.set(ref, known);
+        }
+
+        // Sefaria's Hebrew ref of the first passage, without its passage numbers.
+        function hebrewRefWithoutPassages(heRef, depth) {
+            const raw = String(heRef || '').trim();
+            const parts = raw.split(':');
+            return parts.length > depth ? parts.slice(0, parts.length - depth).join(':') : '';
+        }
+
         function extractCommentaryRefs(linkData) {
             if (!linkData || typeof linkData !== 'object') return [];
 
             const refs = [];
             const seen = new Set();
+            const linked = new Map();
 
             // Commentary before Targum before Midrash, whatever order the
             // payload's keys arrive in. "Quoting Commentary" is works that
@@ -5485,18 +5534,21 @@ function hasParenthetical(text) {
                 .sort((a, b) => a.rank - b.rank)
                 .forEach(({ items }) => {
                     items.forEach((item) => {
-                        const ref = String(item?.ref || '').trim();
-                        if (!ref) return;
+                        const raw = String(item?.ref || '').trim();
+                        if (!raw) return;
+                        const { ref, depth, passages } = splitCommentaryPassage(raw);
+                        noteLinkedPassages(linked, ref, passages);
                         const key = ref.toLowerCase();
                         if (seen.has(key)) return;
                         seen.add(key);
                         refs.push(ref);
-                        const heRef = String(item?.heRef || '').trim();
+                        const heRef = depth ? hebrewRefWithoutPassages(item?.heRef, depth) : String(item?.heRef || '').trim();
                         const en = String(item?.collectiveTitle?.en || '').trim();
                         const he = String(item?.collectiveTitle?.he || '').trim();
                         if (heRef || en || he) commentaryRefMeta.set(ref, { heRef, en, he });
                     });
                 });
+            linked.forEach((passages, ref) => commentaryLinkedPassages.set(ref, passages));
 
             // Safety bound only: a Talmud daf can carry thousands of links.
             return refs.slice(0, COMMENTARY_REF_LIMIT);
@@ -6047,33 +6099,32 @@ function hasParenthetical(text) {
             }
         }
 
-        function renderInlineCommentaryLines(data) {
-            const sourceLines = Array.isArray(data?.lines) ? data.lines : [];
-            const renderedLines = sourceLines.map((line, idx) => {
-                const heRaw = normalizeDisplayText(line?.he || '');
-                const enRaw = normalizeDisplayText(line?.en || '');
+        // One comment of a commentary: its Hebrew paragraph, then its English.
+        function renderCommentaryPart(heSource, enSource) {
+            const he = normalizeDisplayText(heSource) ? escapeDisplayTextPreservingEmphasis(applyHebrewDisplaySettings(heSource)) : '';
+            const en = normalizeDisplayText(enSource) ? escapeDisplayTextPreservingEmphasis(enSource) : '';
+            if (!he && !en) return '';
 
-                if (!heRaw && !enRaw) return '';
+            const hebrewMarkup = he
+                ? `<p dir="rtl" lang="he" class="font-hebrew text-start text-[1.05rem] leading-[1.9] text-slate-800">${he.replaceAll('\n', '<br>')}</p>`
+                : '';
+            const englishMarkup = en
+                ? `<p dir="ltr" class="font-serif text-start text-sm leading-relaxed text-slate-700${he ? ' mt-2' : ''}">${en.replaceAll('\n', '<br>')}</p>`
+                : '';
+            return `<div class="commentary-part">${hebrewMarkup}${englishMarkup}</div>`;
+        }
 
-                const he = heRaw ? escapeDisplayTextPreservingEmphasis(applyHebrewDisplaySettings(line?.he || '')) : '';
-                const en = enRaw ? escapeDisplayTextPreservingEmphasis(line?.en || '') : '';
-
-                const segmentLabel = formatSegmentLabel(line?.segment, idx);
-                const hebrewMarkup = he
-                    ? `<p dir="rtl" class="font-hebrew text-start text-[1.05rem] leading-[1.9] text-slate-800">${he.replaceAll('\n', '<br>')}</p>`
-                    : '';
-                const englishMarkup = en
-                    ? `<p dir="ltr" class="font-serif text-start text-sm leading-relaxed text-slate-700 mt-2">${en.replaceAll('\n', '<br>')}</p>`
-                    : '';
-
-                return `
-                    <article class="pb-2 mb-2 border-b border-slate-100 last:border-b-0 last:mb-0 last:pb-0">
-                        <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">${escapeHtml(segmentLabel)}</p>
-                        ${hebrewMarkup}
-                        ${englishMarkup}
-                    </article>
-                `;
-            }).filter(Boolean);
+        // A commentary arrives as several comments (Sefaria's passages): they
+        // read as one block, in order, with no per-passage heading or number.
+        // `passages` is the set of passage numbers the verse links, when the
+        // commentary belongs to another verse too; it never empties the block.
+        function renderInlineCommentaryLines(data, passages = null) {
+            let sourceLines = Array.isArray(data?.lines) ? data.lines : [];
+            if (passages?.size) {
+                const linked = sourceLines.filter((line) => passages.has(Number(line?.segment)));
+                if (linked.length) sourceLines = linked;
+            }
+            const renderedLines = sourceLines.map((line) => renderCommentaryPart(line?.he || '', line?.en || '')).filter(Boolean);
 
             if (renderedLines.length) {
                 return renderedLines.join('');
@@ -6087,29 +6138,7 @@ function hasParenthetical(text) {
                 return `<p class="text-xs text-slate-500 italic">${t('No commentary text found for this reference.', 'לא נמצא טקסט פירוש עבור הפניה זו.')}</p>`;
             }
 
-            return Array.from({ length: fallbackLen }, (_, idx) => {
-                const heRaw = normalizeDisplayText(heFallbackLines[idx] || '');
-                const enRaw = normalizeDisplayText(enFallbackLines[idx] || '');
-                if (!heRaw && !enRaw) return '';
-
-                const he = heRaw ? escapeDisplayTextPreservingEmphasis(applyHebrewDisplaySettings(heFallbackLines[idx] || '')) : '';
-                const en = enRaw ? escapeDisplayTextPreservingEmphasis(enFallbackLines[idx] || '') : '';
-
-                const hebrewMarkup = he
-                    ? `<p dir="rtl" class="font-hebrew text-start text-[1.05rem] leading-[1.9] text-slate-800">${he.replaceAll('\n', '<br>')}</p>`
-                    : '';
-                const englishMarkup = en
-                    ? `<p dir="ltr" class="font-serif text-start text-sm leading-relaxed text-slate-700 mt-2">${en.replaceAll('\n', '<br>')}</p>`
-                    : '';
-
-                return `
-                    <article class="pb-2 mb-2 border-b border-slate-100 last:border-b-0 last:mb-0 last:pb-0">
-                        <p class="text-[10px] uppercase tracking-wider text-slate-400 mb-1">${idx + 1}</p>
-                        ${hebrewMarkup}
-                        ${englishMarkup}
-                    </article>
-                `;
-            })
+            return Array.from({ length: fallbackLen }, (_, idx) => renderCommentaryPart(heFallbackLines[idx] || '', enFallbackLines[idx] || ''))
                 .filter(Boolean)
                 .join('');
         }
@@ -6128,10 +6157,15 @@ function hasParenthetical(text) {
         }
 
         function renderCommentaryView(commentaryRef, data) {
+            // One heading: the commentator and the reference, "Rashi on Genesis
+            // 1:1", in English and in Sefaria's Hebrew for the same reference.
             const enTitle = String(data?.title || commentaryRef).trim();
-            const heTitle = String(data?.heTitle || '').trim();
-            const bilingualTitle = heTitle ? `${enTitle} · ${heTitle}` : enTitle;
-            const displayTitle = isHebrewMode() ? (heTitle || enTitle) : bilingualTitle;
+            const heTitle = String(data?.heRef || commentaryRefMeta.get(commentaryRef)?.heRef || data?.heTitle || '').trim();
+            // The Hebrew half is isolated so its run keeps its own direction
+            // inside the English heading.
+            const displayTitle = isHebrewMode()
+                ? escapeHtml(heTitle || enTitle)
+                : escapeHtml(enTitle) + (heTitle ? ` · <bdi lang="he">${escapeHtml(heTitle)}</bdi>` : '');
 
             // Keep the reader's place when the translated payload replaces
             // the plain one in place.
@@ -6150,9 +6184,9 @@ function hasParenthetical(text) {
                                 ${t('Back to list', 'חזרה לרשימה')}
                             </button>
                         </div>
-                        <h5 class="text-sm font-semibold text-slate-800 mb-3">${escapeHtml(displayTitle)}</h5>
-                        <div class="max-h-[50dvh] overflow-y-auto pr-1 space-y-2" data-commentary-scroll>
-                            ${renderInlineCommentaryLines(data)}
+                        <h5 class="text-sm font-semibold text-slate-800 mb-3">${displayTitle}</h5>
+                        <div class="max-h-[50dvh] overflow-y-auto pr-1" data-commentary-scroll>
+                            ${renderInlineCommentaryLines(data, commentaryLinkedPassages.get(commentaryRef))}
                         </div>
                     </div>
                 `;

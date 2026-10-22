@@ -1,0 +1,397 @@
+{
+ "_note": "Real Sefaria data for Genesis 1:1 (links as /api/sidebar?stage=links serves them, texts as /api/text/<ref> serves them), each line cut to its first 260 characters.",
+ "links": {
+  "Commentary": [
+   {
+    "ref": "Rashbam on Genesis 1:1:1",
+    "heRef": "רשב\"ם על בראשית א׳:א׳:א׳",
+    "collectiveTitle": {
+     "en": "Rashbam",
+     "he": "רשב\"ם"
+    }
+   },
+   {
+    "ref": "Ramban on Genesis 1:1:1",
+    "heRef": "רמב\"ן על בראשית א׳:א׳:א׳",
+    "collectiveTitle": {
+     "en": "Ramban",
+     "he": "רמב\"ן"
+    }
+   },
+   {
+    "ref": "Ramban on Genesis 1:1:2",
+    "heRef": "רמב\"ן על בראשית א׳:א׳:ב׳",
+    "collectiveTitle": {
+     "en": "Ramban",
+     "he": "רמב\"ן"
+    }
+   },
+   {
+    "ref": "Ramban on Genesis 1:1:3",
+    "heRef": "רמב\"ן על בראשית א׳:א׳:ג׳",
+    "collectiveTitle": {
+     "en": "Ramban",
+     "he": "רמב\"ן"
+    }
+   },
+   {
+    "ref": "Ramban on Genesis 1:1:4",
+    "heRef": "רמב\"ן על בראשית א׳:א׳:ד׳",
+    "collectiveTitle": {
+     "en": "Ramban",
+     "he": "רמב\"ן"
+    }
+   },
+   {
+    "ref": "Ibn Ezra on Genesis 1:1:1",
+    "heRef": "אבן עזרא על בראשית א׳:א׳:א׳",
+    "collectiveTitle": {
+     "en": "Ibn Ezra",
+     "he": "אבן עזרא"
+    }
+   },
+   {
+    "ref": "Ibn Ezra on Genesis 1:1:2",
+    "heRef": "אבן עזרא על בראשית א׳:א׳:ב׳",
+    "collectiveTitle": {
+     "en": "Ibn Ezra",
+     "he": "אבן עזרא"
+    }
+   },
+   {
+    "ref": "Ibn Ezra on Genesis 1:1:3",
+    "heRef": "אבן עזרא על בראשית א׳:א׳:ג׳",
+    "collectiveTitle": {
+     "en": "Ibn Ezra",
+     "he": "אבן עזרא"
+    }
+   },
+   {
+    "ref": "Ibn Ezra on Genesis 1:1:4",
+    "heRef": "אבן עזרא על בראשית א׳:א׳:ד׳",
+    "collectiveTitle": {
+     "en": "Ibn Ezra",
+     "he": "אבן עזרא"
+    }
+   },
+   {
+    "ref": "Ibn Ezra on Genesis 1:1:5",
+    "heRef": "אבן עזרא על בראשית א׳:א׳:ה׳",
+    "collectiveTitle": {
+     "en": "Ibn Ezra",
+     "he": "אבן עזרא"
+    }
+   },
+   {
+    "ref": "Rabbeinu Bahya, Bereshit 1:1:9-11",
+    "heRef": "רבנו בחיי, בראשית א׳:א׳:ט׳-י״א",
+    "collectiveTitle": {
+     "en": "Rabbeinu Bahya",
+     "he": "רבנו בחיי"
+    }
+   },
+   {
+    "ref": "Rabbeinu Bahya, Bereshit 1:1:12-14",
+    "heRef": "רבנו בחיי, בראשית א׳:א׳:י״ב-י״ד",
+    "collectiveTitle": {
+     "en": "Rabbeinu Bahya",
+     "he": "רבנו בחיי"
+    }
+   },
+   {
+    "ref": "Rabbeinu Bahya, Bereshit 1:1:15-16",
+    "heRef": "רבנו בחיי, בראשית א׳:א׳:ט״ו-ט״ז",
+    "collectiveTitle": {
+     "en": "Rabbeinu Bahya",
+     "he": "רבנו בחיי"
+    }
+   },
+   {
+    "ref": "Rabbeinu Bahya, Bereshit 1:1:1-8",
+    "heRef": "רבנו בחיי, בראשית א׳:א׳:א׳-ח׳",
+    "collectiveTitle": {
+     "en": "Rabbeinu Bahya",
+     "he": "רבנו בחיי"
+    }
+   },
+   {
+    "ref": "Rashi on Genesis 1:1:1",
+    "heRef": "רש\"י על בראשית א׳:א׳:א׳",
+    "collectiveTitle": {
+     "en": "Rashi",
+     "he": "רש\"י"
+    }
+   },
+   {
+    "ref": "Rashi on Genesis 1:1:2",
+    "heRef": "רש\"י על בראשית א׳:א׳:ב׳",
+    "collectiveTitle": {
+     "en": "Rashi",
+     "he": "רש\"י"
+    }
+   },
+   {
+    "ref": "Rashi on Genesis 1:1:3",
+    "heRef": "רש\"י על בראשית א׳:א׳:ג׳",
+    "collectiveTitle": {
+     "en": "Rashi",
+     "he": "רש\"י"
+    }
+   },
+   {
+    "ref": "The Kehot Chumash; A Chasidic Commentary, Genesis 1:1:1",
+    "heRef": "חומש קה\"ת; ביאורי חסידות, בראשית א׳:א׳:א׳",
+    "collectiveTitle": {
+     "en": "The Kehot Chumash; A Chasidic Commentary",
+     "he": "חומש קה\"ת; ביאורי חסידות"
+    }
+   },
+   {
+    "ref": "The Kehot Chumash; A Chasidic Commentary, Genesis 1:2:1",
+    "heRef": "חומש קה\"ת; ביאורי חסידות, בראשית א׳:ב׳:א׳",
+    "collectiveTitle": {
+     "en": "The Kehot Chumash; A Chasidic Commentary",
+     "he": "חומש קה\"ת; ביאורי חסידות"
+    }
+   },
+   {
+    "ref": "The Kehot Chumash; A Chasidic Commentary, Genesis 1:3:1",
+    "heRef": "חומש קה\"ת; ביאורי חסידות, בראשית א׳:ג׳:א׳",
+    "collectiveTitle": {
+     "en": "The Kehot Chumash; A Chasidic Commentary",
+     "he": "חומש קה\"ת; ביאורי חסידות"
+    }
+   },
+   {
+    "ref": "The Kehot Chumash; A Chasidic Commentary, Genesis 1:4:1",
+    "heRef": "חומש קה\"ת; ביאורי חסידות, בראשית א׳:ד׳:א׳",
+    "collectiveTitle": {
+     "en": "The Kehot Chumash; A Chasidic Commentary",
+     "he": "חומש קה\"ת; ביאורי חסידות"
+    }
+   },
+   {
+    "ref": "The Kehot Chumash; A Chasidic Commentary, Genesis 1:4:2",
+    "heRef": "חומש קה\"ת; ביאורי חסידות, בראשית א׳:ד׳:ב׳",
+    "collectiveTitle": {
+     "en": "The Kehot Chumash; A Chasidic Commentary",
+     "he": "חומש קה\"ת; ביאורי חסידות"
+    }
+   },
+   {
+    "ref": "The Kehot Chumash; A Chasidic Commentary, Genesis 1:5:1",
+    "heRef": "חומש קה\"ת; ביאורי חסידות, בראשית א׳:ה׳:א׳",
+    "collectiveTitle": {
+     "en": "The Kehot Chumash; A Chasidic Commentary",
+     "he": "חומש קה\"ת; ביאורי חסידות"
+    }
+   },
+   {
+    "ref": "The Kehot Chumash; A Chasidic Commentary, Genesis 1:8:1",
+    "heRef": "חומש קה\"ת; ביאורי חסידות, בראשית א׳:ח׳:א׳",
+    "collectiveTitle": {
+     "en": "The Kehot Chumash; A Chasidic Commentary",
+     "he": "חומש קה\"ת; ביאורי חסידות"
+    }
+   },
+   {
+    "ref": "The Kehot Chumash; A Chasidic Commentary, Genesis 1:10:1",
+    "heRef": "חומש קה\"ת; ביאורי חסידות, בראשית א׳:י׳:א׳",
+    "collectiveTitle": {
+     "en": "The Kehot Chumash; A Chasidic Commentary",
+     "he": "חומש קה\"ת; ביאורי חסידות"
+    }
+   },
+   {
+    "ref": "The Kehot Chumash; A Chasidic Commentary, Genesis 1:16:1",
+    "heRef": "חומש קה\"ת; ביאורי חסידות, בראשית א׳:ט״ז:א׳",
+    "collectiveTitle": {
+     "en": "The Kehot Chumash; A Chasidic Commentary",
+     "he": "חומש קה\"ת; ביאורי חסידות"
+    }
+   },
+   {
+    "ref": "The Kehot Chumash; A Chasidic Commentary, Genesis 1:26:1",
+    "heRef": "חומש קה\"ת; ביאורי חסידות, בראשית א׳:כ״ו:א׳",
+    "collectiveTitle": {
+     "en": "The Kehot Chumash; A Chasidic Commentary",
+     "he": "חומש קה\"ת; ביאורי חסידות"
+    }
+   },
+   {
+    "ref": "The Kehot Chumash; A Chasidic Commentary, Genesis 1:27:1",
+    "heRef": "חומש קה\"ת; ביאורי חסידות, בראשית א׳:כ״ז:א׳",
+    "collectiveTitle": {
+     "en": "The Kehot Chumash; A Chasidic Commentary",
+     "he": "חומש קה\"ת; ביאורי חסידות"
+    }
+   },
+   {
+    "ref": "The Kehot Chumash; A Chasidic Commentary, Genesis 1:28:2",
+    "heRef": "חומש קה\"ת; ביאורי חסידות, בראשית א׳:כ״ח:ב׳",
+    "collectiveTitle": {
+     "en": "The Kehot Chumash; A Chasidic Commentary",
+     "he": "חומש קה\"ת; ביאורי חסידות"
+    }
+   },
+   {
+    "ref": "The Kehot Chumash; A Chasidic Commentary, Genesis 1:28:1",
+    "heRef": "חומש קה\"ת; ביאורי חסידות, בראשית א׳:כ״ח:א׳",
+    "collectiveTitle": {
+     "en": "The Kehot Chumash; A Chasidic Commentary",
+     "he": "חומש קה\"ת; ביאורי חסידות"
+    }
+   },
+   {
+    "ref": "Abarbanel on Torah, Genesis 1:1",
+    "heRef": "אברבנאל על תורה, בראשית א׳:א׳",
+    "collectiveTitle": {
+     "en": "Abarbanel",
+     "he": "אברבנאל"
+    }
+   },
+   {
+    "ref": "Abarbanel on Torah, Genesis 1:1:1",
+    "heRef": "אברבנאל על תורה, בראשית א׳:א׳:א׳",
+    "collectiveTitle": {
+     "en": "Abarbanel",
+     "he": "אברבנאל"
+    }
+   },
+   {
+    "ref": "Or HaChaim on Genesis 1:1:1",
+    "heRef": "אור החיים על בראשית א׳:א׳:א׳",
+    "collectiveTitle": {
+     "en": "Or HaChaim",
+     "he": "אור החיים"
+    }
+   },
+   {
+    "ref": "Or HaChaim on Genesis 1:1:2",
+    "heRef": "אור החיים על בראשית א׳:א׳:ב׳",
+    "collectiveTitle": {
+     "en": "Or HaChaim",
+     "he": "אור החיים"
+    }
+   },
+   {
+    "ref": "Or HaChaim on Genesis 1:1:3",
+    "heRef": "אור החיים על בראשית א׳:א׳:ג׳",
+    "collectiveTitle": {
+     "en": "Or HaChaim",
+     "he": "אור החיים"
+    }
+   },
+   {
+    "ref": "Or HaChaim on Genesis 1:1:4",
+    "heRef": "אור החיים על בראשית א׳:א׳:ד׳",
+    "collectiveTitle": {
+     "en": "Or HaChaim",
+     "he": "אור החיים"
+    }
+   },
+   {
+    "ref": "Or HaChaim on Genesis 1:1:5",
+    "heRef": "אור החיים על בראשית א׳:א׳:ה׳",
+    "collectiveTitle": {
+     "en": "Or HaChaim",
+     "he": "אור החיים"
+    }
+   },
+   {
+    "ref": "Or HaChaim on Genesis 1:1:6",
+    "heRef": "אור החיים על בראשית א׳:א׳:ו׳",
+    "collectiveTitle": {
+     "en": "Or HaChaim",
+     "he": "אור החיים"
+    }
+   }
+  ]
+ },
+ "texts": {
+  "Rashi on Genesis 1:1": {
+   "ref": "Rashi on Genesis 1:1",
+   "title": "Rashi on Genesis 1:1",
+   "heTitle": "רש\"י על בראשית",
+   "heRef": "רש\"י על בראשית א׳:א׳",
+   "lines": [
+    {
+     "segment": "1",
+     "he": "<b>בראשית.</b> אָמַר רַבִּי יִצְחָק לֹֹֹֹֹא הָיָה צָרִיךְ לְהַתְחִיל אֶת הַתּוֹרָה אֶלָּא מֵהַחֹדֶשׁ הַזֶּה לָכֶם, שֶׁהִיא מִצְוָה רִאשׁוֹנָה שֶׁנִּצְטַוּוּ בָּהּ יִשׂרָאֵל, וּמַה טַּעַם פָּתַח בִּבְרֵאשִׁית? מִשׁוּם כֹּחַ מַעֲשָׂיו הִגִּיד לְעַמּוֹ לָתֵת לָהֶ",
+     "en": "בראשית IN THE BEGINNING — Rabbi Isaac said: The Torah <i>which is the Law book of Israel</i> should have commenced with the verse (Exodus 12:2) “This month shall be unto you the first of the months” which is the first commandment given to Israel. What is the r"
+    },
+    {
+     "segment": "2",
+     "he": "<b>בראשית ברא</b> אֵין הַמִּקְרָא הַזֶּה אוֹמֵר אֶלָּא דָּרְשֵׁנִי, כְּמוֹ שֶׁדְּרָשׁוּהוּ רַבּוֹתֵינוּ בִּשְׁבִיל הַתּוֹרָה שֶׁנִקְרֵאת רֵאשִׁית דַּרְכּוֹ (משלי ח'), וּבִשְׁבִיל יִשְׂרָאֵל שֶׁנִקְרְאוּ רֵאשִׁית תְּבוּאָתוֹ (ירמיה ב'); וְאִם בָּאתָ לְפָרְשׁוֹ ",
+     "en": "בראשית ברא IN THE BEGINNING GOD CREATED — This verse calls aloud for explanation in the manner that our Rabbis explained it: God created the world for the sake of the Torah which is called (Proverbs 8:22) “The beginning (ראשית) of His (God’s) way”, and for the"
+    },
+    {
+     "segment": "3",
+     "he": "<b>ברא אלהים</b> וְלֹא נֶאֱמַר בָּרָא ה', שֶׁבַּתְּחִלָּה עָלָה בְמַחֲשָׁבָה לִבְרֹאתוֹ בְּמִדַּת הַדִּין, רָאָה שֶׁאֵין הָעוֹלָם מִתְקַיֵּם, הִקְדִּים מִדַּת רַחֲמִים וְשִׁתְּפָהּ לְמִהַ\"דִּ, וְהַיְינוּ דִּכְתִיב בְּיוֹם עֲשׂוֹת ה' אֱלֹהִים אֶרֶץ וְשָׁמָיִם:",
+     "en": "ברא אלהים GOD [AS JUDGE] CREATED — It does not state 'ברא ה “The Lord (the Merciful One) created, because at first God intended to create it (the world) to be placed under the attribute (rule) of strict justice, but He realised that the world could not thus en"
+    }
+   ]
+  },
+  "Ramban on Genesis 1:1": {
+   "ref": "Ramban on Genesis 1:1",
+   "title": "Ramban on Genesis 1:1",
+   "heTitle": "רמב\"ן על בראשית",
+   "heRef": "רמב\"ן על בראשית א׳:א׳",
+   "lines": [
+    {
+     "segment": "1",
+     "he": "<b>בְּרֵאשִׁית בָּרָא אֱלֹהִים</b> אָמַר רַבִּי יִצְחָק: לֹא הָיָה צָרִיךְ לְהַתְחִיל הַתּוֹרָה אֶלָּא מֵ\"הַחֹדֶשׁ הַזֶּה לָכֶם\" (שמות יב ב), שֶׁהִיא מִצְוָה רִאשׁוֹנָה שֶׁנִּצְטַוּוּ בָּהּ יִשְׂרָאֵל. וּמָה טַעַם פָּתַח בִּבְרֵאשִׁית? שֶׁאִם יֹאמְרוּ אֻמּוֹת ",
+     "en": "IN THE BEGINNING G-D CREATED. Rabbi Yitzchak said: The Torah, which is the book of laws, should have begun with the verse, <i>This month shall be unto you the first of the months</i>,<sup class=\"footnote-marker\">1</sup><i class=\"footnote\">Exodus 12:2.</i> whic"
+    },
+    {
+     "segment": "2",
+     "he": "<b>בְּרֵאשִׁית בָּרָא אֱלֹהִים</b> כָּתַב רַשִׁ\"י (רש\"י על בראשית א':א'): אֵין הַמִּקְרָא הַזֶּה אוֹמֵר אֶלָּא \"דָּרְשֵׁנִי\", כְּמוֹ שֶׁדְּרָשׁוּהוּ רַבּוֹתֵינוּ: בִּשְׁבִיל הַתּוֹרָה שֶׁנִקְרֵאת רֵאשִׁית, שֶׁנֶּאֱמַר (משלי ח כח) \"ה' קָנָנִי רֵאשִׁית דַּרְכּוֹ",
+     "en": "IN THE BEGINNING G-D CREATED. Rashi wrote: “This verse calls aloud for elucidation,<sup class=\"footnote-marker\">19</sup><i class=\"footnote\">The difficulties in the verse are: (a) The word <i>bereshith</i> (in the beginning) appears throughout the Bible in a co"
+    },
+    {
+     "segment": "3",
+     "he": "<b>בְּרֵאשִׁית</b> כָּתַב רַשִׁ\"י (רש\"י על בראשית א':א'): וְאִם בָּאתָ לְפָרְשׁוֹ כִּפְשׁוּטוֹ כָּךְ פָּרְשֵׁהוּ: בְּרֵאשִׁית בְּרִיַּת שָׁמַיִם וָאָרֶץ, וְהָאָרֶץ הָיְתָה תֹהוּ וָבֹהוּ וְחֹשֶׁךְ, וַיֹּאמֶר הקב\"ה יְהִי אוֹר. אִם כֵּן, הַכֹּל נִמְשַׁךְ לִבְרִיא",
+     "en": "IN THE BEGINNING. Rashi wrote: “If you wish to explain it [the word <i>bereshith</i>] in accordance with its plain meaning, explain it thus: at the beginning of the creation of the heaven and earth, and the earth was formless and void and there was darkness, t"
+    },
+    {
+     "segment": "4",
+     "he": "וְאָמַר <b>אֱלֹהִים</b> בַּעַל הַכֹּחוֹת כֻּלָּם, כִּי הַמִּלָּה עִקָּרָהּ \"אֵל\", שֶׁהוּא כֹּחַ, וְהִיא מִלָּה מֻרְכֶּבֶת, \"אֵל הֵם\", כְּאִלּוּ \"אֵל\" סָמוּךְ, \"וְהֵם\" יִרְמֹז לְכָל שְׁאָר הַכּוֹחוֹת; כְּלוֹמַר, כֹּחַ הַכּוֹחוֹת כֻּלָּם. וְעוֹד יִתְבָּאֵר סוֹד ",
+     "en": "AND ‘ELOKIM’ (G-D) SAID. The word <i>Elokim</i> means “the Master of all forces,” for the root of the word is <i>e-il</i>, meaning force, and the word <i>Elokim</i> is a composite consisting of the words <i>e-il heim</i>, as if the word <i>e-il</i> is in a con"
+    }
+   ]
+  },
+  "Ibn Ezra on Genesis 1:1": {
+   "ref": "Ibn Ezra on Genesis 1:1",
+   "title": "Ibn Ezra on Genesis 1:1",
+   "heTitle": "אבן עזרא על בראשית",
+   "heRef": "אבן עזרא על בראשית א׳:א׳",
+   "lines": [
+    {
+     "segment": "1",
+     "he": "<b>בראשית</b> חכמינו אמרו שהבי\"ת נוסף כבי\"ת בָראשונָה (בראשית י\"ג ד'), כי נמצא \"ראשונה יסעו\" (במדבר ב' ט')<i data-commentator=\"Mechokekei Yehudah; Yahel Ohr\" data-order=\"1\"></i> ואילו היה טעמו כן, היה הבי\"ת נקמץ",
+     "en": "IN THE BEGINNING. Our wise men<sup class=\"footnote-marker\">1</sup><i class=\"footnote\">The Hebrew grammarians. See Ibn Janah, <i>Sefer ha-Rikmah</i>, 6:2.</i> taught that the letter <i>bet</i> (of <i>bereshit</i>, in the beginning) is superfluous."
+    },
+    {
+     "segment": "2",
+     "he": "<b>ברא</b> רובי המפרשים אמרו שהבריאה להוציא יש מאין<i data-commentator=\"Mechokekei Yehudah; Yahel Ohr\" data-order=\"19\"></i>, וכן \"אם בריאה יברא ד'\" (במדבר ט\"ז ל')<i data-commentator=\"Mechokekei Yehudah; Yahel Ohr\" data-order=\"20\"></i>, והנה שכחו \"ויברא אלהים א",
+     "en": "CREATED. Most Biblical commentators explain that the word <i>bara</i> (created) indicates creation <i>ex nihilo</i>. <i>But if the Lord make</i> (yivra) <i>a new thing</i> (beri’ah) (Num. 16:30) is similar. However, they have overlooked <i>And God created</i> "
+    },
+    {
+     "segment": "3",
+     "he": "<i data-commentator=\"Mechokekei Yehudah; Karnei Ohr\" data-order=\"8\"></i> אלהים<i data-commentator=\"Mechokekei Yehudah; Yahel Ohr\" data-order=\"40\"></i><i data-commentator=\"Mechokekei Yehudah; Karnei Ohr\" data-order=\"9\"></i>, אחר שמצאנו אלוה",
+     "en": "GOD. <i>Elohim</i> (God) is a plural. We know this because we come across the singular form <i>Elo’ah</i>.<sup class=\"footnote-marker\">21</sup><i class=\"footnote\">Ps. 114:7. <i>Elo’ah</i> being the singular of <i>Elohim</i>.</i> <i>Elohim</i> is employed styli"
+    },
+    {
+     "segment": "4",
+     "he": "וטעם את<i data-commentator=\"Mechokekei Yehudah; Yahel Ohr\" data-order=\"80\"></i>, כמו עצם הדבר<i data-commentator=\"Mechokekei Yehudah; Yahel Ohr\" data-order=\"81\"></i>, והוא סימן עם הפעול<i data-commentator=\"Mechokekei Yehudah; Yahel Ohr\" data-order=\"82\"></i>,",
+     "en": "<i>Et</i> indicates the very thing. It signifies the direct object, as in <i>the heaven</i> (et ha-shamayim).<sup class=\"footnote-marker\">38</sup><i class=\"footnote\">Gen. 1:1. The word <i>et</i> is a most difficult word to translate because it has many differe"
+    },
+    {
+     "segment": "5",
+     "he": "השמים בה\"א הידיעה להורות כי על אלה הנראים ידבר<i data-commentator=\"Mechokekei Yehudah; Yahel Ohr\" data-order=\"89\"></i><i data-commentator=\"Mechokekei Yehudah; Karnei Ohr\" data-order=\"28\"></i>, ולעולם לשון רבים",
+     "en": "THE HEAVEN. The definite article (<i>ha</i>) is placed before heaven (<i>shamayim</i>) to indicate that Scripture speaks of the heaven visible to man.<sup class=\"footnote-marker\">40</sup><i class=\"footnote\">That is, the firmament. According to I.E. there is a "
+    }
+   ]
+  }
+ }
+}

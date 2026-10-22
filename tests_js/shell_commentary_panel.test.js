@@ -58,7 +58,7 @@ function fakePreloader(page, ref = '') {
 
 // --- the commentary text, line by line ------------------------------------------
 
-test('commentary lines show the segment, the Hebrew and the English, and skip empty ones', async () => {
+test('commentary lines show the Hebrew and the English of each comment, and skip empty ones', async () => {
     const page = await readGenesis();
     try {
         const html = page.call('renderInlineCommentaryLines', {
@@ -71,13 +71,13 @@ test('commentary lines show the segment, the Hebrew and the English, and skip em
         });
         const box = page.document.createElement('div');
         box.innerHTML = html;
-        const articles = [...box.querySelectorAll('article')];
-        assert.equal(articles.length, 3);
-        assert.deepEqual(articles.map((article) => article.querySelector('p').textContent), ['3', '7', '4']);
-        assert.equal(articles[0].querySelector('[dir=rtl]').textContent, 'עברית');
-        assert.equal(articles[0].querySelector('[dir=ltr]').innerHTML, 'first<br>second');
-        assert.equal(articles[1].querySelector('[dir=rtl]'), null);
-        assert.equal(articles[2].querySelector('[dir=ltr]'), null);
+        const parts = [...box.querySelectorAll('.commentary-part')];
+        assert.equal(parts.length, 3);
+        assert.equal(box.querySelectorAll('article').length, 0);
+        assert.equal(parts[0].querySelector('[dir=rtl]').textContent, 'עברית');
+        assert.equal(parts[0].querySelector('[dir=ltr]').innerHTML, 'first<br>second');
+        assert.equal(parts[1].querySelector('[dir=rtl]'), null);
+        assert.equal(parts[2].querySelector('[dir=ltr]'), null);
     } finally {
         page.close();
     }
@@ -116,16 +116,16 @@ test('without DOMPurify, commentary markup is stripped and what is left is escap
     }
 });
 
-test('commentary that comes as parallel he/en lists is numbered by position', async () => {
+test('commentary that comes as parallel he/en lists pairs them by position', async () => {
     const page = await readGenesis();
     try {
         const box = page.document.createElement('div');
         box.innerHTML = page.call('renderInlineCommentaryLines', { lines: [], he: ['א', '', 'ג'], en: ['one', '', 'three', 'four'] });
-        const articles = [...box.querySelectorAll('article')];
-        assert.deepEqual(articles.map((article) => article.querySelector('p').textContent), ['1', '3', '4']);
-        assert.equal(articles[0].querySelector('[dir=rtl]').textContent, 'א');
-        assert.equal(articles[2].querySelector('[dir=rtl]'), null);
-        assert.equal(articles[2].querySelector('[dir=ltr]').textContent, 'four');
+        const parts = [...box.querySelectorAll('.commentary-part')];
+        assert.equal(parts.length, 3);
+        assert.equal(parts[0].querySelector('[dir=rtl]').textContent, 'א');
+        assert.equal(parts[2].querySelector('[dir=rtl]'), null);
+        assert.equal(parts[2].querySelector('[dir=ltr]').textContent, 'four');
     } finally {
         page.close();
     }

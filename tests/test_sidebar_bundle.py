@@ -145,13 +145,17 @@ class TestPickPreloadRefs:
             link("Radak on Genesis 1:1:1"),
         ]}
         assert sb.pick_preload_refs(links, authors=3) == [
-            "Rashi on Genesis 1:1:1", "Ramban on Genesis 1:1:1", "Ibn Ezra on Genesis 1:1:1",
+            "Rashi on Genesis 1:1", "Ramban on Genesis 1:1", "Ibn Ezra on Genesis 1:1",
         ]
 
-    def test_passages_of_one_commentator_in_natural_order_up_to_the_cap(self):
-        links = {"Commentary": [link(f"Rashi on Genesis 1:1:{n}") for n in (10, 2, 1, 3, 11)]}
+    def test_the_passages_of_a_commentary_are_one_ref(self):
+        links = {"Commentary": [link(f"Rashi on Genesis 1:1:{n}") for n in (3, 1, 2)]}
+        assert sb.pick_preload_refs(links) == ["Rashi on Genesis 1:1"]
+
+    def test_commentaries_of_one_commentator_in_natural_order_up_to_the_cap(self):
+        links = {"Commentary": [link(f"Rashi on Berakhot 2a:{n}:1") for n in (10, 2, 1, 3, 11)]}
         assert sb.pick_preload_refs(links, per_author=3) == [
-            "Rashi on Genesis 1:1:1", "Rashi on Genesis 1:1:2", "Rashi on Genesis 1:1:3",
+            "Rashi on Berakhot 2a:1", "Rashi on Berakhot 2a:2", "Rashi on Berakhot 2a:3",
         ]
 
     def test_commentators_outside_the_priority_list_are_left_to_load_on_demand(self):
@@ -163,7 +167,7 @@ class TestPickPreloadRefs:
             "Commentary": [link("Rashi on Genesis 1:1:1")],
             "Targum": [link("Onkelos Genesis 1:1", collectiveTitle={"en": "Onkelos Genesis"})],
         }
-        assert sb.pick_preload_refs(links) == ["Rashi on Genesis 1:1:1", "Onkelos Genesis 1:1"]
+        assert sb.pick_preload_refs(links) == ["Rashi on Genesis 1:1", "Onkelos Genesis 1:1"]
 
     def test_no_links(self):
         assert sb.pick_preload_refs({}) == []
@@ -207,17 +211,19 @@ def _text_payload(ref, **extra):
 
 @pytest.fixture
 def stub_upstream(monkeypatch):
-    """Sefaria returns six Rashi/Ramban/... passages; translation is recorded
-    and marks each line so tests can see whether it ran."""
-    refs = [
+    """Sefaria links seven Rashi/Ramban/... passages of four commentaries;
+    translation is recorded and marks each line so tests can see whether it
+    ran."""
+    passages = [
         "Rashi on Genesis 1:1:1", "Rashi on Genesis 1:1:2", "Rashi on Genesis 1:1:3",
         "Ramban on Genesis 1:1:1", "Ramban on Genesis 1:1:2", "Ramban on Genesis 1:1:3",
-        "Ibn Ezra on Genesis 1:1:1",
+        "Ibn Ezra on Genesis 1:1:1", "Rashbam on Genesis 1:1:1",
     ]
+    refs = ["Rashi on Genesis 1:1", "Ramban on Genesis 1:1", "Ibn Ezra on Genesis 1:1", "Rashbam on Genesis 1:1"]
     state = {"fetched": [], "translated": [], "payloads": {}}
 
     def fake_links(ref):
-        return {"Commentary": [link(r) for r in refs]}
+        return {"Commentary": [link(r) for r in passages]}
 
     def fake_get_text(ref):
         state["fetched"].append(ref)
@@ -235,20 +241,21 @@ def stub_upstream(monkeypatch):
     monkeypatch.setattr("backend.sefaria_library.get_text", fake_get_text)
     monkeypatch.setattr("backend.helpers._fill_missing_english_lines", fake_translate)
     state["refs"] = refs
+    state["passages"] = passages
     return state
 
 
 class TestBuildSidebarTexts:
-    def test_preloads_the_picked_passages_keyed_by_their_own_ref(self, stub_upstream):
+    def test_preloads_each_commentary_once_keyed_by_its_own_ref(self, stub_upstream):
         result = sb.build_sidebar_texts("Genesis 1:1")
         assert result["ref"] == "Genesis 1:1"
-        # 4 authors max but only 3 are present; 3 refs per author max.
+        # Eight linked passages, four commentaries, four requests.
         assert set(result["texts"]) == set(stub_upstream["refs"])
         assert sorted(stub_upstream["fetched"]) == sorted(stub_upstream["refs"])
 
-    def test_only_the_first_passages_are_translated_and_flagged(self, stub_upstream):
+    def test_only_the_first_commentaries_are_translated_and_flagged(self, stub_upstream):
         result = sb.build_sidebar_texts("Genesis 1:1")
-        picked = sb.pick_preload_refs({"Commentary": [link(r) for r in stub_upstream["refs"]]})
+        picked = sb.pick_preload_refs({"Commentary": [link(r) for r in stub_upstream["passages"]]})
         translated = set(picked[: sb.TRANSLATE_REFS])
         assert set(stub_upstream["translated"]) == translated
         for ref, text in result["texts"].items():
@@ -261,12 +268,12 @@ class TestBuildSidebarTexts:
 
     def test_the_cached_upstream_payload_is_not_mutated_by_translation(self, stub_upstream):
         sb.build_sidebar_texts("Genesis 1:1")
-        original = stub_upstream["payloads"]["Rashi on Genesis 1:1:1"]
+        original = stub_upstream["payloads"]["Rashi on Genesis 1:1"]
         assert original["lines"][0]["en"] == ""
         assert "translation_generated" not in original
 
     def test_payload_is_slimmed(self, stub_upstream):
-        text = sb.build_sidebar_texts("Genesis 1:1")["texts"]["Rashi on Genesis 1:1:1"]
+        text = sb.build_sidebar_texts("Genesis 1:1")["texts"]["Rashi on Genesis 1:1"]
         assert set(text) <= {
             "ref", "title", "heTitle", "heRef", "lines", "translation_generated",
             "translation_generated_count", "translation_source", "translation_note",
@@ -276,10 +283,10 @@ class TestBuildSidebarTexts:
         assert "en" not in text
 
     def test_flat_lists_are_kept_when_there_are_no_lines(self, stub_upstream):
-        stub_upstream["payloads"]["Rashi on Genesis 1:1:1"] = {
-            "ref": "Rashi on Genesis 1:1:1", "he": ["א"], "en": ["a"], "lines": [],
+        stub_upstream["payloads"]["Rashi on Genesis 1:1"] = {
+            "ref": "Rashi on Genesis 1:1", "he": ["א"], "en": ["a"], "lines": [],
         }
-        text = sb.build_sidebar_texts("Genesis 1:1")["texts"]["Rashi on Genesis 1:1:1"]
+        text = sb.build_sidebar_texts("Genesis 1:1")["texts"]["Rashi on Genesis 1:1"]
         assert text["he"] == ["א"]
         assert text["en"] == ["a"]
 
@@ -289,31 +296,31 @@ class TestBuildSidebarTexts:
         def flaky(ref):
             if ref.startswith("Ramban"):
                 raise RuntimeError("upstream down")
-            if ref == "Rashi on Genesis 1:1:2":
+            if ref == "Ibn Ezra on Genesis 1:1":
                 return {"error": "not found"}
             return real.setdefault(ref, _text_payload(ref))
 
         monkeypatch.setattr("backend.sefaria_library.get_text", flaky)
         texts = sb.build_sidebar_texts("Genesis 1:1")["texts"]
-        assert "Rashi on Genesis 1:1:1" in texts
-        assert "Rashi on Genesis 1:1:2" not in texts
+        assert "Rashi on Genesis 1:1" in texts
+        assert "Ibn Ezra on Genesis 1:1" not in texts
         assert not any(ref.startswith("Ramban") for ref in texts)
 
-    def test_oversized_passages_are_left_out(self, stub_upstream, monkeypatch):
-        normal = len(sb.json.dumps(sb._slim_text(_text_payload("Rashi on Genesis 1:1:2")), ensure_ascii=False))
+    def test_oversized_commentaries_are_left_out(self, stub_upstream, monkeypatch):
+        normal = len(sb.json.dumps(sb._slim_text(_text_payload("Ramban on Genesis 1:1")), ensure_ascii=False))
         monkeypatch.setattr(sb, "MAX_TEXT_BYTES", normal + 100)
-        stub_upstream["payloads"]["Rashi on Genesis 1:1:1"] = _text_payload(
-            "Rashi on Genesis 1:1:1", lines=[{"he": "א" * 500, "en": ""}])
+        stub_upstream["payloads"]["Rashi on Genesis 1:1"] = _text_payload(
+            "Rashi on Genesis 1:1", lines=[{"he": "א" * 500, "en": ""}])
         texts = sb.build_sidebar_texts("Genesis 1:1")["texts"]
-        assert "Rashi on Genesis 1:1:1" not in texts
-        assert "Rashi on Genesis 1:1:2" in texts
+        assert "Rashi on Genesis 1:1" not in texts
+        assert "Ramban on Genesis 1:1" in texts
 
     def test_the_bundle_total_is_capped_keeping_priority_order(self, stub_upstream, monkeypatch):
-        one = len(sb.json.dumps(sb._slim_text(_text_payload("Rashi on Genesis 1:1:1")), ensure_ascii=False))
+        one = len(sb.json.dumps(sb._slim_text(_text_payload("Rashi on Genesis 1:1")), ensure_ascii=False))
         monkeypatch.setattr(sb, "MAX_BUNDLE_TEXT_BYTES", one * 2 + 200)
         texts = sb.build_sidebar_texts("Genesis 1:1")["texts"]
         assert 1 <= len(texts) < len(stub_upstream["refs"])
-        assert "Rashi on Genesis 1:1:1" in texts
+        assert "Rashi on Genesis 1:1" in texts
 
     def test_second_call_is_served_from_cache(self, stub_upstream):
         sb.build_sidebar_texts("Genesis 1:1")
@@ -345,7 +352,7 @@ class TestBuildSidebarTexts:
         started = time.monotonic()
         texts = sb.build_sidebar_texts("Genesis 1:1")["texts"]
         assert time.monotonic() - started < 0.9, "must not wait for the slow commentator"
-        assert "Rashi on Genesis 1:1:1" in texts
+        assert "Rashi on Genesis 1:1" in texts
         assert not any(ref.startswith("Ramban") for ref in texts)
         assert stored["ttl"] == 60
 
@@ -451,7 +458,7 @@ class TestSidebarRoute:
         assert response.status_code == 200
         body = response.get_json()
         assert body["ref"] == "Genesis 1:1"
-        assert "Rashi on Genesis 1:1:1" in body["texts"]
+        assert "Rashi on Genesis 1:1" in body["texts"]
 
     def test_unknown_stage_is_a_400(self, test_client):
         response = test_client.get("/api/sidebar/Genesis%201:1?stage=everything")

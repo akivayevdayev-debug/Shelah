@@ -13,8 +13,8 @@ client can load it for the verse being read, before anything is selected:
 * ``build_sidebar_links(ref)`` -- the commentary / targum / midrash refs in the
   shape ``/api/text/<ref>/links`` uses (so the client's existing grouping code
   reads it unchanged), minus everything the sidebar never shows.
-* ``build_sidebar_texts(ref)`` -- the text of the first few passages of the
-  most-read commentators on that verse, with an English translation filled in
+* ``build_sidebar_texts(ref)`` -- the text of the most-read commentators on
+  that verse, with an English translation filled in
   for the first of them, fetched in parallel.
 
 Everything is cached per ref, concurrent requests for one ref share a single
@@ -53,14 +53,14 @@ _PRIORITY_RANK = {name.lower(): index for index, name in enumerate(COMMENTARY_PR
 # can carry thousands of links.
 LINK_REF_LIMIT = 800
 
-# How much text to preload. A verse's commentary text is read one passage at a
-# time, so a few passages of the first few commentators cover the likely
-# first taps; anything else loads on demand exactly as before.
+# How much text to preload. A commentary is read as one block (every passage
+# Sefaria splits it into), so a few refs of the first few commentators cover
+# the likely first taps; anything else loads on demand exactly as before.
 PRELOAD_AUTHORS = 4
 PRELOAD_REFS_PER_AUTHOR = 3
 # Machine translation is the one expensive step (a Google round trip per
 # line, see backend/helpers.py::_translate_hebrew_text_online), so only the
-# first few passages -- the ones a reader opens first -- are translated here.
+# first few commentaries -- the ones a reader opens first -- are translated here.
 TRANSLATE_REFS = 3
 TRANSLATE_MAX_LINES = 8
 TRANSLATE_MAX_SECONDS = 1.0
@@ -77,6 +77,8 @@ _ONKELOS_BOOK_RE = re.compile(r"^Onkelos\s+(?:Genesis|Exodus|Leviticus|Numbers|D
 # Trailing "2a", "1:5", "1.2", "3-4" style location a work's ref ends with.
 _LOCATION_TOKEN_RE = re.compile(r"^\d+[ab]?(?:[:.]\d+[ab]?)*(?:-\d+(?:[:.]\d+)*)?$", re.IGNORECASE)
 _DIGIT_RUN_RE = re.compile(r"(\d+)")
+# "...Genesis 1:1:2" or "...Berakhot 2a:1:1-3": a section plus passage numbers.
+_PASSAGE_TAIL_RE = re.compile(r"^(\d+[ab]?:\d+)(?::\d+(?:-\d+)?)+$")
 
 _links_cache = TTLCache(maxsize=512, ttl=3600)
 _texts_cache = TTLCache(maxsize=128, ttl=1800)
@@ -222,10 +224,22 @@ def _natural_key(value):
     return [int(part) if part.isdigit() else part.lower() for part in _DIGIT_RUN_RE.split(value)]
 
 
+def passage_parent(ref):
+    """The section a passage belongs to: ``Rashi on Genesis 1:1:2`` is the
+    third-level ref of ``Rashi on Genesis 1:1``, whose own text holds all of
+    its passages. Mirrors splitCommentaryPassage in static/js/shell.js, so the
+    texts preloaded here are the ones the sidebar asks for."""
+    head, space, tail = ref.rpartition(" ")
+    match = _PASSAGE_TAIL_RE.match(tail)
+    return f"{head}{space}{match.group(1)}" if match else ref
+
+
 def pick_preload_refs(links, authors=PRELOAD_AUTHORS, per_author=PRELOAD_REFS_PER_AUTHOR):
-    """The first few passages of the most-read commentators present in
-    ``links``, most-read first. Only commentators in COMMENTARY_PRIORITY are
-    preloaded -- the long tail is read rarely and loads on demand."""
+    """The most-read commentators present in ``links``, most-read first, each
+    with the first few of its commentaries (a commentary is every passage
+    Sefaria links for one section, so it is fetched once, under the section's
+    ref). Only commentators in COMMENTARY_PRIORITY are preloaded -- the long
+    tail is read rarely and loads on demand."""
     by_author = {}
     for items in links.values():
         for entry in items:
@@ -233,8 +247,8 @@ def pick_preload_refs(links, authors=PRELOAD_AUTHORS, per_author=PRELOAD_REFS_PE
             if base not in _PRIORITY_RANK:
                 continue
             slot = by_author.setdefault(
-                base, {"rank": _PRIORITY_RANK[base], "bucket": _commentary_bucket(entry["ref"]), "refs": []})
-            slot["refs"].append(entry["ref"])
+                base, {"rank": _PRIORITY_RANK[base], "bucket": _commentary_bucket(entry["ref"]), "refs": set()})
+            slot["refs"].add(passage_parent(entry["ref"]))
 
     picked = []
     for slot in sorted(by_author.values(), key=lambda s: (s["rank"], s["bucket"]))[:authors]:

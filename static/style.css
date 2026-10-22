@@ -4997,6 +4997,12 @@ html[dir="rtl"] .mobile-drawer-right.mobile-open {
     color: var(--accent-cream);
 }
 
+/* Commentary sidebar: the comments of one commentary read as a single block,
+   spaced by the scale rather than ruled off one by one. */
+.commentary-part + .commentary-part {
+    margin-top: var(--sp-4);
+}
+
 /* Commentary sidebar: back-to-list button dark mode */
 :is([data-theme="dark"], body.theme-dark) #rightSidebar [class*="text-[#004e5f]"],
 :is([data-theme="dark"], body.theme-dark) #selectionInsightsBody [class*="text-[#004e5f]"] {
