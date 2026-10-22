@@ -131,16 +131,31 @@ h6 {
     text-align: right;
 }
 
-/* Ezra SIL ships a single weight, so <b>/<strong> in it (a commentary's
-   opening words, a bolded term in a Hebrew source or title) got only the
-   browser's synthetic bold: about 1% more ink, invisible next to the English
-   side, where Cardo has a real bold (~30% more). A thin stroke in the text
-   colour brings it to ~25%, the same visual weight, and leaves niqqud and
-   te'amim where they are. */
+/* No fake bold. Ezra SIL ships a single weight, so a bold request on it made
+   the browser smear one on: about 40% more ink, on a face that already sets
+   darker than Cardo (a Hebrew prayer heading came out half again as heavy as
+   the English heading beside it). Every other face the page uses has a real
+   bold, so only Ezra SIL is affected. */
+html {
+    font-synthesis-weight: none;
+}
+
+/* Emphasis in Hebrew (a commentary's opening words, a bolded term in a source)
+   is a thin stroke in the text colour over the regular face: about 35% more
+   ink, the same step up as English bold, and niqqud and te'amim stay where
+   they are. The rule used to ask for bold as well, so the stroke came on top
+   of the fake bold (twice the ink of the regular text). */
 :is(.font-hebrew, .reader-text-he, .source-he, .ai-src-box-he, html.rtl #readerTitle) :is(b, strong),
 :is(.font-hebrew, .reader-text-he, .source-he, .ai-src-box-he):is(b, strong) {
-    font-weight: 700;
-    -webkit-text-stroke: 0.05em currentColor;
+    -webkit-text-stroke: var(--he-emphasis-stroke, 0.025em) currentColor;
+}
+
+/* Hebrew titles set in Cardo. Its bold carries only part of the Hebrew block,
+   so a title came out with a few heavy letters among regular ones. The regular
+   face with a thin stroke gives every letter the same weight. */
+html.rtl :is(.home-topic-title, .home-library-title, .ai-tip__title, .conv-empty__title, .prose h1, .prose h2) {
+    font-weight: 400;
+    -webkit-text-stroke: var(--he-emphasis-stroke, 0.025em) currentColor;
 }
 
 /* Proper line height for Hebrew */

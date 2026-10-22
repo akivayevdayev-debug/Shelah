@@ -250,6 +250,10 @@
     --font-serif:  'Cardo', 'Cardo Fallback', Georgia, serif;
     --font-sans:   'Inter', system-ui, sans-serif;
     --font-hebrew: 'Ezra SIL', 'Ezra SIL Fallback', 'Cardo', 'Cardo Fallback', serif;
+    /* Emphasis in Hebrew is a thin stroke on the regular face (see style.css):
+       English bold puts about 35% more ink on a line than regular, and this
+       does the same for Ezra SIL and for Cardo's Hebrew. */
+    --he-emphasis-stroke: 0.025em;
 
     /* ── Calendar event colors (by Hebcal category — must match
        backend/app.py's _holiday_color_for_category palette) ────────── */

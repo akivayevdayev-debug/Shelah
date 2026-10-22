@@ -443,7 +443,7 @@ body.conv-modal-open {
 /* Cardo's Hebrew bold is partial (see .conv-answer[data-script]). */
 .conv-title[data-script="he"] {
     font-weight: 400;
-    -webkit-text-stroke: 0.05em currentColor;
+    -webkit-text-stroke: var(--he-emphasis-stroke, 0.025em) currentColor;
 }
 .conv-subtitle {
     margin: 0;
@@ -1144,7 +1144,7 @@ body.conv-modal-open {
    stroke for weight, as style.css does for Ezra SIL. */
 .conv-answer[data-script="he"] :is(h1, h2, h3, h4, strong, b) {
     font-weight: 400;
-    -webkit-text-stroke: 0.05em currentColor;
+    -webkit-text-stroke: var(--he-emphasis-stroke, 0.025em) currentColor;
 }
 .conv-answer li + li { margin-top: var(--sp-1); }
 .conv-answer blockquote {
