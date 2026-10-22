@@ -182,3 +182,27 @@ def test_unlinked_feedback_inserts_exactly_the_old_record(test_client, db):
         "user_id", "question_hash", "verdict", "comment", "mode", "language", "fallback", "safety_class",
     }
     assert len(db.insert_attempts) == 1
+
+
+def test_a_guest_rating_keeps_its_device_when_only_the_link_columns_are_missing():
+    attempts = []
+
+    class _Table:
+        def insert(self, payload):
+            self.payload = payload
+            return self
+
+        def execute(self):
+            attempts.append(self.payload)
+            if "history_id" in self.payload:
+                raise _APIError("42703")
+            return _Result([{"id": "row-1"}])
+
+    class _Supabase:
+        def table(self, _name):
+            return _Table()
+
+    row_id = feedback_module._insert_feedback(
+        _Supabase(), {"verdict": "helpful"}, {"history_id": ENTRY, "shared_view": True}, {"device_owner": "device-1"})
+    assert row_id == "row-1"
+    assert attempts[-1] == {"verdict": "helpful", "device_owner": "device-1"}

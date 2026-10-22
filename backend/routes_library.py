@@ -11,7 +11,7 @@ unchanged; only the route decorator target moved from ``@app.route`` to
 import io
 import re
 
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, g, jsonify, request, send_file
 
 from backend.helpers import (
     _json_object_body,
@@ -880,7 +880,12 @@ def search_verses_route():
     size = _coerce_int(request.args.get("size"), 6, min_value=1, max_value=12)
     if not query:
         return jsonify({"query": "", "close": False, "results": []})
-    return jsonify(search_verses(query, size))
+    found = search_verses(query, size)
+    if not found.get("results"):
+        # An empty list may be Sefaria being down (the lookup answers 200 either way):
+        # the edge must not keep it for an hour.
+        g.cache_tier_force_private = True
+    return jsonify(found)
 
 
 @routes_library.route("/api/search/suggest")

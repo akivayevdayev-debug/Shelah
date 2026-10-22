@@ -175,3 +175,85 @@ def test_a_weaker_signal_or_a_short_follow_up_gets_the_gentle_note():
 ])
 def test_biblical_questions_carry_a_jewish_signal(question):
     assert claude._has_jewish_context(question)
+
+
+# ── the sync path (Flask /ask and a signed-in conversation reply) ─────────────
+
+def _fake_sync_model(replies, prompts):
+    def model(prompt, dynamic_system_context="", max_tokens=3072, history_turns=None):
+        prompts.append(prompt)
+        reply = replies[min(len(prompts) - 1, len(replies) - 1)]
+        if isinstance(reply, str):
+            return {"answer": "", "error": reply, "is_fallback": True}
+        return {"answer": "x", "structured": reply, "is_fallback": False}
+    return model
+
+
+def test_the_sync_path_gives_a_flagged_question_a_second_look(monkeypatch):
+    prompts = []
+    monkeypatch.setattr(claude, "_call_primary_model_sync", _fake_sync_model([REFUSED, ANSWERED], prompts))
+    result = claude.ask_claude("Who was King David?", [], [], web_search=False)
+    assert len(prompts) == 2
+    assert "SCOPE CHECK" in prompts[1]
+    assert not str(result.get("error") or "").startswith("security_blocked")
+
+
+def test_the_sync_path_refuses_a_question_flagged_twice(monkeypatch):
+    prompts = []
+    monkeypatch.setattr(claude, "_call_primary_model_sync", _fake_sync_model([REFUSED], prompts))
+    result = claude.ask_claude("Who was King David?", [], [], web_search=False)
+    assert len(prompts) == 2
+    assert str(result.get("error") or "").startswith("security_blocked")
+
+
+def test_a_second_look_that_fails_keeps_the_first_refusal(monkeypatch):
+    prompts = []
+    monkeypatch.setattr(claude, "_call_primary_model_sync", _fake_sync_model([REFUSED, "anthropic_circuit_open"], prompts))
+    result = claude.ask_claude("Who was King David?", [], [], web_search=False)
+    assert str(result.get("error") or "").startswith("security_blocked")
+
+
+def test_no_second_look_when_the_time_budget_is_nearly_spent(monkeypatch):
+    prompts = []
+    monkeypatch.setattr(claude, "_call_primary_model_sync", _fake_sync_model([REFUSED, ANSWERED], prompts))
+    monkeypatch.setattr(claude, "_second_look_budget_left", lambda started: False)
+    result = claude.ask_claude("Who was King David?", [], [], web_search=False)
+    assert len(prompts) == 1
+    assert str(result.get("error") or "").startswith("security_blocked")
+
+
+def test_the_async_path_keeps_the_first_refusal_when_the_second_look_fails(monkeypatch):
+    prompts = []
+    async def gemini(prompt, dynamic_system_context="", is_simple=False, history_turns=None, max_tokens=None):
+        prompts.append(prompt)
+        if len(prompts) == 1:
+            return {"answer": "x", "structured": REFUSED, "is_fallback": False}
+        return {"answer": "", "error": "anthropic_circuit_open", "is_fallback": True}
+    async def anthropic(prompt, dynamic_system_context="", gemini_error="", history_turns=None, max_tokens=None):
+        return {"answer": "", "error": "anthropic_circuit_open", "is_fallback": True}
+    monkeypatch.setattr(claude, "_call_gemini_httpx_model", gemini)
+    monkeypatch.setattr(claude, "_call_anthropic_httpx_model", anthropic)
+    result = asyncio.run(claude.ask_ai_async("Who was King David?", [], [], web_search=False))
+    assert str(result.get("error") or "").startswith("security_blocked")
+
+
+@pytest.mark.parametrize("question", ["what about football?", "and for a movie?", "for a movie?", "in a novel?"])
+def test_a_short_follow_up_in_a_thread_passes_the_keyword_gate(question):
+    assert claude._detect_off_topic_subject(question, in_thread=True) is None
+
+
+def test_a_long_question_that_only_starts_like_a_follow_up_is_still_refused_in_a_thread():
+    assert claude._detect_off_topic_subject("In the novel Emma, who is Harriet?", in_thread=True) == "Literature and creative writing"
+
+
+@pytest.mark.parametrize("question", [
+    "Can I pay the loan in full before Shabbat?",
+    "Is a pit that is deeper than ten handbreadths a private domain?",
+])
+def test_ordinary_wording_is_not_a_request_for_a_long_answer(question):
+    assert claude.question_profile(question)[2] < claude.LONG_ANSWER_MAX_TOKENS
+
+
+@pytest.mark.parametrize("question", ["Explain the laws of Shabbat in full.", "deeper", "Go deeper please"])
+def test_a_plain_request_for_length_still_gets_a_long_answer(question):
+    assert claude.question_profile(question)[2] >= claude.LONG_ANSWER_MAX_TOKENS

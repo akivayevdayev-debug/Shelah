@@ -1584,10 +1584,22 @@ def _has_jewish_context(text: str) -> bool:
 # movie?"). Alone it names a subject with no Jewish signal; in a thread it asks what
 # Jewish law says about that thing, which the model resolves from the earlier turns.
 _ELLIPTICAL_FOLLOW_UP_RE = re.compile(
-    r"^\W*(?:(?:and|but|so|also)\W+)?(?:(?:what|how)\s+(?:about|if)\b|(?:for|in|on|with|when|if)\s+(?:a|an|the)\b)"
+    r"^\W*(?:(?:and|but|so|also)\W+)?(?:what|how)\s+(?:about|if)\b"
     r"|^\W*(?:and|but|also)\W+(?:a|an|the|for|in|on|with)\b",
     re.IGNORECASE,
 )
+# "for a movie?", "in a novel?": only this short counts, or "In the novel Emma, who is
+# Harriet?" would pass as a follow-up.
+_BARE_PREPOSITION_FOLLOW_UP_RE = re.compile(r"^\W*(?:for|in|on|with|when|if)\s+(?:a|an|the)\b", re.IGNORECASE)
+_ELLIPTICAL_MAX_WORDS = 10
+_BARE_PREPOSITION_MAX_WORDS = 4
+
+
+def _is_elliptical_follow_up(first_line: str) -> bool:
+    words = len(first_line.split())
+    if _ELLIPTICAL_FOLLOW_UP_RE.match(first_line):
+        return words <= _ELLIPTICAL_MAX_WORDS
+    return bool(_BARE_PREPOSITION_FOLLOW_UP_RE.match(first_line)) and words <= _BARE_PREPOSITION_MAX_WORDS
 
 
 def _detect_off_topic_subject(text: str, in_thread: bool = False) -> Optional[str]:
@@ -1599,7 +1611,7 @@ def _detect_off_topic_subject(text: str, in_thread: bool = False) -> Optional[st
     exception is a bare "what about X?" follow-up (``in_thread``): it takes its
     subject from the thread, so the model reads it with the earlier turns."""
     first_line = text.partition("\n")[0]
-    if in_thread and _ELLIPTICAL_FOLLOW_UP_RE.match(first_line):
+    if in_thread and _is_elliptical_follow_up(first_line):
         return None
     for subject, pattern in _OFF_TOPIC_RULES.items():
         if pattern.search(first_line):
@@ -2391,11 +2403,11 @@ _LONG_ANSWER_PHRASES = (
     r"\belaborat\w*",
     r"\bexpand\s+(?:on|upon)\b",
     r"\b(?:go|dig|dive)\s+(?:much\s+)?deeper\b",
-    r"\bdeeper\b",
+    r"^\W*(?:a\s+(?:bit|little)\s+)?(?:much\s+)?deeper\W*$",
     r"\bmore\s+(?:depth|detail|details)\b",
     r"\bthoroughly\b",
     r"\bextensively\b",
-    r"\bin\s+full\b",
+    r"\b(?:explain|answer|write|describe|discuss|cover|tell\s+me|walk\s+me\s+through)\b[^.?!\n]{0,30}\bin\s+full\b",
     r"\b(?:pasuk|passuk|verse|word|line)[\s-]*by[\s-]*(?:pasuk|passuk|verse|word|line)\b",
     r"\b(?:whole|entire|full)\s+commentary\b",
     r"\beverything\s+(?:about|on|there\s+is)\b",
@@ -3181,6 +3193,13 @@ def _finish_web_lookup(result, query, found):
     return result
 
 
+SCOPE_SECOND_LOOK_MIN_REMAINING_SECONDS = 15.0
+
+
+def _second_look_budget_left(started: float) -> bool:
+    return AI_TOTAL_BUDGET_SECONDS - (time.monotonic() - started) >= SCOPE_SECOND_LOOK_MIN_REMAINING_SECONDS
+
+
 def _web_budget_left(started: float) -> bool:
     return AI_TOTAL_BUDGET_SECONDS - (time.monotonic() - started) >= web_lookup.MIN_REMAINING_BUDGET_SECONDS
 
@@ -3222,6 +3241,25 @@ def ask_claude(question, sefaria_sources, customs, user_memories=None, wiki=None
     web_ok = web_lookup.allowed(web_search)
     started = time.monotonic()
 
+    def _call_model(prompt):
+        return _call_primary_model_sync(
+            prompt,
+            dynamic_system_context=dynamic_system_context,
+            max_tokens=max_tokens,
+            **({"history_turns": history_turns} if history_turns else {}),
+        )
+
+    def _execute(prompt):
+        result = _call_model(prompt)
+        if flagged_out_of_scope(result) and _second_look_budget_left(started):
+            # The second look the async path gives (ask_ai_async). A signed-in
+            # conversation reply is answered here, and short follow-ups are asked there.
+            ask_progress.step(ask_progress.STEP_SECOND_LOOK)
+            second = _call_model(prompt + scope_second_look_note(question, bool(history_turns)))
+            if not second.get("error"):
+                result = second
+        return result
+
     def _run(findings=None):
         def _build(sanitized_query: str) -> str:
             return build_prompt(
@@ -3241,12 +3279,7 @@ def ask_claude(question, sefaria_sources, customs, user_memories=None, wiki=None
         return run_protected_ai_wrapper(
             query=question,
             prompt_builder=_build,
-            model_executor=lambda prompt: _call_primary_model_sync(
-                prompt,
-                dynamic_system_context=dynamic_system_context,
-                max_tokens=max_tokens,
-                **({"history_turns": history_turns} if history_turns else {}),
-            ),
+            model_executor=_execute,
             answer_language=answer_language,
             in_thread=bool(history_turns),
         )
@@ -3801,10 +3834,14 @@ async def ask_ai_async(
     if max_tokens >= LONG_ANSWER_MAX_TOKENS:
         ask_progress.step(ask_progress.STEP_LONG)
     result = await _generate(_prompt())
-    if flagged_out_of_scope(result):
+    if flagged_out_of_scope(result) and _second_look_budget_left(started):
         second_look = scope_second_look_note(sanitized_query, bool(build_history_turns(conversation_history)))
         ask_progress.step(ask_progress.STEP_SECOND_LOOK)
-        result = await _generate(_prompt() + second_look)
+        second = await _generate(_prompt() + second_look)
+        # A second call that fails or runs out of time must not replace the refusal
+        # the first one gave, or the reader gets a sources-only fallback instead.
+        if not second.get("error"):
+            result = second
     result = (
         await _web_second_pass_async(
             result, started, lambda found: _generate(_prompt(found)), answer_language)

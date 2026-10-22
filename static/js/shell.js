@@ -6777,6 +6777,8 @@ function hasParenthetical(text) {
             if (!requestedNextRef) return;
 
             const loadingHaftarah = haftarahIsNext();
+            // Read before the await: a new text resets the state while this fetch runs.
+            const haftarahHeTitle = infiniteReaderState.haftarah?.heTitle || '';
             infiniteReaderState.loading = true;
             renderCurrentTextByLayout({ preserveScroll: false });
 
@@ -6795,7 +6797,7 @@ function hasParenthetical(text) {
                 // the Prophets are not what follows or precedes it here. A copy,
                 // so the cached payload stays a plain text.
                 const nextData = loadingHaftarah
-                    ? { ...fetched, kind: 'haftarah', haftarahHeTitle: infiniteReaderState.haftarah.heTitle, next: '', prev: '' }
+                    ? { ...fetched, kind: 'haftarah', haftarahHeTitle, next: '', prev: '' }
                     : fetched;
                 if (!loadingHaftarah) await ensurePayloadAdjacentRefs(nextData);
 
@@ -10446,6 +10448,14 @@ function hasParenthetical(text) {
             reloadIfChanged() {
                 if (!paintedText) return false;
                 const { ref, payload, query } = paintedText;
+                if (currentTextQuery(ref) !== query && appState.currentView?.type !== 'text') {
+                    // Changed away from the reader (site settings on the calendar, say):
+                    // forget the old text so the next open fetches it for the new choice,
+                    // and do not pull the reader back to a text they left.
+                    textPayloadCache.clear();
+                    paintedText = null;
+                    return false;
+                }
                 if (currentTextQuery(ref) === query) {
                     window.ShelahTextVersions?.render?.(payload);
                     return false;
@@ -10871,6 +10881,9 @@ function hasParenthetical(text) {
             // The server-rendered page is always the default community's text.
             paintedText = { ref: paintedRef, payload: data, query: serverText ? '' : currentTextQuery(paintedRef) };
             window.ShelahTextVersions?.render?.(data);
+            // A saved non-default community or edition pick: the server-rendered text is not
+            // the one it asks for, and nothing else would fetch the right one.
+            if (serverText && currentTextQuery(paintedRef)) queueMicrotask(() => window.ShelahReaderText.reloadIfChanged());
             // Title
             const titleEl = document.getElementById('readerTitle');
             const fallbackTitle = data.title || normalizedRequestRef || String(ref || '');

@@ -468,3 +468,19 @@ class TestWebSourcesInTheAnswer:
 
         rows = _answer_citations({"sources": self.CITED}, [], [{"title": "OU Kosher FAQ", "url": "https://evil.example/x"}])
         assert not [row for row in rows if row.get("url")]
+
+
+class TestReviewFixes:
+    def test_a_backslash_or_space_in_an_address_is_refused(self):
+        for url in ("https://evil.com\\.sefaria.org/x", "https://www.sefaria.org/a b", "https://www.sefaria.org/a\tb",
+                    "https://www.sefaria.org/\x00"):
+            assert web_lookup.page_allowed(url) is False, url
+
+    def test_an_exact_title_beats_a_short_generic_one_whatever_the_page_order(self):
+        pages = [
+            {"title": "Kashrut", "url": "https://www.chabad.org/kashrut/"},
+            {"title": "Star-K Kashrut Agency", "url": "https://www.star-k.org/"},
+        ]
+        for ordered in (pages, list(reversed(pages))):
+            rows = web_lookup.cited_pages(["Web: Star-K Kashrut Agency — the symbol is a K"], ordered)
+            assert [row["url"] for row in rows] == ["https://www.star-k.org/"]

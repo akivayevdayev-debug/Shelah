@@ -39,6 +39,12 @@ for _name in ("SUPABASE_URL", "SUPABASE_SECRET_KEY", "SUPABASE_PUBLISHABLE_KEY",
               "RATE_LIMIT_REDIS_URL", "RATELIMIT_STORAGE_URI"):
     os.environ[_name] = ""
 
+import dotenv  # noqa: E402
+
+# app.py and backend/claude.py call load_dotenv(override=True) when imported, which
+# would put the blanked Supabase/Redis/Sentry values back from the repo's .env.
+dotenv.load_dotenv = lambda *args, **kwargs: False
+
 import asgi  # noqa: E402
 from backend import ask_progress, claude  # noqa: E402
 

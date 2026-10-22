@@ -241,6 +241,16 @@ def test_the_route_returns_verse_results(test_client, sefaria):
     assert body["close"] is False
 
 
+def test_a_found_result_is_cached_at_the_edge_and_an_empty_one_is_not(test_client, sefaria):
+    table, _ = sefaria
+    table[("שמע ישראל", True)] = DEUT_6_4
+    found = test_client.get("/api/search/verses?q=שמע ישראל&size=4")
+    assert "s-maxage" in found.headers["Cache-Control"]
+    empty = test_client.get("/api/search/verses?q=zzzqqqxxx")
+    assert empty.get_json()["results"] == []
+    assert "no-store" in empty.headers["Cache-Control"]
+
+
 def test_the_route_answers_an_empty_query_without_searching(test_client, sefaria):
     _, calls = sefaria
     response = test_client.get("/api/search/verses?q=")

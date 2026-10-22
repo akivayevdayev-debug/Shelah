@@ -55,8 +55,8 @@ MIN_REMAINING_BUDGET_SECONDS = 25.0
 
 # The only sites a lookup may read (the owner approved this list on 2026-10-22).
 # Anthropic restricts the search to them and subdomains of them; page_allowed()
-# checks every returned page against the same list. Keep static/js/web-sources.js
-# in step (tests/test_web_lookup.py reads both).
+# checks every returned page against the same list. Keep WEB_SOURCE_DOMAINS in
+# static/js/source-cards.js in step (tests/test_web_lookup.py reads both).
 ALLOWED_DOMAINS = (
     "sefaria.org", "chabad.org", "ou.org", "oukosher.org", "star-k.org", "crcweb.org",
     "kashrut.com", "yeshiva.co", "din.org.il", "halachayomit.co.il", "dailyhalacha.com",
@@ -64,6 +64,7 @@ ALLOWED_DOMAINS = (
 )
 _SEARCH_TOOL_TYPE = "web_search_20250305"
 _PAGE_URL_MAX_CHARS = 600
+_UNSAFE_URL_CHARS_RE = re.compile(r"[\s\\\x00-\x1f\x7f]")
 
 _FALSE_VALUES = {"0", "false", "no", "off"}
 
@@ -146,7 +147,9 @@ def page_allowed(url: Any, title: Any = "") -> bool:
     login in the address, a host on ``ALLOWED_DOMAINS`` (or a subdomain of one),
     and not a publisher backend/text_trust.py denies."""
     text = str(url or "").strip()
-    if not text or len(text) > _PAGE_URL_MAX_CHARS:
+    # A backslash, space or control character: urllib and a browser read such an address
+    # differently ("https://evil.com\\.sefaria.org" is evil.com in a browser).
+    if not text or len(text) > _PAGE_URL_MAX_CHARS or _UNSAFE_URL_CHARS_RE.search(text):
         return False
     try:
         parts = urlparse(text)
@@ -327,13 +330,28 @@ def _page_for(ref: str, pages: List[Dict[str, str]]) -> Optional[Dict[str, str]]
     name = _words(_WEB_REF_RE.sub("", ref))
     if not name:
         return None
+    best, best_score = None, 0
     for page in pages:
-        title = _words(page["title"])
-        host = _words((urlparse(page["url"]).hostname or "").removeprefix("www."))
-        if (title and (title == name or (len(name) >= _MIN_NAME_CHARS and (name in title or title in name)))) \
-                or (host and host in name):
-            return page
+        score = _match_score(name, page)
+        if score > best_score:  # the first page wins a tie
+            best, best_score = page, score
+    if best:
+        return best
     return pages[0] if len(pages) == 1 else None
+
+
+def _match_score(name: str, page: Dict[str, str]) -> int:
+    """How well the cited ``name`` fits one page: 3 its exact title, 2 a title that
+    contains or is contained in the name, 1 the page's site name, 0 not at all.
+    An exact title outranks a short generic one ("Kashrut") that happens to be
+    inside a longer name ("Star-K Kashrut Agency"), whatever the page order."""
+    title = _words(page["title"])
+    if title and title == name:
+        return 3
+    if title and len(name) >= _MIN_NAME_CHARS and (name in title or title in name):
+        return 2
+    host = _words((urlparse(page["url"]).hostname or "").removeprefix("www."))
+    return 1 if host and host in name else 0
 
 
 def cited_pages(cited: Any, pages: Any) -> List[Dict[str, str]]:

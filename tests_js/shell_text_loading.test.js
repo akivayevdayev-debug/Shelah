@@ -352,6 +352,47 @@ test('the server-rendered chapter is handed over once, rebuilt like /api/text an
     }
 });
 
+test('a community change on another page forgets the open text instead of pulling the reader back to it', async () => {
+    const page = await readFrom('Genesis 1', { [textUrl('Genesis 1')]: chapter(1) });
+    try {
+        page.eval("window.ShelahTextVersions = { query: () => 'minhag=ashkenazi', render() {} }");
+        page.eval("appState.currentView = { type: 'calendar', value: '', label: '' }");
+        assert.equal(page.eval('window.ShelahReaderText.reloadIfChanged()'), false);
+        await page.settle();
+        assert.deepEqual(fetched(page), [], 'nothing is fetched while the reader is not on screen');
+        assert.equal(page.eval('paintedText'), null, 'the next open fetches the text for the new choice');
+    } finally {
+        page.close();
+    }
+});
+
+test('a server-rendered chapter is fetched again for a saved community it was not rendered for', async () => {
+    const page = await openPage({ fetch: { [textUrl('Genesis 1')]: chapter(1) } });
+    try {
+        page.eval("window.ShelahTextVersions = { query: () => 'minhag=ashkenazi', render() {} }");
+        ssrHolder(page, { requestedRef: 'Genesis 1', payload: chapter(1) });
+        page.takeCalls();
+        await page.eval("readText('Genesis 1', { skipNavigationGrid: true, fromRoute: true })");
+        await page.settle();
+        assert.deepEqual(fetched(page), [`${textUrl('Genesis 1')}?autotranslate=0&minhag=ashkenazi`]);
+    } finally {
+        page.close();
+    }
+});
+
+test('a community change on the reader reloads the open text', async () => {
+    const page = await readFrom('Genesis 1', { [textUrl('Genesis 1')]: chapter(1) });
+    try {
+        page.eval("window.ShelahTextVersions = { query: () => 'minhag=ashkenazi', render() {} }");
+        assert.equal(page.eval('appState.currentView.type'), 'text');
+        assert.equal(page.eval('window.ShelahReaderText.reloadIfChanged()'), true);
+        await page.settle();
+        assert.deepEqual(fetched(page), [`${textUrl('Genesis 1')}?autotranslate=0&minhag=ashkenazi`]);
+    } finally {
+        page.close();
+    }
+});
+
 test('a server-rendered payload for another reference, or a broken one, is dropped', async () => {
     const page = await openPage();
     try {

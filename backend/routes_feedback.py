@@ -115,7 +115,8 @@ def _insert_feedback(supabase, record, link, device):
     row's id, or None."""
     attempts = [{**link, **device}]
     if link and device:
-        attempts.append(link)
+        # Either migration may be the one that is missing: keep whichever column exists.
+        attempts += [device, link]
     if attempts[0]:
         attempts.append({})
     for extra in attempts:

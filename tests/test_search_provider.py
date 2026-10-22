@@ -307,6 +307,22 @@ def test_collect_global_sefaria_sources_shapes_hits_into_sources(mock_outbound_h
     }]
 
 
+def test_collect_global_sefaria_sources_skips_a_work_the_trust_lists_deny(mock_outbound_http):
+    hits = [
+        {"_source": {"ref": "Rereading the Rabbis 3:4", "heRef": "", "path": "p", "categories": [],
+                     "titleVariants": [], "naive_lemmatizer": "rabbis women"}, "_score": 3.0},
+        {"_source": {"ref": "Shulchan Arukh 242", "heRef": "", "path": "p", "categories": [],
+                     "titleVariants": [], "naive_lemmatizer": "rabbis women"}, "_score": 2.0},
+    ]
+    with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(responses_lib.POST, "https://www.sefaria.org.il/api/search-wrapper",
+                 json={"hits": {"hits": hits}}, status=200)
+        result = _collect_global_sefaria_sources(
+            ["rabbis women"], fallback_terms=["rabbis"], discovery_stage="specific-api", priority=1,
+        )
+    assert [entry["ref"] for entry in result] == ["Shulchan Arukh 242"]
+
+
 def test_collect_external_global_sources_unmocked_domain_returns_empty(mock_outbound_http):
     result = _collect_external_global_sources(
         ["shabbat"], keywords=["shabbat"], discovery_stage="specific-api", priority=1,

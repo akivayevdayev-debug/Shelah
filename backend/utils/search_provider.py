@@ -25,7 +25,7 @@ from urllib.parse import quote
 import requests
 
 from backend import claude
-from backend import search
+from backend import search, text_trust
 from backend.health_check import health
 from backend.utils.text_engine import RABBI_FINAL_RULING_FOOTER
 
@@ -408,6 +408,10 @@ def _resolve_new_sefaria_hit_ref(hit_source, query_terms, seen_refs):
 
     ref = str(hit_source.get("ref") or "").strip()
     if not ref or ref in seen_refs:
+        return None
+
+    # A work the trust lists hide from the reader must not reach an answer's sources either.
+    if text_trust.is_work_denied(ref) or text_trust.is_work_denied(hit_source.get("index_title")):
         return None
 
     seen_refs.add(ref)

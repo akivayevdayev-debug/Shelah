@@ -6,8 +6,9 @@ backend.claude.ask_claude and reports whether the answer names the community
 it follows and whether it uses Ashkenazi transliterations
 (backend.minhag.ashkenazi_forms).
 
-Local only: uses the API keys in .env (never printed) and turns Sentry off so
-a local run never alerts the error channel. Never point it at production.
+Local only: uses the API keys in .env (never printed) and turns Sentry, Supabase
+and the shared Redis off so a local run never alerts the error channel or writes
+production rows.
 
     .venv/bin/python scripts/eval_minhag_ai.py [out.json]
 """
@@ -23,6 +24,16 @@ from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(".env", override=False)
 os.environ["SENTRY_DSN"] = ""
+# No Supabase and no shared Redis: the cost meter and the cooldown must not touch production.
+for _name in ("SUPABASE_URL", "SUPABASE_SECRET_KEY", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVICE_ROLE_KEY",
+              "RATE_LIMIT_REDIS_URL", "RATELIMIT_STORAGE_URI"):
+    os.environ[_name] = ""
+
+import dotenv  # noqa: E402
+
+# app.py and backend/claude.py call load_dotenv(override=True) when imported, which
+# would put the blanked Supabase/Redis/Sentry values back from the repo's .env.
+dotenv.load_dotenv = lambda *args, **kwargs: False
 
 from backend import claude, minhag  # noqa: E402
 
