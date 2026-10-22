@@ -31,7 +31,8 @@ function openHomePage({ routes = {}, ...options } = {}) {
         ...options,
     });
 }
-const only = (page, url) => page.calls.filter((call) => call.url === url);
+// A request for `url`, whatever query string the page added (the community).
+const only = (page, url) => page.calls.filter((call) => call.url.split('?')[0] === url);
 const text = (element) => element.textContent.replace(/\s+/g, ' ').trim();
 
 // --- this week's parasha ------------------------------------------------------------

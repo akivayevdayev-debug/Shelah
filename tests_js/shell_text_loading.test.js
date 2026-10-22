@@ -817,3 +817,181 @@ test('starting a text seeds the scroll state from it, dropping a previous chapte
         page.close();
     }
 });
+
+// ── The haftarah after the week's parasha ───────────────────────────────────
+
+const PARASHA_REF = 'Genesis 12:1-17:27';
+const HAFTARAH_REF = 'Isaiah 40:27-41:16';
+const HAFTARAH_HE = 'ישעיהו מ׳:כ״ז-מ״א:ט״ז';
+const weeklyParasha = (extra = {}) => ({
+    ref: PARASHA_REF,
+    title: 'Lech-Lecha',
+    heTitle: 'לך לך',
+    source: 'sefaria-calendars',
+    haftarah: { ref: HAFTARAH_REF, title: HAFTARAH_REF, heTitle: HAFTARAH_HE },
+    ...extra,
+});
+const parashaText = () => textPayload(PARASHA_REF, [['1', 'א', 'Go forth']], { prev: 'Genesis 11', next: 'Genesis 18' });
+const haftarahText = () => textPayload(HAFTARAH_REF, [['1', 'ב', 'Why do you say, O Jacob']], { prev: 'Isaiah 39', next: 'Isaiah 42' });
+const weeklyRoutes = (extra = {}) => ({
+    '/api/parasha': weeklyParasha(),
+    [textUrl(PARASHA_REF)]: parashaText(),
+    [textUrl(HAFTARAH_REF)]: haftarahText(),
+    [textUrl('Genesis 18')]: chapter(18),
+    ...extra,
+});
+// What the page asked /api/text for, without the query string it adds.
+const textRequests = (page) => fetched(page).map((url) => url.split('?')[0]);
+const haftarahHeading = (page) => page.$('.reader-haftarah-heading')?.textContent.replace(/\s+/g, ' ').trim();
+
+test('the week\'s parasha is followed by its haftarah, not by the next chapter of the Torah', async () => {
+    const page = await readFrom(PARASHA_REF, weeklyRoutes());
+    try {
+        assert.equal(stateOf(page).next, HAFTARAH_REF);
+        assert.match(page.$('#infiniteReaderStatus').textContent, /Haftarah — Isaiah 40:27-41:16/);
+
+        await loadNextOnce(page);
+        const state = stateOf(page);
+        assert.deepEqual(state.chain, [PARASHA_REF, HAFTARAH_REF]);
+        assert.equal(state.next, '', 'the reading ends with the haftarah');
+        assert.equal(state.loading, false);
+        assert.equal(haftarahHeading(page), 'Haftarah — Isaiah 40:27-41:16');
+        assert.equal(page.$$('.reader-source-clean[data-text-chunk-kind="haftarah"]').length, 1);
+        assert.match(page.$('.reader-haftarah').textContent, /Why do you say, O Jacob/);
+        assert.equal(call(page, 'infiniteReaderStatusMarkup').includes('End of available sections.'), true);
+        assert.deepEqual(textRequests(page), [textUrl(HAFTARAH_REF)], 'Genesis 18 is never asked for');
+    } finally {
+        page.close();
+    }
+});
+
+test('the haftarah is a reading of its own: the Prophets around it are not loaded', async () => {
+    const page = await readFrom(PARASHA_REF, weeklyRoutes());
+    try {
+        await loadNextOnce(page);
+        const chunk = plain(page.eval('window.currentTextPayloadChain[1]'));
+        assert.equal(chunk.kind, 'haftarah');
+        assert.equal(chunk.next, '');
+        assert.equal(chunk.prev, '');
+        assert.equal(page.eval(`textPayloadCache.get(${JSON.stringify(HAFTARAH_REF)})?.kind`), undefined, 'the cached text stays a plain text');
+        assert.deepEqual(textRequests(page), [textUrl(HAFTARAH_REF)], 'no Isaiah 39 or 42');
+    } finally {
+        page.close();
+    }
+});
+
+test('while the haftarah loads, its heading and a skeleton hold its place', async () => {
+    const page = await readFrom(PARASHA_REF, weeklyRoutes());
+    try {
+        NEAR_BOTTOM(page);
+        const pending = page.eval('loadNextTextChunk()');
+        const status = page.$('#infiniteReaderStatus');
+        assert.match(status.innerHTML, /sk-reader-para/);
+        assert.equal(status.querySelector('.reader-haftarah-heading').textContent.replace(/\s+/g, ' ').trim(), 'Haftarah — Isaiah 40:27-41:16');
+        scrollHeightOf(page, 100000);
+        await pending;
+        assert.equal(haftarahHeading(page), 'Haftarah — Isaiah 40:27-41:16', 'the same heading once it has loaded');
+    } finally {
+        page.close();
+    }
+});
+
+test('in Hebrew the haftarah heading reads הפטרה with the reference in Hebrew', async () => {
+    const page = await readFrom(PARASHA_REF, weeklyRoutes(), { storage: { preferredLanguage: 'he' } });
+    try {
+        await loadNextOnce(page);
+        assert.equal(haftarahHeading(page), `הפטרה — ${HAFTARAH_HE}`);
+    } finally {
+        page.close();
+    }
+});
+
+test('the haftarah is asked for by the reader\'s community and remembered per community', async () => {
+    const page = await openPage({ fetch: weeklyRoutes() });
+    try {
+        page.window.ShelahState = { getMinhag: () => 'ashkenazi' };
+        page.takeCalls();
+        await page.eval('fetchWeeklyParasha()');
+        await page.eval('fetchWeeklyParasha()');
+        const asked = page.takeCalls().map((entry) => entry.url).filter((url) => url.startsWith('/api/parasha'));
+        assert.deepEqual(asked, ['/api/parasha?minhag=ashkenazi'], 'asked once for this community');
+
+        page.window.ShelahState = { getMinhag: () => 'mizrahi' };
+        await page.eval('fetchWeeklyParasha()');
+        const next = page.takeCalls().map((entry) => entry.url).filter((url) => url.startsWith('/api/parasha'));
+        assert.deepEqual(next, ['/api/parasha?minhag=mizrahi'], 'another community is not served the first one\'s haftarah');
+    } finally {
+        page.close();
+    }
+});
+
+test('two readers of the same page share one request for the week\'s parasha', async () => {
+    const page = await openPage({ fetch: weeklyRoutes() });
+    try {
+        page.eval('textsCache.parashaQuickLink = null; textsCache.parashaRequest = null');
+        page.takeCalls();
+        const both = await Promise.all([page.eval('fetchWeeklyParasha()'), page.eval('fetchWeeklyParasha()')]);
+        assert.equal(both[0], both[1]);
+        assert.equal(page.takeCalls().filter((entry) => entry.url.startsWith('/api/parasha')).length, 1);
+    } finally {
+        page.close();
+    }
+});
+
+test('a parasha opened before the week is known gets its haftarah once it is', async () => {
+    const page = await openPage({ fetch: weeklyRoutes() });
+    try {
+        scrollHeightOf(page, 100000);
+        page.eval('textsCache.parashaQuickLink = null; textsCache.parashaQuickLinkTs = 0');
+        await page.eval(`readText(${JSON.stringify(PARASHA_REF)}, { skipNavigationGrid: true })`);
+        await page.settle();
+        assert.equal(stateOf(page).next, HAFTARAH_REF);
+        assert.match(page.$('#infiniteReaderStatus').textContent, /Haftarah — Isaiah/);
+    } finally {
+        page.close();
+    }
+});
+
+test('no haftarah is added once the reader has already gone on past the parasha', async () => {
+    const page = await openPage({ fetch: weeklyRoutes() });
+    try {
+        scrollHeightOf(page, 100000);
+        page.eval('textsCache.parashaQuickLink = null; textsCache.parashaQuickLinkTs = 0');
+        await page.eval(`readText(${JSON.stringify(PARASHA_REF)}, { skipNavigationGrid: true })`);
+        page.eval(`window.currentTextPayloadChain.push({ ref: 'Genesis 18' })`);
+        await page.settle();
+        assert.notEqual(stateOf(page).next, HAFTARAH_REF);
+    } finally {
+        page.close();
+    }
+});
+
+test('any other text, and a week with no haftarah listed, keep reading on into the next chapter', async () => {
+    const other = await readFrom('Genesis 2', weeklyRoutes({ [textUrl('Genesis 2')]: chapter(2, { next: 'Genesis 3' }) }));
+    try {
+        assert.equal(stateOf(other).next, 'Genesis 3');
+        assert.equal(other.$('.reader-haftarah'), null);
+    } finally {
+        other.close();
+    }
+
+    const none = await readFrom(PARASHA_REF, weeklyRoutes({ '/api/parasha': weeklyParasha({ haftarah: undefined }) }));
+    try {
+        assert.equal(stateOf(none).next, 'Genesis 18');
+    } finally {
+        none.close();
+    }
+});
+
+test('a haftarah that cannot be loaded ends the reading quietly', async () => {
+    const page = await readFrom(PARASHA_REF, weeklyRoutes({ [textUrl(HAFTARAH_REF)]: { error: 'Text not found', error_type: 'not_found' } }));
+    try {
+        NEAR_BOTTOM(page);
+        await call(page, 'loadNextTextChunk');
+        assert.equal(stateOf(page).next, '');
+        assert.deepEqual(stateOf(page).chain, [PARASHA_REF]);
+        assert.equal(page.$('.reader-haftarah'), null);
+    } finally {
+        page.close();
+    }
+});

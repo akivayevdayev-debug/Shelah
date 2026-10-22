@@ -358,6 +358,9 @@ function hasParenthetical(text) {
             loadingPrev: false,
             nextRef: '',
             prevRef: '',
+            // The haftarah ({ ref, heTitle }) that follows the weekly parasha the
+            // reader has open; nextRef is that ref until it has been appended.
+            haftarah: null,
             seenRefs: new Set(),
             currentVisibleChunkIndex: 0,
             sectionObserver: null,
@@ -3023,6 +3026,7 @@ function hasParenthetical(text) {
             communitiesList: null,
             parashaQuickLink: null,
             parashaQuickLinkTs: 0,
+            parashaRequest: null,
             popularTexts: null,
             popularTextsTs: 0,
         };
@@ -6546,6 +6550,7 @@ function hasParenthetical(text) {
             infiniteReaderState.loadingPrev = false;
             infiniteReaderState.nextRef = String(seedPayload?.next || '').trim();
             infiniteReaderState.prevRef = String(seedPayload?.prev || '').trim();
+            infiniteReaderState.haftarah = null;
             infiniteReaderState.seenRefs = new Set();
             infiniteReaderState.currentVisibleChunkIndex = 0;
 
@@ -6593,16 +6598,127 @@ function hasParenthetical(text) {
             return distanceFromBottom <= thresholdPx;
         }
 
+        // ─── Haftarah after the weekly parasha ──────────────────────────────────
+        // The week's parasha and its haftarah for the reader's community. One
+        // cache slot per community (the haftarah differs between them in some
+        // weeks); a request already in flight is shared.
+        function readerCommunity() {
+            return window.ShelahState?.getMinhag?.() || 'sephardi';
+        }
+
+        function freshWeeklyParasha() {
+            const cached = textsCache.parashaQuickLink;
+            return cached && cached.minhag === readerCommunity()
+                && (Date.now() - textsCache.parashaQuickLinkTs) < PARASHA_CACHE_TTL_MS
+                ? cached
+                : null;
+        }
+
+        function fetchWeeklyParasha() {
+            const fresh = freshWeeklyParasha();
+            if (fresh) return Promise.resolve(fresh);
+            const minhag = readerCommunity();
+            if (textsCache.parashaRequest?.minhag === minhag) return textsCache.parashaRequest.promise;
+
+            const promise = (async () => {
+                const resp = await fetch(`/api/parasha?minhag=${encodeURIComponent(minhag)}`);
+                if (!resp.ok) throw new Error(`parasha ${resp.status}`);
+
+                const data = await resp.json();
+                const enTitle = (data.title || 'Parashat HaShavua').trim();
+                // The Sefaria-calendars source (data.source === 'sefaria-calendars')
+                // always includes a Hebrew title; the Hebcal-converter fallback
+                // (data.source === 'calendar-fallback', used when Sefaria is down)
+                // only returns the bare English parasha name. Derive the Hebrew
+                // name ourselves in that case rather than showing English text
+                // under a Hebrew-mode heading.
+                const heTitle = (data.heTitle || '').trim() || holidayNameToHebrew(enTitle);
+                const haftarahRef = String(data.haftarah?.ref || '').trim();
+                const payload = {
+                    ref: data.ref || 'Genesis 1',
+                    enTitle,
+                    heTitle,
+                    minhag,
+                    haftarah: haftarahRef ? { ref: haftarahRef, heTitle: String(data.haftarah.heTitle || '').trim() } : null,
+                };
+                payload.titleEn = payload.heTitle
+                    ? `${payload.enTitle} · ${payload.heTitle}`
+                    : payload.enTitle;
+                payload.titleHe = payload.heTitle || payload.enTitle;
+
+                textsCache.parashaQuickLink = payload;
+                textsCache.parashaQuickLinkTs = Date.now();
+                return payload;
+            })().finally(() => {
+                if (textsCache.parashaRequest?.promise === promise) textsCache.parashaRequest = null;
+            });
+            textsCache.parashaRequest = { minhag, promise };
+            return promise;
+        }
+
+        // The week's haftarah when `chunk` is the week's parasha, else null.
+        function weeklyHaftarahFor(chunk, weekly) {
+            if (!weekly?.haftarah?.ref) return null;
+            const parashaKey = getRefTrackingKey(weekly.ref);
+            return parashaKey && getRefTrackingKey(chunk?.ref) === parashaKey ? weekly.haftarah : null;
+        }
+
+        // The parasha's own `next` runs on into the following chapter of the
+        // Torah; the week's reading ends with its haftarah, so that comes next.
+        function followWithHaftarah(haftarah) {
+            infiniteReaderState.haftarah = haftarah;
+            infiniteReaderState.nextRef = haftarah.ref;
+        }
+
+        function haftarahIsNext() {
+            const haftarah = infiniteReaderState.haftarah;
+            return Boolean(haftarah && infiniteReaderState.nextRef
+                && getRefTrackingKey(infiniteReaderState.nextRef) === getRefTrackingKey(haftarah.ref));
+        }
+
+        // Only the parasha the reader just opened, and only while nothing has
+        // been appended after it yet.
+        async function followWeeklyParashaWithHaftarah(data) {
+            try {
+                const haftarah = weeklyHaftarahFor(data, await fetchWeeklyParasha());
+                const chain = getCurrentTextPayloadChain();
+                if (!haftarah || window.currentTextPayload !== data || chain[chain.length - 1] !== data) return;
+                followWithHaftarah(haftarah);
+                const status = document.getElementById('infiniteReaderStatus');
+                if (status) status.outerHTML = infiniteReaderStatusMarkup();
+                if (shouldLoadNextTextChunk(260)) void loadNextTextChunk();
+            } catch {
+                // No haftarah to show: the reader ends where it always did.
+            }
+        }
+
+        // "Haftarah — Isaiah 40:27-41:16": the reference in the reader's own
+        // language, set apart (bdi) so its punctuation keeps its order in a
+        // right-to-left line.
+        function haftarahHeadingMarkup(ref, heTitle) {
+            const label = isHebrewMode()
+                ? (String(heTitle || '').trim() || localizeReferenceLabel(ref))
+                : String(ref || '').trim();
+            return `${escapeHtml(t('Haftarah', 'הפטרה'))} — <bdi>${escapeHtml(label)}</bdi>`;
+        }
+
         function infiniteReaderStatusMarkup() {
             if (appState.currentView?.type !== 'text') return '';
             if (infiniteReaderState.loading) {
-                return `<div id="infiniteReaderStatus" role="status" aria-live="polite" class="mt-3 space-y-2">
+                const heading = haftarahIsNext()
+                    ? `<h2 class="reader-haftarah-heading">${haftarahHeadingMarkup(infiniteReaderState.haftarah.ref, infiniteReaderState.haftarah.heTitle)}</h2>`
+                    : '';
+                return `<div id="infiniteReaderStatus" role="status" aria-live="polite" class="${heading ? 'reader-haftarah-pending' : 'mt-3'} space-y-2">
+                    ${heading}
                     <div class="sk-reader-para" aria-hidden="true"></div>
                     <div class="sk-reader-para" aria-hidden="true" style="width:80%"></div>
                 </div>`;
             }
             if (infiniteReaderState.nextRef) {
-                return `<div id="infiniteReaderStatus" class="mt-3 text-center font-serif text-sm text-slate-600"><span class="underline underline-offset-4 decoration-slate-300">${escapeHtml(infiniteReaderState.nextRef)}</span></div>`;
+                const label = haftarahIsNext()
+                    ? haftarahHeadingMarkup(infiniteReaderState.haftarah.ref, infiniteReaderState.haftarah.heTitle)
+                    : escapeHtml(infiniteReaderState.nextRef);
+                return `<div id="infiniteReaderStatus" class="mt-3 text-center font-serif text-sm text-slate-600"><span class="underline underline-offset-4 decoration-slate-300">${label}</span></div>`;
             }
             return `<div id="infiniteReaderStatus" class="mt-3 text-xs text-slate-400 italic">${t('End of available sections.', 'סוף הקטעים הזמינים.')}</div>`;
         }
@@ -6613,21 +6729,28 @@ function hasParenthetical(text) {
             const requestedNextRef = String(infiniteReaderState.nextRef || '').trim();
             if (!requestedNextRef) return;
 
+            const loadingHaftarah = haftarahIsNext();
             infiniteReaderState.loading = true;
             renderCurrentTextByLayout({ preserveScroll: false });
 
             try {
-                const { payload: nextData, resolvedRef } = await fetchTextPayloadWithFallback(requestedNextRef);
-                if (!nextData || nextData.error) {
+                const { payload: fetched, resolvedRef } = await fetchTextPayloadWithFallback(requestedNextRef);
+                if (!fetched || fetched.error) {
                     logReliability('text-next-load-error', {
                         requested: requestedNextRef,
-                        error: nextData?.error || 'unknown',
+                        error: fetched?.error || 'unknown',
                     });
                     infiniteReaderState.nextRef = '';
                     return;
                 }
 
-                await ensurePayloadAdjacentRefs(nextData);
+                // The haftarah is a reading of its own: the chapters around it in
+                // the Prophets are not what follows or precedes it here. A copy,
+                // so the cached payload stays a plain text.
+                const nextData = loadingHaftarah
+                    ? { ...fetched, kind: 'haftarah', haftarahHeTitle: infiniteReaderState.haftarah.heTitle, next: '', prev: '' }
+                    : fetched;
+                if (!loadingHaftarah) await ensurePayloadAdjacentRefs(nextData);
 
                 const resolved = String(nextData.ref || resolvedRef || requestedNextRef).trim();
                 const resolvedKey = getRefTrackingKey(resolved);
@@ -7307,9 +7430,13 @@ function hasParenthetical(text) {
         function renderTextSection(chunk, index, layout) {
             const sectionRows = renderTextRowsForPayload(chunk, layout);
             const sectionRef = String(chunk?.ref || appState.currentView?.value || '').trim();
+            const isHaftarah = chunk?.kind === 'haftarah';
+            const titleMarkup = isHaftarah
+                ? `<h2 class="reader-haftarah-heading">${haftarahHeadingMarkup(sectionRef, chunk.haftarahHeTitle)}</h2>`
+                : sectionTitleMarkup(chunk, index);
             return `
-                <div class="reader-source-clean mb-6" data-text-chunk-index="${index}" data-text-chunk-ref="${escapeHtml(getRefTrackingKey(sectionRef) || sectionRef)}">
-                    ${sectionTitleMarkup(chunk, index)}
+                <div class="reader-source-clean${isHaftarah ? ' reader-haftarah' : ''} mb-6" data-text-chunk-index="${index}" data-text-chunk-ref="${escapeHtml(getRefTrackingKey(sectionRef) || sectionRef)}"${isHaftarah ? ' data-text-chunk-kind="haftarah"' : ''}>
+                    ${titleMarkup}
                     <div class="reader-source-lines">
                         ${sectionRows}
                     </div>
@@ -10683,6 +10810,13 @@ function hasParenthetical(text) {
             window.currentTextPayload = data;
             window.currentTextPayloadChain = [data];
             resetInfiniteReaderState(data);
+            // The week's parasha ends with its haftarah. When the week's parasha
+            // is not known yet (a link opened straight into the reader), it is
+            // fetched after the first paint.
+            const weekly = freshWeeklyParasha();
+            const haftarah = weeklyHaftarahFor(data, weekly);
+            if (haftarah) followWithHaftarah(haftarah);
+            else if (!weekly) void followWeeklyParashaWithHaftarah(data);
             commentaryPreloader?.reset();
             window.currentPrayerName = null;
 
@@ -10712,7 +10846,7 @@ function hasParenthetical(text) {
             // text before this resolves.
             ensurePayloadAdjacentRefs(data).then(() => {
                 if (window.currentTextPayload !== data) return;
-                infiniteReaderState.nextRef = String(data.next || '').trim();
+                if (!infiniteReaderState.haftarah) infiniteReaderState.nextRef = String(data.next || '').trim();
                 infiniteReaderState.prevRef = String(data.prev || '').trim();
             }).catch(() => {});
         }
@@ -10807,10 +10941,9 @@ function hasParenthetical(text) {
                 }
             };
 
-            const hasFreshCachedParasha = textsCache.parashaQuickLink
-                && (Date.now() - textsCache.parashaQuickLinkTs) < PARASHA_CACHE_TTL_MS;
-            if (hasFreshCachedParasha) {
-                applyParashaLink(textsCache.parashaQuickLink);
+            const cachedParasha = freshWeeklyParasha();
+            if (cachedParasha) {
+                applyParashaLink(cachedParasha);
                 return;
             }
 
@@ -10819,31 +10952,7 @@ function hasParenthetical(text) {
             const retryQuietly = () => window.ShelahLoadRegion?.retryLater(quickLink || homeQuickLink,
                 (next) => { void loadParashaQuickLink(next); }, { attempt });
             try {
-                const resp = await fetch('/api/parasha');
-                if (!resp.ok) { retryQuietly(); return; }
-
-                const data = await resp.json();
-                const enTitle = (data.title || 'Parashat HaShavua').trim();
-                // The Sefaria-calendars source (data.source === 'sefaria-calendars')
-                // always includes a Hebrew title; the Hebcal-converter fallback
-                // (data.source === 'calendar-fallback', used when Sefaria is down)
-                // only returns the bare English parasha name. Derive the Hebrew
-                // name ourselves in that case rather than showing English text
-                // under a Hebrew-mode heading.
-                const heTitle = (data.heTitle || '').trim() || holidayNameToHebrew(enTitle);
-                const payload = {
-                    ref: data.ref || 'Genesis 1',
-                    enTitle,
-                    heTitle,
-                };
-                payload.titleEn = payload.heTitle
-                    ? `${payload.enTitle} · ${payload.heTitle}`
-                    : payload.enTitle;
-                payload.titleHe = payload.heTitle || payload.enTitle;
-
-                textsCache.parashaQuickLink = payload;
-                textsCache.parashaQuickLinkTs = Date.now();
-                applyParashaLink(payload);
+                applyParashaLink(await fetchWeeklyParasha());
             } catch {
                 retryQuietly();
             }

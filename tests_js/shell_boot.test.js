@@ -10,7 +10,7 @@ test('the page boots: shell.js defines its globals and the home page fetches its
         assert.equal(page.eval('typeof toggleLanguage'), 'function');
         const urls = page.calls.map((call) => call.url);
         assert.ok(urls.includes('/api/daily-study'));
-        assert.ok(urls.includes('/api/parasha'));
+        assert.ok(urls.includes('/api/parasha?minhag=sephardi'), 'the week\'s parasha is asked for by the reader\'s community');
         assert.ok(urls.includes('/api/library/popular'));
         assert.deepEqual(page.errors, []);
     } finally {

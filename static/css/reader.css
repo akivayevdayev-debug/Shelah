@@ -285,6 +285,37 @@ body.theme-dark .reader-source-clean+.reader-source-clean {
     border-top-color: rgba(255, 255, 255, 0.07);
 }
 
+/* The haftarah that closes the week's parasha: a reading of its own, set apart
+   from the chapters above it by a rule and its own heading. The heading is the
+   same size in the loading placeholder and in the loaded section, so the swap
+   does not move the text under it. (#reader: style.css clears the border of
+   every section.) The placeholder shown while it loads has the same rule and
+   spacing, so the heading stays where it is when the text arrives. */
+#reader .reader-source-clean.reader-haftarah,
+#reader .reader-haftarah-pending {
+    margin-top: var(--sp-8);
+    padding-top: var(--sp-6);
+    border-top: 2px solid color-mix(in srgb, var(--text-muted) 45%, transparent);
+}
+
+.reader-haftarah-heading {
+    margin: 0 0 var(--sp-3);
+    font-size: 0.94rem;
+    font-weight: 700;
+    letter-spacing: 0.012em;
+    line-height: 1.4;
+    text-align: center;
+    color: var(--accent-deep-blue);
+}
+
+html.rtl .reader-haftarah-heading {
+    direction: rtl;
+}
+
+body.theme-dark .reader-haftarah-heading {
+    color: var(--accent-cream);
+}
+
 /* ═══════════════════════════════════════════════════════ */
 /* RESPONSIVE READER LAYOUT */
 /* ═══════════════════════════════════════════════════════ */
