@@ -869,7 +869,7 @@ def _collect_text_hit_suggestions(query, size, metadata_filters, suggestions, se
             )
 
 
-@routes_library.route("/api/search/verses")
+@routes_library.route("/api/search/verses", methods=["GET"])
 def search_verses_route():
     """Verses whose words match the query (backend/verse_search.py): Hebrew
     with or without nikud, or English; Tanakh first, close matches when

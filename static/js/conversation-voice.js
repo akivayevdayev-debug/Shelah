@@ -51,6 +51,16 @@ export function mediaErrorKind(error) {
     return MEDIA_ERROR_KINDS[error?.name] || "denied";
 }
 
+// getUserMedia is called inside the visitor's click, so it cannot be deferred;
+// one that throws at once is turned into a rejection like any other refusal.
+function requestMicrophone(media) {
+    try {
+        return Promise.resolve(media.getUserMedia({ audio: true }));
+    } catch (error) {
+        return Promise.reject(error);
+    }
+}
+
 // Joins dictated text onto what was typed: one space between them, none when
 // the box was empty or already ends in whitespace.
 export function joinSpoken(base, spoken) {
@@ -114,8 +124,7 @@ export function createVoiceInput({ input, button, getLang = () => "en", onState,
         }
         const mine = ++attempt;
         asking = true;
-        // The executor turns a getUserMedia that throws at once into a rejection.
-        new Promise((resolve) => resolve(media.getUserMedia({ audio: true }))).then(
+        requestMicrophone(media).then(
             (stream) => {
                 asking = false;
                 stream?.getTracks?.().forEach((track) => track.stop());

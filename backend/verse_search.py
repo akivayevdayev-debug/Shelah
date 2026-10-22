@@ -65,7 +65,7 @@ _TEAMIM_RE = re.compile("[֑-ֽ֯׀׃]")
 _HEBREW_LETTER_RE = re.compile("[א-ת]")
 # Anything that is not a letter, digit or space becomes a space (maqaf,
 # geresh, gershayim, punctuation), so "ה׳" and "על־פני" search as words.
-_NON_WORD_RE = re.compile(r"[^\w\s]|_", re.UNICODE)
+_NON_WORD_RE = re.compile(r"[\W_]", re.UNICODE)
 _SPACES_RE = re.compile(r"\s+")
 _TAG_RE = re.compile(r"<[^>]*>")
 _BOLD_SPLIT_RE = re.compile(r"(<b>.*?</b>)", re.IGNORECASE | re.DOTALL)

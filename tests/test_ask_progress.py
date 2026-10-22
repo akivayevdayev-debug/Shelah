@@ -192,10 +192,13 @@ class TestDetails:
         assert events_inside == [2]
 
     def test_a_detail_scope_clears_even_when_the_work_raises(self):
+        def raising_scope():
+            with ask_progress.detail_scope("thinking", "tool", tool="get_omer"):
+                raise ValueError("boom")
+
         def work():
             with pytest.raises(ValueError):
-                with ask_progress.detail_scope("thinking", "tool", tool="get_omer"):
-                    raise ValueError("boom")
+                raising_scope()
         events = self._capture(work)
         assert [e["detail"] for e in events] == [{"kind": "tool", "tool": "get_omer"}, None]
 

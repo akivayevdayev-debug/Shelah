@@ -472,12 +472,20 @@ LEXICON_GLOSSES_PER_WORD = 3
 
 _PAREN_GROUP_RE = re.compile(r"\([^()]*\)|\[[^\[\]]*\]")
 # Part-of-speech tags a dense entry opens with ("n.m.", "v. intr.").
-_LEXICON_POS_RE = re.compile(
-    r"^\s*(?:(?:n|v|adj|adv|prep|conj|pron|interj|vb|pr|denom|intr|tr|pl|sing|[mf])\.\s*)+", re.IGNORECASE)
+_LEXICON_POS_TAG_RE = re.compile(
+    r"\s*(?:n|v|adj|adv|prep|conj|pron|interj|vb|pr|denom|intr|tr|pl|sing|[mf])\.\s*", re.IGNORECASE)
 _LEXICON_SPACE_BEFORE_PUNCT_RE = re.compile(r"\s+([,;:.])")
 _GLOSS_TRIM_CHARS = " .;,:"
 _NOT_HEBREW_LETTER_RE = re.compile(r"[^א-ת]")
 _NOT_A_GLOSS_RE = re.compile(r"^(?:=|see\b|v\.|cf\.|prefix\b|abbr)", re.IGNORECASE)
+
+
+def _without_lexicon_pos(text):
+    """The sense without the part-of-speech tags it opens with ("n.m.", "v. intr.")."""
+    end = 0
+    while match := _LEXICON_POS_TAG_RE.match(text, end):
+        end = match.end()
+    return text[end:]
 
 
 def _clean_lexicon_gloss(raw_definition, dense=False):
@@ -490,7 +498,7 @@ def _clean_lexicon_gloss(raw_definition, dense=False):
     for _ in range(2):
         text = _PAREN_GROUP_RE.sub(" ", text)
     text = _LEXICON_SPACE_BEFORE_PUNCT_RE.sub(r"\1", " ".join(text.split()))
-    text = _LEXICON_POS_RE.sub("", text)
+    text = _without_lexicon_pos(text)
     text = re.split(r"[;—]| - " if dense else r"\.\s", text, maxsplit=1)[0].strip(_GLOSS_TRIM_CHARS)
     if not re.search(r"[A-Za-z]", text) or _NOT_A_GLOSS_RE.match(text):
         return ""
@@ -744,7 +752,7 @@ def _hebrew_word_forms(token):
     # A future-tense verb (ויאמר, "and he said") is indexed under its root, so
     # the leading י ת נ א comes off last, after every other form has had its
     # turn. A plural noun keeps it: ימים is "days", not מים, "water".
-    for form in list(forms):
+    for form in tuple(forms):
         if len(form) >= 4 and form[0] in _HEBREW_VERB_PREFIX_LETTERS and not form.endswith(("ים", "ות")):
             add(form[1:])
     return forms
