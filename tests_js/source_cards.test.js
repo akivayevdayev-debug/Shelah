@@ -203,3 +203,30 @@ test('hebrewRefName reads Sefaria\'s heRef and is empty when it is missing', asy
     assert.equal(c.hebrewRefName({ heTitle: 'ברכות' }), '');
     assert.equal(c.hebrewRefName(null), '');
 });
+
+test('web sources: only an https page on the listed sites is a safe address', async () => {
+    const c = await load();
+    assert.equal(c.webSourceUrl('https://oukosher.org/faqs/gum/'), 'https://oukosher.org/faqs/gum/');
+    assert.equal(c.webSourceUrl('https://www.Chabad.org/x'), 'https://www.chabad.org/x');
+    assert.equal(c.webSourceUrl('https://kosher.star-k.org:443/y'), 'https://kosher.star-k.org/y');
+    for (const bad of ['http://oukosher.org/x', 'https://oukosher.org.evil.example/x', 'https://evil.example/?u=oukosher.org',
+        'https://u:p@oukosher.org/x', 'https://oukosher.org:8443/x', 'javascript:alert(1)', '//oukosher.org/x', 'oukosher.org', '', null]) {
+        assert.equal(c.webSourceUrl(bad), null, String(bad));
+    }
+    assert.equal(c.WEB_SOURCE_DOMAINS.length, 15);
+});
+
+test('web sources: a "Web:" ref is recognised and named, in either language', async () => {
+    const c = await load();
+    assert.equal(c.isWebRef('Web: OU Kosher FAQ'), true);
+    assert.equal(c.isWebRef('web:OU'), true);
+    assert.equal(c.isWebRef('Berakhot 2a'), false);
+    assert.equal(c.isWebRef(null), false);
+    assert.equal(c.webSourceName('Web: OU Kosher FAQ'), 'OU Kosher FAQ');
+
+    const linked = c.webSourceHeadHtml({ ref: 'Web: OU <b>FAQ</b>', url: 'https://oukosher.org/x' }, 'en');
+    assert.match(linked, /<span class="ai-src-badge ai-src-badge--web">From the web<\/span>/);
+    assert.match(linked, /<a href="https:\/\/oukosher\.org\/x" target="_blank" rel="noopener noreferrer"/);
+    assert.ok(!linked.includes('<b>'), 'the name is escaped');
+    assert.match(c.webSourceHeadHtml({ ref: 'Web: OU', url: 'http://oukosher.org/x' }, 'he'), /מהרשת<\/span><span class="conv-cite__ref conv-cite__ref--plain"/);
+});

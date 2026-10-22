@@ -91,6 +91,10 @@ def _warn_unpriced_model_once(model: str) -> None:
             pass
 
 
+# Anthropic bills each web search $10 per 1,000 on top of the tokens.
+WEB_SEARCH_COST_USD = 0.01
+
+
 def estimate_cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
     """Return estimated USD cost for a single call."""
     key = (model or "").lower()
@@ -185,6 +189,7 @@ async def record_llm_call(
     route: str = "",
     request_id: str = "",
     extra: dict[str, Any] | None = None,
+    extra_cost_usd: float = 0.0,
 ) -> None:
     """
     Fire-and-forget background write to ai_usage_log.
@@ -199,7 +204,7 @@ this SETTLES that reservation in place with
     primary call followed by a Claude fallback) inserts a normal additive
     row rather than re-settling.
     """
-    cost = estimate_cost_usd(model, input_tokens, output_tokens)
+    cost = estimate_cost_usd(model, input_tokens, output_tokens) + extra_cost_usd
     row: dict[str, Any] = {
         "provider": provider,
         "model": model,

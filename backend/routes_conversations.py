@@ -668,7 +668,7 @@ def _ref_key(ref):
     return " ".join("arukh" if w == "aruch" else w for w in words)
 
 
-def _answer_citations(structured_payload, display_sources):
+def _answer_citations(structured_payload, display_sources, web_pages=None):
     """A follow-up turn's citation rows: the sources its answer actually
     cites, the same "Ref — note" rows a thread's first turn gets from
     ask_history (_seed_citations()). The retrieved sources were searched
@@ -682,6 +682,10 @@ def _answer_citations(structured_payload, display_sources):
     if not cited:
         return retrieved
     by_ref = {_ref_key(c["source_ref"]): c for c in retrieved if c["source_ref"]}
+    web_links = {
+        page["ref"].lower(): page["url"]
+        for page in web_lookup.cited_pages(extract_ai_cited(structured_payload), web_pages)
+    }
     citations = []
     for row in cited:
         match = by_ref.get(_ref_key(row["source_ref"]))
@@ -692,6 +696,9 @@ def _answer_citations(structured_payload, display_sources):
                 "excerpt_he": match["excerpt_he"],
                 "url": match["url"],
             }
+        elif row["source_ref"].lower() in web_links:
+            # A "Web: <page name>" source links to the page the lookup found.
+            row = {**row, "url": web_links[row["source_ref"].lower()]}
         citations.append(row)
     return citations
 
@@ -776,7 +783,9 @@ def _synthesize_and_store_assistant_reply(
             needs_web_warning = _resolve_ask_web_warning_flag(result, ctx)
             answer_text = _compose_validated_ask_answer(raw_ai_answer, needs_web_warning)
             _store_user_memory_summary(user_id, question, answer_text)
-            citations = _answer_citations(structured_payload, _compact_ai_sources(ctx["primary_sources"]))
+            citations = _answer_citations(
+                structured_payload, _compact_ai_sources(ctx["primary_sources"]),
+                (result.get("web_lookup") or {}).get("sources"))
             # A thread reply has no ask_history row, so the AI's note is unlinked.
             record_ai_note(
                 question,

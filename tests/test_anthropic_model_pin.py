@@ -42,11 +42,11 @@ def client(monkeypatch):
     return fake
 
 
-def test_there_are_exactly_two_places_that_send_a_request_to_anthropic():
+def test_there_are_exactly_three_places_that_send_a_request_to_anthropic():
     sites = []
     for path in sorted(BACKEND.glob("*.py")):
         sites += [path.name for _ in re.findall(r"\.messages\.(?:create|stream|parse)\(", path.read_text(encoding="utf-8"))]
-    assert sites == ["claude.py", "claude.py"], "a new Anthropic call site needs the same pin and options"
+    assert sites == ["claude.py", "claude.py", "web_lookup.py"], "a new Anthropic call site needs the same pin and options"
 
 
 @pytest.mark.asyncio
@@ -68,6 +68,19 @@ async def test_the_agentic_turn_uses_haiku_5_5_and_nothing_it_rejects(client):
     assert call["output_config"] == {"effort": "low"}
     assert call["messages"][-1]["role"] == "user"
     assert "thinking" not in call, "the agentic turn keeps Haiku 5.5's adaptive thinking"
+    assert not [key for key in REJECTED if key in call]
+
+
+@pytest.mark.asyncio
+async def test_the_web_lookup_uses_haiku_5_5_and_nothing_it_rejects(client):
+    from backend import web_lookup
+
+    await web_lookup.lookup_async("is Trident gum kosher")
+    [call] = client.messages.calls
+    assert call["model"] == "claude-haiku-5-5"
+    assert call["output_config"] == {"effort": "low"}
+    assert call["messages"][-1]["role"] == "user"
+    assert call["thinking"] == {"type": "disabled"}
     assert not [key for key in REJECTED if key in call]
 
 

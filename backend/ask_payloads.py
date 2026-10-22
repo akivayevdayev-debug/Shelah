@@ -15,7 +15,7 @@ from __future__ import annotations
 import time
 from typing import Any, Dict, Optional
 
-from backend import claude
+from backend import claude, web_lookup
 from backend.helpers import _coarse_ai_error_reason
 
 
@@ -108,6 +108,8 @@ def build_ai_answer_payload(
             "safety_class": structured.get("safety_class", "ok"),
             "rabbinic_disclaimer": structured.get(
                 "rabbinic_disclaimer") or claude.RABBI_FINAL_RULING_FOOTER,
+            # The pages the answer's "Web: ..." citations link to (backend/web_lookup.py).
+            "web_sources": web_lookup.cited_pages(ai_cited, (result.get("web_lookup") or {}).get("sources")),
             **extra_meta,
         },
     }

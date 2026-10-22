@@ -177,22 +177,24 @@ import types  # noqa: E402
 from backend import text_trust, web_lookup  # noqa: E402
 
 
-def _grounded(*domains):
-    chunks = [types.SimpleNamespace(web=types.SimpleNamespace(
-        title=d, uri="https://vertexaisearch.cloud.google.com/grounding-api-redirect/x", domain=d))
-        for d in domains]
-    candidate = types.SimpleNamespace(grounding_metadata=types.SimpleNamespace(
-        grounding_chunks=chunks, web_search_queries=["q"]))
-    return types.SimpleNamespace(text="Findings.", candidates=[candidate])
+def _found(*urls):
+    results = [types.SimpleNamespace(type="web_search_result", title=u, url=u) for u in urls]
+    citations = [types.SimpleNamespace(type="web_search_result_location", title=u, url=u, cited_text="x") for u in urls]
+    return types.SimpleNamespace(content=[
+        types.SimpleNamespace(type="web_search_tool_result", content=results),
+        types.SimpleNamespace(type="text", text="Findings.", citations=citations),
+    ])
 
 
-@pytest.mark.parametrize("domain", ["reformjudaism.org", "www.rabbinicalassembly.org", "learn.jtsa.edu"])
-def test_web_lookup_drops_findings_grounded_on_a_denied_publisher(domain):
-    assert web_lookup._result_from("q", _grounded("ou.org", domain)) is None
+@pytest.mark.parametrize("url", [
+    "https://reformjudaism.org/x", "https://www.rabbinicalassembly.org/x", "https://learn.jtsa.edu/x",
+])
+def test_web_lookup_drops_findings_from_a_denied_publisher(url):
+    assert web_lookup._result_from("q", _found("https://oukosher.org/x", url)) is None
 
 
 def test_web_lookup_keeps_findings_from_allowed_sites():
-    assert web_lookup._result_from("q", _grounded("ou.org", "chabad.org"))["sources"]
+    assert web_lookup._result_from("q", _found("https://oukosher.org/x", "https://www.chabad.org/y"))["sources"]
 
 
 @pytest.mark.parametrize("lens, minhag", [

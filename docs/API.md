@@ -166,6 +166,7 @@ The question is sanitised before use (hidden and control characters removed, whi
     "safety_class": "string, 'ok' unless the answer was classed otherwise",
     "rabbinic_disclaimer": "string",
     "async": true,
+    "web_sources": "array, the web pages the answer cites after a last-resort web lookup, [{ref, title, url}]; empty otherwise. Every url is https on the Orthodox allow-list (backend/web_lookup.py ALLOWED_DOMAINS); a cited 'Web: …' source with no matching page is simply absent",
     "guest": "object, only for a signed-out caller with a device: how much of the guest allowance is used (see Guest limits)"
   }
 }

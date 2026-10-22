@@ -18,6 +18,7 @@
 
 import * as defaultApi from "./conversation-api.js";
 import { applyProgressEvent, createProgress } from "./ask-progress.js";
+import { isWebRef, webSourceUrl } from "./source-cards.js";
 
 const { ERROR_CODES } = defaultApi;
 
@@ -166,10 +167,20 @@ export function answerCitations(data) {
         const ref = (match ? match[1] : text).trim();
         if (!ref || seen.has(ref.toLowerCase())) continue;
         seen.add(ref.toLowerCase());
-        citations.push({ id: null, ordinal: citations.length, ref, excerptEn: match ? match[2].trim() : "", excerptHe: "", url: null });
+        citations.push({ id: null, ordinal: citations.length, ref, excerptEn: match ? match[2].trim() : "", excerptHe: "", url: webPageUrl(ref, data) });
         if (citations.length >= CITED_SOURCE_LIMIT) break;
     }
     return citations;
+}
+
+// The address of the page a "Web: <name>" source took its facts from. The
+// server names it (meta.web_sources, matched against the lookup it ran); the
+// sources list links it only after source-cards.js webSourceUrl approves it.
+function webPageUrl(ref, data) {
+    if (!isWebRef(ref)) return null;
+    const pages = Array.isArray(data?.meta?.web_sources) ? data.meta.web_sources : [];
+    const page = pages.find((item) => String(item?.ref || "").toLowerCase() === ref.toLowerCase());
+    return page ? webSourceUrl(page.url) : null;
 }
 
 // The one-shot /ask client (ai-service.js askAi) throws plain Errors carrying

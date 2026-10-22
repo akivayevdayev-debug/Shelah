@@ -1389,6 +1389,7 @@ body.conv-modal-open {
 .conv-cite__head,
 .conv-cite__links,
 .conv-cite__excerpt,
+.conv-cite__web-notice,
 .conv-cite__preview { grid-column: 2; }
 .conv-cite__links {
     display: flex;
@@ -1465,6 +1466,19 @@ body.conv-modal-open {
 .conv-cite:focus:not(:focus-visible) { outline: none; }
 /* A source the reader cannot open is written out, not linked. */
 .conv-cite__ref--plain { cursor: default; }
+/* A page from the web: the page's name links out, and one line says it is not
+   a Jewish text. */
+.conv-cite__ref--web {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+}
+.conv-cite__web-notice {
+    margin: 0;
+    color: var(--ink-secondary);
+    font-size: var(--text-xs);
+    line-height: 1.5;
+}
 .conv-cite__why {
     color: var(--conv-label);
     font-size: var(--text-xs);

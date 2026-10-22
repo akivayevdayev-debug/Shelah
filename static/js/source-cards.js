@@ -240,6 +240,52 @@ export function externalLinksHtml(ref, lang = "en") {
         .join("");
 }
 
+// The AI's web lookup (backend/web_lookup.py) may read, and the sources list
+// may link to, only these sites. tests/test_web_lookup.py keeps this list equal
+// to the server's ALLOWED_DOMAINS.
+export const WEB_SOURCE_DOMAINS = Object.freeze([
+    "sefaria.org", "chabad.org", "ou.org", "oukosher.org", "star-k.org", "crcweb.org",
+    "kashrut.com", "yeshiva.co", "din.org.il", "halachayomit.co.il", "dailyhalacha.com",
+    "torahanytime.com", "aish.com", "yutorah.org", "hebcal.com",
+]);
+const WEB_REF = /^web\s*:\s*/i;
+
+// A cited source the answer took from the web is written "Web: <page name>".
+export function isWebRef(ref) {
+    return WEB_REF.test(String(ref || ""));
+}
+
+export function webSourceName(ref) {
+    return String(ref || "").replace(WEB_REF, "").trim();
+}
+
+// The page's address when it is safe to link: https, no login in it, the
+// default port, and a host on the list above. Anything else is null and the
+// source is written out as plain text.
+export function webSourceUrl(value) {
+    try {
+        const url = new URL(String(value || "").trim());
+        const host = url.hostname.toLowerCase().replace(/^www\./, "");
+        const listed = WEB_SOURCE_DOMAINS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+        const plain = url.protocol === "https:" && !url.username && !url.password && (url.port === "" || url.port === "443");
+        return listed && plain ? url.href : null;
+    } catch {
+        return null;
+    }
+}
+
+// The head of a web source's row: the "From the web" label and the page's name,
+// a link that opens a new tab when the address is safe.
+export function webSourceHeadHtml(citation, lang = "en") {
+    const label = lang === "he" ? "מהרשת" : "From the web";
+    const name = escapeHtml(webSourceName(citation?.ref) || label);
+    const href = webSourceUrl(citation?.url);
+    const title = href
+        ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="conv-cite__ref conv-cite__ref--web" dir="auto">${name}${icon("arrow-up-right", { size: 12, className: "src-ext-icon" })}</a>`
+        : `<span class="conv-cite__ref conv-cite__ref--plain" dir="auto">${name}</span>`;
+    return `<span class="ai-src-badge ai-src-badge--web">${label}</span>${title}`;
+}
+
 // The Hebrew spelling of a cited ref ("ברכות ב׳ א"), as Sefaria writes it in
 // a /api/text payload; "" when the payload has none, so callers keep the
 // English ref rather than show a bare book title for a specific passage.

@@ -51,7 +51,7 @@ import { isSignedIn } from "./conversation-entry.js";
 import { closeOverlay, pushRoute, readRoute, routeUrl } from "./router.js";
 import { icon as phosphorIcon } from "./icons.js";
 import { activeLabel, createProgress, doneLabel, progressView, viewKey } from "./ask-progress.js";
-import { sourceBadgeHtml, externalLinksHtml, previewHtml, hebrewRefName, readerRef } from "./source-cards.js";
+import { sourceBadgeHtml, externalLinksHtml, previewHtml, hebrewRefName, readerRef, isWebRef, webSourceHeadHtml } from "./source-cards.js";
 import { citeIdPrefix, injectMarkers, placeMarkers, stripSourcesBlock } from "./citation-markers.js";
 import { createCitationPopover } from "./citation-popover.js";
 import { createConversationShare } from "./conversation-share.js";
@@ -666,7 +666,20 @@ async function loadPreview(details) {
 // One cited source, inline under the answer that cites it: type, reference
 // (opens the reader), the model's one-line note, where else to read it, and
 // the text itself on demand (loaded when the disclosure opens -- loadPreview).
+function webCiteHtml(citation, index, l, idPrefix) {
+    const excerpt = citationExcerpt(citation, l);
+    const note = excerpt ? `<p class="conv-cite__excerpt" dir="auto">${escapeText(excerpt)}</p>` : "";
+    const notice = tr(
+        "From the web, not from a Jewish text. Check it with the certifying agency or your rabbi.",
+        "מהרשת, לא מטקסט יהודי. כדאי לוודא מול הגוף המכשיר או הרב שלך.",
+    );
+    return `<li class="conv-cite conv-cite--web" id="${escapeText(idPrefix)}-${index + 1}" data-ref="" data-readable="false" tabindex="-1">`
+        + `<span class="conv-cite__num" aria-hidden="true">${index + 1}</span><span class="conv-cite__head">${webSourceHeadHtml(citation, l)}</span>${note}`
+        + `<p class="conv-cite__web-notice">${escapeText(notice)}</p></li>`;
+}
+
 function citeHtml(citation, index, l, idPrefix) {
+    if (isWebRef(citation.ref)) return webCiteHtml(citation, index, l, idPrefix);
     const ref = readerRef(citation.ref);
     const excerpt = citationExcerpt(citation, l);
     const head = ref

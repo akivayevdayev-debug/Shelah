@@ -455,6 +455,48 @@ test('an answer lists its sources with the reader link, the model\'s note and a 
     }
 });
 
+const WEB_PAGE = 'https://oukosher.org/faqs/trident-gum/';
+const webAnswer = (url = WEB_PAGE) => answerData({
+    answer: 'The OU lists it [1].',
+    ai_cited_sources: [`Web: OU Kosher FAQ ${DASH} lists the gum`],
+    meta: { safety_class: 'ok', web_sources: [{ ref: 'Web: OU Kosher FAQ', title: 'OU Kosher FAQ', url }] },
+});
+
+test('a source from the web says so, links the page in a new tab and is not offered to the reader', async () => {
+    const page = await openAnswerPage();
+    try {
+        await showAnswer(page, webAnswer());
+        const item = row(page, 1);
+        assert.equal(item.querySelector('.ai-src-badge--web').textContent, 'From the web');
+        const link = item.querySelector('a.conv-cite__ref--web');
+        assert.equal(link.textContent, 'OU Kosher FAQ');
+        assert.equal(link.getAttribute('href'), WEB_PAGE);
+        assert.equal(link.getAttribute('target'), '_blank');
+        assert.equal(link.getAttribute('rel'), 'noopener noreferrer');
+        assert.equal(item.querySelector('.conv-cite__excerpt').textContent, 'lists the gum');
+        assert.match(item.querySelector('.conv-cite__web-notice').textContent, /not from a Jewish text/);
+        assert.equal(item.dataset.readable, 'false');
+        assert.equal(item.querySelector('[data-cite-ref], details'), null, 'no reader link and no preview drawer');
+        assert.deepEqual(textCalls(page), [], 'no text lookup for a web page');
+    } finally {
+        page.close();
+    }
+});
+
+test('a web source whose address is not safe is written out, not linked', async () => {
+    const page = await openAnswerPage();
+    try {
+        for (const url of ['http://oukosher.org/x', 'https://example.com/x', 'javascript:alert(1)', null]) {
+            await showAnswer(page, webAnswer(url));
+            const item = row(page, 1);
+            assert.equal(item.querySelector('a'), null, `no link for ${url}`);
+            assert.equal(item.querySelector('.conv-cite__ref--plain').textContent, 'OU Kosher FAQ');
+        }
+    } finally {
+        page.close();
+    }
+});
+
 test('a source the library has is marked readable', async () => {
     const page = await openAnswerPage({ routes: sourceRoutes() });
     try {

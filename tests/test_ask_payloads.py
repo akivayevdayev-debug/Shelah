@@ -70,7 +70,7 @@ class TestAiAnswerPayload:
                 "identity_aware": True, "generated_at": 1_700_000_000, "fallback": False,
                 "structured": True, "is_prohibited": True, "input_sanitized": True,
                 "security": {"input": {"ok": 1}}, "safety_class": "sensitive_intimate",
-                "rabbinic_disclaimer": "Ask your rabbi.", "async": True,
+                "rabbinic_disclaimer": "Ask your rabbi.", "web_sources": [], "async": True,
             },
         }
 
@@ -79,7 +79,7 @@ class TestAiAnswerPayload:
             "mode", "language", "community_lens", "source_count", "custom_count", "knowledge_count",
             "memory_count", "identity_aware", "generated_at", "fallback", "structured",
             "is_prohibited", "input_sanitized", "security", "safety_class", "rabbinic_disclaimer",
-            "async",
+            "web_sources", "async",
         ]
 
     def test_flask_transport_key(self, ctx):

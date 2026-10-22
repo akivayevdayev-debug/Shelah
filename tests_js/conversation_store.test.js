@@ -127,6 +127,19 @@ test('answerCitations: splits "Ref — note", de-duplicates refs, caps at ten', 
     assert.deepEqual(answerCitations(null), []);
 });
 
+test('answerCitations: a "Web:" source carries the page the server matched, if it is a safe one', async () => {
+    const { answerCitations } = await loadStore();
+    const web = (url) => answerCitations({
+        ai_cited_sources: ['Web: OU Kosher FAQ — lists it', 'Web: A forum — says so', 'Berakhot 35a'],
+        meta: { web_sources: [{ ref: 'web: ou kosher faq', title: 'OU Kosher FAQ', url }] },
+    }).map((c) => c.url);
+
+    assert.deepEqual(web('https://oukosher.org/faqs/gum/'), ['https://oukosher.org/faqs/gum/', null, null]);
+    assert.deepEqual(web('https://example.com/x'), [null, null, null], 'a page off the list is not linked');
+    assert.deepEqual(web('http://oukosher.org/x'), [null, null, null], 'neither is a page without https');
+    assert.deepEqual(answerCitations({ ai_cited_sources: ['Web: OU Kosher FAQ'], meta: { web_sources: 'x' } }).map((c) => c.url), [null]);
+});
+
 test('answerCitations: a failed-synthesis or paused answer lists the sources it found', async () => {
     const { answerCitations } = await loadStore();
     const sources = [{ ref: 'Shulchan Arukh, Orach Chayim 253:1', lines: [] }, { title: 'Mishneh Torah, Sabbath 3:9' }, { ref: 'shulchan arukh, orach chayim 253:1' }];

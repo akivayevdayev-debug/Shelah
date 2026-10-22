@@ -171,15 +171,16 @@ class TestMetaKeySetParity:
         "mode", "language", "community_lens", "source_count", "custom_count",
         "knowledge_count", "memory_count", "identity_aware", "generated_at",
         "fallback", "structured", "is_prohibited", "input_sanitized",
-        "security", "safety_class", "rabbinic_disclaimer",
+        "security", "safety_class", "rabbinic_disclaimer", "web_sources",
     }
     STRICT_BLOCK_META_KEYS = {
         "mode", "community_lens", "source_count", "custom_count",
         "generated_at", "fallback", "strict_blocked", "safety_class",
     }
-    # Deliberately omits "language" -- both transports' security-blocked
-    # payloads consistently omit it, matching the strict-block path below.
-    SECURITY_BLOCKED_META_KEYS = SUCCESS_META_KEYS - {"language"}
+    # Deliberately omits "language" and "web_sources" -- both transports'
+    # security-blocked payloads consistently omit them (no model ran, so no web
+    # lookup either), matching the strict-block path below.
+    SECURITY_BLOCKED_META_KEYS = SUCCESS_META_KEYS - {"language", "web_sources"}
     FALLBACK_META_KEYS = {
         "mode", "language", "community_lens", "source_count", "custom_count",
         "knowledge_count", "memory_count", "identity_aware", "generated_at",
