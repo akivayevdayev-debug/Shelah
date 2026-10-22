@@ -64,7 +64,7 @@ ALLOWED_DOMAINS = (
 )
 _SEARCH_TOOL_TYPE = "web_search_20250305"
 _PAGE_URL_MAX_CHARS = 600
-_UNSAFE_URL_CHARS_RE = re.compile(r"[\s\\\x00-\x1f\x7f]")
+_UNSAFE_URL_CHARS_RE = re.compile(r"[\s\\\x00-\x08\x0e-\x1b\x7f]")
 
 _FALSE_VALUES = {"0", "false", "no", "off"}
 

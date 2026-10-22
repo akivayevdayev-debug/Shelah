@@ -473,7 +473,7 @@ LEXICON_GLOSSES_PER_WORD = 3
 _PAREN_GROUP_RE = re.compile(r"\([^()]*\)|\[[^\[\]]*\]")
 # Part-of-speech tags a dense entry opens with ("n.m.", "v. intr.").
 _LEXICON_POS_TAG_RE = re.compile(
-    r"\s*(?:n|v|adj|adv|prep|conj|pron|interj|vb|pr|denom|intr|tr|pl|sing|[mf])\.\s*", re.IGNORECASE)
+    r"(?:n|v|adj|adv|prep|conj|pron|interj|vb|pr|denom|intr|tr|pl|sing|[mf])\.\s*", re.IGNORECASE)
 _LEXICON_SPACE_BEFORE_PUNCT_RE = re.compile(r"\s+([,;:.])")
 _GLOSS_TRIM_CHARS = " .;,:"
 _NOT_HEBREW_LETTER_RE = re.compile(r"[^א-ת]")
@@ -482,10 +482,10 @@ _NOT_A_GLOSS_RE = re.compile(r"^(?:=|see\b|v\.|cf\.|prefix\b|abbr)", re.IGNORECA
 
 def _without_lexicon_pos(text):
     """The sense without the part-of-speech tags it opens with ("n.m.", "v. intr.")."""
-    end = 0
+    start = end = len(text) - len(text.lstrip())
     while match := _LEXICON_POS_TAG_RE.match(text, end):
         end = match.end()
-    return text[end:]
+    return text[end:] if end > start else text
 
 
 def _clean_lexicon_gloss(raw_definition, dense=False):
