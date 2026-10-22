@@ -749,7 +749,8 @@ def _synthesize_and_store_assistant_reply(
         # A question that is plainly not about Jewish law or learning is refused
         # before any retrieval, whatever the thread so far was about.
         ctx = None
-        result = claude.off_topic_block_result(question, answer_language)
+        result = claude.off_topic_block_result(
+            question, answer_language, in_thread=bool(conversation_history))
         if result is not None:
             result_error = str(result.get("error") or "")
         else:

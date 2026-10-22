@@ -1191,7 +1191,8 @@ async def _ask_async_impl(
         if prayer_result is not None:
             return _attach_guest_usage(guest, prayer_result)
 
-        off_topic_result = claude.off_topic_block_result(question, answer_language)
+        off_topic_result = claude.off_topic_block_result(
+            question, answer_language, in_thread=guest is not None and bool(guest.rows))
         if off_topic_result is not None:
             return _attach_guest_usage(guest, await _security_blocked_ask_async_payload(
                 off_topic_result, mode, canonical_lens, answer_language, user_id,

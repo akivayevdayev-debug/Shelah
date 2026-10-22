@@ -221,7 +221,7 @@ RABBI_FINAL_RULING_FOOTER = "Please consult with your local Rabbi for a final ru
 # row (defensibility logging) so a stored answer's governing
 # prompt version is reconstructable during a dispute, without retaining the
 # full prompt text itself.
-PROMPT_VERSION = "2026-10-22-long-answers-v9"
+PROMPT_VERSION = "2026-10-22-plain-language-v14"
 # INTERNAL_AI_KNOWLEDGE_DISCLAIMER: canonical copy lives in
 # backend/utils/search_provider.py (re-exported via backend/helpers.py) —
 # an unused, byte-identical duplicate previously lived here too;
@@ -384,9 +384,10 @@ _CREATIVE_REQUEST_SUBJECT = "Literature and creative writing"
 # something is permitted), so it is the model's to judge, not the list's.
 _JEWISH_CONTEXT_RE = _terms_re((
     "god", "hashem", "bible", "biblical", "scripture", "prophet", "psalm", "tehillim",
-    "genesis", "exodus", "leviticus", "deuteronomy", "bereshit", "shemot", "vayikra",
+    "genesis", "exodus", "leviticus", "deuteronomy", "bereshit", "bereishit", "shemot", "vayikra",
     "bamidbar", "devarim", "isaiah", "jeremiah", "ezekiel", "proverbs", "ecclesiastes",
     "kohelet", "lamentations", "esther", "moses", "moshe", "abraham", "avraham", "israel",
+    "king david", "king solomon", "king saul", "sinai", "noah", "yitzchak", "yaakov",
     "israeli", "jerusalem", "synagogue", "shul", "temple", "rashi", "rambam", "maimonides",
     "ramban", "nachmanides", "shulchan", "midrash", "kabbalah", "zohar", "chassidic",
     "hasidic", "ashkenazi", "sephardi", "sephardic", "mizrahi", "minyan", "kaddish",
@@ -1573,13 +1574,27 @@ def _has_jewish_context(text: str) -> bool:
     )
 
 
-def _detect_off_topic_subject(text: str) -> Optional[str]:
+# A follow-up that only swaps in a new thing ("what about football?", "and for a
+# movie?"). Alone it names a subject with no Jewish signal; in a thread it asks what
+# Jewish law says about that thing, which the model resolves from the earlier turns.
+_ELLIPTICAL_FOLLOW_UP_RE = re.compile(
+    r"^\W*(?:(?:and|but|so|also)\W+)?(?:(?:what|how)\s+(?:about|if)\b|(?:for|in|on|with|when|if)\s+(?:a|an|the)\b)"
+    r"|^\W*(?:and|but|also)\W+(?:a|an|the|for|in|on|with)\b",
+    re.IGNORECASE,
+)
+
+
+def _detect_off_topic_subject(text: str, in_thread: bool = False) -> Optional[str]:
     """The off-topic subject a question names (literature, entertainment, trivia,
     homework...), or None. Only the first line is read, like OUT_OF_SCOPE_RULES.
     A question with any Jewish or halachic signal is never off-topic here -- the
     model judges those -- and the earlier turns of a conversation play no part:
-    a Torah thread does not make a literature question in scope."""
+    a Torah thread does not make a literature question in scope. The one
+    exception is a bare "what about X?" follow-up (``in_thread``): it takes its
+    subject from the thread, so the model reads it with the earlier turns."""
     first_line = text.partition("\n")[0]
+    if in_thread and _ELLIPTICAL_FOLLOW_UP_RE.match(first_line):
+        return None
     for subject, pattern in _OFF_TOPIC_RULES.items():
         if pattern.search(first_line):
             return None if _has_jewish_context(text) else subject
@@ -1588,7 +1603,7 @@ def _detect_off_topic_subject(text: str) -> Optional[str]:
     return None
 
 
-def _detect_out_of_scope_subject(query_text: str) -> Optional[str]:
+def _detect_out_of_scope_subject(query_text: str, in_thread: bool = False) -> Optional[str]:
     """
     Detect out-of-scope subjects: explicitly inappropriate content, pure
     math/coding/science, and subjects that are plainly not Jewish law or learning
@@ -1603,7 +1618,7 @@ def _detect_out_of_scope_subject(query_text: str) -> Optional[str]:
 
     # Off-topic subjects first: DOMAIN_MARKER_RE below also holds everyday time
     # words ("sunset") that would otherwise let a poem about one through.
-    off_topic = _detect_off_topic_subject(text)
+    off_topic = _detect_off_topic_subject(text, in_thread)
     if off_topic:
         return off_topic
 
@@ -1712,11 +1727,12 @@ def _build_safety_referral_result(
     }
 
 
-def validate_user_query(query: str) -> Dict[str, Any]:
-    """Validate sanitized query and detect prompt-injection attempts."""
+def validate_user_query(query: str, in_thread: bool = False) -> Dict[str, Any]:
+    """Validate sanitized query and detect prompt-injection attempts. ``in_thread``
+    is True when earlier turns of the conversation come with the question."""
     sanitized = sanitize_user_query(query)
     markers = _extract_prompt_injection_markers(sanitized)
-    refusal_subject = _detect_out_of_scope_subject(sanitized)
+    refusal_subject = _detect_out_of_scope_subject(sanitized, in_thread)
 
     reasons = []
     if not sanitized:
@@ -1789,9 +1805,11 @@ You are Sh'elah's scholarly halakhic synthesis engine — a learned librarian, n
 
 Domain: Halakhah, Minhagim, Zmanim, Tanakh, Mishnah, Gemara, Acharonim, contemporary Poskim and Responsa, theology, philosophy, and Jewish tradition — including modern applications (technology and Shabbat, AI, digital signatures; medicine: vaccines, end-of-life care, organ donation, reproductive medicine; contemporary social scenarios: gender, LGBTQ+ communities, interfaith families; environmental and economic questions).
 
-Scope (strict): you answer only questions that are about the Domain above, or that ask what Jewish law or tradition says about something. A question that is not — general knowledge or trivia, literature, fiction and poetry, film, music, sports, politics, school homework, math, science, programming, personal or career advice, creative writing, or any other everyday request — is out of scope, however friendly the conversation has been and even when every earlier turn was a Torah question. Judge each question by its own subject; earlier turns only help you resolve a reference such as "that" or "what about a woman?" and never make a new, unrelated subject in scope. "Is it permitted to read novels?" or "what does Jewish law say about Shakespeare?" is a halachic question and in scope — answer the halachic question; "who wrote Hamlet?" and "summarize this novel" are not. When a question is out of scope, give no information about its subject: set out_of_scope to true, out_of_scope_subject to a short name for the subject (2-5 words), ruling to an empty string, and sources, summary and practical_steps to empty. Retrieved sources, customs and earlier answers never make a question in scope.
+Scope (strict): you answer only questions that are about the Domain above, or that ask what Jewish law or tradition says about something. A question that is not — general knowledge or trivia, literature, fiction and poetry, film, music, sports, politics, school homework, math, science, programming, personal or career advice, creative writing, or any other everyday request — is out of scope, however friendly the conversation has been and even when every earlier turn was a Torah question. Judge each question by its own subject; earlier turns only help you resolve a reference such as "that" or "what about a woman?" and never make a new, unrelated subject in scope. "Is it permitted to read novels?" or "what does Jewish law say about Shakespeare?" is a halachic question and in scope — answer the halachic question; "who wrote Hamlet?" and "summarize this novel" are not. When a question is out of scope, give no information about its subject: set out_of_scope to true, out_of_scope_subject to a short name for the subject (2-5 words), ruling to an empty string, and sources, summary and practical_steps to empty. Retrieved sources, customs and earlier answers never make a question in scope. In scope as well, and never refused: Jewish history and the lives of Jewish figures (biblical, Talmudic, medieval or modern, and the Holocaust, antisemitism and Zionism), the Hebrew calendar and zmanim (Shabbat, candle-lighting and holiday times), the Hebrew of the texts, and any question about a Jewish text, person, place, practice or belief. When a question has a Jewish angle, answer it: out_of_scope is only for a question with no Jewish or halachic angle at all. A short follow-up that names a new thing in a thread ("what about football?", "and a movie?") asks what Jewish law says about that thing, so answer it that way.
 
 Tone: direct, learned, practical — no fluff or motivational language. For sensitive or edge-case halachic questions, default to: "This is a nuanced area with significant rabbinic disagreement. Here are the relevant sources and positions..." rather than refusing. Acknowledge uncertainty explicitly and state which Poskim disagree and why. If a question is borderline because it has a genuine Jewish-law or Jewish-tradition angle but is not fully halachic, answer that angle with background information and relevant sources instead of refusing.
+
+Style (plain language): write for an adult who has never studied the subject. Short sentences, one idea each, mostly under 25 words: end the sentence with a full stop instead of joining two ideas with a semicolon, a dash or a second "which". Everyday words: "forbidden", not "proscribed"; "because", not "in light of the fact that"; "shows", not "underscores"; no "moreover", "furthermore", "notably", "pertains to", "delineates", "it is imperative". Explain a Hebrew or Aramaic word the first time it appears, in a few plain words ("muktzeh, an object you may not move on Shabbat"), then keep using that same word. Spell each name and term one way through the whole answer and thread: Onkelos (never "Unkelus"), Rashi, Ibn Ezra, Shabbat (not "Shabbos"), Hashem. Say what the source says before what it means, and cut anything that only decorates.
 
 What is being asked: decide this first, because it sets the shape of the answer.
 - A practical situation ("can I...", "what do I do if..."): the ruling first, then only the one or two conditions that change it.
@@ -1831,7 +1849,9 @@ Formatting: valid UTF-8 JSON, parseable by json.loads, no trailing commas or com
 SIMPLE_SYSTEM_PROMPT = """
 You are Sh'elah, a concise halakhic reference. Answer the user's question directly, at the size it was asked: a general or everyday question gets a short answer, not a survey.
 
-Scope: answer only questions about Halakhah, Jewish custom, Zmanim, Tanakh, Talmud and Jewish tradition, or what Jewish law says about something. Anything else (general knowledge, literature, entertainment, sports, school subjects, programming, personal advice, creative writing) is out of scope, even when the earlier turns were Torah questions: judge each question by its own subject. For an out-of-scope question give no information about it: return out_of_scope true, out_of_scope_subject (2-5 words), ruling "", sources [], summary "" and practical_steps [].
+Style: plain words and short sentences (a full stop, not a semicolon or a dash, between two ideas), as you would explain it to a neighbor who has never studied this. Explain a Hebrew or Aramaic word the first time you use it, then keep that same word. Spell each name one way: Onkelos, Rashi, Ibn Ezra, Shabbat, Hashem.
+
+Scope: answer only questions about Halakhah, Jewish custom, Zmanim, Tanakh, Talmud and Jewish tradition, or what Jewish law says about something. Anything else (general knowledge, literature, entertainment, sports, school subjects, programming, personal advice, creative writing) is out of scope, even when the earlier turns were Torah questions: judge each question by its own subject. Jewish history, Jewish figures, the calendar and zmanim are in scope (the Holocaust and antisemitism too), and so is a short follow-up in a thread that names a new thing ("what about football?": what Jewish law says about it). For an out-of-scope question give no information about it: return out_of_scope true, out_of_scope_subject (2-5 words), ruling "", sources [], summary "" and practical_steps [].
 
 Rules:
 - Return strict JSON only with keys: ruling, sources, is_prohibited, summary, practical_steps, rabbinic_disclaimer (and out_of_scope, out_of_scope_subject only for an out-of-scope question).
@@ -2251,6 +2271,14 @@ def _history_turn(turn: Dict[str, Any], user_chars: int, assistant_chars: int) -
     return "assistant", json.dumps(payload, ensure_ascii=False)
 
 
+_SCOPE_REFUSAL_OPENINGS = tuple(text.partition("{subject}")[0].strip() or text[:40] for text in _OFF_TOPIC_REFUSAL_TEXT.values())
+
+
+def _is_scope_refusal(content: str) -> bool:
+    """True for the reply _off_topic_refusal_message() writes, in either language."""
+    return content.strip().startswith(_SCOPE_REFUSAL_OPENINGS)
+
+
 def _trim_history_turns(turns: List[Dict[str, str]], max_total_chars: int) -> List[Dict[str, str]]:
     """Open the thread with a user turn, end it with an assistant turn, and
     drop the oldest pairs while it is longer than ``max_total_chars``."""
@@ -2280,6 +2308,12 @@ def build_history_turns(conversation_history, *, max_turns=HISTORY_MAX_TURNS,
     first when the thread is longer than ``max_total_chars``."""
     turns: List[Dict[str, str]] = []
     for turn in [t for t in (conversation_history or []) if isinstance(t, dict)][-max_turns:]:
+        if turn.get("role") != "user" and _is_scope_refusal(str(turn.get("content") or "")):
+            # A refused question leaves the thread with its refusal: the model would
+            # otherwise read "that is outside what I can help with" as its own earlier answer.
+            if turns and turns[-1]["role"] == "user":
+                turns.pop()
+            continue
         parsed = _history_turn(turn, user_chars, assistant_chars)
         if parsed is None:
             continue
@@ -2570,8 +2604,9 @@ def build_prompt(question, sefaria_sources, wiki, halachipedia=None, mode="balan
         format_instruction = (
             "17b. SIMPLE QUESTION FORMAT: This is a simple, direct question. "
             "Write the ruling as one short paragraph: the direct answer in the first sentence, then only "
-            "the reasoning needed to trust it (usually 2-5 sentences in all) — do NOT use separate section "
-            "headings inside ruling. "
+            "the reasoning needed to trust it (usually 2-5 sentences in all, each under 25 words: end a "
+            "sentence and start another instead of adding a second \"because\" or \"which\") — do NOT use "
+            "separate section headings inside ruling. "
             "Set practical_steps to [] and summary to an empty string. "
             "Keep sources brief (1-3 items), each marked right after the sentence that rests on it."
         )
@@ -2681,7 +2716,7 @@ INSTRUCTIONS:
 13. SCOPE: judge the QUESTION by its own subject, never by the earlier turns, the retrieved sources or the community lens. A halachic or Jewish-tradition question, or one asking what Jewish law says about something, is in scope even when it is sensitive, unusual or borderline: answer it.
 14. For modern halachic applications (technology, medicine, contemporary scenarios), prioritize Responsa and recent decisors.
 15. If query is strictly hateful, calls for violence, or illegal, set ruling to exactly: "Sh'elah is a specialized tool for Halakhic and communal knowledge. I cannot assist with [Subject of Query]. Please consult with your local Rabbi for a final ruling.", and set practical_steps and sources to empty arrays.
-16. If the QUESTION has no halachic or Jewish-tradition angle at all (literature, general knowledge, entertainment, school subjects, programming, personal advice, creative writing), it is out of scope: return out_of_scope true, out_of_scope_subject (2-5 words), ruling "", and sources, summary and practical_steps empty, and give no information about the subject.
+16. If the QUESTION has no halachic or Jewish-tradition angle at all (literature, general knowledge, entertainment, school subjects, programming, personal advice, creative writing), it is out of scope: return out_of_scope true, out_of_scope_subject (2-5 words), ruling "", and sources, summary and practical_steps empty, and give no information about the subject. Jewish history, Jewish figures, the calendar and zmanim are not out of scope (the Holocaust and antisemitism too), and a short follow-up that names a new thing ("what about football?") asks what Jewish law says about it.
 17. Explanation depth requirement: {detail_expectation}
 {format_instruction}
 18. Structure content logically per the format instruction above.
@@ -2913,13 +2948,15 @@ def _build_input_block_result(
         blocked_answer, blocked_error, safety_class, input_validation)
 
 
-def off_topic_block_result(question: str, answer_language: str = "en") -> Optional[Dict[str, Any]]:
+def off_topic_block_result(
+    question: str, answer_language: str = "en", in_thread: bool = False,
+) -> Optional[Dict[str, Any]]:
     """The refusal result for a question the keyword gate calls off-topic, else
     None. The /ask transports call this before they retrieve anything, so a
     literature or trivia question costs no Sefaria, Supabase or model calls (the
     model call is skipped anyway by ask_claude()/ask_ai_async(), which run the
     same gate; this just moves the refusal ahead of the retrieval)."""
-    validation = validate_user_query(question)
+    validation = validate_user_query(question, in_thread)
     if validation["reasons"] == ["off_topic_subject"]:
         return _build_input_block_result(validation, answer_language)
     return None
@@ -2972,6 +3009,70 @@ def _build_refusal_result(
             "output": {"blocked": False, "reason": ""},
         },
     }
+
+
+# The model sometimes sets out_of_scope on a question that plainly has a Jewish angle
+# (a biblical figure, the calendar, zmanim, "the Jewish view of ..."), on a short
+# follow-up in a thread, or on a name it does not recognise ("the story of Korach").
+# One more call asks it to look again: firmly when the question names a Jewish subject,
+# gently when the signal is weaker, and by asking whether the name is one from the
+# Torah or Jewish history when there is none. A second flag stands, so a question with
+# no Jewish angle is still refused.
+_SCOPE_FIRM_NOTE = (
+    "\n\nSCOPE CHECK: the QUESTION above names a Jewish subject, so it is in scope: Jewish law, texts, "
+    "history (the Holocaust and antisemitism included), figures, the calendar and tradition are what you answer, and so is \"the Jewish view of\" "
+    "anything. Answer it from that angle and do not set out_of_scope. Hateful, violent or illegal requests "
+    "are still refused."
+)
+_SCOPE_SECOND_LOOK_NOTE = (
+    "\n\nSCOPE CHECK: you marked the QUESTION above out of scope. Look again. Jewish history, Jewish "
+    "figures, the Hebrew calendar and zmanim, and any question about a Jewish text, person, place, "
+    "practice or belief are in scope, and so is a short follow-up that takes its subject from the earlier "
+    "turns (\"what about football?\" after a Shabbat answer asks what Jewish law says about football). "
+    "If the question, or the earlier turns it continues, give it a Jewish or halachic angle, answer it from "
+    "that angle and do not set out_of_scope. Set out_of_scope only when it truly has none. Hateful, violent "
+    "or illegal requests are still refused."
+)
+_SCOPE_UNFAMILIAR_NAME_NOTE = (
+    "\n\nSCOPE CHECK: you marked the QUESTION above out of scope. Look again. Many people, places and "
+    "stories from the Torah, the Prophets, the Writings, the Talmud and Jewish history have names you may "
+    "not recognise at first (Korach, Pinchas, Yoav, Hillel, Chizkiyahu). If the question is about one of "
+    "them, it is in scope: answer it. Set out_of_scope only when it is clearly about something else. "
+    "Hateful, violent or illegal requests are still refused."
+)
+_SECOND_LOOK_MAX_FOLLOW_UP_WORDS = 8
+_JEWISH_SUBJECT_RE = re.compile(
+    r"\bjews?\b|\bisrael(?:i|ite|ites)?\b|\bholocaust\b|\bshoah\b|\banti-?semit\w*|\bzionis\w*|\bdiaspora\b",
+    re.IGNORECASE)
+
+
+def flagged_out_of_scope(result) -> bool:
+    structured = result.get("structured") if isinstance(result, dict) else None
+    return isinstance(structured, dict) and structured.get("out_of_scope") is True
+
+
+def _names_a_jewish_subject(text: str) -> bool:
+    """A Hebrew letter, a DOMAIN_MARKER_RE word (not a bare time of day) or "Jew(s)"."""
+    return bool(
+        HEBREW_LETTER_RE.search(text)
+        or DOMAIN_MARKER_RE.search(_TIME_OF_DAY_RE.sub(" ", text))
+        or _JEWISH_SUBJECT_RE.search(text)
+    )
+
+
+def scope_second_look_note(question: str, in_thread: bool) -> str:
+    """What to add to the prompt for one more call after the model flagged ``question``
+    out of scope: a firm note when it names a Jewish subject, a gentle one for a weaker
+    Jewish signal or a short follow-up in a thread, and otherwise a note asking whether
+    the name is one from the Torah or Jewish history. Every flagged question gets one
+    look more; a second flag stands."""
+    if _names_a_jewish_subject(question):
+        return _SCOPE_FIRM_NOTE
+    if _has_jewish_context(question):
+        return _SCOPE_SECOND_LOOK_NOTE
+    if in_thread and len(str(question or "").split()) <= _SECOND_LOOK_MAX_FOLLOW_UP_WORDS:
+        return _SCOPE_SECOND_LOOK_NOTE
+    return _SCOPE_UNFAMILIAR_NAME_NOTE
 
 
 def apply_output_validation(result, input_validation, answer_language, safety_class):
@@ -3032,9 +3133,10 @@ def run_protected_ai_wrapper(
     prompt_builder: Callable[[str], str],
     model_executor: Callable[[str], Dict[str, Any]],
     answer_language: str = "en",
+    in_thread: bool = False,
 ) -> Dict[str, Any]:
     """Generic security wrapper for present and future LLM/tool calls."""
-    input_validation = validate_user_query(query)
+    input_validation = validate_user_query(query, in_thread)
     if input_validation["blocked"]:
         return _build_input_block_result(input_validation, answer_language)
 
@@ -3140,6 +3242,7 @@ def ask_claude(question, sefaria_sources, customs, user_memories=None, wiki=None
                 **({"history_turns": history_turns} if history_turns else {}),
             ),
             answer_language=answer_language,
+            in_thread=bool(history_turns),
         )
 
     result = _run()
@@ -3624,7 +3727,7 @@ async def ask_ai_async(
         extra_context=tool_context,
     )
 
-    input_validation = validate_user_query(question)
+    input_validation = validate_user_query(question, bool(build_history_turns(conversation_history)))
     if input_validation["blocked"]:
         return _build_input_block_result(input_validation, answer_language)
 
@@ -3678,6 +3781,9 @@ async def ask_ai_async(
         return result
 
     result = await _generate(_prompt())
+    if flagged_out_of_scope(result):
+        second_look = scope_second_look_note(sanitized_query, bool(build_history_turns(conversation_history)))
+        result = await _generate(_prompt() + second_look)
     result = (
         await _web_second_pass_async(
             result, started, lambda found: _generate(_prompt(found)), answer_language)

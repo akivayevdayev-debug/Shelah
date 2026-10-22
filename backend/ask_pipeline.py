@@ -274,7 +274,8 @@ async def run_agentic_ask(
         extra_context=tool_context,
     )
 
-    input_validation = claude_module.validate_user_query(question)
+    input_validation = claude_module.validate_user_query(
+        question, bool(claude_module.build_history_turns(conversation_history)))
     if input_validation["blocked"]:
         return claude_module._build_input_block_result(input_validation, answer_language)
 
