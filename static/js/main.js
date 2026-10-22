@@ -28,6 +28,7 @@ import * as askHistory from "./ask-history.js";
 import { createSiddur } from "./siddur.js";
 import { installHebrewKeyboard } from "./hebrew-keyboard.js";
 import { installMinhagSetting } from "./minhag-setting.js";
+import { installTextVersionPicker } from "./text-versions.js";
 
 // Source-card markup for the conversation panel (and any classic-script caller).
 window.ShelahSourceCards = sourceCards;
@@ -130,6 +131,16 @@ function initModules() {
     // The on-screen Hebrew/English keyboard under the search bar.
     installHebrewKeyboard();
     installMinhagSetting();
+    // The reader settings' edition/translation picker. shell.js asks it for
+    // each /api/text query and redraws it per text; a pick or a new community
+    // reloads the open text when that changes what it would fetch.
+    window.ShelahTextVersions = installTextVersionPicker({
+        getMinhag,
+        t: (en, he) => window.t(en, he),
+        onPick: () => window.ShelahReaderText?.reloadIfChanged?.(),
+    });
+    window.ShelahReaderText?.reloadIfChanged?.();
+    onMinhagChange(() => window.ShelahReaderText?.reloadIfChanged?.());
     // "Copy link" on a stored answer: conversation-ui.js moves the control
     // into the answer turn showing it and calls .show per answer. The copied
     // link is public (/a/<token>, static/js/answer-share.js).

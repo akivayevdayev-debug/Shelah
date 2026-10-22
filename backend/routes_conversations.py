@@ -43,7 +43,7 @@ from flask import Blueprint, Response, copy_current_request_context, current_app
 
 from backend.auth import require_clerk_auth
 from backend.device_identity import filter_owner, history_owners
-from backend import ask_progress, claude, web_lookup
+from backend import ask_progress, claude, text_trust, web_lookup
 from backend.ai_notes import record_ai_note
 from backend.cost_gates import (
     bind_cost_attribution,
@@ -1028,10 +1028,12 @@ def _run_conversation_ask(supabase, conversation_id, user_id, question, retry_of
         })
         return jsonify({"error": "Failed to start message"}), 500
 
-    assistant_message = _synthesize_and_store_assistant_reply(
-        supabase, conversation_id, user_id, question, mode, canonical_lens,
-        answer_language, conversation_history, web_search=web_search,
-    )
+    # The texts the AI quotes use this community's versions (backend/text_trust.py).
+    with text_trust.community_scope(text_trust.minhag_for_lens(canonical_lens)):
+        assistant_message = _synthesize_and_store_assistant_reply(
+            supabase, conversation_id, user_id, question, mode, canonical_lens,
+            answer_language, conversation_history, web_search=web_search,
+        )
     # The conversation header as it stands after this turn (title may have
     # just been auto-derived above), so the client can update its header and
     # sidebar row without a second GET or re-deriving the title itself.

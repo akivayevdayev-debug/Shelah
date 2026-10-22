@@ -336,6 +336,31 @@ html.rtl #citySearchInput {
     transform: rotate(90deg);
     pointer-events: none;
 }
+/* The reader settings' version picker (static/js/text-versions.js): a
+   fieldset without the browser's frame, so it lines up with the panel's other
+   groups (their top rule comes from the border-t utility it shares). */
+.reader-version-picker {
+    margin: 0;
+    padding-inline: 0;
+    padding-block-end: 0;
+    border-inline: 0;
+    border-block-end: 0;
+    min-inline-size: 0;
+}
+/* A legend sits on the fieldset's top rule; floating it puts it inside the
+   group like the panel's other headings. */
+.reader-version-picker > legend {
+    float: inline-start;
+    inline-size: 100%;
+    padding: 0;
+    margin-block-end: var(--sp-2);
+}
+.reader-version-picker > legend + * {
+    clear: both;
+}
+.reader-version-select {
+    min-block-size: var(--hit-min);
+}
 .select-field > select {
     width: 100%;
     margin: 0;

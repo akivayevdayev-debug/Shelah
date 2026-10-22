@@ -450,27 +450,27 @@ class TestLibraryLeafRefsEdgeCases:
 class TestGetTextInlineBlockedUpstream:
     def test_sefaria_blocked_error_type_returns_503_with_payload(self, test_client, monkeypatch):
         payload = {"error": "Upstream refused", "error_type": "sefaria_blocked"}
-        monkeypatch.setattr(sl, "get_text", lambda ref: dict(payload))
+        monkeypatch.setattr(sl, "get_text", lambda ref, **_kw: dict(payload))
         response = test_client.get("/api/text/Genesis%201:1")
         assert response.status_code == 503
         assert response.get_json() == payload
 
     def test_blocked_wording_in_error_message_returns_503(self, test_client, monkeypatch):
         payload = {"error": "Request was BLOCKED by upstream firewall"}
-        monkeypatch.setattr(sl, "get_text", lambda ref: dict(payload))
+        monkeypatch.setattr(sl, "get_text", lambda ref, **_kw: dict(payload))
         response = test_client.get("/api/text/Genesis%201:1")
         assert response.status_code == 503
         assert response.get_json() == payload
 
     def test_other_errors_are_not_promoted_to_503(self, test_client, monkeypatch):
         payload = {"error": "Ref not found", "error_type": "not_found"}
-        monkeypatch.setattr(sl, "get_text", lambda ref: dict(payload))
+        monkeypatch.setattr(sl, "get_text", lambda ref, **_kw: dict(payload))
         response = test_client.get("/api/text/Nowhere%201:1")
         assert response.status_code == 200
         assert response.get_json() == payload
 
     def test_blocked_response_skips_english_gap_filling(self, test_client, monkeypatch):
-        monkeypatch.setattr(sl, "get_text", lambda ref: {"error": "blocked", "error_type": "sefaria_blocked"})
+        monkeypatch.setattr(sl, "get_text", lambda ref, **_kw: {"error": "blocked", "error_type": "sefaria_blocked"})
 
         def _boom(data):
             raise AssertionError("gap filling must not run on a blocked response")

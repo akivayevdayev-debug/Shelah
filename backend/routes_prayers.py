@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 from html import escape as _escape_html
 from urllib.parse import unquote
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 from app import SIDDUR_SECTION_MAP, _get_prayer_refs
 from backend.logging_setup import submit_with_context
@@ -168,7 +168,14 @@ def get_siddur_full(prayer_name):
     if not refs:
         return jsonify({"error": f"No Sefaria mapping for '{resolved_name}'"}), 404
 
-    results = _fetch_ref_texts_parallel(refs, get_text)
+    # The reader's community picks each text's version (backend/text_trust.py);
+    # submit_with_context carries it into the worker threads.
+    from backend import text_trust
+    token = text_trust.use_community(request.args.get("minhag"))
+    try:
+        results = _fetch_ref_texts_parallel(refs, get_text)
+    finally:
+        text_trust.reset_community(token)
     combined_lines = _combine_prayer_lines(refs, results)
 
     if not combined_lines:

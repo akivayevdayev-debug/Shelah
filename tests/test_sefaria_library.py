@@ -244,7 +244,8 @@ class TestParseV3Response:
             "categories": ["Tanakh", "Torah"],
             "versions": [
                 {"language": "he", "direction": "rtl", "isSource": True, "text": ["בְּרֵאשִׁית"]},
-                {"language": "en", "direction": "ltr", "isSource": False, "text": ["In the beginning"]},
+                {"language": "en", "direction": "ltr", "isSource": False, "text": ["In the beginning"],
+                 "versionTitle": "The Koren Jerusalem Bible"},
             ],
         }
         result = sl._parse_v3_response(data, "Genesis 1:1")
@@ -660,7 +661,8 @@ class TestGetText:
                     "title": "Genesis",
                     "versions": [
                         {"language": "he", "direction": "rtl", "isSource": True, "text": ["בְּרֵאשִׁית"]},
-                        {"language": "en", "direction": "ltr", "isSource": False, "text": ["In the beginning"]},
+                        {"language": "en", "direction": "ltr", "isSource": False, "text": ["In the beginning"],
+                 "versionTitle": "The Koren Jerusalem Bible"},
                     ],
                 },
                 status=200,
@@ -681,6 +683,7 @@ class TestGetText:
                 json={
                     "ref": "Genesis 1:1", "he": ["בְּרֵאשִׁית"], "text": ["In the beginning"],
                     "title": "Genesis", "categories": ["Tanakh", "Torah"],
+                    "versionTitle": "The Koren Jerusalem Bible",
                 },
                 status=200,
             )

@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 import app as flask_app_module
-from backend import ask_pipeline, ask_progress, claude, guest_cap, search
+from backend import ask_pipeline, ask_progress, claude, guest_cap, search, text_trust
 from backend.ask_payloads import (
     build_ai_answer_payload,
     build_source_fallback_payload,
@@ -1168,6 +1168,9 @@ async def _ask_async_impl(
     await _enforce_ask_async_budget(user_id, client_ip)
 
     mode, canonical_lens, answer_language = _resolve_ask_async_request_params(payload)
+    # The texts the AI quotes use this community's versions (backend/text_trust.py).
+    # Set on this request's own task context, so it ends with the request.
+    text_trust.use_community(text_trust.minhag_for_lens(canonical_lens))
     # Identical key formula to app.py's (dead,
     # unreachable-in-production) ask_question() route -- not read/written by
     # that route today, but keeping one formula rather than two avoids a

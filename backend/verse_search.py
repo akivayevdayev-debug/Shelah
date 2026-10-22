@@ -34,6 +34,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import requests
 
+from backend import text_trust
 from backend.health_check import health
 
 logger = logging.getLogger(__name__)
@@ -232,6 +233,18 @@ def _version_rank(source, hebrew_query) -> int:
     return 0
 
 
+def _hit_allowed(source) -> bool:
+    """text_trust's policy for one search hit: never a hidden work, never a
+    denied edition, and English only from a reviewed translation."""
+    ref = str(source.get("ref") or "")
+    if text_trust.is_work_denied(ref) or text_trust.is_work_denied(source.get("index_title")):
+        return False
+    is_hebrew = str(source.get("lang") or "") == "he"
+    version = {"versionTitle": source.get("version"), "language": "he" if is_hebrew else "en",
+               "isSource": is_hebrew}
+    return text_trust.is_version_shown(version)
+
+
 def _fold_hits(hits, hebrew_query, match) -> list:
     """One result per ref, in first-seen order, with the best edition's
     snippet."""
@@ -239,7 +252,7 @@ def _fold_hits(hits, hebrew_query, match) -> list:
     for rank, hit in enumerate(hits or []):
         source = (hit or {}).get("_source") or {}
         ref = str(source.get("ref") or "").strip()
-        if not ref:
+        if not ref or not _hit_allowed(source):
             continue
         candidate = (_version_rank(source, hebrew_query), rank, hit)
         if ref not in by_ref:

@@ -216,7 +216,7 @@ RABBI_FINAL_RULING_FOOTER = "Please consult with your local Rabbi for a final ru
 # row (defensibility logging) so a stored answer's governing
 # prompt version is reconstructable during a dispute, without retaining the
 # full prompt text itself.
-PROMPT_VERSION = "2026-10-18-web-lookup-v7"
+PROMPT_VERSION = "2026-10-21-orthodox-sources-v8"
 # INTERNAL_AI_KNOWLEDGE_DISCLAIMER: canonical copy lives in
 # backend/utils/search_provider.py (re-exported via backend/helpers.py) —
 # an unused, byte-identical duplicate previously lived here too;
@@ -2618,6 +2618,7 @@ INSTRUCTIONS:
 18. Structure content logically per the format instruction above.
 19. QUALITY STANDARD: be accurate, cite the authorities you actually rely on, and note real disagreement briefly where poskim differ on what the reader should do. Accuracy beats length.
 19b. SOURCE MARKERS: the app shows `sources` as a numbered list under the answer, so do NOT name sources, add a "Sources" heading or list references inside ruling, summary or practical_steps. Put the 1-based number from `sources` in square brackets right after the sentence (or clause) that rests on that source, with no space before it: "...is forbidden.[1]". When several sentences in a row rest on the same source, mark only the last of them, once; never repeat a number in a row and do not gather markers at the end of a paragraph. Use [1][2] only when both sources support the same sentence. Number sources in the order they first appear, never use a number `sources` lacks, and leave a sentence with no specific source unmarked.
+19c. ORTHODOX SOURCES ONLY: never quote, cite or rely on Reform, Conservative, Reconstructionist or Renewal works, rulings, responsa or translations (for example the Rabbinical Assembly / CJLS or the CCAR). If such a source is in the snippets, leave it out.
 {follow_up_instruction}{web_instruction}"""
 
     return _sanitize_prompt_payload(prompt)

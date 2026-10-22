@@ -179,6 +179,8 @@ def _isolate_sefaria_disk_cache(tmp_path, monkeypatch):
     import backend.sefaria_library as sefaria_library
 
     monkeypatch.setattr(sefaria_library, "_DISK_CACHE_DIR", tmp_path / ".sefaria_cache")
+    # Remembered per-book version lists (text_trust picks) are per-process too.
+    sefaria_library._book_versions_cache.clear()
 
 
 # ─── Core client fixtures ─────────────────────────────────────────────────────

@@ -10419,6 +10419,30 @@ function hasParenthetical(text) {
         const indexSectionsCache = new Map();
         let textLoadServiceWorkerRecoveryAttempted = false;
 
+        // The ?minhag= / ?vhe= / ?ven= part of an /api/text request
+        // (static/js/text-versions.js; "" until that module has loaded).
+        function currentTextQuery(ref) {
+            return window.ShelahTextVersions?.query?.(ref) || '';
+        }
+
+        // The text on screen and the query it was fetched with, so a new
+        // version pick or community reloads it only when the fetch would differ.
+        let paintedText = null;
+
+        window.ShelahReaderText = {
+            reloadIfChanged() {
+                if (!paintedText) return false;
+                const { ref, payload, query } = paintedText;
+                if (currentTextQuery(ref) === query) {
+                    window.ShelahTextVersions?.render?.(payload);
+                    return false;
+                }
+                textPayloadCache.clear();
+                void readText(ref, { skipNavigationGrid: true });
+                return true;
+            },
+        };
+
         function cacheTextPayload(ref, payload) {
             const key = String(ref || '').trim();
             if (!key || !payload || payload.error) return;
@@ -10501,7 +10525,9 @@ function hasParenthetical(text) {
             if (!raw || typeof raw !== 'object') return null;
             if (raw.error) return null;
             const heLeafs = _flattenSefariaText(raw.he || []);
-            const enLeafs = _flattenSefariaText(raw.text || []);
+            // Sefaria's default English here hasn't passed the server's version
+            // check (backend/text_trust.py), so this fallback shows the Hebrew only.
+            const enLeafs = [];
             const byPath = (leafs) => {
                 const m = {};
                 leafs.forEach(l => { m[l.path.join('.')] = l.text; });
@@ -10585,7 +10611,8 @@ function hasParenthetical(text) {
                 }
 
                 try {
-                    const resp = await fetch(`/api/text/${encodeURIComponent(candidate)}?autotranslate=0`);
+                    const versionQuery = currentTextQuery(candidate);
+                    const resp = await fetch(`/api/text/${encodeURIComponent(candidate)}?autotranslate=0${versionQuery ? `&${versionQuery}` : ''}`);
                     const payload = await resp.json();
                     reachedServer = true;
                     if (!payload?.error) {
@@ -10594,6 +10621,9 @@ function hasParenthetical(text) {
                         return { found: { payload, resolvedRef: candidate } };
                     }
                     lastErrorPayload = payload || lastErrorPayload;
+                    // A work the site doesn't carry (backend/text_trust.py): no
+                    // other spelling or source may bring it back.
+                    if (payload?.error_type === 'not_available') break;
                 } catch {
                     // Keep trying remaining candidates.
                 }
@@ -10650,7 +10680,7 @@ function hasParenthetical(text) {
 
             // The server looked and there is no such text: Sefaria won't have
             // it either, and its failure mustn't relabel this as "blocked".
-            if (lastErrorPayload?.error_type === 'not_found') {
+            if (lastErrorPayload?.error_type === 'not_found' || lastErrorPayload?.error_type === 'not_available') {
                 return { payload: lastErrorPayload, resolvedRef: requestedRef };
             }
 
@@ -10824,6 +10854,10 @@ function hasParenthetical(text) {
         }
 
         function paintTextView(data, resolvedRef, ref, normalizedRequestRef, options, serverText) {
+            const paintedRef = resolvedRef || normalizedRequestRef || String(ref || '');
+            // The server-rendered page is always the default community's text.
+            paintedText = { ref: paintedRef, payload: data, query: serverText ? '' : currentTextQuery(paintedRef) };
+            window.ShelahTextVersions?.render?.(data);
             // Title
             const titleEl = document.getElementById('readerTitle');
             const fallbackTitle = data.title || normalizedRequestRef || String(ref || '');

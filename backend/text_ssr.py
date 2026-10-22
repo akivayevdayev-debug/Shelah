@@ -305,7 +305,7 @@ def header_title(payload, fallback):
 # What the client keeps of a payload. The flat he/en arrays are left out (they
 # are the lines again); readText rebuilds them when it seeds its cache.
 _PAYLOAD_KEYS = ("ref", "title", "heTitle", "heRef", "lines", "sections", "sectionNames",
-                 "next", "prev", "categories", "authors", "era")
+                 "next", "prev", "categories", "authors", "era", "indexTitle", "versions")
 
 
 def applies(ref):

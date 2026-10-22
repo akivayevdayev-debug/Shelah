@@ -24,6 +24,8 @@ from __future__ import annotations
 import re
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from backend import text_trust
+
 # The conversation UI shows at most this many citations
 # (routes_conversations._MAX_SEED_CITATIONS, conversation-store.js), so a marker
 # can never usefully point past it. A learning answer that walks through a
@@ -73,7 +75,9 @@ def finalize_sources(
     for raw_index, item in enumerate(raw_sources if isinstance(raw_sources, list) else [], start=1):
         value = sanitize(str(item or ""))
         key = source_key(value)
-        if not value or not key:
+        if not value or not key or text_trust.is_source_denied(value):
+            # A Reform / Conservative / other denied source never becomes a
+            # chip (backend/text_trust.py); its markers are removed too.
             index_map[raw_index] = None
         elif key in positions:
             index_map[raw_index] = positions[key]

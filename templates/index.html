@@ -722,6 +722,30 @@
                             </span>
                         </label>
 
+                        <!-- Which edition and translation (static/js/text-versions.js);
+                             hidden until a text with a choice is open. -->
+                        <fieldset id="readerVersionPicker" class="reader-version-picker hidden space-y-2 border-t border-slate-100 pt-2"
+                            aria-describedby="readerVersionHint">
+                            <legend class="text-xs text-slate-600" data-en="Text Version" data-he="מהדורה ותרגום">Text Version</legend>
+                            <label id="readerVersionHeRow" class="block text-xs text-slate-600">
+                                <span data-en="Hebrew" data-he="עברית">Hebrew</span>
+                                <span class="select-field">
+                                <select id="readerVersionHe"
+                                    class="reader-version-select w-full px-2 py-1.5 rounded-sm border bg-slate-50 text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-300"></select>
+                                </span>
+                            </label>
+                            <label id="readerVersionEnRow" class="block text-xs text-slate-600">
+                                <span data-en="Translation" data-he="תרגום">Translation</span>
+                                <span class="select-field">
+                                <select id="readerVersionEn"
+                                    class="reader-version-select w-full px-2 py-1.5 rounded-sm border bg-slate-50 text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-300"></select>
+                                </span>
+                            </label>
+                            <p id="readerVersionHint" class="text-xs text-slate-600"
+                                data-en="Orthodox editions only, chosen for your community."
+                                data-he="רק מהדורות אורתודוקסיות, לפי הקהילה שלך.">Orthodox editions only, chosen for your community.</p>
+                        </fieldset>
+
                         <label class="block text-xs text-slate-600">
                             <span data-en="Text Size" data-he="גודל טקסט">Text Size</span>
                             <input id="readerFontSize" type="range" min="14" max="30" value="18"

@@ -383,6 +383,9 @@ def library_leaf_refs():
 
     if not title:
         return jsonify({"title": "", "refs": [], "sections": []})
+    from backend import text_trust
+    if text_trust.is_work_denied(title):
+        return jsonify({"title": title, "refs": [], "sections": []})
 
     sections = []
     try:
@@ -436,7 +439,8 @@ def get_text_inline(ref):
     """Fetches a Sefaria text inline — Hebrew + English + metadata."""
     from backend.sefaria_library import get_text
     decoded_ref = _decode_route_ref(ref)
-    data = get_text(decoded_ref)
+    data = get_text(decoded_ref, community=_requested_minhag(),
+                    versions=_requested_versions())
 
     if isinstance(data, dict) and data.get("error"):
         error_type = data.get("error_type", "")
@@ -450,6 +454,27 @@ def get_text_inline(ref):
         data = _fill_missing_english_lines(data)
 
     return jsonify(data)
+
+
+_MAX_VERSION_TITLE_LEN = 200
+
+
+def _requested_minhag():
+    """The reader's community from ?minhag=, or None for the default."""
+    from backend.minhag import normalize_minhag
+    return normalize_minhag(request.args.get("minhag"))
+
+
+def _requested_versions():
+    """The reader's own version pick from ?vhe= / ?ven=. text_trust only
+    honours a pick that is a shown version of this text, so anything else
+    falls back to the default."""
+    picked = {}
+    for lang, param in (("he", "vhe"), ("en", "ven")):
+        value = request.args.get(param)
+        if isinstance(value, str) and 0 < len(value) <= _MAX_VERSION_TITLE_LEN:
+            picked[lang] = value
+    return picked or None
 
 
 @routes_library.route("/api/diagnostics/sefaria")

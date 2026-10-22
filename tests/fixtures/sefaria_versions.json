@@ -1,0 +1,2528 @@
+{
+ "_about": "Real Sefaria version lists (GET /api/texts/versions/<title>, 2026-10-20/21), trimmed to the fields backend/text_trust.py reads. Regenerate by re-fetching; do not hand-edit.",
+ "books": {
+  "Genesis": {
+   "category": "Torah",
+   "versions": [
+    {
+     "versionTitle": "THE JPS TANAKH: Gender-Sensitive Edition",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 8.0,
+     "versionSource": "https://jps.org/books/the-jps-tanakh-gender-sensitive-edition/"
+    },
+    {
+     "versionTitle": "The Contemporary Torah, Jewish Publication Society, 2006",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 7.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002529489/NLI"
+    },
+    {
+     "versionTitle": "The Five Books of Moses, by Everett Fox. New York, Schocken Books, 1995",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 6.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH001730367/NLI"
+    },
+    {
+     "versionTitle": "The Koren Jerusalem Bible",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 5.0,
+     "versionSource": "https://www.korenpub.com/koren_en_usd/koren/tanakh-bible/the-koren-jerusalem-bible.html"
+    },
+    {
+     "versionTitle": "Metsudah Chumash, Metsudah Publications, 2009",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 4.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002691623"
+    },
+    {
+     "versionTitle": "The Kehot Chumash; Chabad House Publications, Los Angeles",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 4.0,
+     "versionSource": "https://www.chabadhousepublications.org/books"
+    },
+    {
+     "versionTitle": "Tanakh: The Holy Scriptures, published by JPS",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 3.0,
+     "versionSource": "https://jps.org/books/tanakh-the-holy-scriptures-blue/"
+    },
+    {
+     "versionTitle": "The Rashi chumash by Rabbi Shraga Silverstein",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 2.0,
+     "versionSource": "http://www.sefaria.org/shraga-silverstein"
+    },
+    {
+     "versionTitle": "Miqra according to the Masorah",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 2.0,
+     "versionSource": "https://he.wikisource.org/wiki/%D7%9E%D7%A9%D7%AA%D7%9E%D7%A9:Dovi/%D7%9E%D7%A7%D7%A8%D7%90_%D7%A2%D7%9C_%D7%A4%D7%99_%D7%94%D7%9E%D7%A1%D7%95%D7%A8%D7%94"
+    },
+    {
+     "versionTitle": "Russian Torah translation, by Dmitri Slivniak, Ph.D., edited by Dr. Itzhak Streshinsky. Da Project, 2011 [ru]",
+     "language": "en",
+     "actualLanguage": "ru",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 2.0,
+     "versionSource": "https://dadada.live/books"
+    },
+    {
+     "versionTitle": "The Holy Scriptures: A New Translation (JPS 1917)",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 1.0,
+     "versionSource": "http://opensiddur.org/2010/08/%D7%AA%D7%A0%D7%B4%D7%9A-the-holy-scriptures-a-new-translation-jps-1917/"
+    },
+    {
+     "versionTitle": "Tanach with Ta'amei Hamikra",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 1.0,
+     "versionSource": "http://www.tanach.us/Tanach.xml"
+    },
+    {
+     "versionTitle": "Bible du Rabbinat 1899 [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 1.0,
+     "versionSource": "https://fr.wikisource.org/wiki/Bible_du_Rabbinat_1899"
+    },
+    {
+     "versionTitle": "Die fünf Bücher Moses, trans. Dr. J. Wohlgemuth, Rödelheim 1899 [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 1.0,
+     "versionSource": "https://www.talmud.de/tlmd/creative-commons/arbeit-mit-transkribus/raschitest/"
+    },
+    {
+     "versionTitle": "Перевод с иврита Давида Сафронова под редакцией Андрея Графова [ru]",
+     "language": "en",
+     "actualLanguage": "ru",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 0.0,
+     "versionSource": "https://torah.ru/article/339/"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Jewish English Torah",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://opensiddur.org/translations/jewish-english-torah/"
+    },
+    {
+     "versionTitle": "Modernized Tanakh - Based on JPS 1917, Edited by Adam Cohn",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://modernizedtanakh.blogspot.com"
+    },
+    {
+     "versionTitle": "Tanach with Text Only",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://www.tanach.us/Tanach.xml"
+    },
+    {
+     "versionTitle": "Tanach with Nikkud",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://www.tanach.us/Tanach.xml"
+    },
+    {
+     "versionTitle": "La bible d'André Chouraqui [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://nachouraqui.tripod.com/id83.htm"
+    },
+    {
+     "versionTitle": "Suomi Käännös [fi]",
+     "language": "en",
+     "actualLanguage": "fi",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Suomi Käännös By Ezra Lindholm [fi]",
+     "language": "en",
+     "actualLanguage": "fi",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Rabbi Mike Feuer, Jerusalem Anthology",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Traduction française sous la direction du Grand-Rabbin Zadoc Kahn [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.mechon-mamre.org/f/ft/ft0.htm"
+    },
+    {
+     "versionTitle": "El Pentateuco Con El Comentario de Rabí Shelomó Itzjakí (Rashí) [es]",
+     "language": "en",
+     "actualLanguage": "es",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "La Torá Con Rashi"
+    },
+    {
+     "versionTitle": "Sociedade Biblica Britânica [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.bibliaonline.com.br/tb/gn/3"
+    },
+    {
+     "versionTitle": "BJC - [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Biblia Judaica Completa"
+    },
+    {
+     "versionTitle": "Yehoyesh's Yiddish Tanakh Translation [yi]",
+     "language": "he",
+     "actualLanguage": "yi",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://opensiddur.org/praxes/study/yehoyeshs-yiddish-translation-of-the-tanakh/"
+    },
+    {
+     "versionTitle": "Deutsche Torah Übersetzung - William Grayson - 2017 (zur freien Verwendung) [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Translated on the fly on sefaria in german. (still in progress)"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation [fi]",
+     "language": "en",
+     "actualLanguage": "fi",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Metsudah Chumash, Metsudah Publications, 2009 [with Onkelos translation]",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002691623"
+    },
+    {
+     "versionTitle": "Der Pentateuch, übersetzt und erläutert von Samson Raphael Hirsch. Frankfurt am Main, 1867-1878 [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.talmud.de/tlmd/tanach/"
+    },
+    {
+     "versionTitle": "La Malnova Testamento, L.L.Zamenhof [eo]",
+     "language": "en",
+     "actualLanguage": "eo",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://eo.wikisource.org/wiki/Malnova_Testamento_(Zamenhof)/Genezo/5"
+    },
+    {
+     "versionTitle": "Torah Yesharah, translated and edited by Chas. Kahane. New York, 1963",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH001969090/NLI"
+    },
+    {
+     "versionTitle": "Il Pentateuco. Traduzione italiana di Samuel David Luzzatto, 1872 [it]",
+     "language": "en",
+     "actualLanguage": "it",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.archivio-torah.it"
+    },
+    {
+     "versionTitle": "Bible in Polish, trans. Izaak Cylkow, 1841 - 1908 [pl]",
+     "language": "en",
+     "actualLanguage": "pl",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://bibliepolskie.pl/"
+    },
+    {
+     "versionTitle": "Persian translation by Mashallah Rahman Pour Davud and Hakham Musa Zargari, Otzar haTorah, 1985 [fa]",
+     "language": "he",
+     "actualLanguage": "fa",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.iranjewish.com/Torah/bereshit.htm"
+    },
+    {
+     "versionTitle": "La Bible, Traduction Nouvelle, Samuel Cahen, 1831 [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.levangile.com/Bible-CAH-1-1-1-complet-Contexte-oui.htm"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation [es]",
+     "language": "en",
+     "actualLanguage": "es",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Trazladado en la lingua Espanyola, Estamperia de A. H. Boyadjian, Konstantinopla 1873. Transkrito por Yehuda Sidi, 2021 [lad]",
+     "language": "en",
+     "actualLanguage": "lad",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://folkmasa.org/av/biblial.htm"
+    },
+    {
+     "versionTitle": "benjamin derhambakhsh 2022 [fa]",
+     "language": "he",
+     "actualLanguage": "fa",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "translated by comparison between Hebrew and English translations on this site "
+    },
+    {
+     "versionTitle": "The Philosophical Tanakh ",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "The Philosophical Tanakh - Pieter Kriel"
+    },
+    {
+     "versionTitle": "Judeo-Italian Pentateuch transcribed by Robbie Kramm [itk]",
+     "language": "he",
+     "actualLanguage": "itk",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://digital.bodleian.ox.ac.uk/objects/cb6ea495-383b-491a-af36-43a370994520/surfaces/c5abdda3-e138-42dd-a37c-b3c929f75a43/#"
+    },
+    {
+     "versionTitle": "Tanach Completo em Português [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Tanach Completo em Português"
+    },
+    {
+     "versionTitle": "Miqra Mevoar, trans. and edited by David Kokhav, Jerusalem 2020",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://he.wikisource.org/wiki/%D7%9E%D7%A7%D7%A8%D7%90_%D7%9E%D7%91%D7%95%D7%90%D7%A8"
+    },
+    {
+     "versionTitle": "Biblia de Ferrara [lad]",
+     "language": "en",
+     "actualLanguage": "lad",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "The Ferrara Bible (1553)"
+    },
+    {
+     "versionTitle": "Tora ve Aftara [tr]",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Tora ve Aftara, Moşe Farsi"
+    },
+    {
+     "versionTitle": "Turkish Torah Translation by Moshe Farsi [tr]",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://toraoku.com"
+    },
+    {
+     "versionTitle": "Tanakh in Yiddish. Translated by Ch. Neuhausen, A. Hyman Charlap; NY 1914 [yi]",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://hebrewbooks.org/44090"
+    },
+    {
+     "versionTitle": "Publicado em 5784, Saymon Pires da Silva [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Chavruta Chats Traduções"
+    },
+    {
+     "versionTitle": "Tora în română – tradusă de rabin Șlomo Sorin Rosen, 2023 [ro]",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://bac-lac.on.worldcat.org/oclc/1410394504"
+    },
+    {
+     "versionTitle": "Tanaj Español, trans. Rav Yehuda Ribco, 2026 [es]",
+     "language": "en",
+     "actualLanguage": "es",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://serjudio.com"
+    },
+    {
+     "versionTitle": "Die vier und zwanzig Bücher der Heiligen Schrift. Unter der Redaction von Dr. Zunz übersetzt von H. Arnheim, Dr. Julius Fürst, Dr. M. Sachs. Berlin 1838 [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.opendata.uni-halle.de/handle/1981185920/89948?locale=de"
+    }
+   ]
+  },
+  "Isaiah": {
+   "category": "Prophets",
+   "versions": [
+    {
+     "versionTitle": "THE JPS TANAKH: Gender-Sensitive Edition",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 3.0,
+     "versionSource": "https://jps.org/books/the-jps-tanakh-gender-sensitive-edition/"
+    },
+    {
+     "versionTitle": "Miqra according to the Masorah",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 2.0,
+     "versionSource": "https://he.wikisource.org/wiki/%D7%9E%D7%A9%D7%AA%D7%9E%D7%A9:Dovi/%D7%9E%D7%A7%D7%A8%D7%90_%D7%A2%D7%9C_%D7%A4%D7%99_%D7%94%D7%9E%D7%A1%D7%95%D7%A8%D7%94"
+    },
+    {
+     "versionTitle": "Tanakh: The Holy Scriptures, published by JPS",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 2.0,
+     "versionSource": "https://jps.org/books/tanakh-the-holy-scriptures-blue/"
+    },
+    {
+     "versionTitle": "The Holy Scriptures: A New Translation (JPS 1917)",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 1.0,
+     "versionSource": "http://opensiddur.org/2010/08/%D7%AA%D7%A0%D7%B4%D7%9A-the-holy-scriptures-a-new-translation-jps-1917/"
+    },
+    {
+     "versionTitle": "Tanach with Ta'amei Hamikra",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 1.0,
+     "versionSource": "http://www.tanach.us/Tanach.xml"
+    },
+    {
+     "versionTitle": "Tanach with Text Only",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://www.tanach.us/Tanach.xml"
+    },
+    {
+     "versionTitle": "Tanach with Nikkud",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://www.tanach.us/Tanach.xml"
+    },
+    {
+     "versionTitle": "Rabbi Mike Feuer, Jerusalem Anthology",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Yehoyesh's Yiddish Tanakh Translation [yi]",
+     "language": "he",
+     "actualLanguage": "yi",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://opensiddur.org/praxes/study/yehoyeshs-yiddish-translation-of-the-tanakh/"
+    },
+    {
+     "versionTitle": "The Koren Jerusalem Bible",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.korenpub.com/koren_en_usd/koren/tanakh-bible/the-koren-jerusalem-bible.html"
+    },
+    {
+     "versionTitle": "Bible du Rabbinat 1899 [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://fr.wikisource.org/wiki/Bible_du_Rabbinat_1899"
+    },
+    {
+     "versionTitle": "Die Heilige Schrift, trans. Dr. Simon Bernfeld, Berlin, 1902 - German [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.talmud.de/tlmd/tanach/jeschajahu-das-buch-jesaja/"
+    },
+    {
+     "versionTitle": "Bible in Polish, trans. Izaak Cylkow, 1841 - 1908 [pl]",
+     "language": "en",
+     "actualLanguage": "pl",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://bibliepolskie.pl/"
+    },
+    {
+     "versionTitle": "La Bible, Traduction Nouvelle, Samuel Cahen, 1831 [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.levangile.com/Bible-CAH-1-1-1-complet-Contexte-oui.htm"
+    },
+    {
+     "versionTitle": "La Malnova Testamento, L.L.Zamenhof [eo]",
+     "language": "en",
+     "actualLanguage": "eo",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://eo.wikisource.org/wiki/Malnova_Testamento_(Zamenhof)/Jesaja/1"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation [es]",
+     "language": "en",
+     "actualLanguage": "es",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Tanaj Español, trans. Rav Yehuda Ribco, 2026 [es]",
+     "language": "en",
+     "actualLanguage": "es",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://serjudio.com"
+    },
+    {
+     "versionTitle": "Die vier und zwanzig Bücher der Heiligen Schrift. Unter der Redaction von Dr. Zunz übersetzt von H. Arnheim, Dr. Julius Fürst, Dr. M. Sachs. Berlin 1838 [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.opendata.uni-halle.de/handle/1981185920/89948?locale=de"
+    }
+   ]
+  },
+  "Psalms": {
+   "category": "Writings",
+   "versions": [
+    {
+     "versionTitle": "THE JPS TANAKH: Gender-Sensitive Edition",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 3.0,
+     "versionSource": "https://jps.org/books/the-jps-tanakh-gender-sensitive-edition/"
+    },
+    {
+     "versionTitle": "Miqra according to the Masorah",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 2.0,
+     "versionSource": "https://he.wikisource.org/wiki/%D7%9E%D7%A9%D7%AA%D7%9E%D7%A9:Dovi/%D7%9E%D7%A7%D7%A8%D7%90_%D7%A2%D7%9C_%D7%A4%D7%99_%D7%94%D7%9E%D7%A1%D7%95%D7%A8%D7%94"
+    },
+    {
+     "versionTitle": "Tanakh: The Holy Scriptures, published by JPS",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 2.0,
+     "versionSource": "https://jps.org/books/tanakh-the-holy-scriptures-blue/"
+    },
+    {
+     "versionTitle": "The Holy Scriptures: A New Translation (JPS 1917)",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 1.0,
+     "versionSource": "http://opensiddur.org/2010/08/%D7%AA%D7%A0%D7%B4%D7%9A-the-holy-scriptures-a-new-translation-jps-1917/"
+    },
+    {
+     "versionTitle": "Tanach with Ta'amei Hamikra",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 1.0,
+     "versionSource": "http://www.tanach.us/Tanach.xml"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Tanach with Text Only",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://www.tanach.us/Tanach.xml"
+    },
+    {
+     "versionTitle": "Tanach with Nikkud",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://www.tanach.us/Tanach.xml"
+    },
+    {
+     "versionTitle": "The Rashi Ketuvim by Rabbi Shraga Silverstein",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.sefaria.org/shraga-silverstein"
+    },
+    {
+     "versionTitle": "Rabbi Mike Feuer, Jerusalem Anthology",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation [fi]",
+     "language": "en",
+     "actualLanguage": "fi",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "The Koren Jerusalem Bible",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.korenpub.com/koren_en_usd/koren/tanakh-bible/the-koren-jerusalem-bible.html"
+    },
+    {
+     "versionTitle": "Bible du Rabbinat 1899 [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://fr.wikisource.org/wiki/Bible_du_Rabbinat_1899"
+    },
+    {
+     "versionTitle": "German translation of Arnold Ehrlich [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.talmud.de/tlmd/tehillim-psalm-1/"
+    },
+    {
+     "versionTitle": "Die Heilige Schrift, trans. Dr. Simon Bernfeld, Berlin, 1902 - German [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.talmud.de/tlmd/tanach/  "
+    },
+    {
+     "versionTitle": "Bible in Polish, trans. Izaak Cylkow, 1841 - 1908 [pl]",
+     "language": "en",
+     "actualLanguage": "pl",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://bibliepolskie.pl/"
+    },
+    {
+     "versionTitle": "Yehoyesh's Yiddish Tanakh Translation [yi]",
+     "language": "he",
+     "actualLanguage": "yi",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://opensiddur.org/praxes/study/yehoyeshs-yiddish-translation-of-the-tanakh/"
+    },
+    {
+     "versionTitle": "La Bible, Traduction Nouvelle, Samuel Cahen, 1831 [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.levangile.com/Bible-CAH-1-1-1-complet-Contexte-oui.htm"
+    },
+    {
+     "versionTitle": "La Malnova Testamento, L.L.Zamenhof [eo]",
+     "language": "en",
+     "actualLanguage": "eo",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://eo.wikisource.org/wiki/Malnova_Testamento_(Zamenhof)/Psalmaro/1"
+    },
+    {
+     "versionTitle": "By benjaminder 2022 [fa]",
+     "language": "en",
+     "actualLanguage": "fa",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Book of tehilim Persian edithon"
+    },
+    {
+     "versionTitle": "Persian translation by Mashallah Rahman Pour Davud and Hakham Musa Zargari, Otzar haTorah, 1985 [fa]",
+     "language": "he",
+     "actualLanguage": "fa",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.iranjewish.com/binesh/Tehilim.htm"
+    },
+    {
+     "versionTitle": "CHOURAQUI [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "CHOURAQUI [fr]"
+    },
+    {
+     "versionTitle": "Tanaj Español, trans. Rav Yehuda Ribco, 2026 [es]",
+     "language": "en",
+     "actualLanguage": "es",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://serjudio.com"
+    },
+    {
+     "versionTitle": "Die vier und zwanzig Bücher der Heiligen Schrift. Unter der Redaction von Dr. Zunz übersetzt von H. Arnheim, Dr. Julius Fürst, Dr. M. Sachs. Berlin 1838 [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.opendata.uni-halle.de/handle/1981185920/89948?locale=de"
+    }
+   ]
+  },
+  "Mishnah Berakhot": {
+   "category": "Mishnah",
+   "versions": [
+    {
+     "versionTitle": "Torat Emet 357",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 3.0,
+     "versionSource": "http://www.toratemetfreeware.com/index.html?downloads"
+    },
+    {
+     "versionTitle": "Mishnah, ed. Romm, Vilna 1913",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 2.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH001741739"
+    },
+    {
+     "versionTitle": "William Davidson Edition - English",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 2.0,
+     "versionSource": "https://korenpub.com/collections/the-noe-edition-koren-talmud-bavli-1"
+    },
+    {
+     "versionTitle": "Le Talmud de Jérusalem, traduit par Moise Schwab, 1878-1890 [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 2.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002182155/NLI"
+    },
+    {
+     "versionTitle": "Mishnah Yomit by Dr. Joshua Kulp",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 1.0,
+     "versionSource": "http://learn.conservativeyeshiva.org/mishnah/"
+    },
+    {
+     "versionTitle": "Mischnajot mit deutscher Übersetzung und Erklärung. Berlin 1887-1933 [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 0.5,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002378149/NLI"
+    },
+    {
+     "versionTitle": "Talmud Bavli. German. Lazarus Goldschmidt. 1929 [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 0.25,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH001042448/NLI"
+    },
+    {
+     "versionTitle": "Open Mishnah",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://en.wikisource.org/wiki/Mishnah"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Eighteen Treatises from the Mishna",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.sacred-texts.com/jud/etm/etm002.htm"
+    },
+    {
+     "versionTitle": "The Mishna with Obadiah Bartenura by Rabbi Shraga Silverstein",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.sefaria.org/shraga-silverstein"
+    },
+    {
+     "versionTitle": "Mishna Berahot, translation J. Wilhelm, 2019 [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Original Translation by J. Wilhelm, 2019"
+    },
+    {
+     "versionTitle": "Mishnah based on the Kaufmann manuscript, edited by Dan Be'eri",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "https://archive.org/details/MishnaCorrectedKaufman00WHOLE"
+    },
+    {
+     "versionTitle": "Publicado em 5784, Saymon Pires da Silva [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Chavruta Chats Traduções"
+    }
+   ]
+  },
+  "Berakhot": {
+   "category": "Talmud",
+   "versions": [
+    {
+     "versionTitle": "William Davidson Edition - Vocalized Aramaic",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 3.0,
+     "versionSource": "http://sefaria.org"
+    },
+    {
+     "versionTitle": "William Davidson Edition - English",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 2.0,
+     "versionSource": "https://korenpub.com/collections/the-noe-edition-koren-talmud-bavli-1"
+    },
+    {
+     "versionTitle": "William Davidson Edition - Aramaic",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 2.0,
+     "versionSource": "https://www.korenpub.com/koren_en_usd/koren/talmud/koren-talmud-bavli-no/mskt-brkvt.html"
+    },
+    {
+     "versionTitle": "Tractate Berakot by A. Cohen, Cambridge University Press, 1921",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 1.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002182132"
+    },
+    {
+     "versionTitle": "Wikisource Talmud Bavli",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://he.wikisource.org/wiki/%D7%AA%D7%9C%D7%9E%D7%95%D7%93_%D7%91%D7%91%D7%9C%D7%99"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Rabbi Dr. David Mevorach Seidenberg, from \"Kabbalah and Ecology\"",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.amazon.com/Kabbalah-Ecology-Image-More-Than-Human-World/dp/1107081335"
+    },
+    {
+     "versionTitle": "Rabbi Mike Feuer, Jerusalem Anthology",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "my version",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org/Berakhot.41a?lang=bi"
+    },
+    {
+     "versionTitle": "Talmud Bavli. German trans. by Lazarus Goldschmidt, 1929 [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH001042448/NLI"
+    },
+    {
+     "versionTitle": "Berakhot:Translation to Russian [ru]",
+     "language": "en",
+     "actualLanguage": "ru",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Original translation"
+    },
+    {
+     "versionTitle": "Publicado em 5784, Saymon Pires da Silva [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Chavruta Chats Traduções"
+    }
+   ]
+  },
+  "Jerusalem Talmud Berakhot": {
+   "category": "Yerushalmi",
+   "versions": [
+    {
+     "versionTitle": "The Jerusalem Talmud, edition by Heinrich W. Guggenheimer. Berlin, De Gruyter, 1999-2015",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 3.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH001901012/NLI"
+    },
+    {
+     "versionTitle": "Mechon-Mamre",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "https://www.mechon-mamre.org/b/r/r0.htm"
+    },
+    {
+     "versionTitle": "Venice Edition",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "https://www.nli.org.il/en/books/NNL_ALEPH001936038/NLI"
+    },
+    {
+     "versionTitle": "The Jerusalem Talmud, translation and commentary by Heinrich W. Guggenheimer. Berlin, De Gruyter, 1999-2015",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH001901012/NLI"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Le Talmud de Jérusalem, traduit par Moise Schwab, 1878-1890 [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002182155/NLI"
+    },
+    {
+     "versionTitle": "Talmud Yerushalmi - Suomeksi [FI] Kalle Kannisto",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.academia.edu/37290360/%D7%AA%D7%9C%D7%9E%D7%95%D7%93_%D7%99%D7%A8%D7%95%D7%A9%D7%9C%D7%9E%D7%99_%D7%91%D7%A8%D7%97%D7%95%D7%AA_Talmud_Yerushalmi_brachoth_1a_4b_7a_Suomenkieli_interlineaari_ja_kommentaari_P%C3%A4ivitetty_ja_lopetettu_24_7_2019_pdf"
+    }
+   ]
+  },
+  "Shulchan Arukh, Orach Chayim": {
+   "category": "Shulchan Aruch",
+   "versions": [
+    {
+     "versionTitle": "Maginei Eretz: Shulchan Aruch Orach Chaim, Lemberg, 1893",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 2.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002084080"
+    },
+    {
+     "versionTitle": "Hilkhot Yom ha-Kippurim, trans. by Jan M. Brahms. HUC, 1976",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 2.0,
+     "versionSource": "http://library.huc.edu/pdf/theses/Brahms_Jan_M-CN-Rab-1976_rdf.pdf"
+    },
+    {
+     "versionTitle": "Torat Emet 363",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 1.0,
+     "versionSource": "http://www.toratemetfreeware.com/index.html?downloads"
+    },
+    {
+     "versionTitle": "Wikisource Shulchan Aruch",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://en.wikisource.org/wiki/Translation:Shulchan_Aruch/Orach_Chaim"
+    },
+    {
+     "versionTitle": "Torat Emet Freeware Shulchan Aruch",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://www.toratemetfreeware.com/"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Wiki Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://en.wikisource.org/wiki/Translation:Shulchan_Aruch/Orach_Chaim/240"
+    },
+    {
+     "versionTitle": "Translated by Jay Dinovitser",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.shulchanarach.com/"
+    },
+    {
+     "versionTitle": "reisner t'shuvah / wired to the kadosh baruch hu",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://rabbinicalassembly.org"
+    },
+    {
+     "versionTitle": "Shulján Aruj, Oraj Jaim, trad. Jordán Raber [es]",
+     "language": "en",
+     "actualLanguage": "es",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Jordán Raber"
+    },
+    {
+     "versionTitle": "Shulján Aruj, Oraj Jaim, trad. David Arias Weil [es]",
+     "language": "en",
+     "actualLanguage": "es",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Own translation"
+    },
+    {
+     "versionTitle": "Natan Waingortin",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Traducción propia"
+    },
+    {
+     "versionTitle": "Mishna Berura Yomi",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https:/https://www.mishnaberurayomi.org"
+    },
+    {
+     "versionTitle": "French Shulchan Arukh [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://sefaria.org"
+    },
+    {
+     "versionTitle": "Mishnah Berurah",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Feldheim Mishnah berurah Hebrew to English"
+    },
+    {
+     "versionTitle": "Shulchan Arukh, Orach Chayim temp",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://torah.org/learning/mishna-berura-s1/"
+    },
+    {
+     "versionTitle": "Translation by Double AA on Mi Yodeya",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://judaism.stackexchange.com/a/35431/759"
+    },
+    {
+     "versionTitle": " French Community Translation [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "sefaria"
+    },
+    {
+     "versionTitle": "Publicado em 5784, Saymon Pires da Silva [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Chavruta Chats Traduções"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "שלחן ערוך מטור ארוח חיים",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "https://www.nli.org.il/en/books/NNL_ALEPH990020846020205171/"
+    }
+   ]
+  },
+  "Mishneh Torah, Prayer and the Priestly Blessing": {
+   "category": "Mishneh Torah",
+   "versions": [
+    {
+     "versionTitle": "Mishneh Torah, trans. by Eliyahu Touger. Jerusalem, Moznaim Pub. c1986-c2007",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 4.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH001020101/NLI"
+    },
+    {
+     "versionTitle": "Torat Emet 370",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 3.0,
+     "versionSource": "http://www.toratemetfreeware.com/index.html?downloads"
+    },
+    {
+     "versionTitle": "Based on trans. by Moses Hyamson, 1937-1949",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 3.0,
+     "versionSource": "http://sefaria.org"
+    },
+    {
+     "versionTitle": "The Mishneh Torah by Maimonides. trans. by Moses Hyamson, 1937-1949",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 2.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002108865"
+    },
+    {
+     "versionTitle": "Maimonides' Mishneh Torah, edited by Philip Birnbaum, New York, 1967",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 1.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002108864"
+    },
+    {
+     "versionTitle": "Wikisource",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://he.wikisource.org/wiki/%D7%A8%D7%9E%D7%91%22%D7%9D_%D7%94%D7%9C%D7%9B%D7%95%D7%AA_%D7%AA%D7%A4%D7%99%D7%9C%D7%94_%D7%95%D7%91%D7%A8%D7%9B%D7%AA_%D7%9B%D7%94%D7%A0%D7%99%D7%9D_%D7%99%D7%93"
+    },
+    {
+     "versionTitle": "just the first two halachot",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://www.mechonhadar.org/c/document_library/get_file?uuid=8e2def5c-17b6-4160-9fe3-874c9c9c3587&groupId=11401"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Mechon Mamre",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://www.mechon-mamre.org/i/2206.htm"
+    },
+    {
+     "versionTitle": "Wikisource Mishneh Torah",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://he.wikisource.org/wiki/%D7%9E%D7%A9%D7%A0%D7%94_%D7%AA%D7%95%D7%A8%D7%94_%D7%9C%D7%A8%D7%9E%D7%91%22%D7%9D"
+    },
+    {
+     "versionTitle": "Jad Haghasakkah, trans. by L. Mandelstamm. St. Petersburg, 1851. Corrected and edited by Igor Itkin - German [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.talmud.de/tlmd/mischne-tora/"
+    },
+    {
+     "versionTitle": "Publicado em 5784, Saymon Pires da Silva [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Mishneh Torah, Prayer and the Priestly Blessing"
+    }
+   ]
+  },
+  "Rashi on Genesis": {
+   "category": "Commentary",
+   "versions": [
+    {
+     "versionTitle": "Sefaria Edition",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 7.0,
+     "versionSource": "http://www.sefaria.org/sefaria-edition"
+    },
+    {
+     "versionTitle": "Pentateuch with Rashi's commentary by M. Rosenbaum and A.M. Silbermann, 1929-1934",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 5.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH001969084"
+    },
+    {
+     "versionTitle": "Pentateuch with Rashi's commentary by M. Rosenbaum and A.M. Silbermann, 1929-1934",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 4.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH001969084"
+    },
+    {
+     "versionTitle": "Rashi Chumash, Metsudah Publications, 2009",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 3.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002691623"
+    },
+    {
+     "versionTitle": "Rashi Chumash, Metsudah Publications, 2009",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 1.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002691623"
+    },
+    {
+     "versionTitle": "On Your Way",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 0.5,
+     "versionSource": "http://mobile.tora.ws/"
+    },
+    {
+     "versionTitle": "Wikisource Mikraot Gedolot",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://en.wikisource.org/wiki/Mikraot_Gedolot"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Rashi on Genesis: Suomi by Ezra Lindholm [fi]",
+     "language": "en",
+     "actualLanguage": "fi",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.sefaria.org/Rashi_on_Genesis.7.1.1/en/Sefaria_Community_Translation?lang=en&layout=lines&sidebarLang=all"
+    },
+    {
+     "versionTitle": "Portuguese Version [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.sefaria.org/Rashi_on_Genesis.1.1.1?lang=en"
+    },
+    {
+     "versionTitle": "Rabbi Mike Feuer, Jerusalem Anthology",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Corrected Rashi (English) ",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH001969084"
+    },
+    {
+     "versionTitle": "Raschis Pentateuchkommentar, trans. Rabb. Dr. Selig Bamberger, Hamburg, 1922. Edited by Igor Itkin [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://sammlungen.ub.uni-frankfurt.de/freimann/content/titleinfo/7716358"
+    },
+    {
+     "versionTitle": "test",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": null
+    },
+    {
+     "versionTitle": "Publicado em 5784, Saymon Pires da Silva [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Chavruta Chats Traduções"
+    }
+   ]
+  },
+  "Ramban on Genesis": {
+   "category": "Commentary",
+   "versions": [
+    {
+     "versionTitle": "Vocalized Edition",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 4.0,
+     "versionSource": "https://www.sefaria.org/texts"
+    },
+    {
+     "versionTitle": "Commentary on the Torah by Ramban (Nachmanides). Translated and annotated by Charles B. Chavel. New York, Shilo Pub. House, 1971-1976",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 3.0,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002108945/NLI"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "VBM Torah",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://vbm-torah.org/archive/intparsha72/08-72vayishlach.htm"
+    },
+    {
+     "versionTitle": "Rabbi Mike Feuer, Jerusalem Anthology",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Chavel's Translation ",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Ramban Commentary on the Torah "
+    },
+    {
+     "versionTitle": "Nehama Leibowitz",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "New Studies in Bereshit"
+    },
+    {
+     "versionTitle": "Yalkut, Sifsei Chachomim Chumash, Metsudah Publications, 2009",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002691623"
+    },
+    {
+     "versionTitle": "Ramban (Nachmanides): Commentary on the Torah: Genesis by Rabbi Dr. Charles Chavel ",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Ramban (Nachmanides): Commentary on the Torah: Genesis by Rabbi Dr. Charles Chavel "
+    },
+    {
+     "versionTitle": "On Your Way",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://mobile.tora.ws/"
+    },
+    {
+     "versionTitle": "Publicado em 5784, Saymon Pires da Silva [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Chavruta Chats Traduções"
+    }
+   ]
+  },
+  "Siddur Edot HaMizrach": {
+   "category": "Siddur",
+   "versions": [
+    {
+     "versionTitle": " Shaliehsaboo Edition",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 2.0,
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Torat Emet 357",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://www.toratemetfreeware.com/index.html?downloads"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": " Shaliehsaboo Edition",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Wikipedia, by Musashiaharon",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://en.wikipedia.org/wiki/Patach_Eliyahu"
+    },
+    {
+     "versionTitle": "Shaliehsaboo Edition",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Tanakh: The Holy Scriptures, published by JPS",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org/Psalms.100.1-5?ven=Tanakh:_The_Holy_Scriptures,_published_by_JPS&lang=en"
+    },
+    {
+     "versionTitle": "Psalms 100 Tanakh: The Holy Scriptures, published by JPS",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org/Psalms.100.1-5?ven=Tanakh:_The_Holy_Scriptures,_published_by_JPS&lang=en"
+    },
+    {
+     "versionTitle": "Siddur Edot HaMizrach temp",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Koren Jerusalem Bible",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://sefaria.org"
+    },
+    {
+     "versionTitle": "Publicado em 5784, Saymon Pires da Silva [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Siddur Edot HaMizrach, Bedtime Shema"
+    }
+   ]
+  },
+  "Kitzur Shulchan Arukh": {
+   "category": "Halakha",
+   "versions": [
+    {
+     "versionTitle": "Kitzur Shulchan Aruch, trans. Rabbi Avrohom Davis, Metsudah Pub., 1996",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 4.0,
+     "versionSource": "https://www.judaicaplace.com/search/brand/Metsudah-Publications/"
+    },
+    {
+     "versionTitle": "Torat Emet 357",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 3.0,
+     "versionSource": "http://www.toratemetfreeware.com/index.html?downloads"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Kitzur.net",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://www.kitzur.net/"
+    },
+    {
+     "versionTitle": "Wikisource Kitzur Shulchan Aruch - Menukad",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://he.wikisource.org/wiki/%D7%A7%D7%99%D7%A6%D7%95%D7%A8_%D7%A9%D7%95%D7%9C%D7%97%D7%9F_%D7%A2%D7%A8%D7%95%D7%9A_%D7%9E%D7%A0%D7%95%D7%A7%D7%93_-_%D7%A0%D7%91"
+    },
+    {
+     "versionTitle": "Yona Newman Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://yonanewman.org/kizzur/kizzur1.html#1"
+    },
+    {
+     "versionTitle": "On Your Way",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://tora.ws"
+    },
+    {
+     "versionTitle": "YU Torah miTzion Beit Midrash",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.torontotorah.com"
+    },
+    {
+     "versionTitle": "German Translation of Rabbi Selig Pinchas Bamberger [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.talmud.de/tlmd/der-kitzur-schulchan-aruch/"
+    },
+    {
+     "versionTitle": "Kitzur Shulchan Aruch, translated by Eli Rubin. ",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.chabad.org/library/article_cdo/aid/4297877/jewish/Chapter-32-Rules-for-Guarding-Ones-Health.htm"
+    },
+    {
+     "versionTitle": "Russian [ru]",
+     "language": "en",
+     "actualLanguage": "ru",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "chatGPT 4o translation"
+    }
+   ]
+  },
+  "Mishnah Berurah": {
+   "category": "Halakha",
+   "versions": [
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Wikitext",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://he.wikisource.org/wiki/%D7%9E%D7%A9%D7%A0%D7%94_%D7%91%D7%A8%D7%95%D7%A8%D7%94_%D7%A2%D7%9C_%D7%90%D7%95%D7%A8%D7%97_%D7%97%D7%99%D7%99%D7%9D_%D7%97"
+    },
+    {
+     "versionTitle": "eu5 text",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://mishnaberura.eu5.org/"
+    },
+    {
+     "versionTitle": "On Your Way",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://mobile.tora.ws/"
+    },
+    {
+     "versionTitle": "English",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://translate.google.com"
+    },
+    {
+     "versionTitle": "Mishnah Berurah temp",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://torah.org/learning/mishna-berura-s45/"
+    },
+    {
+     "versionTitle": "Mishnah Berurah 625:1 English",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org/sheets/131394.13?lang=bi"
+    },
+    {
+     "versionTitle": "Natan Waingortin",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Traducción propia"
+    },
+    {
+     "versionTitle": "Feldheim edition ",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Mishnah berurah Hebrew- English edition volume 1 morning conduct"
+    },
+    {
+     "versionTitle": "Mishnah Berura Amud Yomi",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://mishnaberurayomi.org/pdf_digest"
+    },
+    {
+     "versionTitle": "Mishnah Berura Amud Yomi",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "https://mishnaberurayomi.org/pdf_digest"
+    },
+    {
+     "versionTitle": "[fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "fr"
+    }
+   ]
+  },
+  "Pirkei Avot": {
+   "category": "Mishnah",
+   "versions": [
+    {
+     "versionTitle": "Torat Emet 357",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 6.0,
+     "versionSource": "http://www.toratemetfreeware.com/index.html?downloads"
+    },
+    {
+     "versionTitle": "Mishnah Yomit by Dr. Joshua Kulp",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 1.0,
+     "versionSource": "http://learn.conservativeyeshiva.org/mishnah/"
+    },
+    {
+     "versionTitle": "Mischnajot mit deutscher Übersetzung und Erklärung. Berlin 1887-1933 [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 0.5,
+     "versionSource": "https://www.talmud.de/tlmd/die-deutsche-mischna-uebersetzung"
+    },
+    {
+     "versionTitle": "Talmud Bavli. German. Lazarus Goldschmidt. 1929 [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 0.25,
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH001042448/NLI"
+    },
+    {
+     "versionTitle": "Open Mishnah",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://en.wikisource.org/wiki/Mishnah"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "The Saying of the Jewish Fathers: Gorfinkle 1913",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH002129175"
+    },
+    {
+     "versionTitle": "The Mishna with Obadiah Bartenura by Rabbi Shraga Silverstein",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.sefaria.org/shraga-silverstein"
+    },
+    {
+     "versionTitle": "Mishnah, ed. Romm, Vilna 1913",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "https://www.nli.org.il/he/books/NNL_ALEPH001741739"
+    },
+    {
+     "versionTitle": "Ritual de oraciones para todo el ano. Traducción, adaptación y notas de Marcos Edery, 1965 [es]",
+     "language": "en",
+     "actualLanguage": "es",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.nli.org.il/en/books/NNL_ALEPH002330698/NLI"
+    },
+    {
+     "versionTitle": "Sayings of the Jewish Fathers (Pirqe Aboth) translated by Charles Taylor [1897]",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sacred-texts.com/jud/sjf/sjf03.htm"
+    },
+    {
+     "versionTitle": "Maximes des Pères, trans. by Rabbi Rivon Krygier, 2023 [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "sefaria.org"
+    },
+    {
+     "versionTitle": "Ética dos Pais, Tradução por Bruno Manuel dos Anjos Marques Albano, 2023 [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org/texts"
+    },
+    {
+     "versionTitle": "Mishnah based on the Kaufmann manuscript, edited by Dan Be'eri",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "https://archive.org/details/MishnaCorrectedKaufman00WHOLE"
+    },
+    {
+     "versionTitle": "Shona version (Zimbabwe)",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org/Pirkei_Avot.5.22-23?lang=bi"
+    },
+    {
+     "versionTitle": "Italian",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org/Pirkei_Avot.5.22-23?lang=bi"
+    },
+    {
+     "versionTitle": "Publicado em 5784, Saymon Pires da Silva [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Chavruta Chats Traduções"
+    },
+    {
+     "versionTitle": "Pirkei Abot (Sayings of the Fathers) — Yiddish Translation by Yehoash (1921) [yi]",
+     "language": "he",
+     "actualLanguage": "yi",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://archive.org/details/nybc211611"
+    },
+    {
+     "versionTitle": "Nahj Al-Salaf - The Beit Dakira Translation [ar]",
+     "language": "he",
+     "actualLanguage": "ar",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Personal work"
+    }
+   ]
+  },
+  "Esther": {
+   "category": "Writings",
+   "versions": [
+    {
+     "versionTitle": "THE JPS TANAKH: Gender-Sensitive Edition",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 3.0,
+     "versionSource": "https://jps.org/books/the-jps-tanakh-gender-sensitive-edition/"
+    },
+    {
+     "versionTitle": "Miqra according to the Masorah",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 2.0,
+     "versionSource": "https://he.wikisource.org/wiki/%D7%9E%D7%A9%D7%AA%D7%9E%D7%A9:Dovi/%D7%9E%D7%A7%D7%A8%D7%90_%D7%A2%D7%9C_%D7%A4%D7%99_%D7%94%D7%9E%D7%A1%D7%95%D7%A8%D7%94"
+    },
+    {
+     "versionTitle": "Tanakh: The Holy Scriptures, published by JPS",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 2.0,
+     "versionSource": "https://jps.org/books/tanakh-the-holy-scriptures-blue/"
+    },
+    {
+     "versionTitle": "The Holy Scriptures: A New Translation (JPS 1917)",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": 1.0,
+     "versionSource": "http://opensiddur.org/2010/08/%D7%AA%D7%A0%D7%B4%D7%9A-the-holy-scriptures-a-new-translation-jps-1917/"
+    },
+    {
+     "versionTitle": "Tanach with Ta'amei Hamikra",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": 1.0,
+     "versionSource": "http://www.tanach.us/Tanach.xml"
+    },
+    {
+     "versionTitle": "Tanach with Text Only",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://www.tanach.us/Tanach.xml"
+    },
+    {
+     "versionTitle": "Tanach with Nikkud",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "http://www.tanach.us/Tanach.xml"
+    },
+    {
+     "versionTitle": "Sefaria Community Translation",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "The Rashi Ketuvim by Rabbi Shraga Silverstein",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.sefaria.org/shraga-silverstein"
+    },
+    {
+     "versionTitle": "The Koren Jerusalem Bible",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.korenpub.com/koren_en_usd/koren/tanakh-bible/the-koren-jerusalem-bible.html"
+    },
+    {
+     "versionTitle": "The Metsudah Five Megillot, Lakewood, N.J., 2001",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.judaicaplace.com/search/brand/Metsudah-Publications/"
+    },
+    {
+     "versionTitle": "Bible du Rabbinat 1899 [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://fr.wikisource.org/wiki/Bible_du_Rabbinat_1899"
+    },
+    {
+     "versionTitle": "Emoji Megillah",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": true,
+     "isPrimary": true,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Emoji Megillah",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.sefaria.org"
+    },
+    {
+     "versionTitle": "Bible in Polish, trans. Izaak Cylkow, 1841 - 1908 [pl]",
+     "language": "en",
+     "actualLanguage": "pl",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://bibliepolskie.pl/"
+    },
+    {
+     "versionTitle": "Ester. Traduzione italiana di Samuel David Luzzatto, 1872 [it]",
+     "language": "en",
+     "actualLanguage": "it",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.archivio-torah.it"
+    },
+    {
+     "versionTitle": "Book of Esther in Farsi, trans. by Pole-Choubi, synagogue Talmood Torah [fa]",
+     "language": "he",
+     "actualLanguage": "fa",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.iranjewish.com/megilla/megilla_main.htm"
+    },
+    {
+     "versionTitle": "Book of Esther in Farsi, trans. by Pole-Choubi, synagogue Talmood Torah, LTR [fa]",
+     "language": "en",
+     "actualLanguage": "fa",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://www.iranjewish.com/megilla/megilla_main.htm"
+    },
+    {
+     "versionTitle": "Yehoyesh's Yiddish Tanakh Translation [yi]",
+     "language": "he",
+     "actualLanguage": "yi",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "http://opensiddur.org/praxes/study/yehoyeshs-yiddish-translation-of-the-tanakh/"
+    },
+    {
+     "versionTitle": "El libro de Ester - Meguila Ester - Seminario Rabínico [es]",
+     "language": "en",
+     "actualLanguage": "es",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.seminariorabinico.org/wp-content/uploads/El-libro-de-Ester-Meguila-Ester.pdf"
+    },
+    {
+     "versionTitle": "La Bible, Traduction Nouvelle, Samuel Cahen, 1831 [fr]",
+     "language": "en",
+     "actualLanguage": "fr",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.levangile.com/Bible-CAH-1-1-1-complet-Contexte-oui.htm"
+    },
+    {
+     "versionTitle": "La Malnova Testamento, L.L.Zamenhof [eo]",
+     "language": "en",
+     "actualLanguage": "eo",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://eo.wikisource.org/wiki/Malnova_Testamento_(Zamenhof)/Ester/1"
+    },
+    {
+     "versionTitle": "Die Heilige Schrift, trans. Dr. Simon Bernfeld, Berlin, 1902 - German [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.talmud.de/tlmd/tanach/"
+    },
+    {
+     "versionTitle": "Miqra Mevoar, trans. and edited by David Kokhav, Jerusalem 2020",
+     "language": "he",
+     "actualLanguage": "he",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://he.wikisource.org/wiki/%D7%9E%D7%A7%D7%A8%D7%90_%D7%9E%D7%91%D7%95%D7%90%D7%A8"
+    },
+    {
+     "versionTitle": "Russian Torah translation, by Dmitri Slivniak, Ph.D., edited by Dr. Itzhak Streshinsky. Da Project, 2011 [ru]",
+     "language": "en",
+     "actualLanguage": "ru",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://dadada.live/books"
+    },
+    {
+     "versionTitle": "Publicado em 5784, Saymon Pires da Silva [pt]",
+     "language": "en",
+     "actualLanguage": "pt",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "Chavruta Chats Traduções"
+    },
+    {
+     "versionTitle": "Esther; Based on Malbim. Trans. Moshe Atlas, 2026",
+     "language": "en",
+     "actualLanguage": "en",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "sefaria.org"
+    },
+    {
+     "versionTitle": "Tanaj Español, trans. Rav Yehuda Ribco, 2026 [es]",
+     "language": "en",
+     "actualLanguage": "es",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://serjudio.com"
+    },
+    {
+     "versionTitle": "Die vier und zwanzig Bücher der Heiligen Schrift. Unter der Redaction von Dr. Zunz übersetzt von H. Arnheim, Dr. Julius Fürst, Dr. M. Sachs. Berlin 1838 [de]",
+     "language": "en",
+     "actualLanguage": "de",
+     "isSource": false,
+     "isPrimary": false,
+     "priority": "",
+     "versionSource": "https://www.opendata.uni-halle.de/handle/1981185920/89948?locale=de"
+    }
+   ]
+  }
+ }
+}

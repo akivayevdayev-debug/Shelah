@@ -181,12 +181,14 @@ test('when our server fails, Sefaria is asked directly and its answer is reshape
         assert.equal(payload.ref, 'Genesis 1');
         assert.equal(payload.title, 'Genesis 1', 'no title in the reply: the book part of the reference');
         assert.equal(payload.heTitle, 'בראשית');
+        // Sefaria's own default English hasn't passed the server's version
+        // check (backend/text_trust.py), so the direct answer is Hebrew only.
         assert.deepEqual(payload.lines.map((line) => [line.segment, line.he, line.en]), [
-            ['1.1', 'א', 'one'],
-            ['1.2', 'ב', 'two'],
-            ['2.1', 'ג', 'three'],
+            ['1.1', 'א', ''],
+            ['1.2', 'ב', ''],
+            ['2.1', 'ג', ''],
         ]);
-        assert.deepEqual(payload.en, ['one', 'two', 'three']);
+        assert.deepEqual(payload.en, []);
         assert.deepEqual(payload.he, ['א', 'ב', 'ג']);
         assert.equal(payload.next, 'Genesis 2');
         assert.equal(payload.prev, null);
@@ -813,6 +815,25 @@ test('starting a text seeds the scroll state from it, dropping a previous chapte
 
         page.eval(`resetInfiniteReaderState(null)`);
         assert.deepEqual(stateOf(page).seen, []);
+    } finally {
+        page.close();
+    }
+});
+
+test('a work the server does not carry is never fetched from Sefaria directly', async () => {
+    const page = await openPage({
+        fetch: {
+            '/api/text/': { error: 'Text not available: Rereading the Rabbis 1', error_type: 'not_available', he: [], en: [] },
+            'https://www.sefaria.org/api/texts/': { ref: 'Rereading the Rabbis 1', he: ['x'], text: ['y'] },
+        },
+    });
+    try {
+        page.takeCalls();
+        const { payload } = plain(await call(page, 'fetchTextPayloadWithFallback', 'Rereading the Rabbis 1'));
+        assert.equal(payload.error_type, 'not_available');
+        const urls = fetched(page);
+        assert.equal(urls.filter((url) => url.startsWith('https://www.sefaria.org')).length, 0);
+        assert.equal(urls.filter((url) => url.startsWith('/api/text/')).length, 1, 'no other spellings tried');
     } finally {
         page.close();
     }

@@ -28,6 +28,7 @@ from urllib.parse import quote, urlencode, unquote
 import os as _os
 
 from backend.cache import TTLCache, redis_cache_get, redis_cache_set
+from backend import text_trust
 from backend.ref_aliases import canonical_mishneh_torah_ref
 
 logger = logging.getLogger(__name__)
@@ -382,6 +383,8 @@ def _prune_and_fix_library_index(node, remove_keys, fix_map):
     title_key = _normalize_title_key(title)
     if title_key and title_key in remove_keys:
         return None
+    if text_trust.is_work_denied(title):
+        return None
 
     _apply_library_index_fix(clone, title_key, fix_map)
     _prune_library_index_children(clone, remove_keys, fix_map)
@@ -543,6 +546,73 @@ def _build_v3_text_url(ref):
     return f"{SEFARIA_V3_API}/texts/{encoded_ref}?version=source&version=translation"
 
 
+def _build_v3_named_url(ref, chosen):
+    """The v3 URL for the exact versions text_trust chose
+    (`version=hebrew|<title>&version=english|<title>`); "" when it chose none."""
+    params = [
+        ("version", f"{'hebrew' if lang == 'he' else 'english'}|{version.get('versionTitle')}")
+        for lang, version in (chosen or {}).items() if version
+    ]
+    if not params:
+        return ""
+    return f"{SEFARIA_V3_API}/texts/{_encode_ref_path(ref)}?{urlencode(params, quote_via=quote)}"
+
+
+# A ref's last token when it only addresses a place in the book ("1:1",
+# "2a", "3:4-5:2"), so "Genesis 1:1" and "Genesis 2" share a book key.
+_SECTION_TOKEN_RE = re.compile(r"\d+[ab]?(?:[:.]\d+[ab]?)*(?:-[\d:.ab]+)?")
+
+# Each book's Sefaria version list, by book key, so a second chapter can ask
+# for the chosen versions straight away instead of the defaults first.
+_book_versions_cache = TTLCache(maxsize=4096, ttl=86400)
+
+
+def _book_key(ref):
+    raw = str(ref or "").strip()
+    parts = raw.rsplit(None, 1)
+    if len(parts) == 2 and _SECTION_TOKEN_RE.fullmatch(parts[1]):
+        raw = parts[0]
+    return " ".join(raw.split()).casefold()
+
+
+def _version_key(version, lang=None):
+    title = " ".join(str((version or {}).get("versionTitle") or "").split()).casefold()
+    return title, lang or ("he" if (version or {}).get("language") == "he" else "en")
+
+
+def _has_chosen_versions(raw, chosen):
+    """True when the v3 response `raw` carries every version in `chosen`."""
+    present = {_version_key(v) for v in (raw.get("versions") or []) if isinstance(v, dict)}
+    return all(_version_key(v, lang) in present for lang, v in chosen.items() if v)
+
+
+def _chosen_versions(available, community, requested):
+    return text_trust.choose_versions(
+        available, community or text_trust.current_community(), requested)
+
+
+def _trusted_v3_versions(versions, chosen):
+    """Only the chosen versions of a v3 `versions` list, Hebrew first."""
+    wanted = {_version_key(v, lang) for lang, v in chosen.items() if v}
+    kept = [v for v in versions or [] if isinstance(v, dict) and _version_key(v) in wanted]
+    return sorted(kept, key=lambda v: _version_key(v)[1] != "he")
+
+
+def _version_summary(version):
+    if not version:
+        return None
+    return {"title": str(version.get("versionTitle") or "").strip(),
+            "label": text_trust.assess_version(version)["label"]}
+
+
+def _versions_payload(available, chosen, community):
+    return {
+        "he": _version_summary(chosen.get("he")),
+        "en": _version_summary(chosen.get("en")),
+        "available": text_trust.picker_versions(available, community or text_trust.current_community()),
+    }
+
+
 def _is_v3_hebrew_source_version(version):
     """True if this v3 version entry is Hebrew/source text (isSource=True,
     or direction="rtl", or language="he"). Split out of
@@ -656,13 +726,21 @@ def _build_v3_result_dict(data, requested_ref, lines):
     }
 
 
-def _parse_v3_response(data, requested_ref):
-    """Convert a Sefaria v3 /api/v3/texts/{ref} response to our standard get_text() output format."""
+def _parse_v3_response(data, requested_ref, chosen=None, community=None):
+    """Convert a Sefaria v3 /api/v3/texts/{ref} response to our standard
+    get_text() output format, keeping only the versions text_trust allows
+    (`chosen`, else its default for `community`)."""
     if not isinstance(data, dict):
         return None
     if data.get("error"):
         return None
     versions = data.get("versions") or []
+    if not versions:
+        return None
+    available = data.get("available_versions") or versions
+    if chosen is None:
+        chosen = _chosen_versions(available, community, None)
+    versions = _trusted_v3_versions(versions, chosen)
     if not versions:
         return None
 
@@ -671,7 +749,10 @@ def _parse_v3_response(data, requested_ref):
     if not lines:
         return None
 
-    return _build_v3_result_dict(data, requested_ref, lines)
+    result = _build_v3_result_dict(data, requested_ref, lines)
+    result["indexTitle"] = str(data.get("indexTitle") or "")
+    result["versions"] = _versions_payload(available, chosen, community)
+    return result
 
 
 def _is_specific_ref_query(value):
@@ -936,7 +1017,7 @@ def _append_index_title_row(node, rows, seen_titles):
     """Split out of _flatten_index_titles (SonarCloud python:S3776)."""
     title = str(node.get("title") or "").strip()
     categories = node.get("categories", []) or []
-    if not title or not isinstance(categories, list):
+    if not title or not isinstance(categories, list) or text_trust.is_work_denied(title):
         return
     key = title.lower()
     if key in seen_titles:
@@ -1276,7 +1357,8 @@ def get_category_contents(category_path):
     """
     data = _fetch_category_contents_via_index_api(category_path)
     if data is not None:
-        return data
+        # Sefaria's raw listing: drop the works text_trust hides.
+        return _prune_and_fix_library_index(data, set(), {})
 
     # Fallback for category paths that Sefaria's /index/{path} does not resolve.
     parts = [p.strip() for p in (category_path or "").split("/") if p.strip()]
@@ -1345,6 +1427,30 @@ def _try_candidate_text_refs(requested_ref, attempts_tried, lang, context):
     return None, ""
 
 
+def _build_denied_text_response(requested_ref):
+    """A work text_trust hides (Reform / non-Orthodox / untrusted): reported
+    like a missing text, so no caller shows or quotes it."""
+    return {"error": f"Text not available: {requested_ref}", "error_type": "not_available",
+            "ref": requested_ref, "he": [], "en": []}
+
+
+def _filter_v2_versions(data, community):
+    """The v2 fallback's text with any version text_trust doesn't show
+    blanked out. v2 sends one Hebrew (the work's own text) and one English."""
+    he_version = {"versionTitle": data.get("heVersionTitle"), "language": "he",
+                  "versionSource": data.get("heVersionSource"), "isSource": True}
+    en_version = {"versionTitle": data.get("versionTitle"), "language": "en",
+                  "versionSource": data.get("versionSource")}
+    chosen = _chosen_versions([he_version, en_version], community, None)
+    filtered = dict(data)
+    if chosen.get("he") is None:
+        filtered["he"] = []
+    if chosen.get("en") is None:
+        filtered["text"] = []
+    filtered["_versions"] = _versions_payload([he_version, en_version], chosen, community)
+    return filtered
+
+
 def _build_text_not_found_response(requested_ref):
     """The "no data found" error-response branch of get_text(). Split out
     (SonarCloud python:S3776) -- see _flatten_text_with_path.
@@ -1392,15 +1498,52 @@ def _build_text_lines(data):
     return lines, he_flat, en_flat
 
 
-def _try_v3_text(requested_ref, cache_key):
+def _fetch_named_v3(requested_ref, chosen):
+    url = _build_v3_named_url(requested_ref, chosen)
+    raw = _cached_get(url, ttl=86400) if url else None
+    if isinstance(raw, dict) and not raw.get("error") and _has_chosen_versions(raw, chosen):
+        return raw
+    return None
+
+
+def _remember_book_versions(requested_ref, raw):
+    available = raw.get("available_versions") or []
+    if available:
+        _book_versions_cache.set(_book_key(requested_ref), available)
+    return available
+
+
+def _fetch_v3_with_versions(requested_ref, community, requested):
+    """The v3 response holding the versions text_trust picks for this
+    reader, plus that pick. A book seen before costs one request (its
+    version list is remembered); a new one asks for Sefaria's defaults
+    first and only asks again when the pick differs from them."""
+    available = _book_versions_cache.get(_book_key(requested_ref))
+    if available:
+        chosen = _chosen_versions(available, community, requested)
+        raw = _fetch_named_v3(requested_ref, chosen)
+        if raw is not None:
+            return raw, chosen
+    default_raw = _cached_get(_build_v3_text_url(requested_ref), ttl=86400)
+    if not default_raw or default_raw.get("error"):
+        return None, {}
+    available = _remember_book_versions(requested_ref, default_raw)
+    chosen = _chosen_versions(available or default_raw.get("versions") or [], community, requested)
+    if _has_chosen_versions(default_raw, chosen):
+        return default_raw, chosen
+    return _fetch_named_v3(requested_ref, chosen) or default_raw, chosen
+
+
+def _try_v3_text(requested_ref, cache_key, community=None, requested=None):
     """Attempt the v3 Sefaria API (may avoid Cloudflare block); on success,
     cache the resolved ref and return the parsed result, else None. Split
     out of get_text (SonarCloud python:S3776)."""
-    v3_url = _build_v3_text_url(requested_ref)
-    v3_raw = _cached_get(v3_url, ttl=86400)
-    if not v3_raw or v3_raw.get("error"):
+    v3_raw, chosen = _fetch_v3_with_versions(requested_ref, community, requested)
+    if not v3_raw:
         return None
-    parsed_v3 = _parse_v3_response(v3_raw, requested_ref)
+    if text_trust.is_work_denied(v3_raw.get("indexTitle")):
+        return _build_denied_text_response(requested_ref)
+    parsed_v3 = _parse_v3_response(v3_raw, requested_ref, chosen, community)
     if not parsed_v3:
         return None
     _resolved_query_ref_cache.set(
@@ -1457,7 +1600,7 @@ def is_known_missing_text(ref):
     return bool(key) and _missing_text_refs.get(key) is not None
 
 
-def get_text(ref, lang="both", context=0):
+def get_text(ref, lang="both", context=0, *, community=None, versions=None):
     """
     Fetches a specific text passage from Sefaria.
     Returns:
@@ -1471,17 +1614,26 @@ def get_text(ref, lang="both", context=0):
         "sections": list,
         "next": str or None,
         "prev": str or None,
-        "commentary": list (optional)
+        "commentary": list (optional),
+        "indexTitle": str,
+        "versions": {"he": {title, label} | None, "en": ..., "available": [...]}
       }
+
+    Only versions backend/text_trust.py allows are returned: `community`
+    (a minhag; default from text_trust.current_community()) picks the
+    default, `versions` ({"he": title, "en": title}) is the reader's own
+    pick from the version picker. A denied work comes back as an error.
     """
     requested_ref = _normalize_requested_ref(ref)
     if not requested_ref:
         return {"error": "Text not found", "ref": "", "he": [], "en": []}
+    if text_trust.is_work_denied(requested_ref):
+        return _build_denied_text_response(requested_ref)
 
     cache_key = requested_ref.lower()
     failures_before = _fetch_failure_count()
 
-    parsed_v3 = _try_v3_text(requested_ref, cache_key)
+    parsed_v3 = _try_v3_text(requested_ref, cache_key, community, versions)
     if parsed_v3:
         return parsed_v3
 
@@ -1494,8 +1646,11 @@ def get_text(ref, lang="both", context=0):
             _remember_missing_text(requested_ref, cache_key)
         return _build_text_not_found_response(requested_ref)
 
+    if text_trust.is_work_denied(data.get("indexTitle") or data.get("book")):
+        return _build_denied_text_response(requested_ref)
     _cache_resolved_text_ref(cache_key, resolved_ref, data, requested_ref)
 
+    data = _filter_v2_versions(data, community)
     lines, he_flat, en_flat = _build_text_lines(data)
 
     resolved_output_ref = _resolve_output_ref(data, resolved_ref, requested_ref)
@@ -1515,7 +1670,9 @@ def get_text(ref, lang="both", context=0):
         "prev": data.get("prev"),
         "categories": data.get("categories", []),
         "authors": data.get("authors", []),
-        "era": data.get("era", "")
+        "era": data.get("era", ""),
+        "indexTitle": str(data.get("indexTitle") or data.get("book") or ""),
+        "versions": data["_versions"],
     }
 
 
@@ -1604,6 +1761,8 @@ def _is_search_result_removed(ref_value, candidate_titles, remove_keys):
     for candidate in candidate_titles + [ref_value]:
         key = _normalize_title_key(candidate)
         if key and key in remove_keys:
+            return True
+        if text_trust.is_work_denied(candidate):
             return True
     return False
 
@@ -1815,11 +1974,24 @@ def search_library(query, size=10, filters=None, metadata_filters=None):
     return results[:size]
 
 
+def _is_denied_link(link):
+    """A /related link into a work text_trust hides (checked by its index
+    title, its collective title and its ref)."""
+    if not isinstance(link, dict):
+        return True
+    collective = link.get("collectiveTitle")
+    collective_en = collective.get("en") if isinstance(collective, dict) else ""
+    return any(text_trust.is_work_denied(value) for value in (
+        link.get("index_title"), collective_en, link.get("ref")))
+
+
 def _group_links_by_category(links):
     """Group Sefaria /related links by category (falling back to type).
     Split out of get_linked_texts (SonarCloud python:S3776)."""
     grouped = {}
     for link in links:
+        if _is_denied_link(link):
+            continue
         link_type = link.get("type", "Other")
         category = link.get("category", link_type)
         # /related names the Hebrew ref "sourceHeRef"; collectiveTitle is the
@@ -1910,6 +2082,8 @@ def get_linked_texts(ref):
     Fetches all texts linked to a given ref (commentaries, parallel texts, etc.)
     Returns grouped links by type.
     """
+    if text_trust.is_work_denied(ref):
+        return {}
     safe_ref = _encode_ref_path(ref)
     data = _cached_get(f"{SEFARIA_API}/related/{safe_ref}", ttl=3600)
     if not data:
@@ -2001,9 +2175,14 @@ def _is_same_work_title(a, b):
 
 
 def get_index_entry(title):
-    """Fetch a text's index record by title."""
+    """Fetch a text's index record by title ({} for a work text_trust hides)."""
+    if text_trust.is_work_denied(title):
+        return {}
     safe_title = _encode_ref_path(title)
-    return _cached_get(f"{SEFARIA_API}/index/{safe_title}", ttl=86400) or {}
+    entry = _cached_get(f"{SEFARIA_API}/index/{safe_title}", ttl=86400) or {}
+    if isinstance(entry, dict) and text_trust.is_work_denied(entry.get("title")):
+        return {}
+    return entry
 
 
 _CURLY_QUOTE_REPLACEMENTS = {
@@ -2233,7 +2412,11 @@ def leaf_refs_from_schema(schema, title, max_refs=120):
 
 def get_index_leaf_refs(title, max_refs=120):
     """Build leaf refs from a text schema (e.g., full Siddur structure)."""
+    if text_trust.is_work_denied(title):
+        return []
     schema, title = _resolve_index_schema_with_fallbacks(title)
+    if text_trust.is_work_denied(title):
+        return []
 
     if not schema:
         return []

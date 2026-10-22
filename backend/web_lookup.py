@@ -36,6 +36,8 @@ import os
 import re
 from typing import Any, Dict, List, Optional
 
+from backend import text_trust
+
 logger = logging.getLogger(__name__)
 
 MAX_QUERY_CHARS = 160
@@ -168,6 +170,20 @@ def _pages(response: Any) -> List[Dict[str, str]]:
     return pages
 
 
+def _cites_denied_source(response: Any) -> bool:
+    """True when any grounding page is a publisher backend/text_trust.py
+    denies (Reform, Conservative, ...). Gemini's `uri` is a redirect, so the
+    page's `domain` and `title` are what name the real site."""
+    for candidate in getattr(response, "candidates", None) or []:
+        metadata = getattr(candidate, "grounding_metadata", None)
+        for chunk in getattr(metadata, "grounding_chunks", None) or []:
+            web = getattr(chunk, "web", None)
+            if text_trust.is_source_denied(getattr(web, "domain", ""), getattr(web, "title", ""),
+                                           getattr(web, "uri", "")):
+                return True
+    return False
+
+
 def _search_queries(response: Any) -> List[str]:
     queries: List[str] = []
     for candidate in getattr(response, "candidates", None) or []:
@@ -188,6 +204,10 @@ def _result_from(query: str, response: Any) -> Optional[Dict[str, Any]]:
     text = str(getattr(response, "text", "") or "").strip()
     pages = _pages(response)
     if not text or not pages:
+        return None
+    # Fail closed: findings drawn partly from a denied publisher are dropped whole.
+    if _cites_denied_source(response):
+        logger.info("web lookup dropped: a grounding page is a denied source")
         return None
     if withhold_injected([text, *[p["title"] for p in pages]], source="web_lookup") is None:
         return None

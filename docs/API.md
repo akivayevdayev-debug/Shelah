@@ -453,6 +453,8 @@ The complete browsable index (prayers, communities, Sefaria texts) for the top m
 One text, Hebrew and English with metadata. `<ref>` is a Sefaria reference, URL-encoded as needed (`Berakhot.2a`, `Shulchan%20Arukh%2C%20Orach%20Chayim%201%3A1`). Class `fanout`. Cache: immutable tier.
 
 - **Query:** `autotranslate` (default on; `0`, `false`, `no` or `off` disables it). Lines with no English are machine-translated unless disabled.
+- **Query:** `minhag` (`sephardi`, the default, `mizrahi` or `ashkenazi`) picks the default Hebrew and English version for that community. `vhe` / `ven` (each at most 200 characters) ask for a named Hebrew / English version; the server ignores a name it does not allow, so it falls back to the community default.
+- **Versions.** Only Orthodox versions are ever served (`backend/text_trust.py`, list in `data/text_versions.json`, reasons in `docs/evals/2026-10-21-text-trust-lists.md`). Reform, Conservative and other untrusted versions and works are filtered here and on every other Sefaria-backed route: links, graph, sidebar, search, verse search, category lists, the AI's retrieval and its web lookup.
 
 **Response (200):**
 
@@ -471,9 +473,19 @@ One text, Hebrew and English with metadata. `<ref>` is a Sefaria reference, URL-
   "prev": "string | null",
   "categories": [],
   "authors": [],
-  "era": "string"
+  "era": "string",
+  "indexTitle": "string, the book (key for a remembered version pick)",
+  "versions": {
+    "he": { "title": "Sefaria versionTitle", "label": "short label" },
+    "en": { "title": "…", "label": "…" },
+    "available": [ { "title": "…", "lang": "he | en", "label": "…" } ]
+  }
 }
 ```
+
+`versions.he` / `versions.en` are the versions shown (`null` when none is allowed); `available` is what the reader's version picker offers.
+
+A work on the deny-list answers `200` with `{"error", "error_type": "not_available", "ref", "he": [], "en": []}`; the client treats it like `not_found` and does not fall back to Sefaria directly.
 
 An unresolvable reference answers `200` with `{"error", "error_type": "not_found", "ref", "he": [], "en": []}` (and is not cached). While Sefaria is actively blocking requests the answer is `503` with `error_type: "sefaria_blocked"`. A request with no reference (`/api/text/`) is a `400`.
 
@@ -598,7 +610,7 @@ The in-app siddur reads these. Every response is a pure function of its URL (the
 |---|---|
 | `GET /api/prayers/list` | `[{"name", "title", "source": "legacy-service" \| "sefaria-liturgy"}]`: the quick services plus Sefaria's Liturgy books. The Sefaria index the checked-in siddur is built from is left out, since the siddur reader already serves it. Corpus-derived tier. |
 | `GET /api/prayer/<name>` | A preview of one prayer book or service, in English and Hebrew. `404` when the name maps to no reference. Immutable tier. |
-| `GET /api/siddur/full/<name>` | The full prayer text, fetched from Sefaria in parallel and combined: `{"prayer", "lines", "sources"}`. `404` when unmapped or when nothing could be fetched. Class `heavy`. Immutable tier. |
+| `GET /api/siddur/full/<name>` | The full prayer text, fetched from Sefaria in parallel and combined: `{"prayer", "lines", "sources"}`. Optional `?minhag=` picks the community's versions as on `/api/text`. `404` when unmapped or when nothing could be fetched. Class `heavy`. Immutable tier. |
 | `GET /api/siddur/section-refs/<name>` | `{"prayer", "sources": [refs]}`, the references `/api/siddur/full/<name>` would fetch, without fetching them. Kept for old bookmarks and API consumers; nothing in the client calls it. Immutable tier. |
 
 ---
