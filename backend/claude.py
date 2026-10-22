@@ -121,8 +121,9 @@ STUDY_ANSWER_MAX_TOKENS = 6144
 LONG_ANSWER_MAX_TOKENS = 4096
 LONG_ANSWER_MIN_WORDS = 450
 # Haiku 5.5 counts its adaptive thinking against max_tokens and its tokenizer
-# produces ~30% more tokens than Haiku 4.5's for the same text, so the Claude leg
-# is given the answer ceiling plus this much room.
+# produces ~30% more tokens than Haiku 4.5's for the same text, so the agentic
+# Claude turn (which still thinks) is given the answer ceiling plus this much room.
+# The answer call turns thinking off and needs none.
 CLAUDE_THINKING_HEADROOM_TOKENS = 1536
 # Per-HTTP-request ceiling for one model call. Well under AI_TOTAL_BUDGET_SECONDS
 # so a hung Gemini primary still leaves the Claude fallback ~15s of the budget
@@ -861,10 +862,15 @@ def _log_gemini_usage(usage: Any, model_name: str) -> None:
     )
 
 
+def _announce_gemini_retry(_retry_state: Any) -> None:
+    ask_progress.step(ask_progress.STEP_RETRY)
+
+
 @retry(
     retry=retry_if_exception(_is_retryable_gemini_error),
     wait=wait_random_exponential(multiplier=1, min=1, max=_GEMINI_RETRY_WAIT_MAX_SECONDS),
     stop=stop_after_attempt(3),
+    before_sleep=_announce_gemini_retry,
     reraise=True,
 )
 def _generate_gemini_content_with_retry(
@@ -3320,14 +3326,20 @@ def _with_trailing_cache_breakpoint(messages: List[Dict[str, Any]]) -> List[Dict
     return [*messages[:-1], {**last, "content": marked}]
 
 
-def _anthropic_request_options(model_name: str, effort: str = "low") -> Dict[str, Any]:
+def _anthropic_request_options(model_name: str, effort: str = "low", thinking: bool = True) -> Dict[str, Any]:
     """Model-specific request fields. Haiku 5.5 thinks adaptively unless told
     otherwise and bills that thinking as output, so a chat answer asks for low
-    effort; it also rejects any non-default temperature/top_p/top_k (400), which
-    is why this call sends none. Older models take no ``effort``."""
-    if model_name.startswith("claude-haiku-5"):
-        return {"output_config": {"effort": effort}}
-    return {}
+    effort and, when it passes ``thinking=False``, turns thinking off (a short answer
+    is a JSON object built from sources already in the prompt; thinking tripled the
+    time to give it, see docs/evals/2026-10-22-latency.md). It also rejects any non-default
+    temperature/top_p/top_k (400), which is why this call sends none. Older models
+    take no ``effort``."""
+    if not model_name.startswith("claude-haiku-5"):
+        return {}
+    options: Dict[str, Any] = {"output_config": {"effort": effort}}
+    if not thinking:
+        options["thinking"] = {"type": "disabled"}
+    return options
 
 
 def _anthropic_usage_tokens(usage: Any) -> Tuple[int, int]:
@@ -3395,15 +3407,20 @@ async def _call_anthropic_httpx_model(
 
     answer_ceiling = max_tokens or COMPLEX_ANSWER_MAX_TOKENS
     is_study_ceiling = answer_ceiling >= STUDY_ANSWER_MAX_TOKENS
+    # A short answer is built from sources already in the prompt, and thinking
+    # first tripled the time to get it. A long or study answer is where the
+    # thinking earns its time: without it the same prompts came back about half
+    # as long (docs/evals/2026-10-22-latency.md).
+    thinks = answer_ceiling >= LONG_ANSWER_MAX_TOKENS
 
     try:
         message = await client.messages.create(
             model=model_name,
             system=_anthropic_system_blocks(CORE_SYSTEM_PROMPT, dynamic_system_context),
-            max_tokens=answer_ceiling + CLAUDE_THINKING_HEADROOM_TOKENS,
+            max_tokens=answer_ceiling + (CLAUDE_THINKING_HEADROOM_TOKENS if thinks else 0),
             messages=_anthropic_messages(prompt, history_turns),
             timeout=timeout,
-            **_anthropic_request_options(model_name, "medium" if is_study_ceiling else "low"),
+            **_anthropic_request_options(model_name, "medium" if is_study_ceiling else "low", thinking=thinks),
         )
         input_tokens, output_tokens = _anthropic_usage_tokens(getattr(message, "usage", None))
         await record_llm_call(
@@ -3772,6 +3789,7 @@ async def ask_ai_async(
         )
         result_error = str(result.get("error") or "")
         if result_error and not result_error.startswith("security_blocked"):
+            ask_progress.step(ask_progress.STEP_SECOND_MODEL)
             result = await _call_anthropic_httpx_model(
                 prompt,
                 dynamic_system_context=dynamic_system_context,
@@ -3780,9 +3798,12 @@ async def ask_ai_async(
             )
         return result
 
+    if max_tokens >= LONG_ANSWER_MAX_TOKENS:
+        ask_progress.step(ask_progress.STEP_LONG)
     result = await _generate(_prompt())
     if flagged_out_of_scope(result):
         second_look = scope_second_look_note(sanitized_query, bool(build_history_turns(conversation_history)))
+        ask_progress.step(ask_progress.STEP_SECOND_LOOK)
         result = await _generate(_prompt() + second_look)
     result = (
         await _web_second_pass_async(

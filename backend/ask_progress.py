@@ -58,7 +58,16 @@ DETAIL_REFS = "refs"          # sources:  refs=[...up to 3], count=<all refs>
 DETAIL_COMMUNITY = "community"  # customs: community=<the reader's lens>
 DETAIL_TIMES = "times"        # times:    topic=<one of TIMES_TOPICS>
 DETAIL_TOOL = "tool"          # thinking: tool=<tool name>, ref=<a text ref>
-DETAIL_KINDS = frozenset({DETAIL_REFS, DETAIL_COMMUNITY, DETAIL_TIMES, DETAIL_TOOL})
+DETAIL_STEP = "step"          # thinking: step=<one of STEPS>
+DETAIL_KINDS = frozenset({DETAIL_REFS, DETAIL_COMMUNITY, DETAIL_TIMES, DETAIL_TOOL, DETAIL_STEP})
+
+# What the model call itself is doing when it is not just thinking: the
+# reader sees why an answer is taking longer than the usual few seconds.
+STEP_LONG = "long"                  # a long, detailed answer was asked for
+STEP_RETRY = "retry"                # the first model was busy; asking it again
+STEP_SECOND_MODEL = "second_model"  # the first model failed; asking another
+STEP_SECOND_LOOK = "second_look"    # the answer is being checked once more
+STEPS = frozenset({STEP_LONG, STEP_RETRY, STEP_SECOND_MODEL, STEP_SECOND_LOOK})
 
 NDJSON_MIMETYPE = "application/x-ndjson"
 
@@ -160,6 +169,13 @@ def detail(stage_id: str, kind: str, **params: Any) -> None:
     if reporter is None or stage_id not in STAGES or kind not in DETAIL_KINDS:
         return
     reporter.detail(stage_id, _clean_detail(kind, params))
+
+
+def step(name: str) -> None:
+    """Say which step the model call has reached (one of STEPS). A no-op for a
+    name outside STEPS or with no stream bound."""
+    if name in STEPS:
+        detail(STAGE_THINKING, DETAIL_STEP, step=name)
 
 
 @contextmanager

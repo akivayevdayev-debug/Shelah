@@ -11,7 +11,7 @@
 //   { type: "stage", stage, state: "start" | "done" }
 //   { type: "detail", stage, detail: { kind, ...params } | null }
 //        what a running step is doing right now; null when that work ends.
-//        Kinds are a closed set (refs, community, times, tool); this module
+//        Kinds are a closed set (refs, community, times, tool, step); this module
 //        owns the English and Hebrew wording, the server only names the work.
 //   { type: "ping" }                                   (keep-alive, ignored)
 //   { type: "result", payload | body, status? }        (terminal)
@@ -56,7 +56,7 @@ export function createProgress() {
 
 const STEP_STATE = new Map([["start", "active"], ["done", "done"]]);
 
-const DETAIL_KINDS = Object.freeze(["refs", "community", "times", "tool"]);
+const DETAIL_KINDS = Object.freeze(["refs", "community", "times", "tool", "step"]);
 
 function withoutDetail(details, stage) {
     if (!Object.hasOwn(details, stage)) return details;
@@ -140,7 +140,7 @@ const TOOL_LABELS = Object.freeze({
     get_omer: TIMES_TOPICS.omer,
     get_holidays: ["Checking the coming holidays", "בודקים את החגים הקרובים"],
     get_daily_study: ["Checking the daily study schedule", "בודקים את לוח הלימוד היומי"],
-    web_search: ["Searching the web", "מחפשים ברשת"],
+    web_search: ["Searching trusted sites", "מחפשים באתרים מהימנים"],
     lookup_word_meaning: ["Looking up a word", "בודקים משמעות של מילה"],
     translate_text: ["Translating a passage", "מתרגמים קטע"],
     get_commentaries: ["Looking up commentaries", "מחפשים פרשנים"],
@@ -151,6 +151,15 @@ const TOOL_LABELS = Object.freeze({
     get_prayer_text: ["Opening the prayer text", "פותחים את נוסח התפילה"],
     convert_measurements: ["Converting measurements", "ממירים מידות"],
     format_source_citation: ["Preparing the citation", "מכינים את הציטוט"],
+});
+
+// What the model call itself is doing when it is not just thinking: why an
+// answer takes longer than the usual few seconds.
+const STEP_LABELS = Object.freeze({
+    long: ["Writing a long, detailed answer", "כותבים תשובה ארוכה ומפורטת"],
+    retry: ["The first model is busy, trying again", "המודל הראשון עמוס, מנסים שוב"],
+    second_model: ["Asking a second model", "פונים למודל נוסף"],
+    second_look: ["Taking a second look", "בודקים שוב"],
 });
 
 function refsLabel(detail, lang, names) {
@@ -193,6 +202,7 @@ export function detailLabel(detail, lang, names = {}) {
         case "refs": return refsLabel(detail, lang, names);
         case "community": return communityLabel(detail, lang, names);
         case "tool": return toolLabel(detail, lang, names);
+        case "step": return Object.hasOwn(STEP_LABELS, detail.step) ? pick(STEP_LABELS[detail.step], lang) : "";
         default: return "";
     }
 }

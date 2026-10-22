@@ -15,7 +15,7 @@ import pytest
 
 from backend import claude, cost_meter
 
-REJECTED = ("temperature", "top_p", "top_k", "thinking", "betas", "extra_headers")
+REJECTED = ("temperature", "top_p", "top_k", "betas", "extra_headers")
 BACKEND = Path(__file__).resolve().parents[1] / "backend"
 
 
@@ -56,6 +56,7 @@ async def test_the_answer_call_uses_haiku_5_5_and_nothing_it_rejects(client):
     assert call["model"] == "claude-haiku-5-5"
     assert call["output_config"] == {"effort": "low"}
     assert call["messages"][-1]["role"] == "user"  # a trailing assistant turn is a prefill, which Haiku 5.5 rejects
+    assert call["thinking"] == {"type": "disabled"}  # never {"budget_tokens": n}, which Haiku 5.5 rejects
     assert not [key for key in REJECTED if key in call]
 
 
@@ -66,6 +67,7 @@ async def test_the_agentic_turn_uses_haiku_5_5_and_nothing_it_rejects(client):
     assert call["model"] == "claude-haiku-5-5"
     assert call["output_config"] == {"effort": "low"}
     assert call["messages"][-1]["role"] == "user"
+    assert "thinking" not in call, "the agentic turn keeps Haiku 5.5's adaptive thinking"
     assert not [key for key in REJECTED if key in call]
 
 

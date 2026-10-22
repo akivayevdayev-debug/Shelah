@@ -233,10 +233,25 @@ test('a tool call is named, and a source it opens is named with its reference', 
     assert.equal(ns.detailLabel(toolOf('get_text_by_ref', 'Shabbat 31a'), 'he'), 'קוראים Shabbat 31a');
     assert.equal(ns.detailLabel(toolOf('get_text_by_ref'), 'en'), 'Reading a source');
     assert.match(ns.detailLabel(toolOf('get_text_by_ref'), 'he'), /[֐-׿]/);
-    assert.equal(ns.detailLabel(toolOf('web_search'), 'en'), 'Searching the web');
+    assert.equal(ns.detailLabel(toolOf('web_search'), 'en'), 'Searching trusted sites');
     assert.match(ns.detailLabel(toolOf('web_search'), 'he'), /[֐-׿]/);
     assert.equal(ns.detailLabel(toolOf('get_zmanim'), 'en'), ns.detailLabel({ kind: 'times', topic: 'zmanim' }, 'en'));
     assert.equal(ns.detailLabel(toolOf('a_tool_from_the_future'), 'en'), '', 'unknown tools fall back to the step');
+});
+
+test('a model step is named in both languages, and a step the page does not know falls back to the step', async () => {
+    const ns = await load();
+    for (const step of ['long', 'retry', 'second_model', 'second_look']) {
+        const body = { kind: 'step', step };
+        assert.ok(ns.detailLabel(body, 'en'), `${step} en`);
+        assert.match(ns.detailLabel(body, 'he'), /[֐-׿]/, `${step} he`);
+    }
+    assert.equal(ns.detailLabel({ kind: 'step', step: 'second_model' }, 'en'), 'Asking a second model');
+    assert.equal(ns.detailLabel({ kind: 'step', step: 'from_the_future' }, 'en'), '');
+    assert.equal(ns.detailLabel({ kind: 'step', step: 'constructor' }, 'en'), '', 'inherited names are not steps');
+    const state = apply(ns, [start('thinking'), detail('thinking', { kind: 'step', step: 'second_look' })]);
+    assert.deepEqual(ns.progressView(state).detail, { kind: 'step', step: 'second_look' });
+    assert.equal(ns.activeLabel('thinking', 'en', { kind: 'step', step: 'retry' }), 'The first model is busy, trying again');
 });
 
 test('every AI tool the server can run has a line in both languages', async () => {

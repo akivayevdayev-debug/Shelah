@@ -40,7 +40,7 @@ for _name in ("SUPABASE_URL", "SUPABASE_SECRET_KEY", "SUPABASE_PUBLISHABLE_KEY",
     os.environ[_name] = ""
 
 import asgi  # noqa: E402
-from backend import claude  # noqa: E402
+from backend import ask_progress, claude  # noqa: E402
 
 CONCURRENCY = 3
 
@@ -254,6 +254,22 @@ async def ask(question, history=None, lens="Sefardic", language="en", mode="bala
     """One answer, the way the /ask route builds it. ``marks`` collects timings."""
     started = time.perf_counter()
     marks = marks if marks is not None else {}
+    steps = []
+
+    def on_progress(event):
+        marks.setdefault("first_progress_seconds", round(time.perf_counter() - started, 2))
+        detail = event.get("detail") or {}
+        if detail.get("kind") == "step":
+            steps.append(detail["step"])
+
+    token = ask_progress.bind(on_progress)
+    try:
+        return await _ask_once(question, history, lens, language, mode, marks, started, steps)
+    finally:
+        ask_progress.unbind(token)
+
+
+async def _ask_once(question, history, lens, language, mode, marks, started, steps):
     refusal = claude.off_topic_block_result(question, language, in_thread=bool(history))
     if refusal is not None:
         marks["seconds"] = round(time.perf_counter() - started, 2)
@@ -268,6 +284,7 @@ async def ask(question, history=None, lens="Sefardic", language="en", mode="bala
     result = await asgi._dispatch_ask_async_ai_synthesis_call(question, mode, lens, language, ctx)
     marks["model_seconds"] = round(time.perf_counter() - model_started, 2)
     marks["seconds"] = round(time.perf_counter() - started, 2)
+    marks["steps"] = steps
     result["_sources"] = len(ctx.get("primary_sources") or [])
     return result
 

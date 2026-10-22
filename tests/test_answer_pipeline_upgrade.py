@@ -241,6 +241,11 @@ class TestAnthropicRequestPieces:
         assert claude._anthropic_request_options("claude-haiku-5-5", "medium") == {"output_config": {"effort": "medium"}}
         assert claude._anthropic_request_options("claude-haiku-4-5") == {}
 
+    def test_an_answer_call_can_turn_thinking_off(self):
+        assert claude._anthropic_request_options("claude-haiku-5-5", thinking=False) == {
+            "output_config": {"effort": "low"}, "thinking": {"type": "disabled"}}
+        assert claude._anthropic_request_options("claude-haiku-4-5", thinking=False) == {}
+
     def test_cache_reads_and_writes_are_billed_at_their_relative_rates(self):
         usage = types.SimpleNamespace(
             input_tokens=100, cache_creation_input_tokens=1000, cache_read_input_tokens=5000, output_tokens=300)
@@ -310,7 +315,8 @@ class TestAnthropicFallbackCall:
         assert call["system"][1] == {"type": "text", "text": "CTX"}
         assert [m["role"] for m in call["messages"]] == ["user", "assistant", "user"]
         assert call["output_config"] == {"effort": "low"}
-        assert call["max_tokens"] == claude.COMPLEX_ANSWER_MAX_TOKENS + claude.CLAUDE_THINKING_HEADROOM_TOKENS
+        assert call["thinking"] == {"type": "disabled"}
+        assert call["max_tokens"] == claude.COMPLEX_ANSWER_MAX_TOKENS, "no thinking, so no thinking headroom"
         # Haiku 5.5 rejects these; the request must not carry them or a beta header.
         for forbidden in ("temperature", "top_p", "top_k", "extra_headers", "betas"):
             assert forbidden not in call
@@ -323,7 +329,20 @@ class TestAnthropicFallbackCall:
 
         [call] = holder.messages.calls
         assert call["max_tokens"] == claude.STUDY_ANSWER_MAX_TOKENS + claude.CLAUDE_THINKING_HEADROOM_TOKENS
+        assert "thinking" not in call, "a study answer keeps Haiku 5.5's adaptive thinking"
         assert call["output_config"] == {"effort": "medium"}
+
+    async def test_a_long_answer_keeps_thinking_and_a_short_one_does_not(self, anthropic_calls):
+        holder = anthropic_calls(_response(json.dumps({"ruling": "Long."})))
+
+        await claude._call_anthropic_httpx_model("p", max_tokens=claude.LONG_ANSWER_MAX_TOKENS)
+        await claude._call_anthropic_httpx_model("p", max_tokens=claude.SIMPLE_ANSWER_MAX_TOKENS)
+
+        long_call, short_call = holder.messages.calls
+        assert "thinking" not in long_call
+        assert long_call["max_tokens"] == claude.LONG_ANSWER_MAX_TOKENS + claude.CLAUDE_THINKING_HEADROOM_TOKENS
+        assert short_call["thinking"] == {"type": "disabled"}
+        assert short_call["max_tokens"] == claude.SIMPLE_ANSWER_MAX_TOKENS
 
     async def test_cached_tokens_are_billed_at_their_rates(self, anthropic_calls):
         usage = types.SimpleNamespace(

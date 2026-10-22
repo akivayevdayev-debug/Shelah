@@ -158,6 +158,15 @@ class TestDetails:
         ))
         assert events == []
 
+    def test_a_model_step_is_a_detail_of_the_thinking_step_and_an_unknown_one_is_ignored(self):
+        events = self._capture(lambda: (
+            ask_progress.step("second_look"),
+            ask_progress.step("<b>not a step</b>"),
+        ))
+        assert events == [{
+            "type": "detail", "stage": "thinking", "detail": {"kind": "step", "step": "second_look"}}]
+        assert ask_progress.STEPS == {"long", "retry", "second_model", "second_look"}
+
     def test_a_detail_scope_clears_when_the_last_overlapping_piece_of_work_ends(self):
         def work():
             with ask_progress.detail_scope("thinking", "tool", tool="get_zmanim"):
