@@ -7,7 +7,7 @@
       "style.css": "sha256:e674dc01dbd90f006c8534e50f43c9996d82e8b7ca6bfccc155251311bab0e3e",
       "css/typography.css": "sha256:8cc5129450f6f17c2825dc900a5ab184de1b6900bcb9175d4c92ee2eadbdb772",
       "css/reader.css": "sha256:a7680571f7b451f26c9a35c5f76690ce05909c712aa8d1c07acbe01d5f150ac8",
-      "css/sidebar.css": "sha256:465efac7a72b08fd377521dfc69571c6e80f4ee2d7fe5d473c8fc6641dbe434c",
+      "css/sidebar.css": "sha256:d25f6869dcce97669c2b8b5883520e484ad5ec5c5f4c944e82f3f2539ada1a77",
       "css/halacha.css": "sha256:d56991aac19afaa3175434312588862a5a63b32c46d7d07d2f70e23fd9e049bf",
       "css/prayer.css": "sha256:70cf28909030c0816176889df96729aca7618f9088de74d324f9c9a38812c78d",
       "css/siddur.css": "sha256:5026bdd17f89bc51fa2b37963ad4770c22d9b9ac1d8ab3f1a67d0b588963be72",
@@ -19,19 +19,19 @@
       "css/loading.css": "sha256:10eaad855917d62df7a5d396c0bbb8a487d529d846bc3233637e7eb42e5a3211",
       "css/tailwind.css": "sha256:f72a1c23017da8c8925e8004c0d6b85d73ee8ee7b23f76f812a891f14ea63613"
     },
-    "sourcesHash": "41703219a2b4a7ae754c4add35e6877b217f03514082f44fd7120cc698daa5f0",
+    "sourcesHash": "2ee5a974cd9785f8b862095b63fa41e33b05a14a0bed73ce0126f6718681accd",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "41703219a2b4a7ae754c4add35e6877b217f03514082f44fd7120cc698daa5f0",
+        "sourcesHash": "2ee5a974cd9785f8b862095b63fa41e33b05a14a0bed73ce0126f6718681accd",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "41703219a2b4a7ae754c4add35e6877b217f03514082f44fd7120cc698daa5f0",
+        "sourcesHash": "2ee5a974cd9785f8b862095b63fa41e33b05a14a0bed73ce0126f6718681accd",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "41703219a2b4a7ae754c4add35e6877b217f03514082f44fd7120cc698daa5f0",
+        "sourcesHash": "2ee5a974cd9785f8b862095b63fa41e33b05a14a0bed73ce0126f6718681accd",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
@@ -78,7 +78,7 @@
         "source": "sha256:eb2bad4c77b42cee50161aed9d4b0832ab6fb83a3ee2d65a353298f9751d60f7"
       },
       "shell.js": {
-        "source": "sha256:66dd3c9e2e3bee0fcb16816637654aecbcdd3e4469d27a05bc9e9ad1e005ac29"
+        "source": "sha256:3d9e2d6f72ed8b6bd1f774eccc02cdd4b3401b1e447c1d5dd8302adc53d54121"
       },
       "topbar_shared.js": {
         "source": "sha256:27a797b3deffea688349051bba6539490d19d018205f4c9721cd4d69e0bb17c3"
@@ -110,7 +110,7 @@
         "conversation-voice.js": "sha256:332db925ab4ba23df1815de3d434ff61c9cb68948bd44a01ddbb46f577bb4e31",
         "hebrew-keyboard.js": "sha256:1440828a5e15b257d1aba5e74863a7aae256915f5ffd7ba0fcec6200b1c2c7b2",
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
-        "main.js": "sha256:19e8dc85b831808484014143061bbdf6cb939b06d5e348ef71a5f8f4ab3a5662",
+        "main.js": "sha256:180064c57d9656a983a3802d9abf7a4b9400379b17e18ba1c371a6ff8c688ac7",
         "minhag-setting.js": "sha256:3f6723cd6b45a227b97a2fc4dab06365e1da3ae5e01b367ab6c07dd40d8f1060",
         "motion.js": "sha256:f0318a129b6d5719e2fcf78a663cca8b49a1f2fe258d7294602827cced3c7a1e",
         "reader-ui.js": "sha256:afb5716e6b2112361fe652cc9efd2c6a4503ad9e560b898f0b00f992a4dc4fa8",
@@ -120,6 +120,7 @@
         "siddur.js": "sha256:15e35e7e30f379ec23b142424a8f01013ecdcd84c9cbd22525e46da09ec28f4a",
         "source-cards.js": "sha256:f4106bf2c8d0c40465a459bdfd22de91d6547b0fcde43e846436e2a0687757cd",
         "state.js": "sha256:0065636c6f4cd151fc6115742a3d0ea9a5509fe65a3c0019650b458f392ea8d5",
+        "text-versions.js": "sha256:a53956bd68e24c4d4b4dfc3ad779da054e8499bc3e55058b9df6a245c23fd9cb",
         "zmanim.js": "sha256:1179f537a443f7903e9b85c3853d873ba0fe50d27f3e42699300e796c74f84f4"
       },
       "outputs": {
@@ -132,11 +133,11 @@
         "js/community-labels.js": "87dfbcba156b",
         "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/load-region.js": "2833ed602bea",
-        "js/main.js": "6ee5e0dd3cca",
+        "js/main.js": "bd71f97eb67b",
         "js/motion.js": "247715a0f89d",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "5f32eede1174",
-        "js/shell.js": "f3e3973082b0",
+        "js/shell.js": "8d55e86d4391",
         "js/topbar_shared.js": "55aa1d245dcc"
       },
       "unreached": []
