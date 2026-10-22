@@ -115,6 +115,11 @@ COMPLEX_ANSWER_MAX_TOKENS = 3072
 # several sub-questions, each with its own paragraph and source markers. At the
 # complex ceiling the JSON was cut off mid-string and the reader got half an answer.
 STUDY_ANSWER_MAX_TOKENS = 6144
+# A reader who asks for length ("explain in depth", "long answer", "elaborate") gets a
+# long answer, however few words the request takes: a five-word follow-up used to fall
+# under the simple ceiling and come back as a paragraph. See wants_long_answer().
+LONG_ANSWER_MAX_TOKENS = 4096
+LONG_ANSWER_MIN_WORDS = 450
 # Haiku 5.5 counts its adaptive thinking against max_tokens and its tokenizer
 # produces ~30% more tokens than Haiku 4.5's for the same text, so the Claude leg
 # is given the answer ceiling plus this much room.
@@ -216,7 +221,7 @@ RABBI_FINAL_RULING_FOOTER = "Please consult with your local Rabbi for a final ru
 # row (defensibility logging) so a stored answer's governing
 # prompt version is reconstructable during a dispute, without retaining the
 # full prompt text itself.
-PROMPT_VERSION = "2026-10-21-orthodox-sources-v8"
+PROMPT_VERSION = "2026-10-22-long-answers-v9"
 # INTERNAL_AI_KNOWLEDGE_DISCLAIMER: canonical copy lives in
 # backend/utils/search_provider.py (re-exported via backend/helpers.py) —
 # an unused, byte-identical duplicate previously lived here too;
@@ -1795,7 +1800,7 @@ What is being asked: decide this first, because it sets the shape of the answer.
 - A comparison or a dispute (communities, Poskim, Rishonim): each position, who holds it and why, then what follows for the reader.
 - A follow-up: answer only what is new.
 
-Depth: answer the question that was asked, at the size it was asked. A general, everyday or one-line question gets a short direct answer — no survey of every opinion, no history, no steps nobody asked for. Go deep (competing Poskim, background, reasoning) only when the question asks for detail or the answer genuinely turns on a dispute. Accuracy matters more than length, but never cut an answer short: finish every part you start.
+Depth: answer the question that was asked, at the size it was asked. A general, everyday or one-line question gets a short direct answer — no survey of every opinion, no history, no steps nobody asked for. Go deep (competing Poskim, background, reasoning) only when the question asks for detail or the answer genuinely turns on a dispute. When the reader asks for length or depth ("in depth", "in detail", "elaborate", "a long answer", "go deeper", "explain more"), that request outweighs the default: write a full, long answer and never reply with a few sentences. Accuracy matters more than length, but never cut an answer short: finish every part you start.
 
 Complete and not repeated: the first sentence of the answer is the answer — never a restatement or paraphrase of the question, and never a preamble such as "Great question" or "This is a complex topic". Answer every part of the question. When it lists several things to cover ("including...", "specifically...", numbered or comma-separated items), each one gets its own `###` heading and a real answer with the specifics — the names, numbers, verses, what each authority says and why — in the order asked; never merge two items, skip one, or answer one with a general remark about the topic. If the provided sources do not cover an item and you cannot answer it from knowledge you are certain of, say so about that item in one plain sentence ("the commentators differ on this", "I am not sure of a source for this") rather than padding. The reader knows nothing of how you were given material, so never mention "retrieved" or "provided" text, snippets, context, the prompt or these instructions in the answer. Say each thing once: summary and practical_steps carry only what ruling does not already say, and stay empty otherwise.
 
@@ -2011,6 +2016,13 @@ def _detail_expectation_for_question(question: str, mode: str) -> str:
     mode_value = str(mode or "balanced").strip().lower()
     wants_detail = bool(DETAILED_QUERY_RE.search(str(question or "")))
 
+    if wants_long_answer(question):
+        return (
+            f"The reader asked for a long, detailed answer, so write one: at least {LONG_ANSWER_MIN_WORDS} words, "
+            "every part developed with its specifics. An explicit request for length outweighs every "
+            "instruction to be brief, and a few sentences is not an acceptable answer to it."
+        )
+
     if _is_study_question(question):
         return (
             "The reader wants to learn this in full: cover every item asked, each with its specifics, "
@@ -2200,8 +2212,8 @@ def _format_conversation_history(
 # invalidate everything after it).
 HISTORY_MAX_TURNS = 12
 HISTORY_USER_TURN_CHARS = 700
-HISTORY_ASSISTANT_TURN_CHARS = 2400
-HISTORY_MAX_TOTAL_CHARS = 9000
+HISTORY_ASSISTANT_TURN_CHARS = 4500
+HISTORY_MAX_TOTAL_CHARS = 16000
 _SENTENCE_END_CHARS = ".!?\u2026\u05c3;"
 
 
@@ -2324,13 +2336,53 @@ def _is_study_question(question: str) -> bool:
     return len(q.split()) >= _STUDY_MIN_WORDS and list_items >= 3
 
 
+# An explicit request for length or depth, in English or Hebrew, on its own or as a
+# follow-up ("go deeper", "in more detail", "answer in a long answer", "more"). Plain
+# "explain", "why" and "how" are left out: they ask for an explanation, not for length.
+_LONG_ANSWER_PHRASES = (
+    r"\bin[\s-]+depth\b",
+    r"\bin\s+(?:great|full|extreme|more|much|further|greater|fuller|deeper)\s+(?:detail|depth)\b",
+    r"\bin\s+detail\b",
+    r"\b(?:extremely|very|highly)\s+detailed\b",
+    r"\b(?:detailed|thorough|extensive|lengthy|long|longer|full|complete|comprehensive|extended)\s+"
+    r"(?:answer|response|explanation|reply|account|description|breakdown|analysis|write-?up|walk-?through)\b",
+    r"\banswer\s+(?:this\s+)?(?:in\s+)?(?:a\s+)?(?:long|longer|detailed)\b",
+    r"\b(?:at|in)\s+(?:great\s+)?length\b",
+    r"\belaborat\w*",
+    r"\bexpand\s+(?:on|upon)\b",
+    r"\b(?:go|dig|dive)\s+(?:much\s+)?deeper\b",
+    r"\bdeeper\b",
+    r"\bmore\s+(?:depth|detail|details)\b",
+    r"\bthoroughly\b",
+    r"\bextensively\b",
+    r"\bin\s+full\b",
+    r"\b(?:pasuk|passuk|verse|word|line)[\s-]*by[\s-]*(?:pasuk|passuk|verse|word|line)\b",
+    r"\b(?:whole|entire|full)\s+commentary\b",
+    r"\beverything\s+(?:about|on|there\s+is)\b",
+    r"\btell\s+me\s+more\b",
+    r"^\W*(?:more|continue|go\s+on|keep\s+going)\W*$",
+    "בהרחבה", "בפירוט", "לעומק", "בעומק", "תרחיב", "הרחב", "תפרט", r"פרט\s+יותר",
+    r"יותר\s+לעומק", r"תשובה\s+(?:ארוכה|מפורטת|מלאה)", r"הסבר\s+(?:מפורט|מעמיק)",
+)
+LONG_ANSWER_RE = re.compile("|".join(_LONG_ANSWER_PHRASES), re.IGNORECASE)
+
+
+def wants_long_answer(question: str) -> bool:
+    """True when the reader asked in so many words for a long or detailed answer."""
+    return bool(LONG_ANSWER_RE.search(str(question or "").strip()))
+
+
 def question_profile(question: str) -> Tuple[bool, bool, int]:
     """``(is_simple, is_study, max_output_tokens)`` for ``question``. A study request
-    is never "simple", however few words it takes to ask."""
+    is never "simple", however few words it takes to ask, and neither is one that asks
+    for a long answer."""
     is_study = _is_study_question(question)
-    is_simple = _is_simple_question(question) and not is_study
+    long_request = wants_long_answer(question)
+    is_simple = _is_simple_question(question) and not is_study and not long_request
     if is_study:
         return is_simple, True, STUDY_ANSWER_MAX_TOKENS
+    if long_request:
+        return False, False, LONG_ANSWER_MAX_TOKENS
     return is_simple, False, SIMPLE_ANSWER_MAX_TOKENS if is_simple else COMPLEX_ANSWER_MAX_TOKENS
 
 
@@ -2512,6 +2564,7 @@ def build_prompt(question, sefaria_sources, wiki, halachipedia=None, mode="balan
     ) if web_findings else ""
     detail_expectation = _detail_expectation_for_question(question, mode)
     simple, study, _ = question_profile(question)
+    long_request = wants_long_answer(question)
 
     if simple:
         format_instruction = (
@@ -2534,6 +2587,19 @@ def build_prompt(question, sefaria_sources, wiki, halachipedia=None, mode="balan
             "for parallel items; no dense block, no restating the question, nothing said twice. "
             "Set practical_steps to [] and summary to an empty string. "
             "Cite up to 10 specific sources, each marked right after the sentence that rests on it."
+            + (f" The reader also asked for length: write at least {LONG_ANSWER_MIN_WORDS} words." if long_request else "")
+        )
+    elif long_request:
+        format_instruction = (
+            f"17b. LONG ANSWER FORMAT: The reader asked for a long, detailed answer and must get one: write at "
+            f"least {LONG_ANSWER_MIN_WORDS} words in ruling. Open with the direct answer in one or two sentences, "
+            "then develop it under short `### Heading` lines in a natural order: the source or background, what "
+            "each authority or commentator says (the specifics, not a general remark), where they differ and "
+            "why, and what follows for the reader. A request for more depth redoes the subject of the "
+            "earlier answer in full, adding what that answer left out instead of repeating it. Paragraphs of "
+            "2-5 sentences, nothing said twice, no padding. Set practical_steps to [] unless there is a real "
+            "procedure, and summary to an empty string. Cite up to 8 specific sources, each marked right "
+            "after the sentence that rests on it."
         )
     else:
         format_instruction = (
@@ -2550,7 +2616,10 @@ def build_prompt(question, sefaria_sources, wiki, halachipedia=None, mode="balan
     follow_up_instruction = (
         '20. The QUESTION may point back to the earlier turns of this conversation ("that", "it", "the second one", '
         '"what about X?"): resolve those references from them, keep the community and facts already '
-        "established, do not repeat what was already said, and answer only what is new.\n"
+        "established, do not repeat what was already said, and answer only what is new. A QUESTION that only "
+        'asks for a different length or form ("longer", "in more detail", "answer in a long answer", "more", '
+        '"explain it simply") is about the subject of the last answer: give that subject in the form asked, '
+        'and never treat it as out of scope or as an empty question.\n'
     ) if has_history else ""
 
     if web_findings:
@@ -3507,7 +3576,7 @@ def _model_call_extras(history_turns: List[Dict[str, str]], max_tokens: int) -> 
     extras: Dict[str, Any] = {}
     if history_turns:
         extras["history_turns"] = history_turns
-    if max_tokens == STUDY_ANSWER_MAX_TOKENS:
+    if max_tokens in (STUDY_ANSWER_MAX_TOKENS, LONG_ANSWER_MAX_TOKENS):
         extras["max_tokens"] = max_tokens
     return extras
 

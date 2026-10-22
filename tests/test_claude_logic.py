@@ -502,7 +502,8 @@ class TestDetailExpectationForQuestion:
 
     def test_detailed_query_wants_full_explanation(self):
         result = claude._detail_expectation_for_question("please explain in detail", "balanced")
-        assert "full explanation" in result
+        assert "long, detailed answer" in result
+        assert f"at least {claude.LONG_ANSWER_MIN_WORDS} words" in result
 
     def test_practical_mode_wants_concise_steps(self):
         result = claude._detail_expectation_for_question("short question", "practical")
@@ -551,10 +552,18 @@ class TestBuildPrompt:
 
     def test_complex_question_uses_complex_format_instruction(self):
         prompt = claude.build_prompt(
-            "please explain in detail why this halacha differs across communities and elaborate on the reasoning",
+            "why does this halacha differ across communities and how do the Poskim reason about each view of it",
             [], [],
         )
         assert "COMPLEX QUESTION FORMAT" in prompt
+
+    def test_a_question_that_asks_for_length_uses_the_long_format_instruction(self):
+        prompt = claude.build_prompt(
+            "please explain in detail why this halacha differs across communities and elaborate on the reasoning",
+            [], [],
+        )
+        assert "LONG ANSWER FORMAT" in prompt
+        assert "COMPLEX QUESTION FORMAT" not in prompt
 
     def test_prompt_preserves_multi_section_line_structure(self):
         # Regression test for a previously-confirmed bug (see findings log):
@@ -860,7 +869,7 @@ class TestAnswerDepthCalibration:
         assert claude.SIMPLE_ANSWER_MAX_TOKENS < claude.COMPLEX_ANSWER_MAX_TOKENS
 
     def test_prompt_version_reflects_the_rewrite(self):
-        assert claude.PROMPT_VERSION.startswith("2026-10-21")
+        assert claude.PROMPT_VERSION.startswith("2026-10-2")
 
 
 class TestBuildDynamicSystemContext:
