@@ -1569,7 +1569,7 @@ def _collect_primary_sources_sync(question, engine, context=()):
     """
     refs = list(_primary_ref_candidates(question, context))
     ask_progress.detail(
-        ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs[:3], count=len(refs))
+        ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs, count=len(refs))
     source_futures = [
         submit_with_context(_THREAD_POOL, engine.get_library_text, ref)
         for ref in refs

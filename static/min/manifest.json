@@ -57,7 +57,7 @@
         "source": "sha256:6f350ca91dd53161bff6df3a9ddb5e92e3a2aac676064272dafc1104373d46de"
       },
       "admin-feedback.js": {
-        "source": "sha256:52a30e3ace29a433b6a8c96a7c651f26c2a672f4621856beeecf0cfc8c28b171"
+        "source": "sha256:f4a428afb06a553a7fb290fcaac5089392418e2fa7ac18ff0908fb2402de5ef9"
       },
       "clerk-appearance.js": {
         "source": "sha256:f1c54b0760a5e4d05486d65a5802453bbdfcd6e9026ac25c640e69d17179b25d"
@@ -107,7 +107,7 @@
         "conversation-store.js": "sha256:b57b45534c99e26c745ccc9e2e9582f52a91d70b8d5d28b1fbcfd31ea21e0c6c",
         "conversation-ui-helpers.js": "sha256:707d151c8ebb6fe0b3d2d21f9d85d0240627683df8d17a1cd0b5de9080cb5add",
         "conversation-ui.js": "sha256:54d1133ff7b97a58a89856be2d59a6ed4ecfd4ed6ca156793e88930d02ee1d90",
-        "conversation-voice.js": "sha256:332db925ab4ba23df1815de3d434ff61c9cb68948bd44a01ddbb46f577bb4e31",
+        "conversation-voice.js": "sha256:a83dc30b3f5c841f39c47034a22d8db22b5de777600642e82eccfcce691f59ac",
         "hebrew-keyboard.js": "sha256:1440828a5e15b257d1aba5e74863a7aae256915f5ffd7ba0fcec6200b1c2c7b2",
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
         "main.js": "sha256:180064c57d9656a983a3802d9abf7a4b9400379b17e18ba1c371a6ff8c688ac7",
@@ -133,7 +133,7 @@
         "js/community-labels.js": "87dfbcba156b",
         "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/load-region.js": "2833ed602bea",
-        "js/main.js": "b1b7b31e6bce",
+        "js/main.js": "ed445f8b1d4e",
         "js/motion.js": "247715a0f89d",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "5f32eede1174",

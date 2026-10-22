@@ -10,13 +10,16 @@ Local only: uses the API keys in .env (never printed) and turns Sentry, Supabase
 and the shared Redis off so a local run never alerts the error channel or writes
 production rows.
 
-    .venv/bin/python scripts/eval_minhag_ai.py [out.json]
+    .venv/bin/python scripts/eval_minhag_ai.py [--save]
+
+--save writes the rows to build/eval/minhag.json (git-ignored; a constant path, not an argument).
 """
 
 import json
 import os
 import sys
 import time
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -55,7 +58,10 @@ def _answer_text(result):
     return data, " ".join(parts)
 
 
-def main(out_path=None):
+RESULTS_PATH = Path(__file__).resolve().parent.parent / "build" / "eval" / "minhag.json"
+
+
+def main(save=False):
     rows = []
     for question in QUESTIONS:
         for lens in LENSES:
@@ -76,8 +82,9 @@ def main(out_path=None):
                 "answer": str(data.get("answer") or "")[:500],
             })
             print(json.dumps(rows[-1], ensure_ascii=False), flush=True)
-    if out_path:
-        with open(out_path, "w", encoding="utf-8") as handle:
+    if save:
+        RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(RESULTS_PATH, "w", encoding="utf-8") as handle:
             json.dump(rows, handle, ensure_ascii=False, indent=1)
     sephardi_rows = [r for r in rows if r.get("lens") != "Ashkenaz" and "error" not in r]
     flagged = [r for r in sephardi_rows if r["ashkenazi_forms"]]
@@ -88,4 +95,4 @@ def main(out_path=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else None))
+    sys.exit(main("--save" in sys.argv[1:]))

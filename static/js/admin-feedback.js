@@ -635,7 +635,7 @@
             button.disabled = true;
             button.textContent = 'Trying again\u2026';
             ui.restoreFocus = true;
-            load();
+            void load();
         }
 
         // A failed refresh keeps the page it already drew; only a first load (or a
@@ -958,7 +958,7 @@
             updateRelativeTimes(refs.tbody, Date.now());
         }, MINUTE);
 
-        load();
+        void load();
     }
 
     const api = {

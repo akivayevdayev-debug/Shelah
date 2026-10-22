@@ -7,7 +7,7 @@ shared cache (the Gemini cooldown lives there), and Sentry is turned off so a ru
 never alerts the error channel. It still reads Sefaria (GET) and calls the real
 models with the keys in the env file. Local only; never point it at production.
 
-    SHELAH_ENV_FILE=/path/to/.env .venv/bin/python scripts/eval_ai_quality.py SUITE [--provider claude] [--out out.json]
+    SHELAH_ENV_FILE=/path/to/.env .venv/bin/python scripts/eval_ai_quality.py SUITE [--provider claude] [--save]
 
 Suites:
     long      10 prompts that ask for a long answer: word counts
@@ -17,6 +17,8 @@ Suites:
     latency   time to the first progress event, to the model call and in all, per question
 
 --provider claude turns Gemini off, so every answer comes from the Claude fallback.
+--save writes the rows to build/eval/latest.json (git-ignored; the path is a constant, not
+an argument). Rename the file after a run to keep it.
 """
 
 import argparse
@@ -26,6 +28,7 @@ import os
 import re
 import sys
 import time
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -49,6 +52,15 @@ import asgi  # noqa: E402
 from backend import ask_progress, claude  # noqa: E402
 
 CONCURRENCY = 3
+RESULTS_PATH = Path(__file__).resolve().parent.parent / "build" / "eval" / "latest.json"
+
+KORACH = "Explain the story of Korach."
+LIGHT_QUESTION = "Can I turn on a light on Shabbat?"
+LONG_REQUEST = "answer in a long answer"
+LIGHT_THREAD = [
+    {"role": "user", "content": LIGHT_QUESTION},
+    {"role": "assistant", "content": "No. Switching on an electric light is forbidden on Shabbat because it is a form of kindling or building."},
+]
 
 # ── prompts ─────────────────────────────────────────────────────────────────
 
@@ -71,7 +83,7 @@ LONG_PROMPTS = [
     ("In extreme detail, what are the laws of meat and milk?", "en", None),
     ("Elaborate: what does the Rambam teach about teshuvah?", "en", None),
     ("explain in more depth", "en", SHORT_BREAD),
-    ("answer in a long answer", "en", SHORT_SUKKOT),
+    (LONG_REQUEST, "en", SHORT_SUKKOT),
 ]
 
 # The questions of the flagged conversation, in order (docs/evals/2026-10-22-flagged-conversation.md).
@@ -81,7 +93,7 @@ FLAGGED_THREAD = [
     "what does rashi, unkelus, and ibin ezra really say in their whole commentary",
     "now explain pasuk vav-the end",
     "in extreme detail with commentary",
-    "answer in a long answer",
+    LONG_REQUEST,
     "what does rashi comment on pasuk yud bet compared to unkelus? and how do they differ",
     "what about their views on moshe?",
 ]
@@ -91,7 +103,7 @@ STYLE_QUESTIONS = [
     "Can I use my phone on Yom Tov?",
     "What is the meaning of the Shema?",
     "Why is the Ten Days of Repentance important?",
-    "Explain the story of Korach.",
+    KORACH,
     "What does the Talmud say about lending money?",
     "How do I count the Omer?",
     "What is the mitzvah of tzedakah?",
@@ -100,7 +112,7 @@ STYLE_QUESTIONS = [
 
 NORMAL_QUESTIONS = [
     "What blessing do I say before eating an apple?",
-    "Can I turn on a light on Shabbat?",
+    LIGHT_QUESTION,
     "What time does Shabbat start in Jerusalem this week?",
     "Who was King David?",
     "Why do we fast on Yom Kippur?",
@@ -129,7 +141,7 @@ NORMAL_QUESTIONS = [
     "What is the Jewish calendar based on?",
     "Why do Jews wear tefillin?",
     "What did Napoleon do for the Jews of France?",
-    "Explain the story of Korach.",
+    KORACH,
     "What did Pinchas do?",
     "Who was Yoav in the time of King David?",
     "Tell me about the life of Hillel.",
@@ -149,17 +161,13 @@ FOLLOW_UPS = [
     (SHORT_BREAD, "why?"),
     (SHORT_BREAD, "what about on Shabbat?"),
     (SHORT_BREAD, "and for a woman?"),
-    ([{"role": "user", "content": "Can I turn on a light on Shabbat?"},
-      {"role": "assistant", "content": "No. Switching on an electric light is forbidden on Shabbat because it is a form of kindling or building."}], "what about football?"),
-    ([{"role": "user", "content": "Can I turn on a light on Shabbat?"},
-      {"role": "assistant", "content": "No. Switching on an electric light is forbidden on Shabbat because it is a form of kindling or building."}], "and what about a movie?"),
-    ([{"role": "user", "content": "Can I turn on a light on Shabbat?"},
-      {"role": "assistant", "content": "No. Switching on an electric light is forbidden on Shabbat because it is a form of kindling or building."}], "how about a concert?"),
-    ([{"role": "user", "content": "Can I turn on a light on Shabbat?"},
-      {"role": "assistant", "content": "No. Switching on an electric light is forbidden on Shabbat because it is a form of kindling or building."}], "what if it is a novel?"),
+    (LIGHT_THREAD, "what about football?"),
+    (LIGHT_THREAD, "and what about a movie?"),
+    (LIGHT_THREAD, "how about a concert?"),
+    (LIGHT_THREAD, "what if it is a novel?"),
     ([{"role": "user", "content": "Can I eat before Kiddush on Shabbat morning?"},
       {"role": "assistant", "content": "You may not eat or drink a meal before Kiddush on Shabbat morning, but water is allowed."}], "and a poem?"),
-    (SHORT_SUKKOT, "answer in a long answer"),
+    (SHORT_SUKKOT, LONG_REQUEST),
     (SHORT_SUKKOT, "more"),
     (SHORT_SUKKOT, "go on"),
     (SHORT_SUKKOT, "can you say that again more simply?"),
@@ -212,7 +220,7 @@ LATENCY_QUESTIONS = [
     "Why do we light candles on Shabbat?",
     "What is the story of Chanukah?",
     "What is the Rambam's view on teshuvah?",
-    "Explain the story of Korach.",
+    KORACH,
     "What does Rashi say on the first verse of the Torah?",
     "How long do I wait between meat and milk?",
     "Is it permitted to eat before Kiddush on Shabbat morning?",
@@ -308,9 +316,10 @@ async def run_all(jobs):
     return await asyncio.gather(*(one(job) for job in jobs))
 
 
-def report(rows, out_path):
-    if out_path:
-        with open(out_path, "w", encoding="utf-8") as handle:
+def report(rows, save):
+    if save:
+        RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(RESULTS_PATH, "w", encoding="utf-8") as handle:
             json.dump(rows, handle, ensure_ascii=False, indent=1)
 
 
@@ -366,7 +375,7 @@ async def suite_refusal(skip_model=False):
         result = await ask(question)
         return {"question": question, "refused": is_refusal(result), "answer": answer_text(result)[:160]}
 
-    async def follow_up(history, question, expect_refusal=False):
+    async def follow_up(history, question):
         if skip_model:
             return {"question": question, "refused": claude.off_topic_block_result(question) is not None}
         result = await ask(question, history)
@@ -459,7 +468,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("suite", choices=sorted(SUITES))
     parser.add_argument("--provider", choices=("gemini", "claude"), default="gemini")
-    parser.add_argument("--out")
+    parser.add_argument("--save", action="store_true", help="write the rows to build/eval/latest.json")
     parser.add_argument("--no-model", action="store_true", help="refusal suite: the keyword gate only")
     args = parser.parse_args()
     if args.provider == "claude":
@@ -467,7 +476,7 @@ def main():
         os.environ["GOOGLE_API_KEY"] = ""
     suite = SUITES[args.suite]
     rows = asyncio.run(suite(skip_model=args.no_model) if args.suite == "refusal" else suite())
-    report(rows, args.out)
+    report(rows, args.save)
 
 
 if __name__ == "__main__":

@@ -151,6 +151,12 @@ class TestDetails:
             "detail": {"kind": "refs", "refs": ["Berakhot 1:1", "Shabbat 2:1"], "count": 7},
         }]
 
+    def test_a_refs_detail_names_at_most_three_references_and_counts_them_all(self):
+        refs = ["Berakhot 1:1", "Shabbat 2:1", "Pesachim 3:1", "Yoma 4:1"]
+        events = self._capture(lambda: ask_progress.detail("sources", "refs", refs=refs, count=len(refs)))
+        assert events[0]["detail"]["refs"] == refs[:3]
+        assert events[0]["detail"]["count"] == 4
+
     def test_an_unknown_kind_or_stage_is_ignored(self):
         events = self._capture(lambda: (
             ask_progress.detail("sources", "free-text", text="<b>hi</b>"),

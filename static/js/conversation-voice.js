@@ -114,13 +114,8 @@ export function createVoiceInput({ input, button, getLang = () => "en", onState,
         }
         const mine = ++attempt;
         asking = true;
-        let request;
-        try {
-            request = Promise.resolve(media.getUserMedia({ audio: true }));
-        } catch (error) {
-            request = Promise.reject(error);
-        }
-        request.then(
+        // The executor turns a getUserMedia that throws at once into a rejection.
+        new Promise((resolve) => resolve(media.getUserMedia({ audio: true }))).then(
             (stream) => {
                 asking = false;
                 stream?.getTracks?.().forEach((track) => track.stop());

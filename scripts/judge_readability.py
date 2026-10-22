@@ -2,18 +2,23 @@
 (docs/evals/2026-10-22-plain-language.md).
 
 For each question the "before" and "after" answers are shown to claude-haiku-5-5 as A
-and B in a seeded random order, with no hint of which is which. The judge scores each
+and B in a seeded order, with no hint of which is which. The judge scores each
 on five criteria (1 = poor, 5 = excellent) and says which one an adult who has never
 studied the subject would find easier to read. Only the scores and the order are kept.
 
-    SHELAH_ENV_FILE=/path/to/.env .venv/bin/python scripts/judge_readability.py before.json after.json [--out judged.json]
+Reads build/eval/before.json and build/eval/after.json (two `eval_ai_quality.py style
+--save` runs, each renamed after it finishes); --save writes build/eval/judged.json. The
+paths are constants, not arguments.
+
+    SHELAH_ENV_FILE=/path/to/.env .venv/bin/python scripts/judge_readability.py [--save] [--seed N]
 """
 
 import argparse
+import hashlib
 import json
 import os
-import random
 import sys
+from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
@@ -67,6 +72,17 @@ def judge(client, key, question, a, b):
     raise RuntimeError("the judge did not return JSON three times in a row")
 
 
+EVAL_DIR = Path(__file__).resolve().parent.parent / "build" / "eval"
+BEFORE_PATH = EVAL_DIR / "before.json"
+AFTER_PATH = EVAL_DIR / "after.json"
+JUDGED_PATH = EVAL_DIR / "judged.json"
+
+
+def new_answer_is_a(seed, question):
+    """Which side the new answer is shown on: a fixed coin per (seed, question)."""
+    return hashlib.sha256(f"{seed}:{question}".encode()).digest()[0] < 128
+
+
 def pairs(before, after):
     for group in ("questions", "flagged_thread"):
         for old, new in zip(before.get(group, []), after.get(group, [])):
@@ -76,24 +92,21 @@ def pairs(before, after):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("before")
-    parser.add_argument("after")
-    parser.add_argument("--out")
+    parser.add_argument("--save", action="store_true", help="write build/eval/judged.json")
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args()
     key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not key:
         sys.exit("ANTHROPIC_API_KEY is not set")
-    rng = random.Random(args.seed)
-    with open(args.before, encoding="utf-8") as handle:
+    with open(BEFORE_PATH, encoding="utf-8") as handle:
         before = json.load(handle)
-    with open(args.after, encoding="utf-8") as handle:
+    with open(AFTER_PATH, encoding="utf-8") as handle:
         after = json.load(handle)
-    rows, totals = [], {"before": {n: 0 for n in CRITERIA}, "after": {n: 0 for n in CRITERIA}}
+    rows, totals = [], {"before": dict.fromkeys(CRITERIA, 0), "after": dict.fromkeys(CRITERIA, 0)}
     wins = {"before": 0, "after": 0, "same": 0}
     with httpx.Client() as client:
         for question, old, new in pairs(before, after):
-            swapped = rng.random() < 0.5
+            swapped = new_answer_is_a(args.seed, question)
             a, b = (new, old) if swapped else (old, new)
             verdict = judge(client, key, question, a, b)
             new_side, old_side = ("A", "B") if swapped else ("B", "A")
@@ -101,7 +114,12 @@ def main():
                 totals["after"][name] += int(verdict[new_side][name])
                 totals["before"][name] += int(verdict[old_side][name])
             easier = verdict.get("easier")
-            wins["same" if easier not in ("A", "B") else "after" if easier == new_side else "before"] += 1
+            if easier not in ("A", "B"):
+                wins["same"] += 1
+            elif easier == new_side:
+                wins["after"] += 1
+            else:
+                wins["before"] += 1
             rows.append({"question": question, "after_was": new_side, "verdict": verdict})
     count = len(rows)
     summary = {
@@ -110,8 +128,8 @@ def main():
         "easier_to_read": wins,
     }
     print(json.dumps(summary, indent=1))
-    if args.out:
-        with open(args.out, "w", encoding="utf-8") as handle:
+    if args.save:
+        with open(JUDGED_PATH, "w", encoding="utf-8") as handle:
             json.dump({"summary": summary, "rows": rows}, handle, ensure_ascii=False, indent=1)
 
 

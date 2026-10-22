@@ -59,6 +59,7 @@ DETAIL_COMMUNITY = "community"  # customs: community=<the reader's lens>
 DETAIL_TIMES = "times"        # times:    topic=<one of TIMES_TOPICS>
 DETAIL_TOOL = "tool"          # thinking: tool=<tool name>, ref=<a text ref>
 DETAIL_STEP = "step"          # thinking: step=<one of STEPS>
+MAX_DETAIL_REFS = 3
 DETAIL_KINDS = frozenset({DETAIL_REFS, DETAIL_COMMUNITY, DETAIL_TIMES, DETAIL_TOOL, DETAIL_STEP})
 
 # What the model call itself is doing when it is not just thinking: the
@@ -156,7 +157,8 @@ def end(stage: str) -> None:
 def _clean_detail(kind: str, params: dict[str, Any]) -> dict[str, Any]:
     """The detail's wire form: its kind and whichever parameters have a value."""
     if isinstance(params.get("refs"), (list, tuple)):
-        params = {**params, "refs": [str(ref).strip() for ref in params["refs"] if str(ref or "").strip()]}
+        refs = [str(ref).strip() for ref in params["refs"] if str(ref or "").strip()]
+        params = {**params, "refs": refs[:MAX_DETAIL_REFS]}
     return {"kind": kind, **{key: value for key, value in params.items() if value not in (None, "", [], ())}}
 
 

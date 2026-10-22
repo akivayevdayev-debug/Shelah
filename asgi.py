@@ -144,7 +144,7 @@ async def _collect_primary_sources(
     )
     refs = primary_refs if isinstance(primary_refs, list) else []
     ask_progress.detail(
-        ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs[:3], count=len(refs))
+        ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs, count=len(refs))
 
     async def _load_one(ref: str) -> dict[str, Any] | None:
         engine = ShelahEngine()
