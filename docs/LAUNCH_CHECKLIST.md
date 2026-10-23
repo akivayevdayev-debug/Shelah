@@ -12,7 +12,7 @@ engineering pass can close.
 | Status | Meaning |
 |---|---|
 | ✅ Done | Implemented, tested, and verified against the current repo state |
-| ✅ Done — operator-attested | Engineering work is complete; the remaining fact is a dashboard or account setting only the operator can see, recorded with its date |
+| ✅ Done (operator-attested) | Engineering work is complete; the remaining fact is a dashboard or account setting only the operator can see, recorded with its date |
 | ⚠️ Partial | Some of the line is done; the rest is named specifically |
 | ❌ Not started | No work has begun on this line |
 
@@ -94,7 +94,7 @@ primary, shared Anthropic fallback, agentic Anthropic turn), shipped
 
 ### 3. Age handling and output safety
 
-**Status: ⚠️ Partial — the age-appropriate output layer is done; an age *gate* does not exist.**
+**Status: ⚠️ Partial. The age-appropriate output layer is done; an age *gate* does not exist.**
 
 Output safety is solid. `AGE_APPROPRIATE_DIRECTIVE` and
 `NO_IMPERSONATION_DIRECTIVE` are hoisted into both `CORE_SYSTEM_PROMPT` and
@@ -115,18 +115,18 @@ unfinished engineering task.
 
 ### 4. Security: secrets, RLS, CSP, supply chain, auth
 
-**Status: ⚠️ Partial — the engineering items are done; an external penetration test has not been done.**
+**Status: ⚠️ Partial. The engineering items are done; an external penetration test has not been done.**
 
 The full engineering review is [`docs/SECURITY.md`](SECURITY.md). Summary:
 
-- **Secrets — ✅ rotated, history rewritten.** A Gemini API key committed in
+- **Secrets: ✅ rotated, history rewritten.** A Gemini API key committed in
   three early commits was removed from the working tree and rotated
   (operator-confirmed 2026-09-02, Google Cloud Console), and the repository
   history was rewritten on 2026-09-18 to purge it. Two residual exposures
   remain open and are listed in `docs/SECURITY.md` §13: GitHub's hidden
   `refs/pull/*/head` refs and by-hash serving of old commits, both closable
   only through a GitHub Support request.
-- **Strict RLS — ✅ Done, empirically confirmed live 2026-09-04** and
+- **Strict RLS: ✅ Done, empirically confirmed live 2026-09-04** and
   reconfirmed 2026-09-16. `STRICT_SUPABASE_RLS` is a hardcoded `True`,
   `/api/devtools/rls-audit` covers every user-scoped table, and a
   regression test pins `strict_rls: True`. The confirmation took three dated
@@ -138,19 +138,19 @@ The full engineering review is [`docs/SECURITY.md`](SECURITY.md). Summary:
   passed its positive and negative cross-user checks on `user_preferences`,
   `study_bookmarks` and `user_memories`, and the token diagnostic read
   `aud='authenticated'`.
-- **CSP, SRI, pinned dependencies, secret scanning — ✅ Done.** See
+- **CSP, SRI, pinned dependencies, secret scanning: ✅ Done.** See
   `docs/SECURITY.md` §3 and §4. The script policy has no `'unsafe-inline'`
   (inline scripts are admitted by hash). `'unsafe-inline'` remains in the style
   policy (inline `style=` attributes) and is tracked as an open item.
-- **Authentication and authorization review — ✅ Done**
+- **Authentication and authorization review: ✅ Done**
   (`docs/SECURITY.md` §6). `CLERK_AUDIENCE` is set in production.
-- **Anonymous asking — ✅ deliberate (operator decision, confirmed
+- **Anonymous asking: ✅ deliberate (operator decision, confirmed
   2026-10-03).** The production Vercel project sets `CLERK_ENFORCE_AUTH=false`
   explicitly (read 2026-10-03), so the "Optional" routes, `/ask` included, work
   without signing in, bounded by the anonymous rate limit and budget gate;
   Turnstile is provisioned but off. That overrides the code's `true` default on
   Vercel, on purpose. See `docs/SECURITY.md` §6.
-- **Penetration test / external security review — not done.** The engineering
+- **Penetration test / external security review: not done.** The engineering
   review says outright that it is not a substitute for one.
 
 ### 5. Privacy operations: DSR, account deletion, DPAs, retention, breach plan
@@ -163,10 +163,10 @@ The full engineering review is [`docs/SECURITY.md`](SECURITY.md). Summary:
 - The breach response plan is written, with a 72-hour GDPR timeline and
   notification templates
   ([`docs/PRIVACY_OPERATIONS.md`](PRIVACY_OPERATIONS.md) §6).
-- **DPAs — ✅ executed, operator-confirmed 2026-09-16** for all six
+- **DPAs: ✅ executed, operator-confirmed 2026-09-16** for all six
   processors (Clerk, Supabase, Vercel, Google, Anthropic, Sentry);
   see `docs/PRIVACY_OPERATIONS.md` §3.
-- **Retention job — ✅ running, `CRON_SECRET` confirmed set in production
+- **Retention job: ✅ running, `CRON_SECRET` confirmed set in production
   (operator-attested, 2026-09-06).** `GET /api/devtools/retention-enforce`
   enforces 90-day windows on `ask_history` and `ai_usage_log`, and
   `vercel.json` schedules it daily at 14:00 UTC. `CRON_SECRET` ships empty
@@ -178,7 +178,7 @@ and consent records are deleted with the account.
 
 ### 6. Observability: Sentry, structured logs, cost metering, budget cap, uptime alerts, circuit breakers
 
-**Status: ⚠️ Partial — uptime alerts are the one remaining open item.**
+**Status: ⚠️ Partial. Uptime alerts are the one remaining open item.**
 
 Done:
 
@@ -189,18 +189,18 @@ Done:
   atomic per-user daily budget blocks at the database layer
   (`scripts/sql/check_and_reserve_user_budget.sql`; a 20-concurrent-caller
   test went from 20 of 20 allowed before the fix to 1 of 20 after).
-- **Global budget cap — ✅ live since 2026-09-01.** `DAILY_BUDGET_USD` is
+- **Global budget cap: ✅ live since 2026-09-01.** `DAILY_BUDGET_USD` is
   `10.00` in production (reconfirmed 2026-09-04). The `budget-check` cron
   sums the day's `ai_usage_log` spend and alerts when it reaches the cap.
   A misconfigured or unset value is no longer silent:
   `backend/cost_meter.py` logs a warning at both no-op sites and
   `/api/stack/health` reports `security.cost_breaker.configured: false`.
-- **Global cost breaker — ✅ shipped 2026-08-22.**
+- **Global cost breaker: ✅ shipped 2026-08-22.**
   `is_global_cost_breaker_tripped()` is consulted inside `ask_async()` and
   serves a cached answer or a calm paused-state payload when tripped.
-- **Multi-account budget bypass — decided 2026-08-23:** accept and document,
+- **Multi-account budget bypass: decided 2026-08-23:** accept and document,
   conditional on the WAF and global breaker above (both shipped).
-- **Edge WAF — ✅ entered 2026-08-26** (3 custom rules including the `/ask`
+- **Edge WAF: ✅ entered 2026-08-26** (3 custom rules including the `/ask`
   rate limit). The rate-limit rule is in Enforce mode at 100 requests per
   minute per IP+JA4, confirmed live 2026-09-16 and still listed as enabled on
   2026-10-03. Its third rule, the non-standard-method rule, stays in Log
@@ -209,7 +209,7 @@ Done:
 - **Circuit breakers** are wired for Sefaria, web fetches, translation and
   Hebcal (all four Hebcal call sites), and for both AI providers.
 
-**Not done — uptime alerts.** No monitor is configured.
+**Not done: uptime alerts.** No monitor is configured.
 [`docs/RUNBOOKS.md`](RUNBOOKS.md) ("Uptime monitoring") specifies the
 intended two-tier check: a 5-minute check on a static asset, and a
 15–30 minute check on a function-backed endpoint, with the caveat that
@@ -238,18 +238,18 @@ healthy. Creating the monitoring account is an operator action.
 
 ### 8. Business: entity, insurance, trademark
 
-**Status: ⚠️ Decided, not "in place" — all three are accepted-risk decisions.**
+**Status: ⚠️ Decided, not "in place". All three are accepted-risk decisions.**
 
 No engineering pass can resolve this line. The operator has made all three
-calls: **entity — operating as an individual, not an LLC** (2026-09-04),
-**insurance — declined** (2026-09-06), and **trademark/name clearance —
+calls: **entity: operating as an individual, not an LLC** (2026-09-04),
+**insurance: declined** (2026-09-06), and **trademark/name clearance:
 declined** (2026-09-16), each because the cost and complexity are
 disproportionate for a free, non-revenue site. See "Business & compliance"
 below for the consequences of each.
 
 ### 9. Backups, restore, rollback
 
-**Status: ⚠️ Partial — documented, not executed.**
+**Status: ⚠️ Partial. Documented, not executed.**
 
 [`docs/RUNBOOKS.md`](RUNBOOKS.md) documents both procedures: "Backups &
 recovery" (manual `pg_dump` / `supabase db dump` and restore commands) and

@@ -1,6 +1,6 @@
 # Sh'elah developer notes
 
-A practical map for someone about to change the code: what runs where, which file owns what, how to run and test it, and where to look first when something breaks. It is deliberately short on detail that lives better elsewhere; the deep references are linked below.
+A practical map for someone about to change the code: what runs where, which file owns what, how to run and test it, and where to look first when something breaks. It stays short on detail that other docs cover better. The deep references are linked below.
 
 | You want | Read |
 |---|---|
@@ -20,7 +20,7 @@ A practical map for someone about to change the code: what runs where, which fil
 1. A browser requests `/` (or any deep-link path such as `/library/...`, `/siddur/...`, `/conversations/...`). Flask renders `templates/index.html`; `backend/page_meta.py` fills the per-URL `<head>` values and `backend/routes_spa_paths.py` serves the path deep links.
 2. The page is a single-page app with no bundler. A classic deferred script, `static/js/shell.js` (loaded by `templates/index.html`), owns most of the UI; ES modules under `static/js/` own the newer surfaces and meet it through `window.Shelah*` bridges (see [`FRONTEND.md`](FRONTEND.md)).
 3. The page calls `/api/*` for texts, the library, prayers and the siddur, zmanim, holidays, the parasha, communities, bookmarks, history and conversations, and `POST /ask` for AI answers.
-4. In production the whole app is one Vercel function (`api/index.py` re-exports `asgi.app`). FastAPI serves only `POST /ask` and `GET /api/async/health` natively; every other route is Flask, mounted through `WSGIMiddleware`. Request handling therefore has two worlds:
+4. In production the whole app is one Vercel function (`api/index.py` re-exports `asgi.app`). FastAPI serves only `POST /ask` and `GET /api/async/health` natively; every other route is Flask, mounted through `WSGIMiddleware`. Request handling therefore runs in two worlds:
    - **Async** (`asgi.py`, `backend/ask_pipeline.py`, `backend/claude.py`'s async entry points): must never block the event loop. Use `asyncio.to_thread` or async `httpx`.
    - **Sync** (`app.py` and the `backend/routes_*.py` blueprints): ordinary Flask handlers, run in WSGI worker threads.
 5. External services: Sefaria (texts, links, calendars, the library index), Hebcal (Hebrew dates, candle lighting), Wikipedia and Halachipedia (retrieval), Gemini and Claude (answers), Supabase (user data, community knowledge, history, conversations, budgets), Clerk (identity), Cloudflare Turnstile (anonymous `/ask`), Upstash Redis (rate limits), Sentry (errors, relayed to Discord through `sentry-discord-relay/`).
@@ -32,7 +32,7 @@ Entry points:
 | File | Owns |
 |---|---|
 | `asgi.py` | The deployed ASGI app: native `/ask`, request-id and cache-policy middleware, `RateLimitMiddleware`, the Flask mount |
-| `app.py` | The Flask app: configuration, security headers, blueprint registration, the Sefaria/zmanim helpers the blueprints import, and a sync `/ask` that is not reachable in production but is kept at parity (`tests/test_ask_transport_parity.py`) |
+| `app.py` | The Flask app: configuration, security headers, blueprint registration, the Sefaria/zmanim helpers the blueprints import, and a sync `/ask` that production never reaches. It is kept at parity with the native route (`tests/test_ask_transport_parity.py`) |
 | `api/index.py` | The Vercel entry point |
 
 Request-path modules (all under `backend/`):

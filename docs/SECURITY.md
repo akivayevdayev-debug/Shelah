@@ -1,15 +1,15 @@
 # Security — policy & posture
 
 **Status:** living document, last reviewed **2026-10-02**. It records what has
-been audited, what was found, what was fixed, how the live deployment is
-configured, and what remains an explicit open item for a human decision
-(see [§13](#13-open-items)). Dated entries ("confirmed 2026-09-02") are the
+been audited, what was found and fixed, how the live deployment is
+configured, and which items still need a human decision (see
+[§13](#13-open-items)). Dated entries ("confirmed 2026-09-02") are the
 last time the operator or an engineering pass verified that fact; they are
 not re-verified automatically.
 
-This is an engineering document, not a substitute for a penetration test or
-external security review. None has been performed yet; this document and the
-fixes it describes are the engineering-side input to one.
+This is an engineering document. It does not replace a penetration test or
+external security review, and neither has been performed yet. This document and
+the fixes it describes are the engineering input to one.
 
 See [`docs/LAUNCH_CHECKLIST.md`](LAUNCH_CHECKLIST.md) for how these findings
 map onto the launch-gate checklist, [`docs/AI_SECURITY_REVIEW.md`](AI_SECURITY_REVIEW.md)
@@ -32,12 +32,12 @@ there and ship on the next deploy.
 
 **In scope:** the deployed application and everything in this repository.
 **Out of scope:** the third-party services it depends on (Clerk, Supabase,
-Vercel, Upstash, Cloudflare, Sentry, Sefaria, Anthropic, Google) — report
+Vercel, Upstash, Cloudflare, Sentry, Sefaria, Anthropic, Google): report
 issues in those to their vendors.
 
 ## 1. Secrets & key management
 
-**Historical finding — rotated; git history rewritten.** A Google/Gemini API
+**Historical finding: rotated; git history rewritten.** A Google/Gemini API
 key (value not reproduced here) was committed in `test_results.txt` (raw saved
 output of a manual model-call test, including the request URL's `?key=` query
 parameter) across multiple commits from 2026-05-16 onward and was still
@@ -46,13 +46,13 @@ tracked in the working tree at the start of the first security pass.
 - **Fixed 2026-08-17:** the file was removed from the tree, and
   `test_results.txt` / `_workspace_backups_and_trash/` were added to
   `.gitignore` so the pattern can't be re-committed.
-- **✅ Rotated — confirmed by the operator, 2026-09-02 (Google Cloud
-  Console).** The leaked key is revoked at the source; it is not a live
+- **Rotated.** Confirmed by the operator, 2026-09-02 (Google Cloud
+  Console). The leaked key is revoked at the source, so it is not a live
   credential regardless of who holds a copy.
-- **Git-history purge — `origin/main` rewritten 2026-09-18.** An earlier
-  attempt (2026-09-17) was incomplete — the key had been hard-wrapped across a
-  line break in the file, so only the head of the key was replaced — and was
-  reverted. The 2026-09-18 pass ran `git filter-repo --replace-text` (regex
+- **Git-history purge: `origin/main` rewritten 2026-09-18.** An earlier
+  attempt (2026-09-17) was incomplete. The key had been hard-wrapped across a
+  line break in the file, so only the head of the key was replaced, and the
+  attempt was reverted. The 2026-09-18 pass ran `git filter-repo --replace-text` (regex
   rules that tolerate the line wrap, plus rules for any prefix/suffix fragment
   of at least 12 characters) on a disposable mirror clone, then scanned all
   3,386 objects for the full key (raw, newline-joined, whitespace-joined) and
@@ -61,11 +61,11 @@ tracked in the working tree at the start of the first security pass.
   unchanged apart from commit hashes quoted inside messages. It was
   force-pushed with `--force-with-lease`, and a fresh mirror clone of `origin`
   re-scanned clean.
-  - **Still open — residual exposure 1:** `refs/pull/2/head` through
+  - **Still open, residual exposure 1:** `refs/pull/2/head` through
     `refs/pull/5/head` on GitHub still reach the old, key-bearing commits. A
     push to `main` cannot change pull-request refs; removing them needs a
     request to GitHub Support.
-  - **Still open — residual exposure 2:** GitHub kept serving the old commits
+  - **Still open, residual exposure 2:** GitHub kept serving the old commits
     by hash on 2026-09-18 (the repository is public; 0 forks at that time), and
     any pre-existing clone keeps the old history. Anyone with an old clone must
     re-clone or run `git fetch origin && git reset --hard origin/main`.
@@ -75,8 +75,8 @@ tracked in the working tree at the start of the first security pass.
   rewritten history (497 commits, 2026-09-18) reported 4 findings, all the same
   false positive (`shelah-sw-v2-migrated` / `shelah-sw-v3-migrated`, held in a
   `migrationKey` constant in `templates/index.html`, since 2026-10-13 in
-  `static/js/shell.js` — a client-side localStorage migration-flag string, not a
-  credential; `.gitleaks.toml` allowlists it).
+  `static/js/shell.js`. It is a client-side localStorage migration-flag string,
+  not a credential. `.gitleaks.toml` allowlists it).
 - `.env` is never tracked (`.gitignore` covers `.env`/`.env.*`; only
   `.env.example`, which ships placeholder values, is committed). The
   `gitleaks` and `bandit` pre-commit hooks run locally and again in CI over
@@ -105,7 +105,7 @@ operator 2026-09-16.**
   **Disabled** on Production on 2026-09-04 and activated. Clerk's integration
   toggle injects a `role` claim only, never `aud`, so `aud` / `email` /
   `app_metadata` / `user_metadata` were added to Clerk's Claims template by
-  hand — without that, `CLERK_AUDIENCE=authenticated` would have produced
+  hand. Without that, `CLERK_AUDIENCE=authenticated` would have produced
   "Token is missing the 'aud' claim" failures. A Clerk development instance is
   also registered under Third-Party Auth for local development.
 - **Live acceptance test:** `scripts/verify_rls.py` (a two-real-user positive
@@ -124,7 +124,7 @@ operator 2026-09-16.**
 - The live path sends Clerk's plain default session token
   (`templates/index.html`'s `authHeaders()`), not a `"supabase"`-templated one.
 - `STRICT_SUPABASE_RLS` (`app.py`) is a hardcoded `True` literal, enforced
-  unconditionally — a security posture, not per-deployment config. A
+  unconditionally, a fixed security setting, not per-deployment config. A
   regression test asserts `strict_rls` is `True` in the audit response, so
   flipping the literal fails CI.
 - **Policies.** `scripts/sql/SUPABASE_RLS_POLICIES.sql` defines
@@ -232,7 +232,7 @@ entirely):
   sdist-only dependencies). Pins that closed advisories:
   - `starlette` 1.0.1 → **1.3.1** (closes `PYSEC-2026-248`/`249`/`2280`/`2281`,
     `GHSA-jp82-jpqv-5vv3`, `GHSA-82w8-qh3p-5jfq`, `GHSA-wqp7-x3pw-xc5r`,
-    `GHSA-x746-7m8f-x49c`); the smallest bump that closes them, not latest.
+    `GHSA-x746-7m8f-x49c`); this is the smallest bump that closes them, not the latest.
   - `PyJWT` **2.15.0** (the smallest version with no known advisory; 2.14.0 still
     carried `PYSEC-2026-4141`); `urllib3` (transitive, via `requests`) **2.8.0**
     for `PYSEC-2026-4175`/`4176`/`4177`; `click`, `h2`, `idna` patched earlier.
@@ -240,10 +240,10 @@ entirely):
   - Each bump was verified against the full pytest suite before pinning.
 - **CI (`.github/workflows/ci.yml`)**, on every push, with every third-party
   action pinned to a commit SHA and the runner pinned to `ubuntu-24.04`:
-  - `pre-commit run --all-files` (`gitleaks` + `bandit`) — **blocking**, so a
+  - `pre-commit run --all-files` (`gitleaks` + `bandit`): **blocking**, so a
     skipped local hook (`--no-verify`) cannot ship a secret or a
     bandit-flagged pattern.
-  - `pip-audit` against each lock file separately (`--disable-pip`) —
+  - `pip-audit` against each lock file separately (`--disable-pip`):
     **blocking** since 2026-10-03, like the `ruff` step (both were clean when
     promoted). A new advisory fails the next run. The fix is to bump the
     affected package and regenerate the lock files (`uv pip compile`, see
@@ -290,14 +290,14 @@ Three real gaps were found and fixed (each has a regression test):
   `SEFARIA_API` host ruled out SSRF either way.
 - **`GET /api/holidays`:** the `year` query param was interpolated straight
   into the outbound Hebcal URL, so `2026&geo=pos&latitude=1` could inject
-  parameters. Fixed by coercing through `_coerce_int` (bounded 1583–3000). The
+  parameters. Fixed by coercing through `_coerce_int` (bounded 1583 to 3000). The
   fixed `hebcal.com` host ruled out SSRF.
 
-**Rate limiting — one ASGI middleware.** All rate limiting runs through
+**Rate limiting: one ASGI middleware.** All rate limiting runs through
 `backend/rate_limit.py`, whose `RateLimitMiddleware` is installed once on
 `asgi.fastapi_app`. Starlette's middleware stack wraps the router that also
 dispatches to the `WSGIMiddleware`-mounted Flask app, so it sees 100 % of
-traffic — every native FastAPI route and every Flask route — exactly once,
+traffic (every native FastAPI route and every Flask route) exactly once,
 before any handler runs. One body shape, `{"error": ..., "code":
 "rate_limited"}` with a `Retry-After` header, covers every rejection.
 
@@ -330,17 +330,17 @@ before any handler runs. One body shape, `{"error": ..., "code":
   `/static/*` is exempt. Every new route must be classified in this table.
 - **Store:** a Redis fixed-window counter (`INCR` + conditional `EXPIRE`,
   matching the Vercel edge WAF's algorithm) when `RATE_LIMIT_REDIS_URL` is set
-  — **confirmed set in the live Vercel production environment (2026-08-26)**,
+  (**confirmed set in the live Vercel production environment, 2026-08-26**),
   so production traffic is limited against one shared, cross-instance counter.
   When the variable is unset or malformed the middleware falls back to a
   per-process sliding-window store (LRU-capped at 2048 keys), which is for
   local development and misconfiguration, not the production default. The
   fallback logs loudly at boot (`logger.warning` when unset; `logger.critical`
   with `exc_info` when set but the client fails to build), and a malformed
-  store must never crash app boot — a fixed regression (production incident
-  2026-08-26/27; see `docs/RUNBOOKS.md`'s incident history).
+  store must never crash app boot. This was a regression, now fixed (production
+  incident 2026-08-26/27; see `docs/RUNBOOKS.md`'s incident history).
 - **Trusted client key:** every IP-keyed bucket uses
-  `backend/helpers.py::_resolve_client_ip()` — `X-Vercel-Forwarded-For`, then
+  `backend/helpers.py::_resolve_client_ip()`: `X-Vercel-Forwarded-For`, then
   `X-Forwarded-For`, then `X-Real-IP` (first comma-separated value), then the
   ASGI-reported address. There is no second IP-extraction path.
 - **Identity-aware keys (`llm` and `account`):** a signed-in caller (Clerk
@@ -348,13 +348,13 @@ before any handler runs. One body shape, `{"error": ..., "code":
   separate JWT parsing) is keyed per account (`rl:<class>:user:<sub>`) instead
   of sharing an IP bucket, so one heavy signed-in caller behind a shared
   institutional egress IP (a yeshiva, day school or shul network) cannot lock
-  out the whole building. `webhook` stays IP-keyed — it is Clerk calling us,
-  and Svix signature verification is the real gate on that route.
+  out the whole building. `webhook` stays IP-keyed, since it is Clerk calling us,
+  and Svix signature verification is the actual check on that route.
 - **Kill switch:** `RATELIMIT_ENABLED` (default `true`, the flag
   `tests/conftest.py` and `ci.yml` rely on) disables the middleware when
   false.
 - **Observability:** every rejection and every store-unavailable event is
-  logged with a hashed key (`_hash_key`, sha256 truncated to 16 hex — never a
+  logged with a hashed key (`_hash_key`, sha256 truncated to 16 hex, never a
   raw IP or Clerk `sub`) via `log_mitigation()` / `_capture_backend_error()`
   (§8).
 
@@ -368,7 +368,7 @@ caller bounded:
    (`PER_USER_DAILY_BUDGET_USD`, default $2.00, **on by default**, reserved
    atomically through the `check_and_reserve_user_budget` Supabase RPC so
    concurrent requests cannot all slip under the cap) and a global cost
-   breaker (`DAILY_BUDGET_USD`, opt-in — a no-op until the operator sets it;
+   breaker (`DAILY_BUDGET_USD`, opt-in, and a no-op until the operator sets it;
    `is_global_cost_breaker_tripped` pauses `/ask` once total daily spend
    reaches it, regardless of account count).
 
@@ -380,7 +380,7 @@ caller bounded:
 The per-user cap is a **guardrail, not an anti-abuse control** (decided
 2026-08-23): it keys on the Clerk `user_id`, and Clerk signup is frictionless
 by design, so a caller who hits the cap can create a second account. That was
-an accepted, documented tradeoff; the real ceilings against a multi-account
+an accepted, documented tradeoff; the actual ceilings against a multi-account
 attacker are the global breaker and the IP+JA4-keyed WAF rule, which survives
 account rotation.
 
@@ -392,7 +392,7 @@ pre-fetch sections via `build_prompt()`, and the agentic `web_search` /
 `search_responsa_external` / `translate_text` tool results). Two layers apply:
 
 - `backend/retrieval_guard.py` drops a snippet carrying injection phrasing
-  before it enters the prompt — English paraphrase verbs
+  before it enters the prompt. It matches English paraphrase verbs
   (ignore/disregard/forget/override/set aside…), "act as…/pretend you are…"
   persona jailbreaks, page-level-authority phrasing, plus Hebrew, French,
   Spanish, German, Russian, Portuguese, Italian, Ukrainian, Arabic and Yiddish
@@ -409,11 +409,11 @@ pre-fetch sections via `build_prompt()`, and the agentic `web_search` /
   in it, and a web lookup's findings arrive in the same wrapper as
   `source="web_lookup_last_resort"`, screened by `withhold_injected` first).
 
-It is a conservative phrase heuristic — bare "you are now" and "ignore any
+It is a conservative phrase heuristic. Bare "you are now" and "ignore any
 instructions from his doctor" (or a bare "the owner"/"the Creator") are
-deliberately not markers, being normal halachic prose — and one layer beside
-the untrusted-data framing and `validate_model_output()`. It is not a
-classifier: a truly novel paraphrase is not caught.
+deliberately not markers, since they are normal halachic prose. It is one
+layer beside the untrusted-data framing and `validate_model_output()`. It is
+not a classifier, so a truly novel paraphrase is not caught.
 
 Other controls:
 
@@ -429,15 +429,15 @@ Other controls:
 ## 6. AuthN/Z review
 
 - **`_verify_clerk_token`** (`backend/auth.py`): `algorithms` is hardcoded to
-  `["RS256"]` — no algorithm-confusion risk. `issuer` is always passed to
+  `["RS256"]`, so there is no algorithm-confusion risk. `issuer` is always passed to
   `jwt.decode`, so `iss` is verified; expiry is verified by default (PyJWT) and
   never disabled. A missing `CLERK_JWT_ISSUER` fails closed (raises before any
   token is looked at), and both `require_clerk_auth` / `maybe_require_clerk_auth`
   catch any verification exception and return `401` rather than proceeding.
-- **Audience verification — config-dependent, ✅ confirmed set in production.**
+- **Audience verification: config-dependent, confirmed set in production.**
   When `CLERK_AUDIENCE` is unset (it is optional in `.env.example`) the `aud`
   claim is not checked, so any RS256 token from the right issuer would be
-  accepted regardless of which Clerk application minted it — an explicit,
+  accepted regardless of which Clerk application minted it. That is an explicit,
   documented branch, and a real bypass if the Clerk tenant were ever shared
   across applications. `CLERK_AUDIENCE` is **confirmed set in the live Vercel
   production environment** (`vercel env ls production`, 2026-09-02), so
@@ -446,7 +446,7 @@ Other controls:
 - Every user-data route (bookmarks, preferences, memories, `ask_history`,
   conversations, share management, devtools) is decorated with
   `@require_clerk_auth` or `@maybe_require_clerk_auth` as appropriate and
-  filters by the JWT's own `sub` claim — no route trusts a client-supplied
+  filters by the JWT's own `sub` claim, and no route trusts a client-supplied
   `user_id` (no IDOR pattern found).
 - Public share links (`/a/<token>`, answers and conversations): the token is
   `secrets.token_urlsafe(16)`; the public read selects only reader-visible
@@ -512,14 +512,14 @@ which still pays a full invocation to say "no." It lives in dashboard config
 a separate quota; it is one action type on an ordinary custom rule and uses
 one of the same three slots. All three are in use:
 
-1. **Rate-limit rule — Enforce, confirmed live 2026-09-16:** path `/ask`,
+1. **Rate-limit rule (Enforce), confirmed live 2026-09-16:** path `/ask`,
    method `POST`; key **IP + JA4 digest** (JA4 is a TLS-stack fingerprint that
    survives the IP rotation a real flood uses); fixed window, **60 s**;
    **100 requests/minute**, set from a week of Log-mode traffic data; action
    **429**, with repeat offenders locked out for **15 minutes**.
 2. **Deny common scanner paths:** `/.env`, `/.git/*`, `/wp-admin/*`,
-   `/vendor/*`, `/phpmyadmin/*` — pure noise against this codebase, and each
-   hit would otherwise cost a function invocation just to 404.
+   `/vendor/*`, `/phpmyadmin/*`. These are pure noise against this codebase,
+   and each hit would otherwise cost a function invocation just to 404.
 3. **Method rule, site-wide, action Log (on purpose).** The rule is named
    "Deny non-standard HTTP methods" and its condition is `method does not
    equal GET,POST,HEAD,OPTIONS`, but its action is **Log**, so it records
@@ -550,8 +550,8 @@ They are not custom rules, so they use no slot (`vercel firewall rules list`):
 | AI Bots | `ai-bots` | **Log** (was Deny until 2026-10-13) |
 | BotID | `bot-id` | Basic |
 
-**AI Bots is what blocked AI crawlers, not Bot Protection and not the custom
-rules.** With it on Deny, `curl -A "GPTBot/1.1" https://shelah.org/` (and the
+**The AI Bots ruleset is what blocked AI crawlers.** Bot Protection and the
+custom rules were not involved. With AI Bots on Deny, `curl -A "GPTBot/1.1" https://shelah.org/` (and the
 same for ClaudeBot, anthropic-ai, PerplexityBot, Bytespider, CCBot and a
 `Google-Extended` UA string) answers **403** with `x-vercel-mitigated: deny`,
 while Googlebot and a browser UA get 200. `robots.txt` cannot change that:
@@ -623,7 +623,7 @@ Two things to remember when changing these:
 - **WAF counters are tracked per region.** The rule is correct as "exactly one
   counter" only because `vercel.json` pins `"regions": ["iad1"]`. If that pin is
   removed or a second region is added, the counter silently splits and the
-  effective limit multiplies by the region count — revisit the rule the same day
+  effective limit multiplies by the region count. Revisit the rule on the same day
   a region change ships.
 
 The WAF sits in front of, not instead of, the application middleware (§5) and
@@ -635,13 +635,13 @@ dashboard.
 
 Two additions to the abuse stack above.
 
-**Identity-aware rate-limit keys** — see §5. An IP-only bucket treats every
+**Identity-aware rate-limit keys:** see §5. An IP-only bucket treats every
 caller behind one shared egress IP as a single caller; signed-in callers get a
 per-account bucket, a higher per-minute allowance (`authenticated_max_requests`)
 and an explicit daily `/ask` quota (`daily_max_requests`), all in the same
 shared store `backend/rate_limit.py` and `backend/cost_meter.py` already use.
 
-**Cloudflare Turnstile — why this and not Vercel BotID.** Anonymous `/ask`
+**Cloudflare Turnstile: why this and not Vercel BotID.** Anonymous `/ask`
 traffic that crosses a per-IP hourly threshold
 (`TURNSTILE_ANON_HOURLY_THRESHOLD`, default 5) is gated behind a Turnstile
 challenge (`backend/turnstile.py`). Vercel's BotID was considered and
@@ -652,8 +652,8 @@ POST any language can make, it is free at this project's volume, and it stays
 invisible to the large majority of legitimate callers. The call uses async
 httpx (never a blocking `requests` call). The feature is gated behind
 `TURNSTILE_ENABLED` (default **off**), so every function in
-`backend/turnstile.py` is a true no-op — local dev and the test suite are
-unaffected — until an operator enables it and supplies `TURNSTILE_SECRET_KEY` /
+`backend/turnstile.py` is a true no-op. Local dev and the test suite are
+unaffected until an operator enables it and supplies `TURNSTILE_SECRET_KEY` /
 `TURNSTILE_SITE_KEY` in the deployment environment. As of 2026-10-03 the
 production project has both keys set and `TURNSTILE_ENABLED=FALSE`, so the gate
 is provisioned but off. (Separately, Clerk's Bot
@@ -661,24 +661,24 @@ Sign-up Protection renders its own Turnstile challenge in an iframe, which is
 why the CSP's `frame-src` allows `challenges.cloudflare.com`.)
 
 Two deliberately different fail postures live in `backend/turnstile.py`:
-`is_challenge_required()` (is a challenge owed at all? — anti-abuse polish)
+`is_challenge_required()` (is a challenge owed at all? Anti-abuse polish)
 fails **open** on a store error, so a Redis blip does not block anonymous
 `/ask` on top of what the `llm` class's own fail-closed posture already
-decided; `verify_turnstile_token()` (is *this* proof valid? — the actual gate)
+decided; `verify_turnstile_token()` (is *this* proof valid? The actual gate)
 fails **closed** on a missing token, a missing or misconfigured secret key, or
 a `siteverify` error, since that is the one an attacker would want to bypass by
 making `siteverify` look unreachable.
 
-**Mitigation observability.** Every rejection — a rate-limit 429 or a Turnstile
-403 — emits one structured log line plus a Sentry **breadcrumb** (never a
-Sentry event, to avoid drowning the real error signal and burning the free-tier
+**Mitigation observability.** Every rejection (a rate-limit 429 or a Turnstile
+403) emits one structured log line plus a Sentry **breadcrumb** (never a
+Sentry event, to avoid drowning the error signal and burning the free-tier
 event quota) via `backend.logging_setup.log_mitigation(tier, route_class,
 key_hash, route)`. The key is always hashed before logging, so an attack shows
 up as a spike in `mitigation_triggered` lines without putting an identifiable
 value in a log store.
 
 **Env vars:** `TURNSTILE_ENABLED`, `TURNSTILE_SECRET_KEY`, `TURNSTILE_SITE_KEY`,
-`TURNSTILE_ANON_HOURLY_THRESHOLD` — see `.env.example` for defaults and
+`TURNSTILE_ANON_HOURLY_THRESHOLD`. See `.env.example` for defaults and
 `docs/API.md` for the full policy/env matrix alongside the `RATE_LIMIT_*` vars.
 
 **Guest conversation limits (2026-10-09).** Anonymous `/ask` is open by design
@@ -728,13 +728,13 @@ completeness gaps were found and fixed:
   description.
 - **A Clerk `user.deleted` webhook backstops deletions this app doesn't
   initiate.** A user can delete their Clerk identity through Clerk's hosted
-  `<UserProfile />`, and an operator can delete one from the Clerk Dashboard —
-  neither calls this app's endpoint, so either could orphan a user's data with
+  `<UserProfile />`, and an operator can delete one from the Clerk Dashboard.
+  Neither calls this app's endpoint, so either could orphan a user's data with
   no JWT left to authenticate a retry. `POST /api/webhooks/clerk`
   (`backend/routes_webhooks.py`) closes this. It verifies Clerk's Svix
   signature by hand (HMAC-SHA256 over `"{svix-id}.{svix-timestamp}.{body}"`,
   rejecting anything outside a 300-second timestamp window) rather than adding
-  the `svix` package — signature verification **is** this endpoint's
+  the `svix` package. Signature verification **is** this endpoint's
   authentication. On a valid `user.deleted` event it runs the same table
   cascade `delete_account()` uses, keyed on `data.id`; it is idempotent by
   construction. It requires `CLERK_WEBHOOK_SIGNING_SECRET` and an Endpoint in
@@ -744,7 +744,7 @@ completeness gaps were found and fixed:
   own action, and the webhook above already catches that path.
 
 **Backups.** Supabase backup / point-in-time-recovery retention was confirmed
-2026-09-01: **Free plan — no PITR (a paid Pro-plan add-on) and no automated
+2026-09-01: **Free plan: no PITR (a paid Pro-plan add-on) and no automated
 backups at all.** See `docs/RUNBOOKS.md`'s "Backups & recovery" and
 `docs/LAUNCH_CHECKLIST.md` for the manual `pg_dump` / `supabase db dump`
 fallback this implies.
@@ -755,7 +755,7 @@ every `_capture_backend_error` call site that previously passed a raw Clerk
 `sub` into Sentry or structured-log context. Field-level per-user encryption /
 crypto-shredding was considered and **not** built: every live store this app
 controls already gets a real `DELETE` (strictly stronger than shredding), and
-the one store shredding would help — provider-managed backups — has an
+the one store shredding would help (provider-managed backups) has an
 exposure already time-bounded by the provider's own retention.
 
 ## 10. Supabase Advisor scan — 2026-09-03
@@ -781,8 +781,7 @@ the statements. **The migration was applied and verified live on 2026-09-03**
   role; revoking it would break preferences, semantic bookmarks and both RAG
   memory paths. `community_knowledge` is flagged but is deliberately
   public-read. Those residual findings are the expected remainder.
-- **`rls_policy_always_true`** on `answer_feedback.anyone_can_submit_feedback`
-  — reviewed and confirmed **intentional**: `POST /api/feedback` accepts
+- **`rls_policy_always_true`** on `answer_feedback.anyone_can_submit_feedback`. Reviewed and confirmed **intentional**: `POST /api/feedback` accepts
   anonymous submissions (`@maybe_require_clerk_auth`), and the route has its own
   tighter-than-default `feedback` rate-limit class (10 req/60 s).
   Anon `INSERT` must use `returning=minimal`, since anon has no `SELECT` by
@@ -827,9 +826,9 @@ what a stranger can reach.
   unguessable `share_token` (`secrets.token_urlsafe(16)`, 128 bits of
   randomness) and `is_public`; anyone holding `/a/<token>` can then read the
   answer through `GET /api/public/answer/<token>` without signing in. `DELETE`
-  revokes it — the token is cleared, so the old link 404s for good and
-  re-sharing mints a new one. The public route selects only the answer columns
-  — never `user_id` or the row `id` — and every response carries
+  revokes it. The token is cleared, so the old link 404s for good and
+  re-sharing mints a new one. The public route selects only the answer columns,
+  never `user_id` or the row `id`, and every response carries
   `X-Robots-Tag: noindex, nofollow`. It is rate-limited in the `fanout` class
   per IP, which keeps token guessing slow. The columns come from
   `scripts/sql/migrate_ask_history_share.sql`; until it is applied the routes
@@ -839,15 +838,15 @@ what a stranger can reach.
   policies, with an application-layer ownership check on every route as
   defense in depth. The thread's `minhag` setting is enforced server-side (the
   stored row's own value, never the request body), and
-  `POST /api/conversations/<id>/ask` is rate-limited in the `llm` class — the
+  `POST /api/conversations/<id>/ask` is rate-limited in the `llm` class, with the
   same fail-closed, per-account budget as `/ask`.
 
 ## 13. Open items
 
 Items needing a human decision or an operator action, collected in one place:
 
-- **External penetration test / security review** — not yet performed.
-- **Git-history residual exposures** (§1): `refs/pull/2/head`–`5/head` and
+- **External penetration test / security review:** not yet performed.
+- **Git-history residual exposures** (§1): `refs/pull/2/head` to `refs/pull/5/head` and
   hash-addressable old commits still reachable on GitHub; needs a GitHub
   Support request.
 - **CSP `style-src 'unsafe-inline'`** (§3): about 70 `style=` attributes, 4

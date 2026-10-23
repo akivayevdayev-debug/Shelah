@@ -8,7 +8,7 @@ retention cron is running (`CRON_SECRET` confirmed set in production
 2026-09-06).
 
 Sh'elah is operated by a solo developer (Akiva Yevdayev), not a company
-with a dedicated privacy team — every "who does this" answer below is the
+with a dedicated privacy team. Every "who does this" answer below is the
 same person, contactable at **contact@shelah.org**.
 
 See [`docs/LAUNCH_CHECKLIST.md`](LAUNCH_CHECKLIST.md) (line 5, "Privacy
@@ -22,12 +22,12 @@ checklist.
 Signed-in users can exercise the two highest-volume rights themselves,
 without waiting on a manual request:
 
-- **Access / portability** — "Privacy & Data" in the account menu →
+- **Access / portability**: "Privacy & Data" in the account menu →
   "Download my data" calls `GET /api/user/data-export`
   (`backend/routes_privacy.py`), which returns a JSON bundle of every row
   the user owns across `user_preferences`, `study_bookmarks`,
   `ask_history`, `user_memories`, `ai_usage_log`, `answer_feedback`
-  (added 2026-08-27 — previously excluded, so a feedback
+  (added 2026-08-27; previously excluded, so a feedback
   row survived account deletion undiscoverable and unreachable) and
   `conversations`, the AI chat history, with its messages and citations
   embedded (added 2026-09-26; before that, chat threads were neither
@@ -38,15 +38,15 @@ without waiting on a manual request:
   Claude API's web search tool, only a short search phrase the model wrote (links, emails and long
   numbers are refused), never an identity, history or memory. The panel also adds this browser's local
   recent history, shelf and settings under `this_device`. This
-  satisfies GDPR Art. 15 (access) and Art. 20 (portability — the export is
+  satisfies GDPR Art. 15 (access) and Art. 20 (portability: the export is
   already machine-readable JSON, matching the "JSON/CSV" commitment in
   `privacy.html` §6) in one action.
-- **Deletion ("right to be forgotten")** — the same panel's "Delete my
+- **Deletion ("right to be forgotten")**: the same panel's "Delete my
   account" calls `POST /api/user/delete-account`, gated behind typing the
   confirmation phrase `DELETE`. It deletes the user's rows from every table
   listed above, and only if *all* of those deletes succeed does it go on to
   delete the Clerk identity itself via Clerk's Backend API
-  (`DELETE /v1/users/{id}`, requires `CLERK_SECRET_KEY` — see
+  (`DELETE /v1/users/{id}`, requires `CLERK_SECRET_KEY`; see
   `.env.example`). If any table delete fails, the Clerk account is
   deliberately left intact (HTTP 207, `clerk_skipped` in the response) so
   the user keeps a working login and can retry rather than being locked out
@@ -54,7 +54,7 @@ without waiting on a manual request:
   are individually idempotent, so a retried request after a partial failure
   is safe to resend as-is.
 - **Completeness backstop for deletions this app doesn't initiate** (added
-  2026-08-27) — `POST /api/webhooks/clerk`
+  2026-08-27): `POST /api/webhooks/clerk`
   (`backend/routes_webhooks.py`) listens for Clerk's `user.deleted`
   webhook and runs the same per-table cascade delete above, keyed on the
   event's `data.id`. This exists because `delete_account()` above is not
@@ -62,25 +62,25 @@ without waiting on a manual request:
   their own identity through Clerk's hosted `<UserProfile />` UI (embedded
   via `openClerkUserProfile()` in `templates/index.html`), or an operator
   can delete a user directly from the Clerk Dashboard (e.g. handling
-  abuse/a takedown request) — neither path ever calls this app's own
+  abuse/a takedown request). Neither path ever calls this app's own
   endpoint, so without this listener every table row for that user would
   be orphaned permanently with no Clerk JWT left to authenticate a retry.
   Requires `CLERK_WEBHOOK_SIGNING_SECRET` (see `.env.example`) to be
   configured, both in this app's environment and as the signing secret of
   a matching Endpoint created in Clerk Dashboard → Webhooks, subscribed to
   `user.deleted`, pointed at this route. **Confirmed enabled, 2026-09-02**
-  (Akiva, Clerk Dashboard) — self-service account deletion is live for
+  (Akiva, Clerk Dashboard): self-service account deletion is live for
   this app's Clerk instance. Carries no completeness risk: the webhook
   above already backstops this exact path. See `docs/SECURITY.md` §9 for
   the dated record.
 
-Neither endpoint reaches a table via the RLS-scoped client — see the
+Neither endpoint reaches a table via the RLS-scoped client. See the
 module docstring in `backend/routes_privacy.py` for why (the frontend's
 Clerk bearer token isn't a Supabase-compatible JWT, so gating a compliance
 endpoint behind that would silently fail for every real user). Each query
 instead uses the service-role client with an explicit
 `.eq("user_id", ...)` filter, which is also the only way to reach
-`user_memories` at all — its RLS policy blocks all client-side access by
+`user_memories` at all. Its RLS policy blocks all client-side access by
 design (`scripts/sql/rag_identity_cache_setup.sql`).
 
 **What self-serve does not cover** (still requires the manual path below):
@@ -109,8 +109,8 @@ of a minor per `privacy.html` §8).
   to the age requirement. Some GDPR/CCPA programs deliberately retain a
   minimal "accepted terms X at date Y" record after erasure under the Art.
   17(3)(e) legal-defense carve-out. This project has not implemented that
-  carve-out — deletion here is total, matching the plain-language "delete
-  my account and data" commitment in `privacy.html` §6 — but it's worth
+  carve-out. Deletion here is total, matching the plain-language "delete
+  my account and data" commitment in `privacy.html` §6, but it's worth
   revisiting alongside counsel review if a dispute over consent timing
   ever becomes a real risk.
 
@@ -122,34 +122,34 @@ the in-app flow:
 1. **Intake.** All requests arrive at contact@shelah.org (the address
    published in `privacy.html` §6 and §12, and `terms.html`). Treat any
    email containing "delete my data", "access my data", "GDPR", "CCPA", or
-   similar language as a DSR regardless of exact wording — data-protection
+   similar language as a DSR regardless of exact wording. Data-protection
    law does not require the requester to use a magic phrase.
 2. **Verify identity.** Ask the requester to confirm the email address
    associated with their account (Clerk is the source of truth for
    account ↔ email). Do not act on a request where the claimed identity
-   can't be reasonably matched to an account — this protects other users
+   can't be reasonably matched to an account. This protects other users
    from a social-engineered deletion/export of *their* data.
 3. **Fulfill, by request type:**
-   - *Access/portability* — sign in as needed to trigger
+   - *Access/portability*: sign in as needed to trigger
      `GET /api/user/data-export` on the requester's behalf (or, once an
      admin/service-role tool exists, query Supabase directly by
      `user_id`), and send the JSON export as an attachment.
-   - *Deletion* — trigger `POST /api/user/delete-account` the same way,
+   - *Deletion*: trigger `POST /api/user/delete-account` the same way,
      or run the equivalent Supabase deletes + Clerk API call by hand if
      the requester's session isn't available.
-   - *Correction* — no self-serve path exists yet (most stored data is
+   - *Correction*: no self-serve path exists yet (most stored data is
      preferences/bookmarks a user already edits directly, or AI-generated
      Q&A history that isn't "about" the user in the corrigible sense);
      handle by hand via direct Supabase update, scoped to the specific
      field named in the request.
-   - *Objection/restriction* — since Sh'elah's only processing bases are
+   - *Objection/restriction*: since Sh'elah's only processing bases are
      consent, contract necessity, and legal obligation (`privacy.html`
      §2 table), an objection request is effectively a deletion request;
      handle it as one unless the requester specifies a narrower scope.
 4. **Respond within 30 days** (the commitment in `privacy.html` §6), or
    sooner if a specific law requires it (e.g. CCPA's shorter windows for
    California residents).
-5. **Log the request** (date, requester, type, outcome) — even a plain
+5. **Log the request** (date, requester, type, outcome). Even a plain
    text/spreadsheet log is sufficient at this scale, but it's what
    demonstrates compliance if ever asked.
 
@@ -162,12 +162,12 @@ user in `user_preferences`: `legal_accepted`, `legal_accepted_at`,
 localStorage re-prompt flag off `LEGAL_TERMS_VERSION`/
 `LEGAL_PRIVACY_VERSION` (`app.py`), so bumping either constant both
 re-shows the modal to every user and produces a distinguishable acceptance
-record for the new version — that's what makes "re-prompt on material
+record for the new version. That's what makes "re-prompt on material
 version change" real rather than aspirational.
 
 **Bug fixed in this pass:** `accept_legal()` previously upserted against a
 `clerk_id` column that does not exist anywhere in the schema (the table's
-real primary key is `user_id`) — every consent-record write was silently
+real primary key is `user_id`). Every consent-record write was silently
 rejected by PostgREST and swallowed by a broad `except`. Consent records
 were not actually being persisted until this fix. See
 `backend/routes_user.py`'s `accept_legal()` and the regression test in
@@ -179,7 +179,7 @@ Every processor below receives some category of personal or usage data
 (full list and what each one receives: `privacy.html` §4). Most SaaS
 vendors offer a click-through/standard DPA that a customer accepts once
 (often bundled into the ToS or available in account settings) rather than
-a negotiated document — confirm the current acceptance mechanism and URL
+a negotiated document. Confirm the current acceptance mechanism and URL
 directly on each vendor's site before relying on the links below, since
 legal-page URLs move.
 
@@ -189,9 +189,9 @@ legal-page URLs move.
 | Supabase | All app-stored user data (preferences, bookmarks, ask history, memories) | Click-through DPA (supabase.com/legal/dpa) | ✅ Executed (operator-confirmed 2026-09-16) |
 | Vercel | Request/hosting logs, aggregated analytics | Vercel DPA (vercel.com/legal/dpa) | ✅ Executed (operator-confirmed 2026-09-16) |
 | Google (Gemini API) | Question text + retrieved source excerpts (no account identifiers) | Google Cloud/API Data Processing Addendum (cloud.google.com/terms/data-processing-addendum) | ✅ Executed (operator-confirmed 2026-09-16) |
-| Anthropic (Claude API) | Question text + retrieved source excerpts (no account identifiers) | Anthropic commercial DPA (anthropic.com/legal — commercial terms) | ✅ Executed (operator-confirmed 2026-09-16) |
+| Anthropic (Claude API) | Question text + retrieved source excerpts (no account identifiers) | Anthropic commercial DPA (anthropic.com/legal, commercial terms) | ✅ Executed (operator-confirmed 2026-09-16) |
 | Sentry | Scrubbed error/crash reports (`docs/OBSERVABILITY.md`) | Click-through DPA (sentry.io/legal/dpa) | ✅ Executed (operator-confirmed 2026-09-16) |
-| Sefaria, Hebcal, MyMemory/Google Translate | Search/lookup queries derived from the question, or text snippets — not account identity | No formal DPA sought — public APIs, no account-identifying data shared, source-text/calendar/translation lookups only | Documented, not a gap |
+| Sefaria, Hebcal, MyMemory/Google Translate | Search/lookup queries derived from the question, or text snippets, not account identity | No formal DPA sought: public APIs, no account-identifying data shared, source-text/calendar/translation lookups only | Documented, not a gap |
 
 All click-through DPAs above have been executed by the account holder.
 Retain a copy of each vendor's DPA acceptance confirmation alongside this
@@ -218,19 +218,19 @@ chase down:
 **What this does and doesn't resolve:** it answers "what mechanism does
 each vendor offer," which is a fact anyone can look up. It does **not**
 answer whether that mechanism is legally sufficient for *this* Service's
-actual data flows and EU/UK/Swiss exposure — that residual judgment call
+actual data flows and EU/UK/Swiss exposure. That residual judgment call
 is the kind an attorney review would settle; the operator declined
 attorney review on 2026-09-05, so it stands as an accepted-risk
 judgment. Vendor certifications and DPA terms can change without notice,
 so re-verify before relying on this table for anything beyond drafting.
 
-**Research note (2026-09-05):** Supabase and Sentry — the two remaining
-sub-processors not covered in the 2026-09-04 pass — were researched
+**Research note (2026-09-05):** Supabase and Sentry, the two remaining
+sub-processors not covered in the 2026-09-04 pass, were researched
 against their own current public DPA/trust-center documentation above.
 Supabase's DPA makes no DPF claim anywhere, so its mechanism is SCCs
 only; Supabase separately supports EU-region data residency (a project
 provisioned entirely in an EU region), which is a data-location control
-distinct from — and not a substitute for evaluating — the transfer
+distinct from, and not a substitute for evaluating, the transfer
 mechanism above for any data (backups, logs, sub-processors) that still
 leaves the region. Sentry self-certifies under the DPF per its own trust
 page and DPA, with SCCs as the documented fallback. Both rows are now
@@ -241,12 +241,12 @@ reflected in `privacy.html` §5.
 | Activity | Data subjects | Categories of data | Purpose | Recipients | Retention | Security measures |
 |---|---|---|---|---|---|---|
 | Account creation & auth | Registered users | Name, email, auth tokens | Provide the Service, secure login | Clerk | Until deletion or 1yr inactivity (`privacy.html` §3) | Clerk-managed password hashing; HTTPS/TLS 1.2+ |
-| Halachic Q&A (ask pipeline) | Registered + anonymous users | Question text, AI answer, cited sources, community/mode/language settings; for a signed-out asker, a one-way hash of the `shelah_device` cookie | Generate and store the AI answer, per-user history, and let a signed-out asker reopen their own answer on the device that asked it | Google Gemini, Anthropic Claude, Sefaria, Supabase | 90 days, then deleted (automated — §5 below) | RLS-scoped table, encryption at rest (Supabase) |
+| Halachic Q&A (ask pipeline) | Registered + anonymous users | Question text, AI answer, cited sources, community/mode/language settings; for a signed-out asker, a one-way hash of the `shelah_device` cookie | Generate and store the AI answer, per-user history, and let a signed-out asker reopen their own answer on the device that asked it | Google Gemini, Anthropic Claude, Sefaria, Supabase | 90 days, then deleted (automated, see §5 below) | RLS-scoped table, encryption at rest (Supabase) |
 | User preferences & study data | Registered users | UI prefs, bookmarks, study notes, AI summaries | Personalize reading experience | Supabase only | Until user deletes or account deletion | RLS-scoped table |
 | Conversation memory | Registered users | Short AI-generated summaries of prior interactions | Personalize future answers | Supabase, (indirectly) Gemini/Claude at inference time | Until account deletion | RLS blocks all client access; service-role only |
-| AI usage/cost metering | Registered + anonymous (IP-keyed) users | Model name, token counts, estimated cost, `user_id` or `client_key` | Enforce per-caller budget caps | Supabase only | 90 days, then deleted (automated — §5 below) | Service-role only, not client-readable |
+| AI usage/cost metering | Registered + anonymous (IP-keyed) users | Model name, token counts, estimated cost, `user_id` or `client_key` | Enforce per-caller budget caps | Supabase only | 90 days, then deleted (automated, see §5 below) | Service-role only, not client-readable |
 | Legal consent & age attestation | Registered users | ToS/Privacy version + timestamp, 13+/16+ attestation | Demonstrate consent, enforce minimum age | Supabase only | Duration of account + reasonable post-deletion period (defensibility) | RLS-scoped table |
-| Error/crash telemetry | Registered + anonymous users | Scrubbed stack traces, request IDs — question/answer text excluded | Debug production incidents | Sentry | Sentry's own retention (project-configured) | Data scrubbing enabled (`docs/OBSERVABILITY.md`) |
+| Error/crash telemetry | Registered + anonymous users | Scrubbed stack traces, request IDs (question/answer text excluded) | Debug production incidents | Sentry | Sentry's own retention (project-configured) | Data scrubbing enabled (`docs/OBSERVABILITY.md`) |
 
 ## 5. Retention enforcement
 
@@ -260,28 +260,28 @@ deletes:
 
 This replaces the "an automated retention job is planned... until it
 ships, deletion beyond user-initiated requests is manual" language that
-previously sat in `privacy.html` §3 — that job now exists and runs daily.
+previously sat in `privacy.html` §3. That job now exists and runs daily.
 
 **Deliberately out of scope for this job** (see `privacy.html` §3 for the
 full retention table):
 
-- **Account info / 1-year inactivity** — auto-deleting a whole account
+- **Account info / 1-year inactivity**: auto-deleting a whole account
   (Supabase rows *and* the Clerk identity) on an inactivity heuristic is a
   materially riskier operation than trimming log rows, and this app has no
   reliable "last active" signal synced locally today (Clerk tracks
   `last_sign_in_at` server-side, but nothing here reads it). Left as a
   manual/future job rather than shipped half-verified against live user
-  accounts — the safer failure mode for an irreversible bulk-delete is "it
+  accounts. The safer failure mode for an irreversible bulk-delete is "it
   doesn't run automatically yet," not "it runs against an untested
   heuristic."
-- **User preferences & bookmarks** — retained "until deleted by user or
+- **User preferences & bookmarks**: retained "until deleted by user or
   account deletion" by design; there is no time-based window to enforce.
-- **Legal consent & age-attestation records** — retained past account
+- **Legal consent & age-attestation records**: retained past account
   deletion intentionally, as a defensibility record; a job that deleted
   these would defeat their purpose.
-- **Session cookies** — client-side, deleted on logout; not a server-side
+- **Session cookies**: client-side, deleted on logout; not a server-side
   retention concern.
-- **Device cookie (`shelah_device`)** — a functional cookie set by the first
+- **Device cookie (`shelah_device`)**: a functional cookie set by the first
   signed-out `/ask` (random value, `HttpOnly`, `SameSite=Lax`, one year; only
   its SHA-256 is stored, as `ask_history.user_id = device:<hash>`). It is not a
   tracking id and is never sent to a third party. The answer it unlocks is
@@ -292,11 +292,11 @@ full retention table):
   signs in on the same browser); a DSR for one is handled by the answer's
   owner deleting it from its page, or manually by `user_id` once the person
   supplies the cookie value.
-- **Security logs (IP, access logs) — 30 days** — these are Vercel's own
+- **Security logs (IP, access logs), 30 days**: these are Vercel's own
   platform request logs, not rows in this app's Supabase project; their
   retention is configured in the Vercel dashboard, not enforceable from
   application code.
-- **Cached AI responses — 24 hours** — an in-memory/edge cache, not a
+- **Cached AI responses, 24 hours**: an in-memory/edge cache, not a
   Supabase table; expires on its own via the cache's TTL.
 
 ### Under-13 account closure (manual runbook)
@@ -305,20 +305,19 @@ full retention table):
 flow for a user who later self-identifies as under 13, and that closing
 a *known* under-13 account on discovery is a retention obligation
 (distinct from age-gating at signup, which the policy deliberately
-doesn't do — see that doc's Operator decisions). This is the manual
+doesn't do; see that doc's Operator decisions). This is the manual
 procedure for when that discovery happens (e.g. the user or a
 parent/guardian emails contact@shelah.org, or it surfaces in a
 support conversation):
 
 1. **Verify the claim.** Same identity check as the DSR manual procedure
-   above — confirm the email/account the claim is about, so a false or
+   above: confirm the email/account the claim is about, so a false or
    malicious report can't be used to close someone else's account.
 2. **Close the account promptly.** Run the same steps as the DSR manual
    *Deletion* path above (§1, step 3): `POST /api/user/delete-account`
    on the account's behalf, or the equivalent Supabase deletes + Clerk
    identity deletion by hand if the account's own session isn't
-   available. There is no separate under-13-specific deletion code path
-   — it reuses the existing account-deletion flow.
+   available. There is no separate under-13-specific deletion code path. It reuses the existing account-deletion flow.
 3. **Don't wait for the 30-day DSR window.** This isn't a discretionary
    user request; treat it as time-sensitive and action it as soon as
    the identity check in step 1 clears, not on the DSR response-time
@@ -329,7 +328,7 @@ support conversation):
 
 ## 6. Breach response plan
 
-**Roles.** Solo-operated project — one person (Akiva Yevdayev) holds
+**Roles.** Solo-operated project. One person (Akiva Yevdayev) holds
 every role below until the project has more than one operator.
 
 - **Incident lead / DPO-equivalent contact:** contact@shelah.org
@@ -340,26 +339,26 @@ Vercel deployment/runtime logs, a direct report (user, researcher, vendor).
 `docs/SECURITY.md`'s "Reporting a vulnerability" section is the intake
 path for the latter.
 
-**Timeline (GDPR Art. 33 — 72 hours from *becoming aware*, not from the
+**Timeline (GDPR Art. 33: 72 hours from *becoming aware*, not from the
 breach itself):**
 
-1. **Hour 0 — confirm & contain.** Verify the report is real. Rotate any
+1. **Hour 0: confirm & contain.** Verify the report is real. Rotate any
    exposed credential immediately (see `docs/SECURITY.md`'s key-rotation
    guidance). If a specific attack vector is active (e.g. an auth bypass),
    disable the affected route/feature via a deploy if that's faster than a
    full fix.
-2. **Hour 0–24 — scope.** Determine what data was exposed, how many users
+2. **Hour 0–24: scope.** Determine what data was exposed, how many users
    are affected, and whether it meets the GDPR Art. 33 "risk to the rights
    and freedoms of natural persons" bar for notification. Given the app's
    halachic-question domain, treat exposure of question/answer content as
-   higher-risk by default — the app's safety classifier exists
+   higher-risk by default. The app's safety classifier exists
    because that content is routinely medical, marital, mental-health, and
    abuse-adjacent.
-3. **Hour 24–72 — notify (if required).** If notification is required:
+3. **Hour 24–72: notify (if required).** If notification is required:
    - Fix the root cause first, or have a concrete remediation timeline.
    - Draft and send the user-facing notice (template below).
    - If an EU/UK/Swiss supervisory authority notification is required
-     (Art. 33), that's a legal filing — get counsel involved before
+     (Art. 33) is a legal filing, so get counsel involved before
      submitting one; `privacy.html` §10 already flags that this project
      hasn't yet determined whether it needs a formal EU representative.
 4. **Post-incident.** Write up what happened, what was fixed, and what
@@ -373,9 +372,8 @@ breach itself):**
 > We're writing to let you know about a security incident that may have
 > affected your account. On [date], we discovered [what happened, in
 > plain language]. The information involved may have included [specific
-> data categories — be precise, not vague]. We [have fixed / are fixing]
-> the issue by [remediation]. We recommend you [specific action, if any —
-> e.g. nothing needed, or "sign out other sessions"]. If you have
+> data categories: be precise, not vague]. We [have fixed / are fixing]
+> the issue by [remediation]. We recommend you [specific action, if any; for example, nothing needed, or "sign out other sessions"]. If you have
 > questions, reply to this email or contact contact@shelah.org.
 
 **Regulator notification template (Art. 33, only if counsel confirms it's

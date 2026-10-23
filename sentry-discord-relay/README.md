@@ -4,10 +4,10 @@ A lightweight Cloudflare Worker that receives Sentry webhook alerts and forwards
 
 ## Features
 
-- **Zero cost** — runs on the Workers free tier
-- **Rich Discord embeds** — color-coded by severity, includes project, level, status, culprit, and stacktrace
-- **HMAC signature verification** — optional shared-secret validation so only Sentry can trigger it
-- **Secret management** — Discord webhook URL stored as an encrypted Worker secret, never in source
+- Zero cost: runs on the Workers free tier
+- Rich Discord embeds: color-coded by severity, includes project, level, status, culprit, and stacktrace
+- HMAC signature verification: optional shared-secret validation so only Sentry can trigger it
+- Secret management: the Discord webhook URL is stored as an encrypted Worker secret, never in source
 
 ## Quick Start
 

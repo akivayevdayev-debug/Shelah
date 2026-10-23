@@ -1,6 +1,6 @@
 # Service architecture
 
-**Status (2026-10-02):** a Flask + FastAPI hybrid on Vercel (one region, `iad1`). The AI path, the conversation routes, rate limiting, per-user and global cost gates, the circuit breakers and the CDN cache tiers are all implemented and covered by tests (about 4,700 pytest tests at 99.8% backend coverage, an 85% floor enforced in CI). This document describes how requests flow, what each module owns, how async safety is enforced, and how the system behaves in a serverless environment. Route-by-route detail is in [API.md](API.md); the data model is in [DATABASE.md](DATABASE.md); configuration is in [ENVIRONMENT.md](ENVIRONMENT.md).
+**Status (2026-10-02):** Flask and FastAPI run together on Vercel in one region (`iad1`). The AI path, the conversation routes, rate limiting, per-user and global cost gates, the circuit breakers and the CDN cache tiers are implemented and tested: about 4,700 pytest tests, 99.8% backend coverage, and an 85% floor enforced in CI. This document covers how requests flow, what each module owns, how async safety is enforced, and how the system behaves in a serverless environment. Route-by-route detail is in [API.md](API.md), the data model is in [DATABASE.md](DATABASE.md), and configuration is in [ENVIRONMENT.md](ENVIRONMENT.md).
 
 ---
 
@@ -35,7 +35,7 @@ asgi.py  (FastAPI)
         └── Cloudflare Turnstile (siteverify), Sentry
 ```
 
-Everything that is not `POST /ask` or `GET /api/async/health` is a Flask route reached through the WSGI mount, run on a worker thread. `app.py` also still defines a synchronous `POST /ask`, but in production the native FastAPI route matches first, so it is unreachable there; `tests/test_ask_transport_parity.py` pins the two to the same payload shape so they cannot drift.
+Every route except `POST /ask` and `GET /api/async/health` is a Flask route. It is reached through the WSGI mount and runs on a worker thread. `app.py` also defines a synchronous `POST /ask`. In production the native FastAPI route matches first, so the Flask copy never runs there. `tests/test_ask_transport_parity.py` checks that both return the same payload shape, so they cannot drift apart.
 
 ---
 
@@ -43,22 +43,22 @@ Everything that is not `POST /ask` or `GET /api/async/health` is a Flask route r
 
 ### `asgi.py`
 
-The ASGI entry point and the only place the two stacks meet.
+The ASGI entry point, and the only place where the two stacks meet.
 
-- `request_id_middleware`: rejects bodies over 256 KiB by `Content-Length` before any parsing (Flask's own `MAX_CONTENT_LENGTH` does not cover native routes), binds a `request_id` (an inbound `X-Request-Id` is kept, otherwise one is generated and written back into the ASGI headers so the Flask layer reports the same id), adds the security headers and a `Cache-Control` tier to native responses that lack them, and logs `request_complete` with the duration.
-- `RateLimitMiddleware` (`backend/rate_limit.py`): registered first so the id middleware ends up outermost; it rejects with 429 before dispatch to either FastAPI or Flask.
+- `request_id_middleware`: rejects bodies over 256 KiB by `Content-Length` before any parsing (Flask's own `MAX_CONTENT_LENGTH` does not cover native routes). It binds a `request_id`. An inbound `X-Request-Id` is kept; otherwise one is generated and written back into the ASGI headers, so the Flask layer reports the same id. It also adds the security headers and a `Cache-Control` tier to native responses that lack them, and logs `request_complete` with the duration.
+- `RateLimitMiddleware` (`backend/rate_limit.py`): registered first so the id middleware ends up outermost. It rejects with 429 before dispatch to either FastAPI or Flask.
 - The `/ask` handler and its helpers (section 4), `GET /api/async/health`, and `fastapi_app.mount("/", WSGIMiddleware(flask_app_module.app))`.
-- `import backend.logging_setup` (which runs `sentry_sdk.init()`) must stay ahead of the `FastAPI(...)` call, or Sentry silently stops instrumenting.
+- `import backend.logging_setup` (which runs `sentry_sdk.init()`) must stay ahead of the `FastAPI(...)` call. Otherwise Sentry silently stops instrumenting.
 
 ### `app.py`
 
-The Flask application: configuration, the request hooks, the SPA shell and a few pages (`/`, `/settings`, `/profile`, `/terms`, `/privacy`, `/accessibility`, `/manifest.webmanifest`, `/favicon.ico`, `/service-worker.js`), the 404 handler, shared helpers that blueprints import (`get_engine`, the Supabase client factories, the ask-time retrieval helpers), and the loop that registers the blueprints. A blueprint that fails to import aborts startup with the module name instead of serving 404s for an unknown subset of routes. In-process counters (`DEVTOOLS_STATS`) live here.
+The Flask application. It holds the configuration, the request hooks, the SPA shell and a few pages (`/`, `/settings`, `/profile`, `/terms`, `/privacy`, `/accessibility`, `/manifest.webmanifest`, `/favicon.ico`, `/service-worker.js`), the 404 handler, and the shared helpers that blueprints import (`get_engine`, the Supabase client factories, the ask-time retrieval helpers). It also holds the loop that registers the blueprints. A blueprint that fails to import aborts startup and names the module, rather than serving 404s for an unknown subset of routes. In-process counters (`DEVTOOLS_STATS`) live here.
 
-Hooks: `before_request` binds the request id; `after_request` logs completion and applies the security headers and the cache tier. New routes go in a `backend/routes_*.py` blueprint, not `app.py`.
+Hooks: `before_request` binds the request id. `after_request` logs completion and applies the security headers and the cache tier. New routes go in a `backend/routes_*.py` blueprint, not in `app.py`.
 
 ### `api/index.py`
 
-Vercel requires the function entry point under `api/`; this file only re-exports `asgi.app`.
+Vercel requires the function entry point under `api/`. This file only re-exports `asgi.app`.
 
 ---
 
@@ -87,7 +87,7 @@ Vercel requires the function entry point under `api/`; this file only re-exports
 
 ## 4. The `/ask` pipeline
 
-`POST /ask` in `asgi.py` runs these stages in order. A client that sends `Accept: application/x-ndjson` gets one progress line per step and then the result (the HTTP status is still real: a refusal is an ordinary 4xx; once streaming starts, a failure is an in-stream `error` line).
+`POST /ask` in `asgi.py` runs these stages in order. A client that sends `Accept: application/x-ndjson` gets one progress line per step, then the result. The HTTP status is still real: a refusal is an ordinary 4xx, and once streaming has started, a failure arrives as an in-stream `error` line.
 
 ```text
  0. Rate limit        RateLimitMiddleware (llm class, fail-closed)       → 429
@@ -116,12 +116,12 @@ Vercel requires the function entry point under `api/`; this file only re-exports
 
 Notes:
 
-- **Providers.** Gemini is primary (`gemini-3.5-flash-lite`, overridable with `GEMINI_MODEL`) through the SDK's async client; Claude Haiku 5.5 is the fallback through async `httpx`. Both providers receive the thread's earlier turns as real conversation turns (not pasted into the prompt), and the Claude request puts the fixed system prompt in a cached block ahead of the per-request context so repeat asks read it from the prompt cache. Every call is gated by that provider's circuit breaker (`backend/health_check.py`): for Claude, 3 consecutive failures open it and it half-opens after 120 s; Gemini has a longer rule, where 2 consecutive real errors switch the app to Claude only for 45 minutes (30 to 60, `GEMINI_COOLDOWN_SECONDS`) and the first request after that probes it again. An open circuit skips straight to the next provider. A `security_blocked` result is returned as is, never retried on the other provider.
-- **Token spend.** The rules the model calls follow, so cost stays proportional to what is new in a request: (1) static text first, changing text last, because prompt caching matches a prefix: the fixed instructions (and the tool definitions) are cached, the customs, memory and tool context follow after the breakpoint, and the Gemini system instruction keeps the same order so its implicit cache hits; (2) cache breakpoints on the system prompt, on the last earlier turn of a thread, and on the newest block of each tool round (`_with_trailing_cache_breakpoint`), so a round re-reads everything before it at a tenth of the price (checked live: round 3 read 13.5k tokens from the cache where, unmarked, it paid full price for the 4.2k new ones); the forced final round and the first-turn prompt carry none, since nothing follows them; (3) low reasoning effort for chat answers and a hard answer ceiling plus a fixed thinking headroom on every call; (4) tool results capped at 4,000 characters before they are fed back, and at most 4 tool rounds; (5) usage read back from the response (`_anthropic_usage_tokens`, logged as `anthropic cache: read/written/uncached`) and priced at the cache rates, so the cost ledger shows the saving instead of assuming it; (6) the Claude-only stretch of a Gemini cooldown uses exactly the same cached request, so it costs no more per answer than any fallback.
-- **Timeouts.** One request ceiling of 30 s per model call, clamped to the budget that remains (a contextvar deadline); Gemini rejects deadlines under 10 s, so it is not started with less. The 45 s synthesis budget sits under Vercel's 90 s `maxDuration` so the fallback in stage 11 always gets to run.
-- **Prompt and answer shape.** The model returns structured JSON (`ruling`, `sources`, `summary`, `practical_steps`, …) and tags each claim with a source number right after the sentence it backs; `backend/citation_markers.py` renumbers the markers against the cleaned source list, drops any that point at nothing, and shows a source once for a run of consecutive sentences that rest on it. A question that asks to learn a whole passage or topic is detected (`question_profile`) and given a larger output budget and a sectioned answer; an answer cut off by the token limit is trimmed back to its last complete sentence instead of being shown half-finished. Retrieved third-party text passes `backend/retrieval_guard.py` before it reaches the prompt (a snippet carrying injection phrases is dropped whole). `claude.PROMPT_VERSION` is stored with each saved answer so the governing prompt is reconstructable.
-- **The conversation ask** (`POST /api/conversations/<id>/ask`, in `routes_conversations.py`) runs the same retrieval and synthesis through `app.py`'s sync helpers on a worker thread, adds the thread's prior turns to the prompt, enforces the minhag lock from the conversation row (never the request body), and applies the same two cost gates through `backend/cost_gates.py`. It carries the `llm` rate-limit class through a path pattern.
-- **Streaming and cancellation.** A streamed answer is held by a strong reference in `_ASK_STREAM_TASKS`, so a client that disconnects mid-stream does not cancel the history and cost writes that follow.
+- **Providers.** Gemini is primary (`gemini-3.5-flash-lite`, overridable with `GEMINI_MODEL`) and is called through the SDK's async client. Claude Haiku 5.5 is the fallback, called through async `httpx`. Both providers receive the thread's earlier turns as real conversation turns, not pasted into the prompt. The Claude request puts the fixed system prompt in a cached block ahead of the per-request context, so repeat asks read it from the prompt cache. Every call is gated by that provider's circuit breaker (`backend/health_check.py`). For Claude, 3 consecutive failures open the circuit, and it half-opens after 120 s. Gemini has a longer rule: 2 consecutive real errors switch the app to Claude alone for 45 minutes (30 to 60, `GEMINI_COOLDOWN_SECONDS`). The first request after that probes Gemini again. An open circuit skips straight to the next provider. A `security_blocked` result is returned as it is and is never retried on the other provider.
+- **Token spend.** Cost should track only what is new in a request. Six rules keep it there. (1) Static text comes first and changing text last, because prompt caching matches a prefix. The fixed instructions and the tool definitions are cached, and the customs, memory and tool context follow after the breakpoint. The Gemini system instruction keeps the same order, so its implicit cache hits. (2) Cache breakpoints sit on the system prompt, on the last earlier turn of a thread, and on the newest block of each tool round (`_with_trailing_cache_breakpoint`). A round therefore re-reads everything before it at a tenth of the price. Checked live: round 3 read 13.5k tokens from the cache where, without the marker, it would have paid full price for the 4.2k new ones. The forced final round and the first-turn prompt carry no breakpoint, since nothing follows them. (3) Low reasoning effort for chat answers, plus a hard answer ceiling and a fixed thinking headroom on every call. (4) Tool results are capped at 4,000 characters before they go back to the model, and there are at most 4 tool rounds. (5) Usage is read back from the response (`_anthropic_usage_tokens`, logged as `anthropic cache: read/written/uncached`) and priced at the cache rates. The cost ledger therefore shows the saving instead of assuming it. (6) The Claude-only stretch of a Gemini cooldown uses exactly the same cached request, so an answer costs no more there than on any other fallback.
+- **Timeouts.** One request ceiling of 30 s applies to each model call, clamped to the budget that remains (a contextvar deadline). Gemini rejects deadlines under 10 s, so it is not started with less. The 45 s synthesis budget sits under Vercel's 90 s `maxDuration`, so the fallback in stage 11 always gets to run.
+- **Prompt and answer shape.** The model returns structured JSON (`ruling`, `sources`, `summary`, `practical_steps`, …) and tags each claim with a source number right after the sentence it backs. `backend/citation_markers.py` renumbers the markers against the cleaned source list, drops any that point at nothing, and shows a source once for a run of consecutive sentences that rest on it. A question that asks to learn a whole passage or topic is detected (`question_profile`) and given a larger output budget and a sectioned answer. An answer cut off by the token limit is trimmed back to its last complete sentence, so the reader never sees a half-finished one. Retrieved third-party text passes `backend/retrieval_guard.py` before it reaches the prompt. A snippet carrying injection phrases is dropped whole. `claude.PROMPT_VERSION` is stored with each saved answer, so the governing prompt can be reconstructed.
+- **The conversation ask** (`POST /api/conversations/<id>/ask`, in `routes_conversations.py`) runs the same retrieval and synthesis through `app.py`'s sync helpers on a worker thread. It adds the thread's prior turns to the prompt, enforces the minhag lock from the conversation row (never from the request body), and applies the same two cost gates through `backend/cost_gates.py`. It uses the `llm` rate-limit class, matched by a path pattern.
+- **Streaming and cancellation.** A streamed answer is held by a strong reference in `_ASK_STREAM_TASKS`. A client that disconnects mid-stream therefore does not cancel the history and cost writes that follow.
 
 ---
 
@@ -140,7 +140,7 @@ Notes:
 | `backend/sefaria.py`, `backend/sefaria_library.py` | Topic-to-reference table; the library, text, links and search client with bounded caches |
 | `backend/sidebar_bundle.py` | The commentary sidebar's two-stage, server-cached bundle (slim links, then preloaded text) |
 | `backend/search.py`, `backend/utils/search_provider.py` | Wikipedia, Halachipedia and Hebcal connectors; corpus matching and the source-discovery fallback; translation (MyMemory, Google) |
-| `backend/customs.py` | Loads and fuzzy-matches the community customs under `customs/` (13 community files, `schema.json`, and the aggregate `customs_db.json`). The JSON files seed the `community_knowledge` table (`scripts/migrate_customs_to_supabase.py`), back `/api/community/*`, and serve the agentic `search_community_customs` tool; the live `/ask` retrieval reads `community_knowledge`, not the files |
+| `backend/customs.py` | Loads and fuzzy-matches the community customs under `customs/` (13 community files, `schema.json`, and the aggregate `customs_db.json`). The JSON files seed the `community_knowledge` table (`scripts/migrate_customs_to_supabase.py`), back `/api/community/*`, and serve the agentic `search_community_customs` tool. The live `/ask` retrieval reads `community_knowledge` instead of the files. |
 | `backend/zmanim_engine.py`, `backend/calendar_service.py` | Zmanim and the Hebrew calendar (pyluach first, Hebcal cross-checks); month events for FullCalendar |
 | `backend/siddur_data.py`, `siddur_day.py`, `siddur_lines.py` | The checked-in siddur (`data/siddur/`), what changes on a Hebrew day, and typed lines |
 | `backend/cache.py`, `backend/cache_policy.py` | A bounded TTL/LRU cache with an optional Redis tier; the single source of truth for `Cache-Control` tiers |
@@ -155,9 +155,9 @@ Notes:
 
 The FastAPI side runs on one event loop. These rules are mandatory (`.agents/ENGINEERING_RULES.md`):
 
-1. **No blocking I/O on the event loop.** `requests`, file reads, Supabase's sync client and CPU-heavy work go through `asyncio.to_thread()`; outbound HTTP on the async path uses `httpx.AsyncClient`.
-2. **Flask routes are synchronous** and run on the WSGI thread pool, where blocking I/O is fine. Do not call `asyncio.run()` inside a Flask handler except through the documented bridge in `claude.py` and `cost_gates.py`, which handle both the no-loop and running-loop cases.
-3. **`request_id` and the identity fields are contextvars**, copied into tasks and threads at creation, so binding them in the middleware reaches everything the request spawns.
+1. **No blocking I/O on the event loop.** `requests`, file reads, Supabase's sync client and CPU-heavy work go through `asyncio.to_thread()`. Outbound HTTP on the async path uses `httpx.AsyncClient`.
+2. **Flask routes are synchronous** and run on the WSGI thread pool, where blocking I/O is fine. Do not call `asyncio.run()` inside a Flask handler, except through the documented bridge in `claude.py` and `cost_gates.py`, which handle both the no-loop and running-loop cases.
+3. **`request_id` and the identity fields are contextvars.** They are copied into tasks and threads at creation, so binding them in the middleware reaches everything the request spawns.
 4. **One Redis client per event loop** for the limiter, because an async client cannot be shared across loops.
 5. **No warmers and no polling** of any route by the client for ordinary visitors (a billing rule; see [VERCEL_COST_OPTIMIZATION.md](VERCEL_COST_OPTIMIZATION.md)).
 
@@ -165,9 +165,9 @@ The FastAPI side runs on one event loop. These rules are mandatory (`.agents/ENG
 
 ## 7. Serverless behavior
 
-- **Per-instance state.** Process-local and not shared across instances: `DEVTOOLS_STATS`, the circuit-breaker state (except the Gemini cooldown, which is also published to Redis when `RATE_LIMIT_REDIS_URL` is set), the in-process rate-limit fallback (used only when `RATE_LIMIT_REDIS_URL` is unset), and each `TTLCache`'s memory tier. Anything that must be seen by every instance lives in Supabase or Redis.
-- **Cold starts.** Import time loads the blueprints and sets up logging; the Clerk JWKS cache is empty until the first authenticated request. Keep import-time work free of network calls; customs validation at startup is off in the production runtime.
-- **Time limits.** `maxDuration` is 90 s. Upstream reads (Sefaria, Hebcal, Wikipedia and the rest) use short per-call timeouts, mostly 5 to 12 s, and the retrieval stages in section 4 have their own ceilings; the model budget is in section 4.
-- **Scheduled work.** Two crons in `vercel.json`: `budget-check` (13:00 UTC) and `retention-enforce` (14:00 UTC), both bearer-authenticated with `CRON_SECRET`.
-- **CDN.** `cache_policy.py` classifies every response into an immutable, date-deterministic, corpus-derived or private tier; a response that depends on a session (a zmanim call that falls back to the session location) is forced private for that request. Details in [VERCEL_COST_OPTIMIZATION.md](VERCEL_COST_OPTIMIZATION.md).
-- **Security layers in front.** Vercel WAF, then the rate limiter, Turnstile and the cost gates; see [SECURITY.md](SECURITY.md).
+- **Per-instance state.** The following is process-local and not shared across instances: `DEVTOOLS_STATS`, the circuit-breaker state (except the Gemini cooldown, which is also published to Redis when `RATE_LIMIT_REDIS_URL` is set), the in-process rate-limit fallback (used only when `RATE_LIMIT_REDIS_URL` is unset), and each `TTLCache`'s memory tier. Anything that every instance must see lives in Supabase or Redis.
+- **Cold starts.** Import time loads the blueprints and sets up logging. The Clerk JWKS cache stays empty until the first authenticated request. Keep import-time work free of network calls. Customs validation at startup is off in the production runtime.
+- **Time limits.** `maxDuration` is 90 s. Upstream reads (Sefaria, Hebcal, Wikipedia and the rest) use short per-call timeouts, mostly 5 to 12 s, and the retrieval stages in section 4 have their own ceilings. The model budget is in section 4.
+- **Scheduled work.** Two crons in `vercel.json`: `budget-check` (13:00 UTC) and `retention-enforce` (14:00 UTC). Both are bearer-authenticated with `CRON_SECRET`.
+- **CDN.** `cache_policy.py` classifies every response into an immutable, date-deterministic, corpus-derived or private tier. A response that depends on a session (a zmanim call that falls back to the session location) is forced private for that request. Details are in [VERCEL_COST_OPTIMIZATION.md](VERCEL_COST_OPTIMIZATION.md).
+- **Security layers in front.** Vercel WAF, then the rate limiter, Turnstile and the cost gates. See [SECURITY.md](SECURITY.md).

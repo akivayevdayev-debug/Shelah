@@ -6,19 +6,19 @@
 [![CI](https://github.com/akivayevdayev-debug/Shelah/actions/workflows/ci.yml/badge.svg)](https://github.com/akivayevdayev-debug/Shelah/actions/workflows/ci.yml)
 [![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=akivayevdayev-debug_Shelah_app&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=akivayevdayev-debug_Shelah_app)
 
-**[shelah.org](https://shelah.org)** — the Torah Encyclopedia — literally
+**[shelah.org](https://shelah.org)**, the Torah Encyclopedia, literally
 
 Sh'elah (שאלה meaning question in Hebrew) is a Jewish learning website I built by myself (and yes ofc with ai as well because without it it would still be an idea long forgotten). It has three things:
 
 1. A searchable library of Torah and Judaic texts and commentary (all powered by Sefaria's texts, but made to actually feel easy to use), with customs broken out by community: Ashkenazi, Sefardi, Teimani, and a bunch of others.
-2. An AI assistant that answers questions on Jewish law (halacha) by pulling information from primary sources like the Torah and other Judaic texts instead of just guessing.
+2. An AI assistant that answers questions on Jewish law (halacha), texts, history, customs, and Jewish life, pulling information from primary sources like the Torah and other Judaic texts instead of just guessing.
 3. The practical stuff people actually need every day: live prayer times (zmanim) and candle-lighting times based on where you are, and a Hebrew calendar with the weekly Torah portion built in.
 
-One quick but important thing before anything else: **Sh'elah is for learning, not for rulings.** The AI isn't a rabbi and doesn't pretend to be one. Every answer ends by telling you to take real questions with halachic uncertainty to your own rabbi.
+**Sh'elah is for learning, not for rulings.** The AI is not a rabbi and does not pretend to be one. Every answer ends by telling you to take real questions with halachic uncertainty to your own rabbi.
 
 ## What it does right now
 
-- Answers halacha questions with the actual sources it used cited, and always points you back to your own rabbi for anything that's a real ruling.
+- Answers questions on Jewish law, texts, history, and customs, with the actual sources it used cited, and always points you back to your own rabbi for anything that is a real ruling.
 - Refuses to touch anything medical, mental-health, or abuse-related. Instead of the AI trying to answer, it sends you to real help. Halacha touches sensitive stuff, and an ai is the wrong thing to be answering those questions.
 - Has safeguards against weird off-topic questions and prompt injection (because we don't want the site getting hacked °~°).
 - A Torah/Judaic text library with commentary and word translations, shown in English and Hebrew side by side (with proper RTL layout in Hebrew).
@@ -158,7 +158,7 @@ If anything at all is broken, email me at **contact@shelah.org** and I'll try my
 
 ## How the AI works (and how it stays in its lane) (Skip this if ur not into boring coding stuff)
 
-The `/ask` endpoint runs a retrieval pipeline: before the model sees your question at all, `backend/rag.py` pulls in live Sefaria results, the 13-community customs data, and your own saved context (if you're signed in). **Gemini is the main model, and Claude is the automatic backup** if Gemini errors out or is down (`backend/claude.py`). Both get the exact same guardrails, and there are tests that make sure that stays true.
+The `/ask` endpoint runs a retrieval pipeline: before the model sees your question at all, `backend/rag.py` pulls in live Sefaria results, the 13-community customs data, and your own saved context (if you're signed in). Gemini is the main model (`gemini-3.5-flash-lite`), and Claude (`claude-haiku-5-5`) answers when Gemini fails, times out, or is paused. After two real Gemini errors, Gemini is paused for 45 minutes and Claude answers alone (`backend/claude.py`). Both get the exact same guardrails, and there are tests that make sure that stays true.
 
 On top of that there's a tool-use layer (`backend/ai_tools.py`, 22 tools) so the AI can go fetch texts, zmanim, calendar dates, and Hebrew-date math when it actually needs them, instead of everything getting shoved into the prompt every time. It's switched on with `AI_AGENTIC_TOOLS=true` and is off by default. With it off, the AI still gets the Sefaria results, customs, and your saved context up front, just not the ability to go fetch more mid-answer. Why it's a switch: one question can turn into several tool rounds, which means several paid model calls, so it shouldn't be on until the rate limiter uses a shared store (`RATE_LIMIT_REDIS_URL`). Details in [docs/AI_TOOLS.md](docs/AI_TOOLS.md).
 
@@ -169,7 +169,7 @@ On top of that there's a tool-use layer (`backend/ai_tools.py`, 22 tools) so the
 3. Acharonim and modern poskim (19th–21st century responsa)
 4. The model's own knowledge, ONLY when 1–3 come up empty or clearly contradict each other
 
-General web search (like Wikipedia) is a last resort for when the texts and the calendar math genuinely can't answer something, and it's never allowed to be the only basis for a halachic answer.
+A web lookup is a last resort, used only when the texts and the calendar math cannot settle a real-world fact (for example, whether a product is kosher). It runs through Anthropic's web search tool, limited to a short allow-list of Orthodox sites, and it is never allowed to be the only basis for a halachic answer. Visitors can turn it off under Web search in the chat menu.
 
 **The guardrails:**
 
@@ -190,7 +190,7 @@ General web search (like Wikipedia) is a last resort for when the texts and the 
 - **Frontend:** plain HTML/CSS/JS (ES modules), Tailwind, marked + DOMPurify for rendering AI answers safely.
 - **Keeping it alive:** Turnstile for bot checks (built, currently switched off), Sentry and a Discord webhook for errors, circuit breakers on every external service, SonarCloud for code quality, and a lot of CI.
 
-### How it's wired together (ai made this part don't ask me how it all works I can't give u a clear answer unfortunately °—°)
+### How it's wired together (ai made this part don't ask me how it all works I can't give u a clear answer unfortunately °~°)
 
 ```
 Browser

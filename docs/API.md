@@ -2,7 +2,7 @@
 
 Every route is served from one Vercel deployment. The base URL in production is the project's Vercel URL (for example `https://shelah-app.vercel.app`).
 
-**Status (2026-10-02):** written against the route table in the code (`app.py`, `asgi.py` and every `backend/routes_*.py` blueprint), not against an earlier design. `POST /ask` and `GET /api/async/health` are native FastAPI routes in `asgi.py`; everything else is Flask, reached through the `WSGIMiddleware` mount underneath. Both stacks share one rate limiter, one cache-policy table and one auth module.
+**Status (2026-10-02):** this reference follows the route table in the code (`app.py`, `asgi.py` and every `backend/routes_*.py` blueprint). `POST /ask` and `GET /api/async/health` are native FastAPI routes in `asgi.py`; everything else is Flask, reached through the `WSGIMiddleware` mount underneath. Both stacks share one rate limiter, one cache-policy table and one auth module.
 
 ## Conventions
 
@@ -108,7 +108,7 @@ After the view comes an optional **tail** of overlay and AI keys, all path segme
 
 ### `POST /ask`
 
-Submit a halachic or Torah-study question and receive an AI-synthesised answer with source citations. Handled by the async FastAPI route in `asgi.py`. A synchronous Flask implementation of `/ask` still exists in `app.py`, but the native route shadows it and it is not reachable in production.
+Submit a halachic or Torah-study question and get back an answer drafted by the AI, with source citations. The async FastAPI route in `asgi.py` handles it. A synchronous Flask implementation of `/ask` still exists in `app.py`, but the native route shadows it, so production never reaches it.
 
 - **Auth:** Optional. Required whenever `CLERK_ENFORCE_AUTH` is on (the code's default on Vercel, but deliberately set to `false` on the production project, so anonymous asking works there). Auth enriches the answer with the caller's memory summaries and records it in the caller's history. A signed-out caller's answer is recorded too, under their **device**: the first signed-out `/ask` that succeeds sets a `shelah_device` cookie (see [Device identity](#device-identity)), and the returned `history_id` opens at `/answer/<id>` in that browser only.
 - **Rate-limit class:** `llm` (fails closed).
@@ -217,7 +217,7 @@ The body is newline-delimited JSON, one object per line:
 
 The client (`static/js/citation-markers.js`, `citation-popover.js`) renders each marker as a small numbered chip, shows the sources once, in the sources area under the answer (it drops the duplicate trailing "Sources" list the server also puts in the answer's markdown), and opens a card on hover, click, tap or Enter with the reference, the model's one-line note, the first lines of the text, "Open in reader" and "Show in sources". A source the reader cannot open (not on Sefaria) shows plain text with a search link instead of a dead one.
 
-**Which sources are pulled.** Sources come from what the question actually names or matches (`backend/sefaria.py: find_refs_for_question`); a question that matches nothing gets **no** Sefaria sources, not a stock fallback such as Orach Chayim 1 or Human Dispositions 1, and the answer then says so (an unmatched question may still reach the web-context tier, which carries its own warning). Community customs are included only when the custom is about the question's subject, not merely the same community, and a ref that failed to load (an `unavailable` stand-in) or has no text is dropped from the sources the model and the reader see (`backend/ask_payloads.py: is_usable_primary_source`).
+**Which sources are pulled.** Sources come from what the question actually names or matches (`backend/sefaria.py: find_refs_for_question`); a question that matches nothing gets **no** Sefaria sources, not a stock fallback such as Orach Chayim 1 or Human Dispositions 1, and the answer then says so (an unmatched question may still reach the web-context tier, which carries its own warning). Community customs are included only when the custom is about the question's subject, not just the same community, and a ref that failed to load (an `unavailable` stand-in) or has no text is dropped from the sources the model and the reader see (`backend/ask_payloads.py: is_usable_primary_source`).
 
 **Reference spellings.** `GET /api/text/<ref>` answers an unresolvable reference with `200` and `{"error", "error_type": "not_found"}`. Before trying the reference as written it tries Sefaria's title for a transliterated Mishneh Torah reference (`Hilchot Shabbat 2:1` and `Rambam, Hilchot Shabbat 2:1` resolve as `Mishneh Torah, Sabbath 2:1`; table in `backend/ref_aliases.py`), which is how the model tends to write them.
 
@@ -352,11 +352,11 @@ Anonymous callers have no daily cap, only the tighter per-minute IP bucket. A si
 
 **Store outage posture:** the `llm` class fails **closed**, because an unmetered `/ask` during an outage is a budget hole. Every other class fails **open**, so a reader is not blocked by a transient Redis blip. Redis failures open a 20-second circuit breaker and are reported once per cooldown rather than once per request.
 
-An earlier version of this document named a `RATE_LIMIT_PER_MIN` variable; that variable never existed. The mechanism is this middleware. A Vercel WAF rate-limit layer sits in front of all of it (`docs/SECURITY.md` §7).
+This document once named a `RATE_LIMIT_PER_MIN` variable, which never existed. The middleware is the mechanism. A Vercel WAF rate-limit layer sits in front of all of it (`docs/SECURITY.md` §7).
 
 ### Turnstile (`backend/turnstile.py`)
 
-Anonymous `/ask` traffic past a per-IP hourly request threshold is challenged with Cloudflare Turnstile (chosen over Vercel BotID; `docs/SECURITY.md` §8 has the reasoning). Signed-in callers never see this gate; they already have Clerk signup plus the daily quota above. Below the threshold, or whenever `TURNSTILE_ENABLED` is unset (the default), this is a true no-op.
+Anonymous `/ask` traffic past a per-IP hourly request threshold is challenged with Cloudflare Turnstile (chosen over Vercel BotID; `docs/SECURITY.md` §8 has the reasoning). Signed-in callers never see this gate, since they already have Clerk signup plus the daily quota above. Below the threshold, or whenever `TURNSTILE_ENABLED` is unset (the default), the gate does nothing.
 
 **403 response body (a challenge is owed and no valid token was supplied):**
 
@@ -858,7 +858,7 @@ If any table delete fails, the Clerk account is deliberately **left intact** and
 
 ### `POST /api/webhooks/clerk`
 
-`backend/routes_webhooks.py`. A completeness backstop for account deletion: `POST /api/user/delete-account` is the only code path in this app that deletes a user's Supabase rows, but a Clerk identity can also be deleted through doors the app does not control (Clerk's hosted `<UserProfile />` self-service delete, or an operator removing a user in the Clerk Dashboard). Neither calls this app, so neither would trigger cleanup without this webhook. On a `user.deleted` event it cascades the same delete across the same seven tables listed under [Privacy](#privacy), keyed on the payload's `data.id`; there is no live Clerk JWT to authenticate with, because the identity may already be gone.
+`backend/routes_webhooks.py`. A completeness backstop for account deletion: `POST /api/user/delete-account` is the only code path in this app that deletes a user's Supabase rows, but a Clerk identity can also be deleted outside this app's control (Clerk's hosted `<UserProfile />` self-service delete, or an operator removing a user in the Clerk Dashboard). Neither calls this app, so neither would trigger cleanup without this webhook. On a `user.deleted` event it cascades the same delete across the same seven tables listed under [Privacy](#privacy), keyed on the payload's `data.id`; there is no live Clerk JWT to authenticate with, because the identity may already be gone.
 
 - **Auth:** Svix signature. The request must carry `svix-id`, `svix-timestamp` and `svix-signature`. The signature is HMAC-SHA256 over `"{svix-id}.{svix-timestamp}.{raw body}"` with `CLERK_WEBHOOK_SIGNING_SECRET` (base64-decoded after stripping a `whsec_` prefix) and must match one of the space-delimited `v1,<base64>` values in `svix-signature`. `svix-timestamp` must be within 300 seconds of the server's clock in either direction. Verified by hand against the documented Svix scheme rather than adding the `svix` package as a dependency.
 - **Rate-limit class:** `webhook` (15 per minute per IP).
@@ -927,7 +927,7 @@ Nothing here is meant for end users. Gating matters because several of these rev
 
 ### `GET /api/devtools/retention-enforce`
 
-`backend/routes_privacy.py`. Deletes data past the retention windows documented in `templates/privacy.html` §3, so that policy is enforced rather than promised: `ask_history` and `ai_usage_log` rows older than 90 days (by `created_at`) are hard-deleted. It also sweeps abandoned atomic AI-spend budget reservations (`ai_usage_log` rows with `reserved=true` past their `reservation_expires_at`) in the same run, through `expire_stale_budget_reservations()`, rather than standing up a separate job.
+`backend/routes_privacy.py`. Deletes data past the retention windows documented in `templates/privacy.html` §3, so that the policy is actually enforced: `ask_history` and `ai_usage_log` rows older than 90 days (by `created_at`) are hard-deleted. The same run also sweeps abandoned atomic AI-spend budget reservations (`ai_usage_log` rows with `reserved=true` past their `reservation_expires_at`) through `expire_stale_budget_reservations()`, so no separate job is needed.
 
 **Response (200, fully succeeded):**
 

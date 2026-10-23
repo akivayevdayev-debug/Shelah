@@ -4,7 +4,7 @@
 
 The single-page app shell, about 14,500 lines. It holds the markup for the whole UI, the no-flash theme and preference bootstraps in `<head>`, the import map for the ES modules under `static/js/`, and one classic inline script that owns most of the interactive behaviour (state, rendering, the reader, the calendar, the settings panel). Newer surfaces live in ES modules and reach the inline script through the `window.Shelah*` bridges. Details: [`docs/FRONTEND.md`](../docs/FRONTEND.md).
 
-Tailwind is **built** (`static/css/tailwind.css`, via `npm run build:css`), not configured inline. After adding utility classes here, rebuild it.
+Tailwind is built (`static/css/tailwind.css`, via `npm run build:css`), not configured inline. After adding utility classes here, rebuild it.
 
 ### Page zones
 
