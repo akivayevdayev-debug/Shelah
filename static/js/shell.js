@@ -4666,45 +4666,47 @@ function hasParenthetical(text) {
         // by aria-activedescendant, while focus stays in the field.
         const suggestionOptionId = (index) => `searchOption-${index}`;
 
-        function suggestionOptionHtml(item, index, typeLabels) {
-            const isActive = index === appState.activeSuggestionIndex;
-            const itemAlignClass = isHebrewMode() ? 'text-end' : 'text-start';
-            const itemDir = isHebrewMode() ? 'rtl' : 'ltr';
+        function suggestionDisplayLabel(item, typeLabels) {
+            if (item.type === 'ask') {
+                const askValue = String(item.value || '').trim();
+                return isHebrewMode()
+                    ? `שאל את ש'אלה: ${askValue}`
+                    : `Ask Sh'elah: ${askValue}`;
+            }
             const baseLabel = String((isHebrewMode() ? item.label_he : item.label) || item.label || '').trim();
             const typePrefix = (item.type === 'text' || item.type === 'verse')
                 ? ''
                 : (typeLabels[item.type] || item.type || '');
             const hasPrefix = typePrefix
                 && baseLabel.toLowerCase().startsWith(`${typePrefix.toLowerCase()} `);
-            let displayLabel = hasPrefix
-                ? baseLabel
-                : `${typePrefix} ${baseLabel}`.trim();
+            return hasPrefix ? baseLabel : `${typePrefix} ${baseLabel}`.trim();
+        }
 
-            if (item.type === 'ask') {
-                const askValue = String(item.value || '').trim();
-                displayLabel = isHebrewMode()
-                    ? `שאל את ש'אלה: ${askValue}`
-                    : `Ask Sh'elah: ${askValue}`;
-            }
-
-            let subtitleHtml;
-            if (item.type === 'verse') {
-                // The verse itself, in its own language and direction, with
-                // the words that matched in <mark> (text only: the server
-                // sends plain-text parts, and each is escaped here).
-                const lang = item.lang === 'he' ? 'he' : 'en';
-                const parts = Array.isArray(item.parts) ? item.parts : [];
-                const snippet = parts.map((part) => {
-                    const text = escapeHtml(String(part?.text || ''));
-                    return part?.match ? `<mark class="suggestion-verse-match">${text}</mark>` : text;
-                }).join('');
-                subtitleHtml = `<div class="suggestion-verse-snippet text-xs" lang="${lang}" dir="${lang === 'he' ? 'rtl' : 'ltr'}">${snippet}</div>`;
-            } else {
+        function suggestionSubtitleHtml(item) {
+            if (item.type !== 'verse') {
                 const subtitle = isHebrewMode()
                     ? (item.subtitle_he || translateSuggestionSubtitle(item.subtitle, item.type))
                     : (item.subtitle || '');
-                subtitleHtml = `<div class="text-xs text-slate-500 truncate">${escapeHtml(subtitle)}</div>`;
+                return `<div class="text-xs text-slate-500 truncate">${escapeHtml(subtitle)}</div>`;
             }
+            // The verse itself, in its own language and direction, with
+            // the words that matched in <mark> (text only: the server
+            // sends plain-text parts, and each is escaped here).
+            const lang = item.lang === 'he' ? 'he' : 'en';
+            const parts = Array.isArray(item.parts) ? item.parts : [];
+            const snippet = parts.map((part) => {
+                const text = escapeHtml(String(part?.text || ''));
+                return part?.match ? `<mark class="suggestion-verse-match">${text}</mark>` : text;
+            }).join('');
+            return `<div class="suggestion-verse-snippet text-xs" lang="${lang}" dir="${lang === 'he' ? 'rtl' : 'ltr'}">${snippet}</div>`;
+        }
+
+        function suggestionOptionHtml(item, index, typeLabels) {
+            const isActive = index === appState.activeSuggestionIndex;
+            const itemAlignClass = isHebrewMode() ? 'text-end' : 'text-start';
+            const itemDir = isHebrewMode() ? 'rtl' : 'ltr';
+            const displayLabel = suggestionDisplayLabel(item, typeLabels);
+            const subtitleHtml = suggestionSubtitleHtml(item);
 
             let typeBadge = item.type === 'text' ? '' : (typeLabels[item.type] || item.type || '');
             if (item.type === 'verse' && !item.tanakh) typeBadge = typeLabels.text;
@@ -4796,6 +4798,14 @@ function hasParenthetical(text) {
             }
         }
 
+        // Escape closed the list: a reference or verse request still on its
+        // way must not open it again when it answers.
+        function cancelSuggestionFetch() {
+            suggestionFetchSerial += 1;
+            suggestionAbort?.abort();
+            suggestionAbort = null;
+        }
+
         function hideSearchSuggestions() {
             appState.suggestionItems = [];
             appState.activeSuggestionIndex = -1;
@@ -4874,6 +4884,20 @@ function hasParenthetical(text) {
 
         let suggestionAbort = null;
 
+        // The verse group, once its request answers, under the reference list
+        // already on screen.
+        async function showVerseSuggestions(base, verseRequest, isCurrent) {
+            const verses = await verseRequest;
+            if (!isCurrent()) return;
+            appState.verseSearch = {
+                state: 'done',
+                close: Boolean(verses?.close),
+                items: (verses?.results || []).map(toVerseItem),
+            };
+            showSuggestionItems(base);
+            setSuggestStatus(suggestCountLabel(appState.suggestionItems.length));
+        }
+
         async function fetchOmniboxSuggestions(query) {
             const q = (query || '').trim();
             const fetchSerial = ++suggestionFetchSerial;
@@ -4881,12 +4905,7 @@ function hasParenthetical(text) {
             suggestionAbort?.abort();
             suggestionAbort = null;
 
-            if (suppressSuggestionMenu) {
-                hideSearchSuggestions();
-                return;
-            }
-
-            if (q.length < 2) {
+            if (suppressSuggestionMenu || q.length < 2) {
                 hideSearchSuggestions();
                 return;
             }
@@ -4925,15 +4944,7 @@ function hasParenthetical(text) {
                     return;
                 }
 
-                const verses = await verseRequest;
-                if (!isCurrent()) return;
-                appState.verseSearch = {
-                    state: 'done',
-                    close: Boolean(verses?.close),
-                    items: (verses?.results || []).map(toVerseItem),
-                };
-                showSuggestionItems(base);
-                setSuggestStatus(suggestCountLabel(appState.suggestionItems.length));
+                await showVerseSuggestions(base, verseRequest, isCurrent);
             } catch (error) {
                 if (!isCurrent() || error?.name === 'AbortError') return;
                 hideSearchSuggestions();
@@ -5893,6 +5904,35 @@ function hasParenthetical(text) {
             }).join('');
         }
 
+        // The word-meaning card above the commentary list: the gloss with up to
+        // three alternatives, "No definition found", or nothing.
+        function wordMeaningCardHtml(wordInfo) {
+            const word = escapeHtml(wordInfo?.word || '');
+            const card = (body) => `
+                    <div class="rounded-lg border border-[#d7c8ad] bg-[#f2eadc] px-3 py-2">
+                        <p class="text-[11px] uppercase tracking-widest text-[#5d4c36] font-bold">${t('Word Meaning', 'משמעות מילה')}</p>
+                        ${body}
+                    </div>
+                `;
+            if (!wordInfo?.meaning) {
+                return wordInfo?.notFound
+                    ? card(`<p class="text-sm text-[#4f4130] mt-1"><span class="font-semibold">${word}</span>: ${t('No definition found', 'לא נמצאה הגדרה')}</p>`)
+                    : '';
+            }
+            const primaryMeaning = String(wordInfo.meaning).trim().toLowerCase();
+            const altMeanings = Array.isArray(wordInfo.alternatives)
+                ? wordInfo.alternatives
+                    .map((value) => String(value || '').trim())
+                    .filter((value) => value && value.toLowerCase() !== primaryMeaning)
+                    .slice(0, 3)
+                : [];
+            const altMarkup = altMeanings.length
+                ? `<p class="text-xs text-[#6a5842] mt-1">${altMeanings.map((value) => escapeHtml(value)).join(' · ')}</p>`
+                : '';
+            return card(`<p class="text-sm text-[#4f4130] mt-1"><span class="font-semibold">${word}</span>: ${escapeHtml(wordInfo.meaning)}</p>
+                        ${altMarkup}`);
+        }
+
         function renderSelectionInsightsChooser() {
             if (!selectionInsightsBody) return;
 
@@ -5918,34 +5958,7 @@ function hasParenthetical(text) {
                 return;
             }
 
-            let html = '';
-            if (!hasWordMeaning && selectionCommentaryState.wordInfo?.notFound) {
-                html += `
-                    <div class="rounded-lg border border-[#d7c8ad] bg-[#f2eadc] px-3 py-2">
-                        <p class="text-[11px] uppercase tracking-widest text-[#5d4c36] font-bold">${t('Word Meaning', 'משמעות מילה')}</p>
-                        <p class="text-sm text-[#4f4130] mt-1"><span class="font-semibold">${escapeHtml(selectionCommentaryState.wordInfo.word || '')}</span>: ${t('No definition found', 'לא נמצאה הגדרה')}</p>
-                    </div>
-                `;
-            }
-            if (hasWordMeaning) {
-                const primaryMeaning = String(selectionCommentaryState.wordInfo?.meaning || '').trim().toLowerCase();
-                const altMeanings = Array.isArray(selectionCommentaryState.wordInfo?.alternatives)
-                    ? selectionCommentaryState.wordInfo.alternatives
-                        .map((value) => String(value || '').trim())
-                        .filter((value) => value && value.toLowerCase() !== primaryMeaning)
-                        .slice(0, 3)
-                    : [];
-                const altMarkup = altMeanings.length
-                    ? `<p class="text-xs text-[#6a5842] mt-1">${altMeanings.map((value) => escapeHtml(value)).join(' · ')}</p>`
-                    : '';
-                html += `
-                    <div class="rounded-lg border border-[#d7c8ad] bg-[#f2eadc] px-3 py-2">
-                        <p class="text-[11px] uppercase tracking-widest text-[#5d4c36] font-bold">${t('Word Meaning', 'משמעות מילה')}</p>
-                        <p class="text-sm text-[#4f4130] mt-1"><span class="font-semibold">${escapeHtml(selectionCommentaryState.wordInfo.word || '')}</span>: ${escapeHtml(selectionCommentaryState.wordInfo.meaning || '')}</p>
-                        ${altMarkup}
-                    </div>
-                `;
-            }
+            let html = wordMeaningCardHtml(selectionCommentaryState.wordInfo);
 
             if (Array.isArray(groupedCommentaries) && groupedCommentaries.length) {
                 html += `
@@ -6426,6 +6439,17 @@ function hasParenthetical(text) {
             });
         }
 
+        // The word meaning if it has already arrived. If not, and there are
+        // commentaries to show, it is left pending (merged in when it lands);
+        // with nothing else to show, it is waited for.
+        async function settledWordInfo(wordPromise, hasCommentaries) {
+            const WORD_PENDING = Symbol('word-pending');
+            const wordInfo = await Promise.race([wordPromise, Promise.resolve(WORD_PENDING)]);
+            if (wordInfo !== WORD_PENDING) return { wordInfo, pending: false };
+            if (hasCommentaries) return { wordInfo: null, pending: true };
+            return { wordInfo: await wordPromise, pending: false };
+        }
+
         async function updateSelectionInsights() {
             // Newer selections (or a cleared one) supersede older lookups:
             // every await below is followed by an isCurrent() check so a slow
@@ -6451,20 +6475,11 @@ function hasParenthetical(text) {
             // Don't hold the commentary list hostage to the word lookup (it can
             // fall back to an online translation): if the links arrive first,
             // render them now and merge the meaning in when it lands.
-            const WORD_PENDING = Symbol('word-pending');
             const { links } = await commentaryPromise;
             if (!isCurrent()) return;
-            let wordInfo = await Promise.race([wordPromise, Promise.resolve(WORD_PENDING)]);
-            const wordStillPending = wordInfo === WORD_PENDING;
-            if (wordStillPending) wordInfo = null;
-
             const groupedCommentaries = buildGroupedCommentaries(links, currentRef);
-
-            if (wordStillPending && !groupedCommentaries.length) {
-                // Nothing to show yet except (maybe) the meaning -- wait for it.
-                wordInfo = await wordPromise;
-                if (!isCurrent()) return;
-            }
+            const { wordInfo, pending } = await settledWordInfo(wordPromise, groupedCommentaries.length > 0);
+            if (!isCurrent()) return;
 
             const hasWordMeaning = Boolean(cleanWord && wordInfo?.meaning);
             if (!groupedCommentaries.length && !hasWordMeaning) {
@@ -6472,9 +6487,7 @@ function hasParenthetical(text) {
                 return;
             }
 
-            if (wordStillPending && groupedCommentaries.length) {
-                mergeLateWordMeaning(wordPromise, cleanWord, isCurrent);
-            }
+            if (pending) mergeLateWordMeaning(wordPromise, cleanWord, isCurrent);
 
             selectionCommentaryState.groupedCommentaries = groupedCommentaries;
             const wordNotFound = Boolean(cleanWord && wordInfo?.notFound);
@@ -10110,7 +10123,11 @@ function hasParenthetical(text) {
             }
             const [, chapterRef, segment] = match;
             const anchor = { ref: getRefTrackingKey(chapterRef), segment, offset: verseTargetOffset() };
-            await readText(chapterRef, { restoreScroll: { view: 'text', top: 0, anchor } });
+            const loading = readText(chapterRef, { restoreScroll: { view: 'text', top: 0, anchor } });
+            const requestId = _readTextRequestGen;
+            await loading;
+            // A newer text was opened meanwhile: the verse is not on screen.
+            if (requestId !== _readTextRequestGen) return;
             revealVerse(anchor);
         }
 
@@ -12287,6 +12304,7 @@ function hasParenthetical(text) {
             }
 
             if (e.key === 'Escape') {
+                cancelSuggestionFetch();
                 hideSearchSuggestions();
                 return;
             }

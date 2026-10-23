@@ -158,7 +158,8 @@ def _domain(url) -> str:
         host = urlparse(str(url or "").strip()).hostname or ""
     except ValueError:  # e.g. a stray "[" reads as a broken IPv6 host
         return ""
-    return host.removeprefix("www.").lower()
+    # "jtsa.edu." (a fully qualified name) is the same host as "jtsa.edu".
+    return host.removeprefix("www.").lower().rstrip(".")
 
 
 # Movement bodies an AI citation or a web page title may name instead of a
@@ -172,6 +173,9 @@ DENIED_SOURCE_NAMES = {
     "Central Conference of American Rabbis": "Reform movement's rabbinical body.",
     "CCAR": "Reform movement's rabbinical body.",
     "Reform Responsa": "Reform movement responsa.",
+    "Reform Judaism Responsa": "Reform movement responsa.",
+    "Conservative Yeshiva": "Conservative movement's yeshiva in Jerusalem.",
+    "Mechon Hadar": "Egalitarian, non-Orthodox.",
     "Union for Reform Judaism": "Reform movement.",
     "Hebrew Union College": "Reform movement's seminary.",
     "Reconstructionist": _RECONSTRUCTIONIST,
@@ -183,9 +187,14 @@ _DENIED_SOURCE_NAMES_RE = re.compile(
 )
 
 
+# A host named inside a citation ("Responsa, see jtsa.edu").
+_HOST_IN_TEXT_RE = re.compile(r"\b(?:[a-z0-9-]{1,63}\.){1,4}[a-z]{2,24}\b", re.IGNORECASE)
+
+
 def is_source_denied(*values) -> bool:
     """True when any of `values` (a URL, a bare domain such as Gemini's
-    grounding `domain`, or a page title) names a denied publisher or work."""
+    grounding `domain`, or a page title or citation) names a denied publisher
+    or work."""
     for value in values:
         text = str(value or "").strip()
         if not text:
@@ -193,6 +202,8 @@ def is_source_denied(*values) -> bool:
         if _denied_domain_reason(text if "://" in text else f"https://{text}"):
             return True
         if is_work_denied(text) or _DENIED_SOURCE_NAMES_RE.search(text):
+            return True
+        if any(_denied_domain_reason(f"https://{host}") for host in _HOST_IN_TEXT_RE.findall(text)):
             return True
     return False
 
@@ -294,6 +305,25 @@ def picker_versions(available, community=None) -> list[dict]:
     return rows
 
 
+# A work's main title before its ";" subtitle, used on its own only when it is
+# distinctive (four words or more): "Standing Again at Sinai" yes, "The Torah" no.
+_SHORT_TITLE_MIN_WORDS = 4
+
+
+def _short_title_key(work_key: str) -> str:
+    short = work_key.partition(";")[0].strip()
+    if short == work_key or len(short.split()) < _SHORT_TITLE_MIN_WORDS:
+        return ""
+    return short
+
+
+def _names_work(key: str, work_key: str) -> bool:
+    """`key` is the work itself or a ref inside it ("<work> 3", "<work>, p. 40")."""
+    if not work_key:
+        return False
+    return key == work_key or key.startswith(work_key + " ") or key.startswith(work_key + ",")
+
+
 def denied_work_reason(title) -> str | None:
     """Why the work `title` (an index title, or a ref inside it) is hidden;
     None when it is allowed."""
@@ -302,7 +332,7 @@ def denied_work_reason(title) -> str | None:
         return None
     for work in DENIED_WORKS:
         work_key = _key(work["title"])
-        if key == work_key or key.startswith(work_key + " ") or key.startswith(work_key + ","):
+        if _names_work(key, work_key) or _names_work(key, _short_title_key(work_key)):
             return work["reason"]
         if work["match"] == "prefix" and key.startswith(work_key):
             return work["reason"]

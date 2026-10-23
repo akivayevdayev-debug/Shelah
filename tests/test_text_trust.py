@@ -288,3 +288,29 @@ def test_v2_fallback_blanks_a_denied_translation(sefaria):
     result = sl.get_text("Genesis 1:1")
     assert result["he"] == ["בְּרֵאשִׁ֖ית"]
     assert result["en"] == []
+
+
+# Citation forms the denied-source check used to miss.
+@pytest.mark.parametrize("citation", [
+    "Standing Again at Sinai, p. 40",
+    "Reform Judaism responsa",
+    "Conservative Yeshiva, Mishnah Berakhot 1",
+    "Responsa, see jtsa.edu",
+    "https://jtsa.edu./responsa",
+])
+def test_source_denied_catches_short_and_embedded_forms(citation):
+    assert text_trust.is_source_denied(citation)
+
+
+@pytest.mark.parametrize("citation", [
+    "Mishnah Berakhot 1:1",
+    "The Torah, Genesis 1",
+    "Shulchan Arukh, Orach Chayim 1",
+    "chabad.org",
+])
+def test_source_denied_leaves_classical_refs_alone(citation):
+    assert not text_trust.is_source_denied(citation)
+
+
+def test_short_generic_title_is_not_denied_on_its_own():
+    assert not text_trust.is_work_denied("The Torah")

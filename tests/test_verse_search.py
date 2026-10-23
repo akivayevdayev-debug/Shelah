@@ -283,3 +283,18 @@ def test_a_typo_still_offers_the_verse_when_later_books_match_exactly(sefaria):
 def test_matched_words_joined_by_a_maqaf_are_one_phrase():
     parts = vs.snippet_parts("<b>לֶךְ</b>־<b>לְךָ</b> מֵאַרְצְךָ")
     assert parts[0] == {"text": "לֶךְ־לְךָ", "match": True}
+
+
+def test_reviewed_hebrew_edition_beats_an_unreviewed_one_listed_first():
+    hits = [
+        _hit("Genesis 1:1", "בראשית א׳:א׳", "<b>בראשית</b> ברא", version="Some Unreviewed Upload"),
+        _hit("Genesis 1:1", "בראשית א׳:א׳", "<b>בְּרֵאשִׁית</b> בָּרָא", version="Miqra according to the Masorah"),
+    ]
+    _order, by_ref = vs._best_hit_per_ref(hits, hebrew_query=True)
+    assert by_ref["Genesis 1:1"][2]["_source"]["version"] == "Miqra according to the Masorah"
+
+
+def test_unreviewed_hebrew_edition_still_shows_when_it_is_the_only_one():
+    hits = [_hit("Genesis 1:1", "בראשית א׳:א׳", "<b>בראשית</b> ברא", version="Some Unreviewed Upload")]
+    order, _by_ref = vs._best_hit_per_ref(hits, hebrew_query=True)
+    assert order == ["Genesis 1:1"]

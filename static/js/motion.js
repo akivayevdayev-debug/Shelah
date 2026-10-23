@@ -452,6 +452,27 @@ function _entranceStartOpacity(el, fresh) {
     return fresh ? 0 : Number.parseFloat(getComputedStyle(el).opacity) || 0;
 }
 
+// The entrance animations of present(): `el` fades in from `startOpacity`;
+// the mover (the card, or `el` when the preset moves it) springs from its
+// offset, or from the trigger it grows out of.
+function _startEntrance(animate, el, card, p, preset, origin, startOpacity) {
+    const mover = card ?? (p.y || p.scale !== 1 || origin ? el : null);
+    const morph = _originMorph(mover, origin, preset);
+    const from = morph ? _xf(0, morph.scale) : _xf(_offset(p.y, mover), p.scale);
+    el.style.opacity = String(startOpacity);
+    if (mover) {
+        if (morph) mover.style.transformOrigin = morph.origin;
+        mover.style.transform = from;
+    }
+
+    const fade = { ..._FADE, ...p.fade };
+    const controls = [animate(el, { opacity: [startOpacity, 1] }, { duration: fade.in, ease: [0.25, 0, 0.3, 1] })];
+    if (mover) {
+        controls.push(animate(mover, { transform: [from, _xf(0, 1)] }, _springTransition((morph && p.morphSpring) || p.spring)));
+    }
+    return { controls, mover, fade };
+}
+
 /**
  * Show `el` with an entrance. `card` (optional) is a child that carries the
  * movement while `el` itself only fades -- the shape of a modal, where `el` is
@@ -485,20 +506,7 @@ export async function present(el, { preset = 'popover', card = null, replay = fa
         return;
     }
 
-    const mover = card ?? (p.y || p.scale !== 1 || state.origin ? el : null);
-    const morph = _originMorph(mover, state.origin, preset);
-    const from = morph ? _xf(0, morph.scale) : _xf(_offset(p.y, mover), p.scale);
-    el.style.opacity = String(startOpacity);
-    if (mover) {
-        if (morph) mover.style.transformOrigin = morph.origin;
-        mover.style.transform = from;
-    }
-
-    const fade = { ..._FADE, ...p.fade };
-    const controls = [animate(el, { opacity: [startOpacity, 1] }, { duration: fade.in, ease: [0.25, 0, 0.3, 1] })];
-    if (mover) {
-        controls.push(animate(mover, { transform: [from, _xf(0, 1)] }, _springTransition((morph && p.morphSpring) || p.spring)));
-    }
+    const { controls, mover, fade } = _startEntrance(animate, el, card, p, preset, state.origin, startOpacity);
     state.controls = controls;
     await _withCeiling(Promise.all(controls), mover ? _SPRING_CEILING_S : fade.in);
     if (state.token !== token) return; // superseded by a dismiss()

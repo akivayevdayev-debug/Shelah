@@ -17,6 +17,7 @@ from uuid import uuid4
 from flask import Blueprint, jsonify, request, g
 
 from backend import claude
+from backend.rag import split_web_pages
 from backend.auth import (
     _verify_clerk_token,
     _extract_bearer_token,
@@ -446,7 +447,7 @@ def get_ask_history():
             .execute()
         )
         rows = result.data or []
-        items = rows[:limit]
+        items = [split_web_pages(row) for row in rows[:limit]]
         next_cursor = _encode_history_cursor(items[-1]) if len(rows) > limit else None
         return jsonify({"items": items, "next_cursor": next_cursor})
     except Exception as e:
@@ -484,7 +485,7 @@ def get_ask_history_entry(entry_id):
         rows = result.data or []
         if not rows:
             return jsonify({"error": "Not found"}), 404
-        return jsonify(rows[0])
+        return jsonify(split_web_pages(rows[0]))
     except Exception as e:
         _capture_backend_error("ask_history_get_failed", e, {"user_id_hash": hash_user_id(user_id), "entry_id": entry_id})
         return jsonify({"error": "Failed to load history entry"}), 500

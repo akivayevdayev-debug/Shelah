@@ -534,9 +534,16 @@ def _normalize_requested_ref(value, max_rounds=3):
     return decoded
 
 
-def _build_text_url(ref, lang="both", context=0):
+def _build_text_url(ref, lang="both", context=0, versions=None):
+    """The v2 texts URL; `versions` ({"he": title, "en": title}) asks for the
+    reader's own pick (Sefaria's vhe / ven) instead of the defaults."""
     encoded_ref = _encode_ref_path(ref)
-    params = urlencode({"lang": lang, "context": context, "pad": 0})
+    query = {"lang": lang, "context": context, "pad": 0}
+    for lang_key, param in (("he", "vhe"), ("en", "ven")):
+        title = str((versions or {}).get(lang_key) or "").strip()
+        if title:
+            query[param] = title
+    params = urlencode(query)
     return f"{SEFARIA_API}/texts/{encoded_ref}?{params}"
 
 
@@ -1387,7 +1394,7 @@ def _flatten_text_with_path(arr, path=None):
     return []
 
 
-def _try_initial_text_attempts(initial_attempts, attempts_tried, lang, context):
+def _try_initial_text_attempts(initial_attempts, attempts_tried, lang, context, versions=None):
     """Try each of get_text()'s initial ref attempts (cached-resolved ref,
     then the requested ref) in order. Returns (data, resolved_ref), with
     data=None if none succeeded. Split out of get_text() (SonarCloud
@@ -1403,13 +1410,13 @@ def _try_initial_text_attempts(initial_attempts, attempts_tried, lang, context):
         attempts_tried.add(lowered)
 
         attempt_data = _cached_get(_build_text_url(
-            attempt_ref, lang, context), ttl=86400)
+            attempt_ref, lang, context, versions), ttl=86400)
         if attempt_data and "error" not in attempt_data:
             return attempt_data, attempt_data.get("ref") or attempt_ref
     return None, ""
 
 
-def _try_candidate_text_refs(requested_ref, attempts_tried, lang, context):
+def _try_candidate_text_refs(requested_ref, attempts_tried, lang, context, versions=None):
     """Try each resolved candidate ref for get_text() in order. Returns
     (data, resolved_ref), with data=None if none succeeded. Split out of
     get_text() (SonarCloud python:S3776) -- see _flatten_text_with_path.
@@ -1421,7 +1428,7 @@ def _try_candidate_text_refs(requested_ref, attempts_tried, lang, context):
         attempts_tried.add(lowered)
 
         candidate_data = _cached_get(_build_text_url(
-            candidate, lang, context), ttl=86400)
+            candidate, lang, context, versions), ttl=86400)
         if candidate_data and "error" not in candidate_data:
             return candidate_data, candidate_data.get("ref") or candidate
     return None, ""
@@ -1434,14 +1441,15 @@ def _build_denied_text_response(requested_ref):
             "ref": requested_ref, "he": [], "en": []}
 
 
-def _filter_v2_versions(data, community):
+def _filter_v2_versions(data, community, requested=None):
     """The v2 fallback's text with any version text_trust doesn't show
-    blanked out. v2 sends one Hebrew (the work's own text) and one English."""
+    blanked out. v2 sends one Hebrew (the work's own text) and one English:
+    the reader's pick (`requested`) when the URL asked for it."""
     he_version = {"versionTitle": data.get("heVersionTitle"), "language": "he",
                   "versionSource": data.get("heVersionSource"), "isSource": True}
     en_version = {"versionTitle": data.get("versionTitle"), "language": "en",
                   "versionSource": data.get("versionSource")}
-    chosen = _chosen_versions([he_version, en_version], community, None)
+    chosen = _chosen_versions([he_version, en_version], community, requested)
     filtered = dict(data)
     if chosen.get("he") is None:
         filtered["he"] = []
@@ -1551,7 +1559,7 @@ def _try_v3_text(requested_ref, cache_key, community=None, requested=None):
     return parsed_v3
 
 
-def _resolve_v2_text_data(requested_ref, cache_key, lang, context):
+def _resolve_v2_text_data(requested_ref, cache_key, lang, context, versions=None):
     """Resolve text data via the v2 API: try the cached/requested ref
     first, then fall back to other ref candidates. Split out of get_text
     (SonarCloud python:S3776)."""
@@ -1560,10 +1568,10 @@ def _resolve_v2_text_data(requested_ref, cache_key, lang, context):
     initial_attempts = [cached_ref,
                         requested_ref] if cached_ref else [requested_ref]
     data, resolved_ref = _try_initial_text_attempts(
-        initial_attempts, attempts_tried, lang, context)
+        initial_attempts, attempts_tried, lang, context, versions)
     if not data:
         data, resolved_ref = _try_candidate_text_refs(
-            requested_ref, attempts_tried, lang, context)
+            requested_ref, attempts_tried, lang, context, versions)
     return data, resolved_ref
 
 
@@ -1638,7 +1646,7 @@ def get_text(ref, lang="both", context=0, *, community=None, versions=None):
         return parsed_v3
 
     data, resolved_ref = _resolve_v2_text_data(
-        requested_ref, cache_key, lang, context)
+        requested_ref, cache_key, lang, context, versions)
 
     if not data or "error" in data:
         _resolved_query_ref_cache.delete(cache_key)
@@ -1650,7 +1658,7 @@ def get_text(ref, lang="both", context=0, *, community=None, versions=None):
         return _build_denied_text_response(requested_ref)
     _cache_resolved_text_ref(cache_key, resolved_ref, data, requested_ref)
 
-    data = _filter_v2_versions(data, community)
+    data = _filter_v2_versions(data, community, versions)
     lines, he_flat, en_flat = _build_text_lines(data)
 
     resolved_output_ref = _resolve_output_ref(data, resolved_ref, requested_ref)

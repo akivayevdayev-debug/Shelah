@@ -139,18 +139,22 @@ export function createVoiceInput({ input, button, getLang = () => "en", onState,
 
     function begin() {
         if (listening) return;
-        recognition = new Ctor();
-        recognition.lang = voiceLang(getLang());
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.maxAlternatives = 1;
+        const session = new Ctor();
+        recognition = session;
+        session.lang = voiceLang(getLang());
+        session.continuous = true;
+        session.interimResults = true;
+        session.maxAlternatives = 1;
         base = input.value;
-        recognition.onresult = onResult;
-        recognition.onerror = (event) => {
+        session.onresult = onResult;
+        session.onerror = (event) => {
             const kind = errorKind(event?.error);
             if (kind) onError?.(kind);
         };
-        recognition.onend = () => {
+        // A stopped session can end after a new one has started: only the
+        // current session's end turns the mic off.
+        session.onend = () => {
+            if (recognition !== session) return;
             recognition = null;
             setListening(false);
         };

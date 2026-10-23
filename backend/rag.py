@@ -498,6 +498,39 @@ def _fetch_user_memory_summaries(user_id, limit=None, bearer_token=None):
     return summaries
 
 
+# The pages an answer's "Web: ..." citations link to are kept in the row's
+# `sources` list, tagged with this kind, so a reopened answer still links them
+# without a column of its own; readers split them back out (split_web_pages).
+WEB_PAGE_SOURCE_KIND = "web_page"
+
+
+def _web_page_entries(web_sources):
+    entries = []
+    for page in web_sources if isinstance(web_sources, list) else []:
+        if not isinstance(page, dict) or not page.get("ref") or not page.get("url"):
+            continue
+        entries.append({"kind": WEB_PAGE_SOURCE_KIND, "ref": str(page["ref"])[:300],
+                        "title": str(page.get("title") or "")[:300], "url": str(page["url"])[:1000]})
+    return entries
+
+
+def split_web_pages(row):
+    """A stored ask_history row as the reader wants it: its web pages moved
+    from `sources` to `meta.web_sources` (where the live /ask answer has them)."""
+    if not isinstance(row, dict):
+        return row
+    sources = row.get("sources") if isinstance(row.get("sources"), list) else []
+    pages = [s for s in sources if isinstance(s, dict) and s.get("kind") == WEB_PAGE_SOURCE_KIND]
+    if not pages:
+        return row
+    split = dict(row)
+    split["sources"] = [s for s in sources if s not in pages]
+    meta = dict(row.get("meta") or {})
+    meta["web_sources"] = [{"ref": p["ref"], "title": p.get("title", ""), "url": p["url"]} for p in pages]
+    split["meta"] = meta
+    return split
+
+
 def _store_ask_history(
     user_id,
     question,
@@ -505,6 +538,7 @@ def _store_ask_history(
     *,
     sources=None,
     ai_cited_sources=None,
+    web_sources=None,
     community="All",
     mode="balanced",
     language="en",
@@ -544,7 +578,7 @@ def _store_ask_history(
         "user_id": user_id,
         "question": str(question or "")[:2000],
         "answer": str(answer or "")[:10000],
-        "sources": sources if isinstance(sources, list) else [],
+        "sources": (sources if isinstance(sources, list) else []) + _web_page_entries(web_sources),
         "ai_cited_sources": ai_cited_sources if isinstance(ai_cited_sources, list) else [],
         "community": str(community or "All")[:100],
         "mode": str(mode or "balanced")[:50],

@@ -46,7 +46,7 @@ def test_a_refused_question_leaves_the_thread_with_its_refusal():
     ] + THREAD[2:]
     turns = claude.build_history_turns(history)
     assert [t["role"] for t in turns] == ["user", "assistant", "user", "assistant"]
-    assert not any("Hamlet" in t["text"] or "outside what I can help" in t["text"] for t in turns)
+    assert not any("Hamlet" in t["text"] or "outside what I can help" in t["text"] or "find a Jewish angle" in t["text"] for t in turns)
 
 
 def test_the_hebrew_refusal_leaves_the_thread_too():

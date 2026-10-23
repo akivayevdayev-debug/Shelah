@@ -1102,3 +1102,22 @@ class TestCachedGetDiskHit:
 
         assert sl._cached_get(self.URL) == {"fresh": True}
         assert fetched == [self.URL]
+
+
+# ─── v2 fallback honours the reader's version pick ─────────────────────────
+
+class TestV2FallbackVersionPick:
+    PICK = {"en": "Metsudah Chumash, Metsudah Publications, 2009"}
+
+    def test_url_asks_for_the_picked_english(self):
+        url = sl._build_text_url("Genesis 1", "both", 0, self.PICK)
+        assert "ven=Metsudah+Chumash" in url
+
+    def test_url_without_a_pick_is_unchanged(self):
+        assert "ven=" not in sl._build_text_url("Genesis 1", "both", 0)
+
+    def test_filter_keeps_the_picked_version_as_chosen(self):
+        data = {"heVersionTitle": "Tanach with Nikkud", "versionTitle": self.PICK["en"],
+                "he": ["א"], "text": ["a"]}
+        filtered = sl._filter_v2_versions(data, "sephardi", self.PICK)
+        assert filtered["_versions"]["en"]["title"] == self.PICK["en"]

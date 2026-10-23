@@ -245,6 +245,18 @@ def _hit_allowed(source) -> bool:
     return text_trust.is_version_shown(version)
 
 
+# An unreviewed Hebrew edition counts as the work's own text only as a fallback,
+# as in sefaria_library.get_text: a reviewed edition of the same ref always wins.
+_ORIGINAL_TEXT_FALLBACK_PENALTY = 100
+
+
+def _is_original_text_fallback(source) -> bool:
+    if str(source.get("lang") or "") != "he":
+        return False
+    version = {"versionTitle": source.get("version"), "language": "he", "isSource": True}
+    return text_trust.assess_version(version)["label"] == text_trust.ORIGINAL_TEXT
+
+
 def _best_hit_per_ref(hits, hebrew_query):
     """``(refs in first-seen order, {ref: (version rank, hit rank, hit)})`` with
     the best edition of each ref kept."""
@@ -254,7 +266,10 @@ def _best_hit_per_ref(hits, hebrew_query):
         ref = str(source.get("ref") or "").strip()
         if not ref or not _hit_allowed(source):
             continue
-        candidate = (_version_rank(source, hebrew_query), rank, hit)
+        version_rank = _version_rank(source, hebrew_query)
+        if _is_original_text_fallback(source):
+            version_rank += _ORIGINAL_TEXT_FALLBACK_PENALTY
+        candidate = (version_rank, rank, hit)
         if ref not in by_ref:
             order.append(ref)
             by_ref[ref] = candidate

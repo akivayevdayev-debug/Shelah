@@ -57,7 +57,7 @@
         "source": "sha256:6f350ca91dd53161bff6df3a9ddb5e92e3a2aac676064272dafc1104373d46de"
       },
       "admin-feedback.js": {
-        "source": "sha256:2d3a0591127ffca90565053a4cc2aebf69ccd39f3e3cd403cda5778d09509cba"
+        "source": "sha256:3d36bef570f2709b3b6846db2393298e67cdaa2e94cfb8726c30eb4d64a76045"
       },
       "clerk-appearance.js": {
         "source": "sha256:f1c54b0760a5e4d05486d65a5802453bbdfcd6e9026ac25c640e69d17179b25d"
@@ -78,7 +78,7 @@
         "source": "sha256:eb2bad4c77b42cee50161aed9d4b0832ab6fb83a3ee2d65a353298f9751d60f7"
       },
       "shell.js": {
-        "source": "sha256:9843a242b6b3742db42a3cb804f1ac98145363ab216b7f399d8c7131f811ea84"
+        "source": "sha256:b40320fd7d7fc10c2861a4bc4e4e6823d7116bc1ca9c50e7078e05b9c5a7256f"
       },
       "topbar_shared.js": {
         "source": "sha256:27a797b3deffea688349051bba6539490d19d018205f4c9721cd4d69e0bb17c3"
@@ -107,12 +107,12 @@
         "conversation-store.js": "sha256:b57b45534c99e26c745ccc9e2e9582f52a91d70b8d5d28b1fbcfd31ea21e0c6c",
         "conversation-ui-helpers.js": "sha256:707d151c8ebb6fe0b3d2d21f9d85d0240627683df8d17a1cd0b5de9080cb5add",
         "conversation-ui.js": "sha256:927bb36c15c4b5cb53cbe6e58be99b5e3c913bd78b241d018bbcc278e9985a0a",
-        "conversation-voice.js": "sha256:47f4a034a051d1db0ea1c3f52dc44064b7db23a07856c7dbfc1d6958611735db",
-        "hebrew-keyboard.js": "sha256:e6f4870df9326ac77544897b0715c2b40a8f3f692f19ef713e2253fa90d06770",
+        "conversation-voice.js": "sha256:34f9ccb1fa67d5db791ff1c8bcabe61977d56a7354c4f60c35b19fdfefeedc94",
+        "hebrew-keyboard.js": "sha256:70c1ce2b633381c4ee0d9cafa04324c15e5cc7578fda303ef5d7983dc72112b3",
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
         "main.js": "sha256:180064c57d9656a983a3802d9abf7a4b9400379b17e18ba1c371a6ff8c688ac7",
         "minhag-setting.js": "sha256:3f6723cd6b45a227b97a2fc4dab06365e1da3ae5e01b367ab6c07dd40d8f1060",
-        "motion.js": "sha256:f0318a129b6d5719e2fcf78a663cca8b49a1f2fe258d7294602827cced3c7a1e",
+        "motion.js": "sha256:c6a4e6617a67dd5730c8bee08e7cd213183e0fa6f3b0ff44a107ab77459d4251",
         "reader-ui.js": "sha256:afb5716e6b2112361fe652cc9efd2c6a4503ad9e560b898f0b00f992a4dc4fa8",
         "router.js": "sha256:712579f51ff6faece9b77f831e548130d75f150002fc2639ad97bdb9d5453ced",
         "siddur-day.js": "sha256:c8c6dade0de211346d6fbed5afa0ae5e33cb1aa863d600b5a67ae86569f84a12",
@@ -125,7 +125,7 @@
       },
       "outputs": {
         "js/actions.js": "74c685cdac5b",
-        "js/admin-feedback.js": "6993fd32c764",
+        "js/admin-feedback.js": "ce94acb7a44b",
         "js/calendar-detail.js": "f7455b20b943",
         "js/chunks/chunk-GI7XZAIM.js": "7f7dabe88234",
         "js/chunks/chunk-YSI2UDVM.js": "7920ec4717b4",
@@ -133,11 +133,11 @@
         "js/community-labels.js": "87dfbcba156b",
         "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/load-region.js": "2833ed602bea",
-        "js/main.js": "3b0282dbf33d",
-        "js/motion.js": "247715a0f89d",
+        "js/main.js": "db995e02b5c6",
+        "js/motion.js": "78836d5f6141",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "5f32eede1174",
-        "js/shell.js": "f0ac3f48549a",
+        "js/shell.js": "7ef972c0375a",
         "js/topbar_shared.js": "55aa1d245dcc"
       },
       "unreached": []

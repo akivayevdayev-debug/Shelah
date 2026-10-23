@@ -15,6 +15,7 @@ Suites:
     refusal   normal, follow-up and off-topic questions: false and correct refusal rates
     context   a third turn that must use turns one and two
     latency   time to the first progress event, to the model call and in all, per question
+    coverage  multi-part Jewish-life requests: refusals, and each part answered (judged by Claude)
 
 --provider claude turns Gemini off, so every answer comes from the Claude fallback.
 --save writes the rows to build/eval/latest.json (git-ignored; the path is a constant, not
@@ -229,6 +230,32 @@ LATENCY_QUESTIONS = [
     "When is Rosh Hashanah this year?",
 ]
 
+# Requests with several parts, or a task (a d'var Torah, a plan, a list) rather than a
+# ruling. Each has a Jewish angle, so a refusal or a skipped part is a failure
+# (docs/evals/2026-10-23-coverage.md).
+COVERAGE_PROMPTS = [
+    "What blessing do I make on an apple, what is the blessing after, and does it change if I eat it during a meal with bread?",
+    "Write a short d'var Torah for my son's bar mitzvah on Parashat Noach.",
+    "Help me write a eulogy for my grandfather, a Holocaust survivor who loved learning Gemara.",
+    "Plan a Pesach seder for 10 guests: the order of the steps, roughly how long each takes, and what I need to prepare beforehand.",
+    "What should I say and not say when visiting a shiva house, and how long should I stay?",
+    "Give me a one-month study plan for Mishnah Berakhot.",
+    "Recommend five books for a beginner who wants to learn about Judaism, and say what each is good for.",
+    "Translate Modeh Ani into English and explain each phrase.",
+    "Give me a recipe for challah and explain the mitzvah of separating challah.",
+    "Who were the Beta Israel, how did they come to Israel, and what is the festival of Sigd?",
+    "Compare Rashi and Ibn Ezra on the first verse of the Torah, then tell me which is closer to the plain meaning and why.",
+    "My kids are 6 and 9. How can I explain Tisha B'Av to them, and what activities fit the day?",
+    "What are the 39 melachot of Shabbat? List them all with one example each.",
+    "Can I use an electric toothbrush on Shabbat, and what about toothpaste?",
+    "What is the Jewish view on organ donation and brain death, and should I sign a donor card?",
+    "What are the differences between Ashkenazi and Sephardi customs for Pesach, Rosh Hashanah and mourning?",
+    "Write a short poem for Shabbat about rest.",
+    "I'm not Jewish and I'm dating a Jewish woman. What should I know about her family's traditions, and how does conversion work?",
+    "How do I set up a kosher kitchen from scratch: the dishes, the sink, the oven and the dishwasher?",
+    "Tell me the story of Purim for a children's play: the characters, the scenes, and a short script for the first scene.",
+]
+
 # ── helpers ─────────────────────────────────────────────────────────────────
 
 WORD_RE = re.compile(r"[\w'’א-ת]+", re.UNICODE)
@@ -249,7 +276,7 @@ def answer_text(result):
     return str(result.get("answer") or "")
 
 
-_DECLINE_RE = re.compile(r"\b(?:cannot|can't|will not|won't|am unable to|unable to)\s+(?:assist|help|provide|write|create|fulfil+)\b|outside what I can help", re.IGNORECASE)
+_DECLINE_RE = re.compile(r"\b(?:cannot|can't|will not|won't|am unable to|unable to)\s+(?:assist|help|provide|write|create|fulfil+)\b|outside what I can help|find a Jewish angle", re.IGNORECASE)
 
 
 def is_refusal(result):
@@ -432,6 +459,60 @@ async def suite_latency():
     return rows
 
 
+_COVERAGE_JUDGE = """You check whether an answer does everything a request asks.
+
+REQUEST:
+{question}
+
+ANSWER:
+{answer}
+
+List each distinct thing the request asks for (2-6 items). For each, say whether the answer
+does it fully, partly or not at all. Then say whether the answer declines, deflects, or says the
+assistant only handles some kinds of question (for example "I only give halachic rulings").
+Reply with JSON only: {{"parts": [{{"part": "...", "covered": "full|partial|none"}}], "deflects": true|false, "note": "one short sentence"}}"""
+
+
+async def judge_coverage(question, answer):
+    """Claude's per-part verdict on one answer, or an error row."""
+    import anthropic
+
+    client = anthropic.AsyncAnthropic()
+    message = await client.messages.create(
+        model="claude-haiku-5-5", max_tokens=700, thinking={"type": "disabled"},
+        messages=[{"role": "user", "content": _COVERAGE_JUDGE.format(question=question, answer=answer[:6000])}])
+    text = "".join(block.text for block in message.content if block.type == "text")
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    return json.loads(match.group(0)) if match else {"error": text[:200]}
+
+
+async def suite_coverage():
+    async def one(question):
+        marks = {}
+        result = await ask(question, marks=marks)
+        text = answer_text(result)
+        verdict = {} if is_refusal(result) else await judge_coverage(question, text)
+        parts = verdict.get("parts") or []
+        return {
+            "question": question, "refused": is_refusal(result), "model": result.get("model"),
+            "profile": list(claude.question_profile(question)), "words": count_words(text),
+            "parts": len(parts), "full": sum(p.get("covered") == "full" for p in parts),
+            "partial": sum(p.get("covered") == "partial" for p in parts),
+            "deflects": bool(verdict.get("deflects")), "note": verdict.get("note"),
+            "seconds": marks.get("seconds"), "answer": text,
+        }
+
+    rows = await run_all([lambda q=q: one(q) for q in COVERAGE_PROMPTS])
+    for row in rows:
+        print(json.dumps({k: v for k, v in row.items() if k != "answer"}, ensure_ascii=False), flush=True)
+    answered = [r for r in rows if "parts" in r and not r["refused"]]
+    parts = sum(r["parts"] for r in answered)
+    print(f"refused {sum(bool(r.get('refused')) for r in rows)}/{len(rows)}; "
+          f"deflected {sum(r['deflects'] for r in answered)}; "
+          f"parts full {sum(r['full'] for r in answered)}/{parts}, partial {sum(r['partial'] for r in answered)}")
+    return rows
+
+
 # ── readability ─────────────────────────────────────────────────────────────
 
 FANCY = (
@@ -460,7 +541,7 @@ def readability(text):
 
 SUITES = {
     "long": suite_long, "style": suite_style, "refusal": suite_refusal,
-    "context": suite_context, "latency": suite_latency,
+    "context": suite_context, "latency": suite_latency, "coverage": suite_coverage,
 }
 
 

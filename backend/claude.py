@@ -222,7 +222,7 @@ RABBI_FINAL_RULING_FOOTER = "Please consult with your local Rabbi for a final ru
 # row (defensibility logging) so a stored answer's governing
 # prompt version is reconstructable during a dispute, without retaining the
 # full prompt text itself.
-PROMPT_VERSION = "2026-10-22-plain-language-v14"
+PROMPT_VERSION = "2026-10-23-coverage-v15"
 # INTERNAL_AI_KNOWLEDGE_DISCLAIMER: canonical copy lives in
 # backend/utils/search_provider.py (re-exported via backend/helpers.py) —
 # an unused, byte-identical duplicate previously lived here too;
@@ -1509,14 +1509,14 @@ def _domain_refusal_message(subject: str) -> str:
 # that makes no sense after "who wrote Hamlet?".
 _OFF_TOPIC_REFUSAL_TEXT = {
     "en": (
-        "Sh'elah answers questions about Halakhah, Jewish law and custom, Tanakh, Talmud and "
-        "Jewish tradition, so {subject} is outside what I can help with here. Ask me a "
-        "Torah or halakhic question and I'll gladly help."
+        "Sh'elah helps with Jewish law, texts, history, customs and everyday Jewish life, "
+        "and I couldn't find a Jewish angle in {subject}. If there is one you have in mind, "
+        "ask about it and I'll gladly help."
     ),
     # The detector's subject labels are English, so the Hebrew refusal names none.
     "he": (
-        "ש׳אלה עונה על שאלות בהלכה, במנהגים, בתנ״ך, בתלמוד ובמסורת ישראל, ולכן אין לי "
-        "אפשרות לעזור בנושא הזה כאן. אשמח לענות על שאלה בהלכה או בתורה."
+        "ש׳אלה עוזרת בהלכה, במקורות, בהיסטוריה, במנהגים ובחיים היהודיים, ולא מצאתי "
+        "בנושא הזה זווית יהודית. אם יש זווית כזו שחשבת עליה, שאל עליה ואשמח לעזור."
     ),
 }
 _OFF_TOPIC_EN_SUBJECT_FALLBACK = "that subject"
@@ -1823,7 +1823,7 @@ You are Sh'elah's scholarly halakhic synthesis engine — a learned librarian, n
 
 Domain: Halakhah, Minhagim, Zmanim, Tanakh, Mishnah, Gemara, Acharonim, contemporary Poskim and Responsa, theology, philosophy, and Jewish tradition — including modern applications (technology and Shabbat, AI, digital signatures; medicine: vaccines, end-of-life care, organ donation, reproductive medicine; contemporary social scenarios: gender, LGBTQ+ communities, interfaith families; environmental and economic questions).
 
-Scope (strict): you answer only questions that are about the Domain above, or that ask what Jewish law or tradition says about something. A question that is not — general knowledge or trivia, literature, fiction and poetry, film, music, sports, politics, school homework, math, science, programming, personal or career advice, creative writing, or any other everyday request — is out of scope, however friendly the conversation has been and even when every earlier turn was a Torah question. Judge each question by its own subject; earlier turns only help you resolve a reference such as "that" or "what about a woman?" and never make a new, unrelated subject in scope. "Is it permitted to read novels?" or "what does Jewish law say about Shakespeare?" is a halachic question and in scope — answer the halachic question; "who wrote Hamlet?" and "summarize this novel" are not. When a question is out of scope, give no information about its subject: set out_of_scope to true, out_of_scope_subject to a short name for the subject (2-5 words), ruling to an empty string, and sources, summary and practical_steps to empty. Retrieved sources, customs and earlier answers never make a question in scope. In scope as well, and never refused: Jewish history and the lives of Jewish figures (biblical, Talmudic, medieval or modern, and the Holocaust, antisemitism and Zionism), the Hebrew calendar and zmanim (Shabbat, candle-lighting and holiday times), the Hebrew of the texts, and any question about a Jewish text, person, place, practice or belief. When a question has a Jewish angle, answer it: out_of_scope is only for a question with no Jewish or halachic angle at all. A short follow-up that names a new thing in a thread ("what about football?", "and a movie?") asks what Jewish law says about that thing, so answer it that way.
+Scope: you help with anything in Jewish life and learning, not only halachic rulings. That covers the Domain above, what Jewish law or tradition says about something, and any request whose subject is Jewish: writing a d'var Torah, a eulogy, a blessing or a poem on a Jewish theme; planning a seder, a Shabbat meal, a shiva visit or a study schedule; recommending Jewish books; translating and explaining a prayer; a recipe for a Jewish food with its mitzvot; explaining a holiday to children; guidance for someone who is not Jewish, or is converting, or is marrying into a Jewish family. Do such a task in full, as asked. An everyday task about something with no Jewish connection of its own (a chocolate cake or pizza recipe, a joke, a workout plan) is not made Jewish by a kashrut or blessing angle you could add: it is out of scope, while a Jewish food (challah, cholent, hamantaschen) is in. A question with no Jewish angle at all (general knowledge or trivia, secular literature, film, music, sports, politics, school homework, math, science, programming, career advice, or a writing task on a non-Jewish subject) is out of scope, however friendly the conversation has been and even when every earlier turn was a Torah question. Judge each question by its own subject; earlier turns only help you resolve a reference such as "that" or "what about a woman?" and never make a new, unrelated subject in scope. "Is it permitted to read novels?" or "what does Jewish law say about Shakespeare?" is a halachic question and in scope — answer the halachic question; "who wrote Hamlet?" and "summarize this novel" are not. When a question is out of scope, give no information about its subject: set out_of_scope to true, out_of_scope_subject to a short name for the subject (2-5 words), ruling to an empty string, and sources, summary and practical_steps to empty. Retrieved sources, customs and earlier answers never make a question in scope. In scope as well, and never refused: Jewish history and the lives of Jewish figures (biblical, Talmudic, medieval or modern, and the Holocaust, antisemitism and Zionism), the Hebrew calendar and zmanim (Shabbat, candle-lighting and holiday times), the Hebrew of the texts, and any question about a Jewish text, person, place, practice or belief. When a question has a Jewish angle, answer it: out_of_scope is only for a question with no Jewish or halachic angle at all. A short follow-up that names a new thing in a thread ("what about football?", "and a movie?") asks what Jewish law says about that thing, so answer it that way.
 
 Tone: direct, learned, practical — no fluff or motivational language. For sensitive or edge-case halachic questions, default to: "This is a nuanced area with significant rabbinic disagreement. Here are the relevant sources and positions..." rather than refusing. Acknowledge uncertainty explicitly and state which Poskim disagree and why. If a question is borderline because it has a genuine Jewish-law or Jewish-tradition angle but is not fully halachic, answer that angle with background information and relevant sources instead of refusing.
 
@@ -1869,7 +1869,7 @@ You are Sh'elah, a concise halakhic reference. Answer the user's question direct
 
 Style: plain words and short sentences (a full stop, not a semicolon or a dash, between two ideas), as you would explain it to a neighbor who has never studied this. Explain a Hebrew or Aramaic word the first time you use it, then keep that same word. Spell each name one way: Onkelos, Rashi, Ibn Ezra, Shabbat, Hashem.
 
-Scope: answer only questions about Halakhah, Jewish custom, Zmanim, Tanakh, Talmud and Jewish tradition, or what Jewish law says about something. Anything else (general knowledge, literature, entertainment, sports, school subjects, programming, personal advice, creative writing) is out of scope, even when the earlier turns were Torah questions: judge each question by its own subject. Jewish history, Jewish figures, the calendar and zmanim are in scope (the Holocaust and antisemitism too), and so is a short follow-up in a thread that names a new thing ("what about football?": what Jewish law says about it). For an out-of-scope question give no information about it: return out_of_scope true, out_of_scope_subject (2-5 words), ruling "", sources [], summary "" and practical_steps [].
+Scope: help with anything in Jewish life and learning, not only halachic rulings: Halakhah, Jewish custom, Zmanim, Tanakh, Talmud and Jewish tradition, what Jewish law says about something, and any task on a Jewish subject (a d'var Torah, a eulogy, a seder or study plan, book recommendations, a prayer translation, a holiday explained for children), done in full. An everyday task about something with no Jewish connection (a chocolate cake recipe, a joke) stays out of scope. A question with no Jewish angle (general knowledge, secular literature, entertainment, sports, school subjects, programming, a writing task on a non-Jewish subject) is out of scope, even when the earlier turns were Torah questions: judge each question by its own subject. Jewish history, Jewish figures, the calendar and zmanim are in scope (the Holocaust and antisemitism too), and so is a short follow-up in a thread that names a new thing ("what about football?": what Jewish law says about it). For an out-of-scope question give no information about it: return out_of_scope true, out_of_scope_subject (2-5 words), ruling "", sources [], summary "" and practical_steps [].
 
 Rules:
 - Return strict JSON only with keys: ruling, sources, is_prohibited, summary, practical_steps, rabbinic_disclaimer (and out_of_scope, out_of_scope_subject only for an out-of-scope question).
@@ -2090,8 +2090,37 @@ def _detail_expectation_for_question(question: str, mode: str) -> str:
         "Balanced mode: answer the question that was asked, at the size it was asked. "
         "A general or everyday question gets a short direct answer (a few sentences) with "
         "no history, no survey of every opinion and no steps it did not ask for. Go deeper "
-        "only where the answer really turns on a dispute."
+        "only where the answer really turns on a dispute. A request with several parts, or one "
+        "that asks you to write, plan or list something, gets every part in full."
     )
+
+
+# A request to produce something (a d'var Torah, a plan, a list, a translation),
+# at the start of a sentence or after "can you" / "please" / "help me".
+_TASK_REQUEST_RE = re.compile(
+    r"(?:^|[.?!]\s+|\b(?:can|could|would|will) you\s+|\bplease\s+|\bhelp me\s+)"
+    r"(?:write|draft|compose|plan|list|recommend|suggest|translate|outline|create|prepare|"
+    r"summari[sz]e|give me|tell me the story|teach me|walk me through|make me)\b"
+    r"|^(?:כתוב|תכתוב|תכתבי|תכנן|תתכנן|המלץ|תמליץ|תרגם|תתרגם|הכן|תכין)",
+    re.IGNORECASE)
+# "Pesach, weddings and mourning": three or more things asked about at once.
+_LIST_OF_THREE_RE = re.compile(r"\w, [^,]{1,40} and \w", re.IGNORECASE)
+# A second question joined to the first: ", and what about ...", "... and how ...".
+_SECOND_QUESTION_RE = re.compile(
+    r"\band (?:what|how|why|when|where|who|which|is|are|can|should|do|does)\b", re.IGNORECASE)
+
+
+def _is_multi_part_request(q: str) -> bool:
+    """True for a request that asks for something to be produced or asks several
+    things at once: those need room for every part, which the short format lacks."""
+    if _TASK_REQUEST_RE.search(q) or _SECOND_QUESTION_RE.search(q):
+        return True
+    if q.count("?") >= 2:
+        return True
+    # "...: the dishes, the sink, the oven and the dishwasher" or "A, B and C".
+    if q.count(",") >= 2 and (":" in q or " and " in q):
+        return True
+    return _LIST_OF_THREE_RE.search(q) is not None
 
 
 def _is_simple_question(question: str) -> bool:
@@ -2099,12 +2128,14 @@ def _is_simple_question(question: str) -> bool:
     q = str(question or "").strip()
     if not q:
         return True
+    if _is_multi_part_request(q):
+        return False
     words = q.split()
     if len(words) <= 12:
         return True
     complex_signals = [
         r"\bwhy\b", r"\bhow does\b", r"\bexplain\b", r"\banalyze\b",
-        r"\bcompare\b", r"\bdifference\b", r"\bwhat are the reasons\b",
+        r"\bcompare\b", r"\bdifferences?\b", r"\bwhat are the reasons\b",
         r"\bin detail\b", r"\bcomprehensively\b", r"\bdiscuss\b",
         r"\belaborate\b", r"\bhistory of\b", r"\beverything about\b",
         r"\band also\b", r"\bmoreover\b", r"\badditionally\b",
@@ -2314,7 +2345,7 @@ def _add_history_turn(turns, turn, user_chars, assistant_chars) -> None:
     answered, an empty turn adds nothing, a neighbour of the same role is joined."""
     if turn.get("role") != "user" and _is_scope_refusal(str(turn.get("content") or "")):
         # A refused question leaves the thread with its refusal: the model would
-        # otherwise read "that is outside what I can help with" as its own earlier answer.
+        # otherwise read "I couldn't find a Jewish angle" as its own earlier answer.
         if turns and turns[-1]["role"] == "user":
             turns.pop()
         return
@@ -2603,6 +2634,9 @@ def _format_instruction(simple: bool, study: bool, long_request: bool) -> str:
             "The ruling field starts with the DIRECT ANSWER (1-3 sentences), then gives the reasoning "
             "the question needs without restating it. If the question has several parts, answer each part in order "
             "under its own short `### Heading`; a single-point question gets no headings. "
+            "When the reader asks you to produce something (a d'var Torah, a eulogy, a poem, a plan, a list, a "
+            "translation, a recipe, a script), the ruling IS that thing: write all of it, with every item, "
+            "example, step or audience the request names, not a description of what it could contain. "
             "Use practical_steps (at most 6) only for a procedure the reader must carry out that ruling does not already "
             "spell out; otherwise []. "
             "Set summary to an empty string unless it adds a takeaway ruling does not contain. "
@@ -2734,7 +2768,7 @@ INSTRUCTIONS:
     - If Hebrew is requested and source snippets include Hebrew, prefer Hebrew phrasing/citations over English.
     - Whatever the language, keep each `sources` reference in its English Sefaria form before the em dash (the app links it to the text); only the note after the dash is translated.
 4. If mode is strict, do not include unsupported claims.
-5. Be direct and precise. Put the answer in the first sentence without restating the question, answer every part of it, size the rest to the question, say each thing once, and do not pad with background, history or opinions it did not ask about.
+5. Be direct and precise. Put the answer in the first sentence without restating the question, answer every part of it (every item, example, step or age group it names), size the rest to the question, say each thing once, and do not pad with background, history or opinions it did not ask about. Never tell the reader to ask a rabbi in place of answering: say what the sources hold and what the main views are; rabbinic_disclaimer already covers the final ruling.
 6. Keep source ordering aligned with the hierarchy above: specific API first, broad API second, internal knowledge third.
 7. Do not prepend warning banners yourself; backend controls warning rendering.
 8. Return strict JSON only, with keys: ruling, sources, is_prohibited, summary, practical_steps, rabbinic_disclaimer.
@@ -2745,7 +2779,7 @@ INSTRUCTIONS:
 13. SCOPE: judge the QUESTION by its own subject, never by the earlier turns, the retrieved sources or the community lens. A halachic or Jewish-tradition question, or one asking what Jewish law says about something, is in scope even when it is sensitive, unusual or borderline: answer it.
 14. For modern halachic applications (technology, medicine, contemporary scenarios), prioritize Responsa and recent decisors.
 15. If query is strictly hateful, calls for violence, or illegal, set ruling to exactly: "Sh'elah is a specialized tool for Halakhic and communal knowledge. I cannot assist with [Subject of Query]. Please consult with your local Rabbi for a final ruling.", and set practical_steps and sources to empty arrays.
-16. If the QUESTION has no halachic or Jewish-tradition angle at all (literature, general knowledge, entertainment, school subjects, programming, personal advice, creative writing), it is out of scope: return out_of_scope true, out_of_scope_subject (2-5 words), ruling "", and sources, summary and practical_steps empty, and give no information about the subject. Jewish history, Jewish figures, the calendar and zmanim are not out of scope (the Holocaust and antisemitism too), and a short follow-up that names a new thing ("what about football?") asks what Jewish law says about it.
+16. A task on a Jewish subject is in scope and is done in full: a d'var Torah, a eulogy, a poem or blessing, a seder, meal or study plan, book recommendations, a prayer translation, a recipe with its mitzvot, a holiday explained for children, guidance for a non-Jew or a convert. An everyday task about something with no Jewish connection (a chocolate cake recipe, a joke) is not made Jewish by a kashrut angle you could add. Only when the QUESTION has no halachic or Jewish angle at all (secular literature, general knowledge, entertainment, school subjects, programming, a writing task on a non-Jewish subject) is it out of scope: return out_of_scope true, out_of_scope_subject (2-5 words), ruling "", and sources, summary and practical_steps empty, and give no information about the subject. Jewish history, Jewish figures, the calendar and zmanim are not out of scope (the Holocaust and antisemitism too), and a short follow-up that names a new thing ("what about football?") asks what Jewish law says about it.
 17. Explanation depth requirement: {detail_expectation}
 {format_instruction}
 18. Structure content logically per the format instruction above.
@@ -3048,10 +3082,12 @@ def _build_refusal_result(
 # Torah or Jewish history when there is none. A second flag stands, so a question with
 # no Jewish angle is still refused.
 _SCOPE_FIRM_NOTE = (
-    "\n\nSCOPE CHECK: the QUESTION above names a Jewish subject, so it is in scope: Jewish law, texts, "
-    "history (the Holocaust and antisemitism included), figures, the calendar and tradition are what you answer, and so is \"the Jewish view of\" "
-    "anything. Answer it from that angle and do not set out_of_scope. Hateful, violent or illegal requests "
-    "are still refused."
+    "\n\nSCOPE CHECK: you marked the QUESTION above out of scope, but it names a Jewish subject. Jewish law, "
+    "texts, history (the Holocaust and antisemitism included), figures, the calendar, tradition and Jewish "
+    "life are what you answer, and so is \"the Jewish view of\" anything. If the question is about that "
+    "Jewish subject, answer it and do not set out_of_scope. If the Jewish word is only incidental (a plot "
+    "summary or trivia that happens to mention Jews), answer the Jewish side of it, or keep out_of_scope "
+    "when it has none. Hateful, violent or illegal requests are still refused."
 )
 _SCOPE_SECOND_LOOK_NOTE = (
     "\n\nSCOPE CHECK: you marked the QUESTION above out of scope. Look again. Jewish history, Jewish "
@@ -3670,6 +3706,35 @@ async def _gemini_answer(response: Any, model_name: str, is_simple: bool) -> Dic
     }
 
 
+@retry(
+    retry=retry_if_exception(_is_retryable_gemini_error),
+    wait=wait_random_exponential(multiplier=1, min=1, max=_GEMINI_RETRY_WAIT_MAX_SECONDS),
+    stop=stop_after_attempt(3),
+    before_sleep=_announce_gemini_retry,
+    reraise=True,
+)
+async def _generate_gemini_content_async_with_retry(
+    client: Any, model_name: str, contents: Any, system_text: str, max_tokens: int,
+) -> Any:
+    """The async twin of _generate_gemini_content_with_retry: retried only on
+    429/503/504 while a retry still leaves the Claude fallback its reserve, each
+    attempt's HTTP timeout clamped the same way."""
+    timeout = _gemini_call_timeout()
+    if timeout < _GEMINI_MIN_TIMEOUT_SECONDS:
+        raise TimeoutError("ai_budget_exhausted")
+    return await client.aio.models.generate_content(
+        model=model_name,
+        contents=contents,
+        config=genai_types.GenerateContentConfig(
+            system_instruction=system_text,
+            max_output_tokens=max_tokens,
+            temperature=0.3,
+            response_mime_type="application/json",
+            http_options=genai_types.HttpOptions(timeout=int(timeout * 1000)),
+        ),
+    )
+
+
 async def _call_gemini_httpx_model(
     prompt: str,
     dynamic_system_context: str = "",
@@ -3710,16 +3775,8 @@ async def _call_gemini_httpx_model(
     max_tokens = max_tokens or (SIMPLE_ANSWER_MAX_TOKENS if is_simple else COMPLEX_ANSWER_MAX_TOKENS)
 
     try:
-        response = await _cached_gemini_client.aio.models.generate_content(
-            model=model_name,
-            contents=_gemini_contents(prompt, history_turns),
-            config=genai_types.GenerateContentConfig(
-                system_instruction=system_text,
-                max_output_tokens=max_tokens,
-                temperature=0.3,
-                response_mime_type="application/json",
-            ),
-        )
+        response = await _generate_gemini_content_async_with_retry(
+            _cached_gemini_client, model_name, _gemini_contents(prompt, history_turns), system_text, max_tokens)
     except Exception as exc:
         # Off-loop: the error that opens the cooldown also publishes it to the
         # shared Redis tier, a blocking write.
@@ -3796,6 +3853,10 @@ async def ask_ai_async(
     wiki = wiki or []
     halachipedia = halachipedia or []
     user_memories = user_memories or []
+    # The same budget asgi.py's wait_for enforces, made visible to the model
+    # calls so a Gemini retry never eats the Claude fallback's time.
+    if _model_deadline.get() is None:
+        _model_deadline.set(time.monotonic() + AI_TOTAL_BUDGET_SECONDS)
     dynamic_system_context = _build_dynamic_system_context(
         customs=customs,
         user_memories=user_memories,

@@ -692,6 +692,26 @@
             }
         }
 
+        function failHttp(status) {
+            const hint = status === 503 ? ' The database is not configured on this deployment.' : ' This is usually temporary.';
+            return fail('error', `The server answered with HTTP ${status}.${hint}`);
+        }
+
+        function showDigest(data, restoreFocus) {
+            ui.all = normalizeRows(data?.rows);
+            ui.loaded = ui.all.length > 0;
+            clock = Date.now();
+            if (!ui.all.length) return showState('empty');
+            setView('ready');
+            renderAll();
+            refs.download.disabled = false;
+            ui.loadedLabel = new Intl.DateTimeFormat('en', { timeStyle: 'short' }).format(clock);
+            refs.loadedAt.textContent = `Loaded ${ui.loadedLabel}`;
+            const loaded = summarize(ui.all);
+            say(`Loaded ${loaded.total} from readers and ${loaded.aiNotes} AI notes.`);
+            if (restoreFocus) refs.content.focus({ preventScroll: true });
+        }
+
         async function load() {
             if (ui.loading) return;
             ui.loading = true;
@@ -711,23 +731,8 @@
                 const response = await fetchDigest(token);
                 if (response.status === 401) return showState('expired');
                 if (response.status === 403) return showState('forbidden');
-                if (!response.ok) {
-                    const hint = response.status === 503 ? ' The database is not configured on this deployment.' : ' This is usually temporary.';
-                    return fail('error', `The server answered with HTTP ${response.status}.${hint}`);
-                }
-                const data = await response.json();
-                ui.all = normalizeRows(data?.rows);
-                ui.loaded = ui.all.length > 0;
-                clock = Date.now();
-                if (!ui.all.length) return showState('empty');
-                setView('ready');
-                renderAll();
-                refs.download.disabled = false;
-                ui.loadedLabel = new Intl.DateTimeFormat('en', { timeStyle: 'short' }).format(clock);
-                refs.loadedAt.textContent = `Loaded ${ui.loadedLabel}`;
-                const loaded = summarize(ui.all);
-                say(`Loaded ${loaded.total} from readers and ${loaded.aiNotes} AI notes.`);
-                if (restoreFocus) refs.content.focus({ preventScroll: true });
+                if (!response.ok) return failHttp(response.status);
+                showDigest(await response.json(), restoreFocus);
             } catch (error) {
                 fail('error', error?.name === 'AbortError' ? 'The request took too long.' : undefined);
             } finally {

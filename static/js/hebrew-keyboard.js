@@ -209,6 +209,25 @@ export function installHebrewKeyboard({
         return width > 0 && width < COMPACT_BELOW_PX ? "compact" : "full";
     }
 
+    function toggleKey(wide) {
+        const label = layout === "he"
+            ? t("Switch to English letters", "מעבר לאותיות באנגלית")
+            : t("Switch to Hebrew letters", "מעבר לאותיות בעברית");
+        return `<button type="button" class="${wide} kbd-toggle" data-key="toggle" aria-label="${escapeHtml(label)}"${layout === "he" ? "" : ' lang="he"'}>${layout === "he" ? "EN" : "עב"}</button>`;
+    }
+
+    function layerKey(wide) {
+        const label = symbols ? t("Letters", "אותיות") : t("Numbers and symbols", "מספרים וסימנים");
+        const lettersText = layout === "he" ? "אבג" : "ABC";
+        const text = symbols ? lettersText : "?123";
+        return `<button type="button" class="${wide} kbd-layer" data-key="layer" aria-label="${escapeHtml(label)}"${symbols && layout === "he" ? ' lang="he"' : ""}>${text}</button>`;
+    }
+
+    function moreKey(wide) {
+        const label = symbols === 2 ? t("Numbers", "מספרים") : t("More symbols", "סימנים נוספים");
+        return `<button type="button" class="${wide} kbd-more" data-key="more" aria-label="${escapeHtml(label)}">${symbols === 2 ? "123" : "#+="}</button>`;
+    }
+
     function specialKey(kind) {
         const wide = "kbd-key kbd-key-wide";
         switch (kind) {
@@ -220,22 +239,12 @@ export function installHebrewKeyboard({
                 return `<button type="button" class="${wide} kbd-shift" data-key="shift" aria-label="Shift" aria-pressed="${shift || caps ? "true" : "false"}"><span aria-hidden="true">⇧</span></button>`;
             case "caps":
                 return `<button type="button" class="${wide} kbd-caps" data-key="caps" aria-pressed="${caps ? "true" : "false"}">Caps</button>`;
-            case "toggle": {
-                const label = layout === "he"
-                    ? t("Switch to English letters", "מעבר לאותיות באנגלית")
-                    : t("Switch to Hebrew letters", "מעבר לאותיות בעברית");
-                return `<button type="button" class="${wide} kbd-toggle" data-key="toggle" aria-label="${escapeHtml(label)}"${layout === "he" ? "" : ' lang="he"'}>${layout === "he" ? "EN" : "עב"}</button>`;
-            }
-            case "layer": {
-                const label = symbols ? t("Letters", "אותיות") : t("Numbers and symbols", "מספרים וסימנים");
-                const lettersText = layout === "he" ? "אבג" : "ABC";
-                const text = symbols ? lettersText : "?123";
-                return `<button type="button" class="${wide} kbd-layer" data-key="layer" aria-label="${escapeHtml(label)}"${symbols && layout === "he" ? ' lang="he"' : ""}>${text}</button>`;
-            }
-            case "more": {
-                const label = symbols === 2 ? t("Numbers", "מספרים") : t("More symbols", "סימנים נוספים");
-                return `<button type="button" class="${wide} kbd-more" data-key="more" aria-label="${escapeHtml(label)}">${symbols === 2 ? "123" : "#+="}</button>`;
-            }
+            case "toggle":
+                return toggleKey(wide);
+            case "layer":
+                return layerKey(wide);
+            case "more":
+                return moreKey(wide);
             case "space":
                 return `<button type="button" class="kbd-key kbd-key-space" data-key="space" data-text=" " aria-label="${escapeHtml(t("Space", "רווח"))}"><span aria-hidden="true">${escapeHtml(t("space", "רווח"))}</span></button>`;
             default:

@@ -30,6 +30,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, g, jsonify
 
 from backend.device_identity import filter_owner, require_history_owner
+from backend.rag import split_web_pages
 from backend.routes_conversation_share import public_conversation_payload
 
 from app import (
@@ -252,5 +253,6 @@ def get_public_answer(token):
         "mode": row.get("mode"),
         "language": row.get("language"),
     }
+    payload = split_web_pages(payload)
     payload["public"] = True
     return _noindex(jsonify(payload))

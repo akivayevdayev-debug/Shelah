@@ -95,7 +95,7 @@ class TestRefusal:
         assert result["structured"]["safety_class"] == "ok"
         assert result["structured"]["sources"] == []
         assert "literature and creative writing" in result["answer"]
-        assert "Halakhah" in result["answer"]
+        assert "Jewish law" in result["answer"]
         # No "consult your Rabbi" line after a literature question.
         assert claude.RABBI_FINAL_RULING_FOOTER not in result["answer"]
 
@@ -307,7 +307,7 @@ class TestAskTransportsRefuseBeforeRetrieval:
 
     @staticmethod
     def _assert_refusal_payload(body):
-        assert "outside what I can help with" in body["answer"]
+        assert "couldn't find a Jewish angle" in body["answer"]
         assert body["sources"] == []
         assert body["customs"] == []
         assert body["ai_cited_sources"] == []

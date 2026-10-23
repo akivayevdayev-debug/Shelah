@@ -2060,6 +2060,7 @@ def _run_ask_question_ai_synthesis(
         normalized_answer,
         sources=display_sources,
         ai_cited_sources=ai_cited,
+        web_sources=web_lookup.cited_pages(ai_cited, (result.get("web_lookup") or {}).get("sources")),
         community=canonical_lens,
         mode=mode,
         language=answer_language,

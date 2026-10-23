@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 import app as flask_app_module
-from backend import ask_pipeline, ask_progress, claude, guest_cap, search, text_trust
+from backend import ask_pipeline, ask_progress, claude, guest_cap, search, text_trust, web_lookup
 from backend.ask_payloads import (
     build_ai_answer_payload,
     build_source_fallback_payload,
@@ -769,6 +769,7 @@ async def _run_ask_async_ai_synthesis(
         normalized_answer,
         sources=display_sources,
         ai_cited_sources=ai_cited,
+        web_sources=web_lookup.cited_pages(ai_cited, (result.get("web_lookup") or {}).get("sources")),
         community=canonical_lens,
         mode=mode,
         language=answer_language,

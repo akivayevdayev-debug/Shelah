@@ -956,7 +956,7 @@ class TestAskInConversation:
         stored = client.table(MSG_TABLE).insert_calls[-1][0][0]
         assert stored["role"] == "assistant"
         assert stored["status"] == "complete"
-        assert "outside what I can help with" in stored["content"]
+        assert "couldn't find a Jewish angle" in stored["content"]
         assert client.table(CIT_TABLE).insert_calls == []
 
     def test_synthesis_exception_stores_error_placeholder_message(self, test_client, authed, monkeypatch):
