@@ -1,10 +1,10 @@
-"""Loaded first by pytest (`-p tests._alias_httpx` in pytest.ini).
+"""Imported first by tests/conftest.py; importing it is what does the work.
 
-The Anthropic SDK moved from httpx to httpx2, an API-compatible fork. respx
-patches whatever `httpx` is, so without this alias it stops seeing the SDK's
-requests and a test can reach the real API. `alias_httpx()` makes
-`import httpx` (and `httpcore`) resolve to httpx2 for the whole test process;
-it must run before anything imports httpx.
+The Anthropic SDK uses httpx2, an API-compatible fork of httpx. respx patches
+whatever `httpx` is, so without this alias a test could reach the real API.
+`alias_httpx()` makes `import httpx` (and `httpcore`) resolve to httpx2 for
+the whole run. It must run before anything imports httpx, which is why
+pytest.ini turns off respx's auto-loaded pytest plugin.
 """
 
 import httpx2

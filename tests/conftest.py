@@ -14,6 +14,8 @@ see the test values. Provides:
 
 from __future__ import annotations
 
+import tests._alias_httpx  # noqa: F401  (must stay the first import)
+
 import os
 
 # ── Set env vars BEFORE any app-level import ──────────────────────────────────
