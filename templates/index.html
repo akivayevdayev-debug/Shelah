@@ -170,8 +170,8 @@
          before then are queued by the listener below and handed to the SDK by
          sentry-init.js once it is up. -->
     <script>(function(w){var q=w.__shelahEarlyErrors=[];function pu(x){if(q.length<10)q.push(x);}function oe(ev){pu(ev.error||ev.message);}function or(ev){pu(ev.reason);}w.addEventListener('error',oe);w.addEventListener('unhandledrejection',or);w.__shelahEarlyErrorsStop=function(){w.removeEventListener('error',oe);w.removeEventListener('unhandledrejection',or);};})(window)</script>
-    <script defer src="https://browser.sentry-cdn.com/10.69.0/bundle.min.js"
-            integrity="sha384-3CEt/dsT99DjKC3MgiUAiordZm0hoZjYMn6ioBvRKm+9A98CLWAUsQsk5XaPpjfU"
+    <script defer src="https://browser.sentry-cdn.com/11.9.0/bundle.min.js"
+            integrity="sha384-xE/bmsH+mppbFLN9Cj+Lyc7rR9sTBh9p6GEswhQcoZPRAZbv5k6MRfdRIGnB+azV"
             crossorigin="anonymous"></script>
     <script defer src="{{ asset_url('js/sentry-init.js') }}"></script>
     {% endif %}
@@ -206,12 +206,12 @@
         rel="stylesheet" media="print" data-async-css>
     <noscript><link href="https://fonts.googleapis.com/css2?family=Cardo:wght@400;700&family=Inter:wght@400;500;600&display=swap"
         rel="stylesheet"></noscript>
-    <script defer src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"
-            integrity="sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+"
+    <script defer src="https://cdn.jsdelivr.net/npm/marked@18.1.1/lib/marked.umd.js"
+            integrity="sha384-rATToyt6602Jnq8c7w8HZwmyOUgPL7mzxX01FBWoV48ns/EgkakGozpES+PnaYOI"
             crossorigin="anonymous"></script>
     <!-- DOMPurify: sanitize HTML produced by marked.parse() to prevent XSS -->
-    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.4.9/dist/purify.min.js"
-            integrity="sha384-6ZdfL2Azuen6KYvcTkbxqJS1d7txbNWrVfmURkxNeCn7DtzhLRL6Fi6WGG6ZLdKn"
+    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.4.17/dist/purify.min.js"
+            integrity="sha384-P0JNneQf81HOl9VwNXK76cQ9VMD6Nfsnepxb0cCOg8+UzEdzgPHAPV4wVQrvYQSx"
             crossorigin="anonymous"></script>
     {% set css = page_css(css_kind) %}
     {% if css and css.critical %}
@@ -256,7 +256,7 @@
          falls back to instant state changes until then).
          window.ShelahLibs.load(name) resolves true once the library's global
          exists, false if it could not be loaded; callers keep going without it. -->
-    <script>(function(w,d){var L={fullcalendar:{src:"https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js",integrity:"sha384-B1OFx8Gy9GjPu8UbUyXbGQpzll9ubAUQ9agInFJ8NnD7nYG1u/CLR+Sqr5yifl4q",ready:function(){return!!w.FullCalendar}},motion:{src:"https://cdn.jsdelivr.net/npm/motion@12.43.0/dist/motion.js",integrity:"sha384-hgVFh5YKDMdpcWEjpRqk2kPXOKBH7I9NBCKe3uR6dHKgy/BWPe8kyL01kiYuRn1u",ready:function(){return!!w.Motion}}{% if clerk_publishable_key %},clerk:{src:"https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5.127.0/dist/clerk.browser.js",integrity:"sha384-9BfgqxUZJLeppMqmDGDPFU1zC63bMyEwEXG8xMcQwhDz5qU3WUR4PwpVcZ4fKU8D",attrs:{"data-clerk-publishable-key":{{ clerk_publishable_key | tojson }}},ready:function(){return!!w.Clerk}}{% endif %}},P={};w.ShelahLibs={load:function(n){var l=L[n];if(!l)return Promise.resolve(false);if(l.ready())return Promise.resolve(true);return P[n]||(P[n]=new Promise(function(r){var s=d.createElement('script');s.src=l.src;s.integrity=l.integrity;s.crossOrigin='anonymous';if(l.attrs)for(var k in l.attrs)s.setAttribute(k,l.attrs[k]);s.onload=function(){r(l.ready())};s.onerror=function(){delete P[n];s.remove();r(false)};d.head.appendChild(s)}))}};function motion(){w.ShelahLibs.load('motion')}['pointerover','touchstart','keydown','scroll'].forEach(function(e){w.addEventListener(e,motion,{once:true,passive:true,capture:true})});w.addEventListener('load',function(){setTimeout(motion,3000)});if(L.clerk&&(d.documentElement.classList.contains('auth-likely-in')||/\/(signin|profile|settings|chat|history|answer|a|conversation)(\/|$)/.test(w.location.pathname)||/[?&](chat|conversation|a|history|auth)=/.test(w.location.search)))w.ShelahLibs.load('clerk')})(window,document)</script>
+    <script>(function(w,d){var L={fullcalendar:{src:"https://cdn.jsdelivr.net/npm/fullcalendar@6.1.22/index.global.min.js",integrity:"sha384-a9qx08ufzJ+0qbHzdqA+GYiSayQQB5BK2YGS/HQT9cxhQm+GhiXFj1ByVXa93ZRR",ready:function(){return!!w.FullCalendar}},motion:{src:"https://cdn.jsdelivr.net/npm/motion@14.6.0/dist/motion.js",integrity:"sha384-wyFtoWIFus6Butv1mjUTfcosTs0hTxLly4xsBL9KKBbd+WuuXov75vD9yhy5UZv9",ready:function(){return!!w.Motion}}{% if clerk_publishable_key %},clerk:{src:"https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5.128.1/dist/clerk.browser.js",integrity:"sha384-GpRJv2HyaO/k/gGXDuz7JGje1Fi8IlJziMrg39G2mi5Bw6Foi6mBC3iIxYVDsLmA",attrs:{"data-clerk-publishable-key":{{ clerk_publishable_key | tojson }}},ready:function(){return!!w.Clerk}}{% endif %}},P={};w.ShelahLibs={load:function(n){var l=L[n];if(!l)return Promise.resolve(false);if(l.ready())return Promise.resolve(true);return P[n]||(P[n]=new Promise(function(r){var s=d.createElement('script');s.src=l.src;s.integrity=l.integrity;s.crossOrigin='anonymous';if(l.attrs)for(var k in l.attrs)s.setAttribute(k,l.attrs[k]);s.onload=function(){r(l.ready())};s.onerror=function(){delete P[n];s.remove();r(false)};d.head.appendChild(s)}))}};function motion(){w.ShelahLibs.load('motion')}['pointerover','touchstart','keydown','scroll'].forEach(function(e){w.addEventListener(e,motion,{once:true,passive:true,capture:true})});w.addEventListener('load',function(){setTimeout(motion,3000)});if(L.clerk&&(d.documentElement.classList.contains('auth-likely-in')||/\/(signin|profile|settings|chat|history|answer|a|conversation)(\/|$)/.test(w.location.pathname)||/[?&](chat|conversation|a|history|auth)=/.test(w.location.search)))w.ShelahLibs.load('clerk')})(window,document)</script>
     <script>
         window.APP_CLERK = {
             publishableKey: {{ clerk_publishable_key | tojson }},

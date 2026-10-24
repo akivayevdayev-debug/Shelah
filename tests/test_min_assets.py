@@ -168,8 +168,8 @@ class TestLazyThirdPartyLibraries:
     page's CSP by tests/test_csp.py."""
 
     LIBRARIES = {
-        "fullcalendar": "fullcalendar@6.1.15/index.global.min.js",
-        "motion": "motion@12.43.0/dist/motion.js",
+        "fullcalendar": "fullcalendar@6.1.22/index.global.min.js",
+        "motion": "motion@14.6.0/dist/motion.js",
     }
 
     @staticmethod

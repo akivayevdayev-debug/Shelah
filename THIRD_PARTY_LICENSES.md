@@ -73,7 +73,7 @@ devDependency) or the CDN `<script>`/`<link>` tags in `templates/index.html`
 
 - **Tailwind CSS** `4.3.3` (npm devDependency, `package-lock.json`) — MIT —
   https://github.com/tailwindlabs/tailwindcss
-- **marked** `15.0.12` (CDN, `templates/index.html`) — MIT —
+- **marked** `18.1.1` (CDN, `templates/index.html`) — MIT —
   https://github.com/markedjs/marked
 
 A typical MIT notice (see each project for its exact copyright line):
@@ -103,7 +103,7 @@ SOFTWARE.
 ```
 
 ### DOMPurify (not MIT — dual-licensed)
-- **DOMPurify** `3.4.9` (CDN, `templates/index.html`) —
+- **DOMPurify** `3.4.17` (CDN, `templates/index.html`) —
   https://github.com/cure53/DOMPurify
 
 DOMPurify is **not** MIT-licensed. Its own `package.json` declares

@@ -830,18 +830,27 @@ class TestMainBlock:
         else:
             monkeypatch.setenv("FLASK_DEBUG", debug_env)
         monkeypatch.setenv("FLASK_SECRET_KEY", "main-block-secret")
+        monkeypatch.delenv("HOST", raising=False)
 
         self._run_as_main()
 
         assert len(startup_stubs["run"]) == 1
         run_call = startup_stubs["run"][0]
         assert run_call["args"] == ()
-        assert run_call["kwargs"] == {"debug": expected_debug, "host": "0.0.0.0", "port": expected_port}
+        assert run_call["kwargs"] == {"debug": expected_debug, "host": "127.0.0.1", "port": expected_port}
         assert isinstance(run_call["kwargs"]["port"], int)
         # The server is started on the app object this very run built.
         assert isinstance(run_call["app"], flask.Flask)
         assert run_call["app"].secret_key == "main-block-secret"
         assert run_call["app"] is not flask_app_module.app
+
+    def test_running_as_a_script_binds_the_host_from_env(self, monkeypatch, startup_stubs):
+        monkeypatch.setenv("HOST", "0.0.0.0")
+        monkeypatch.setenv("FLASK_SECRET_KEY", "main-block-secret")
+
+        self._run_as_main()
+
+        assert startup_stubs["run"][0]["kwargs"]["host"] == "0.0.0.0"
 
     def test_running_as_a_script_never_hijacks_the_already_imported_app_module(self, monkeypatch, startup_stubs):
         assert sys.modules["app"] is flask_app_module

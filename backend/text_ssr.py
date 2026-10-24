@@ -334,6 +334,8 @@ def build(ref):
     return {
         "requested_ref": ref,
         "payload": trimmed,
-        "rows_html": Markup(rows_html),
+        # render_rows escapes every line (_clean_line: html.escape + an
+        # allow-list of emphasis tags), so the markup is ours.
+        "rows_html": Markup(rows_html),  # nosec B704
         "title": header_title(payload, ref),
     }

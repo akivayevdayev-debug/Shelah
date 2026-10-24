@@ -41,7 +41,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.12"
+          python-version: "3.14"
           cache: "pip"
 
       - name: Install dependencies
@@ -52,7 +52,7 @@ jobs:
         # the runtime lock, so the dev lock is not installed here (the
         # previous unlocked `pip install -r requirements-dev.txt` pulled
         # pytest & co. into a job that never runs them). The runtime lock's
-        # wheels were dry-run-verified for CPython 3.12 as well as 3.14.
+        # wheels are dry-run-verified for CPython 3.14, the version Vercel runs.
         run: |
           pip install --require-hashes --only-binary=:all: --no-binary=julian,memoization \
             -r requirements.lock.txt

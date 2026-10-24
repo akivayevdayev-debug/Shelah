@@ -7,9 +7,10 @@
  *
  * - True no-op when SENTRY_DSN_BROWSER is unset or the CDN script failed to
  *   load: no throw, no console warning, mirrors static/js/motion.js.
- * - sendDefaultPii: false + dataCollection{userInfo:false, httpBodies:[]} —
- *   the vendor-supported mechanism for keeping question/answer text out of
- *   Sentry. beforeSend/beforeBreadcrumb below are defence-in-depth on top of
+ * - dataCollection set to the v10 restrictive baseline (DATA_COLLECTION
+ *   below): the vendor-supported mechanism for keeping question/answer text
+ *   out of Sentry. SDK v11 fills any key left out with a permissive default,
+ *   so every category is listed. beforeSend/beforeBreadcrumb below are defence-in-depth on top of
  *   that, not a substitute for it.
  * - No Replay integration (this file only ever calls Sentry.init on the
  *   plain errors-only CDN bundle — see index.html's <script> comment).
@@ -244,6 +245,26 @@
         };
     }
 
+    // Sentry v11's "keep the v10 default" block (MIGRATION.md). Each key is
+    // spelled out because v11 merges a partial object with permissive
+    // defaults: cookies, headers, bodies, query strings and GenAI text would
+    // otherwise be collected.
+    var IP_HEADER_DENY = ['forwarded', '-ip', 'remote-', 'via', '-user'];
+    var DATA_COLLECTION = {
+        userInfo: false,
+        cookies: false,
+        httpHeaders: {
+            request: { deny: IP_HEADER_DENY },
+            response: { deny: IP_HEADER_DENY },
+        },
+        httpBodies: [],
+        urlQueryParams: { deny: IP_HEADER_DENY },
+        genAI: { inputs: false, outputs: false },
+        databaseQueryData: false,
+        queues: false,
+        graphQL: { document: false, variables: false },
+    };
+
     function makeBeforeBreadcrumb() {
         return function beforeBreadcrumb(breadcrumb) {
             return scrubBreadcrumb(breadcrumb);
@@ -281,14 +302,8 @@
                 dsn: dsn,
                 environment: environment,
                 release: release,
-                // Overrides the vendor-suggested default — request
-                // headers/cookies/IP must never be attached automatically.
-                sendDefaultPii: false,
                 tracesSampleRate: 0,
-                dataCollection: {
-                    userInfo: false,
-                    httpBodies: [],
-                },
+                dataCollection: DATA_COLLECTION,
                 beforeSend: makeBeforeSend(allowedOrigin),
                 beforeBreadcrumb: makeBeforeBreadcrumb(),
             });

@@ -35,6 +35,13 @@ try:
 except Exception:  # pragma: no cover
     httpx = None
 
+# The Anthropic SDK (1.x and later) runs on httpx2, a fork of httpx, so its
+# connection errors are httpx2 classes rather than httpx ones.
+try:
+    import httpx2
+except Exception:  # pragma: no cover
+    httpx2 = None
+
 try:
     import jwt as _jwt
 except Exception:  # pragma: no cover
@@ -584,8 +591,10 @@ def _is_local_network_outage(error) -> bool:
     Supabase incident. On the deployment the same error still alerts."""
     if _in_production_runtime():
         return False
-    unreachable = (socket.gaierror,) + (
-        (httpx.ConnectError, httpx.ConnectTimeout) if httpx is not None else ())
+    unreachable = (socket.gaierror,)
+    for lib in (httpx, httpx2):
+        if lib is not None:
+            unreachable += (lib.ConnectError, lib.ConnectTimeout)
     seen = set()
     # Callers also pass plain strings (a failure message with no exception).
     while isinstance(error, BaseException) and id(error) not in seen:

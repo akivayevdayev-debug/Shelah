@@ -33,7 +33,7 @@ function _motionStagger() {
     return window.Motion?.stagger ?? null;
 }
 
-// motion@12.43.0's spring() is a low-level generator that requires its own
+// Motion's spring() is a low-level generator that requires its own
 // `keyframes` and is meant for advanced use (e.g. a spring visualiser) --
 // animate()'s documented way to drive a spring transition is `type: spring`
 // alongside the physics params, not `easing: spring(config)` (which throws,

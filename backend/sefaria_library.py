@@ -156,7 +156,7 @@ _DISK_CACHE_DIR = _PROJECT_ROOT / ".sefaria_cache"
 
 
 def _disk_cache_path(url: str) -> Path:
-    key = hashlib.md5(url.encode("utf-8")).hexdigest()
+    key = hashlib.md5(url.encode("utf-8"), usedforsecurity=False).hexdigest()
     return _DISK_CACHE_DIR / f"{key}.json"
 
 

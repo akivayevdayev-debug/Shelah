@@ -49,7 +49,7 @@ class TestSentryBrowserIntegration:
         response = test_client.get("/")
         html = response.get_data(as_text=True)
 
-        assert "https://browser.sentry-cdn.com/10.69.0/bundle.min.js" in html
+        assert "https://browser.sentry-cdn.com/11.9.0/bundle.min.js" in html
         assert 'integrity="sha384-' in html
         assert re.search(r"/static/(?:min/)?js/sentry-init\.js", html)
         assert "fakekey@o1.ingest.us.sentry.io" in html

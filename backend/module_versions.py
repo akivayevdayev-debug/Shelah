@@ -149,7 +149,8 @@ def inline_asset(name, tag="script"):
     path = (STATIC_DIR / name).resolve()
     path.relative_to(STATIC_DIR.resolve())
     stat = path.stat()
-    return Markup(_inline_text(path, stat.st_mtime_ns, stat.st_size, tag))
+    # Our own file under static/, checked above for a closing tag.
+    return Markup(_inline_text(path, stat.st_mtime_ns, stat.st_size, tag))  # nosec B704
 
 
 # ── static/min/ (scripts/build_assets.mjs) ──────────────────────────────────

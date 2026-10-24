@@ -1,15 +1,17 @@
 repos:
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.8.6
+    rev: 1.9.4
     hooks:
       - id: bandit
         name: bandit-security-scan
-        args: ["-r", ".", "-x", ".venv,venv,node_modules,test-results"]
+        # Medium severity and confidence and up; tests (assert is how they work)
+        # and agent worktrees are not scanned.
+        args: ["-r", ".", "-ll", "-ii", "-x", "./.venv,./venv,./node_modules,./test-results,./tests,./.claude"]
         pass_filenames: false
         stages: [pre-commit, pre-push]
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.24.2
+    rev: v8.30.0
     hooks:
       - id: gitleaks
         name: gitleaks-secret-scan

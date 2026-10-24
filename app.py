@@ -2434,4 +2434,5 @@ if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5001))
     debug_mode = os.environ.get(
         'FLASK_DEBUG', '').strip().lower() in ('1', 'true')
-    app.run(debug=debug_mode, host='0.0.0.0', port=port)
+    # Local dev runner: loopback unless HOST says otherwise.
+    app.run(debug=debug_mode, host=os.environ.get('HOST', '127.0.0.1'), port=port)

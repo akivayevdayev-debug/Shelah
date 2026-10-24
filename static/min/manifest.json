@@ -17,21 +17,21 @@
       "css/calendar.css": "sha256:a945342013952570f32e29075fbe95163f4d92ecafd9c6fd789e4d58414ad038",
       "css/calendar-detail.css": "sha256:d14b9c9ed0a63a3d7f396d41e264781bf319897b773fd2ea2e7d7189cafed9ed",
       "css/loading.css": "sha256:10eaad855917d62df7a5d396c0bbb8a487d529d846bc3233637e7eb42e5a3211",
-      "css/tailwind.css": "sha256:f72a1c23017da8c8925e8004c0d6b85d73ee8ee7b23f76f812a891f14ea63613"
+      "css/tailwind.css": "sha256:a761fbf4b1e65c859b6579eb66bbe4817b376d0ae1a26d8e292898c252a3b250"
     },
-    "sourcesHash": "99b91671fba0d18cb18d864bc7c3fcfd99197da48fc224a58a0c5099364a9ba7",
+    "sourcesHash": "25a5543ba3e25b5c5a6aadb58ec57ebad2c493db8574370f10e6609d5c7b4a95",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "99b91671fba0d18cb18d864bc7c3fcfd99197da48fc224a58a0c5099364a9ba7",
+        "sourcesHash": "25a5543ba3e25b5c5a6aadb58ec57ebad2c493db8574370f10e6609d5c7b4a95",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "99b91671fba0d18cb18d864bc7c3fcfd99197da48fc224a58a0c5099364a9ba7",
+        "sourcesHash": "25a5543ba3e25b5c5a6aadb58ec57ebad2c493db8574370f10e6609d5c7b4a95",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "99b91671fba0d18cb18d864bc7c3fcfd99197da48fc224a58a0c5099364a9ba7",
+        "sourcesHash": "25a5543ba3e25b5c5a6aadb58ec57ebad2c493db8574370f10e6609d5c7b4a95",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
@@ -75,7 +75,7 @@
         "source": "sha256:e43004fcc811de5e3640009f6269ec9bd32b4921e68399ff02064cebace086ba"
       },
       "sentry-init.js": {
-        "source": "sha256:eb2bad4c77b42cee50161aed9d4b0832ab6fb83a3ee2d65a353298f9751d60f7"
+        "source": "sha256:968aced3c444af8bc1de8da0954ad3704ee3acf4a2df7812da324e62c3890547"
       },
       "shell.js": {
         "source": "sha256:b40320fd7d7fc10c2861a4bc4e4e6823d7116bc1ca9c50e7078e05b9c5a7256f"
@@ -112,7 +112,7 @@
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
         "main.js": "sha256:180064c57d9656a983a3802d9abf7a4b9400379b17e18ba1c371a6ff8c688ac7",
         "minhag-setting.js": "sha256:3f6723cd6b45a227b97a2fc4dab06365e1da3ae5e01b367ab6c07dd40d8f1060",
-        "motion.js": "sha256:c6a4e6617a67dd5730c8bee08e7cd213183e0fa6f3b0ff44a107ab77459d4251",
+        "motion.js": "sha256:f24ac58bc40f743106b637ce6e1cefdf4d8ad480fa2383cd598e9ce1b54aeac5",
         "reader-ui.js": "sha256:afb5716e6b2112361fe652cc9efd2c6a4503ad9e560b898f0b00f992a4dc4fa8",
         "router.js": "sha256:712579f51ff6faece9b77f831e548130d75f150002fc2639ad97bdb9d5453ced",
         "siddur-day.js": "sha256:c8c6dade0de211346d6fbed5afa0ae5e33cb1aa863d600b5a67ae86569f84a12",
@@ -136,7 +136,7 @@
         "js/main.js": "db995e02b5c6",
         "js/motion.js": "78836d5f6141",
         "js/reveal.js": "a44a70067bf6",
-        "js/sentry-init.js": "5f32eede1174",
+        "js/sentry-init.js": "dda06e431a09",
         "js/shell.js": "7ef972c0375a",
         "js/topbar_shared.js": "55aa1d245dcc"
       },
