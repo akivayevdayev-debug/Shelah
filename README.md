@@ -11,21 +11,21 @@
 Sh'elah (שאלה meaning question in Hebrew) is a Jewish learning website I built by myself (and yes ofc with ai as well because without it it would still be an idea long forgotten). It has three things:
 
 1. A searchable library of Torah and Judaic texts and commentary (all powered by Sefaria's texts, but made to actually feel easy to use), with customs broken out by community: Ashkenazi, Sefardi, Teimani, and a bunch of others.
-2. An AI assistant that answers questions on Jewish law (halacha), texts, history, customs, and Jewish life, pulling information from primary sources like the Torah and other Judaic texts instead of just guessing.
+2. An AI assistant for Jewish life and learning, not just halacha. It handles Jewish law, texts, history, customs, and Jewish tasks like writing a d'var Torah or eulogy, planning a seder/Shabbat/study plan, prayer translations, a Jewish recipe, or explaining a holiday to kids. It pulls information from primary sources like the Torah and other Judaic texts instead of just guessing.
 3. The practical stuff people actually need every day: live prayer times (zmanim) and candle-lighting times based on where you are, and a Hebrew calendar with the weekly Torah portion built in.
 
 **Sh'elah is for learning, not for rulings.** The AI is not a rabbi and does not pretend to be one. Every answer ends by telling you to take real questions with halachic uncertainty to your own rabbi.
 
 ## What it does right now
 
-- Answers questions on Jewish law, texts, history, and customs, with the actual sources it used cited, and always points you back to your own rabbi for anything that is a real ruling.
+- Answers every part of a multi-part question on Jewish law, texts, history, customs, and Jewish tasks like the ones above, with the actual sources it used cited. It won't give binding rulings, and it refuses stuff with no Jewish angle (sorry, no plain chocolate cake recipes here °~°). You can rate any answer with thumbs up/down plus an optional comment.
 - Refuses to touch anything medical, mental-health, or abuse-related. Instead of the AI trying to answer, it sends you to real help. Halacha touches sensitive stuff, and an ai is the wrong thing to be answering those questions.
 - Has safeguards against weird off-topic questions and prompt injection (because we don't want the site getting hacked °~°).
 - A Torah/Judaic text library with commentary and word translations, shown in English and Hebrew side by side (with proper RTL layout in Hebrew).
 - Community-aware answers and customs for 13 traditions: Ashkenaz, Sefardic, Yemenite (Teimani), Moroccan, Persian, Syrian, Bukharian, Iraqi, Ethiopian, Georgian, Greek/Romaniote, Mountain Jewish (Kavkazi), Turkish/Ottoman Sefardic, and more as I add them.
 - Prayer services (Shacharit, Mincha, Aaravit) that know about your community's nusach.
 - Daily study stuff like Daf Yomi and Mishna Yomit, pulled live from Hebcal.
-- Bookmarks and saved preferences once you sign in.
+- Guests get a limited number of questions before signing in (through Clerk). Once you're in, you get bookmarks and saved preferences. Anyone can share an answer with a link.
 - You can install it like an app on your phone (it's a PWA), and the core reading stuff works offline.
 - Live zmanim and candle-lighting times based on your real location, including fast start/end times and the right times on holidays.
 - A Hebrew calendar with the parashah, plus holiday cards with real clock times and links straight into the text.
@@ -188,7 +188,7 @@ A web lookup is a last resort, used only when the texts and the calendar math ca
 - **AI:** Gemini first, Claude as backup, with optional tool use (see above).
 - **Texts and calendar data:** Sefaria for texts, Hebcal for the calendar and zmanim, MyMemory / Google Translate for the translation fallback, plus the 13 community customs datasets in `customs/`.
 - **Frontend:** plain HTML/CSS/JS (ES modules), Tailwind, marked + DOMPurify for rendering AI answers safely.
-- **Keeping it alive:** Turnstile for bot checks (built, currently switched off), Sentry and a Discord webhook for errors, circuit breakers on every external service, SonarCloud for code quality, and a lot of CI.
+- **Keeping it alive:** Upstash Redis for the rate limiter, Turnstile for bot checks (built, currently switched off), Sentry and a Discord webhook for errors, circuit breakers on every external service, SonarCloud for code quality, and a lot of CI.
 
 ### How it's wired together (ai made this part don't ask me how it all works I can't give u a clear answer unfortunately °~°)
 
@@ -269,7 +269,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Right now that's 4,702 Python tests at 99.83% `backend/` coverage, plus 628 JS tests (`npm test`, which is `node --test tests_js/*.test.js`).
+Right now that's 6,141 Python tests at about 99% `backend/` coverage, plus 1,738 JS tests (`npm test`, which is `node --test tests_js/*.test.js`).
 
 - **Fully offline.** `tests/conftest.py` sets fake credentials and turns off auth enforcement, so everything external (Sefaria, Hebcal, Clerk, Supabase, Gemini, Anthropic) is mocked and you don't need any real keys.
 - **Coverage gate.** `pytest.ini` fails the build if `backend/` coverage drops under 85%. That number only goes up, never down.
