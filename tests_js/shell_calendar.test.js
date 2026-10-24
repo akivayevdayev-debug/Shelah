@@ -190,7 +190,9 @@ test('the grid is built once, in the reader\'s language, on the month view', asy
         assert.equal(instance.element, page.$('#calendar'));
         assert.equal(instance.options.initialView, 'dayGridMonth');
         assert.equal(instance.options.direction, 'ltr');
-        assert.deepEqual(plain(instance.options.buttonText), { today: 'Today' });
+        assert.equal(instance.options.todayText, 'Today');
+        assert.deepEqual(plain(instance.options.headerToolbar), { start: 'title', end: 'today prev,next' });
+        assert.equal(instance.options.dayMaxEvents, false);
         assert.equal(page.$('#calendarModal').getAttribute('data-calendar-built'), '1');
     } finally {
         page.close();
@@ -215,13 +217,13 @@ test('a Hebrew page builds a right-to-left grid, and a language switch re-labels
         page.eval(`displayedLanguage = 'he'`);
         const instance = built(page);
         assert.equal(instance.options.direction, 'rtl');
-        assert.deepEqual(plain(instance.options.buttonText), { today: 'היום' });
-        assert.equal(instance.options.buttonHints.next, 'החודש הבא');
+        assert.equal(instance.options.todayText, 'היום');
+        assert.equal(instance.options.nextHint, 'החודש הבא');
 
         page.eval(`displayedLanguage = 'en'`);
         call(page, 'syncCalendarLanguage');
         assert.equal(instance.options.direction, 'ltr');
-        assert.equal(instance.options.buttonHints.next, 'Next month');
+        assert.equal(instance.options.nextHint, 'Next month');
         assert.equal(instance.rendered, 2);
     } finally {
         page.close();
@@ -242,10 +244,12 @@ test('the weekday headers and the month title follow the language, not the machi
     const page = await openCalendarPage();
     try {
         const { options } = built(page);
-        assert.deepEqual([0, 1, 6].map((dow) => options.dayHeaderContent({ dow })), ['Sun', 'Mon', 'Sat']);
+        // The header reads the UTC weekday of its marker: 4 Jan 2026 was a Sunday.
+        const headerOf = (dow) => options.dayHeaderContent({ date: new Date(Date.UTC(2026, 0, 4 + dow)) });
+        assert.deepEqual([0, 1, 6].map(headerOf), ['Sun', 'Mon', 'Sat']);
         assert.equal(options.titleFormat({ date: { year: 2026, month: 9 } }), 'October 2026');
         page.eval(`displayedLanguage = 'he'`);
-        assert.match(options.dayHeaderContent({ dow: 0 }), /א/);
+        assert.match(headerOf(0), /א/);
         assert.match(options.titleFormat({ date: { year: 2026, month: 9 } }), /אוקטובר 2026/);
     } finally {
         page.close();
@@ -367,7 +371,7 @@ test('the library is loaded on first use; the grid waits busy, then builds', asy
     }
 });
 
-test('a library that arrives while the calendar is open re-measures the grid and redraws the agenda', async () => {
+test('a library that arrives while the calendar is open builds the grid and redraws the agenda', async () => {
     const page = await openCalendarPage();
     try {
         delete page.window.FullCalendar;
@@ -376,9 +380,10 @@ test('a library that arrives while the calendar is open re-measures the grid and
         page.eval(`calendarSelectedKey = '2026-10-10'`);
         call(page, 'ensureCalendarLibrary');
         await page.settle();
-        const [instance] = page.calendar.instances;
-        assert.equal(instance.sized, true);
+        assert.equal(page.calendar.instances.length, 1);
+        assert.equal(page.calendar.instances[0].rendered, 1);
         assert.equal(page.$('#calendarAgenda').hidden, false);
+        assert.notEqual(page.$('#calendarAgendaHeading').textContent, '');
     } finally {
         page.close();
     }
@@ -460,12 +465,12 @@ test('after the first draw, a new month fades in', async () => {
     try {
         const animated = [];
         page.window.ShelahMotion = { animateIn: (el, options) => animated.push([el.className, options]) };
-        page.$('#calendar').innerHTML = '<div class="fc-view-harness"></div>';
+        page.$('#calendar').innerHTML = '<div class="fc-view"></div>';
         const { options } = built(page);
         options.datesSet(monthInfo(2026, 5));
         assert.deepEqual(animated, [], 'not on the first draw');
         options.datesSet(monthInfo(2026, 6));
-        assert.deepEqual(plain(animated), [['fc-view-harness', { y: 6 }]]);
+        assert.deepEqual(plain(animated), [['fc-view', { y: 6 }]]);
     } finally {
         page.close();
     }
@@ -754,7 +759,7 @@ test('what the grid draws for an event: a localized name, a full-name tooltip, a
         const { options } = built(page);
         const rosh = event('Rosh Chodesh <Av>', '2026-10-11', { category: 'roshchodesh', icon: 'moon' });
         assert.deepEqual(plain(options.eventContent({ event: rosh })), { html: 'Rosh Chodesh &lt;Av&gt;' });
-        assert.deepEqual(plain(options.eventClassNames({ event: rosh })), ['cal-cat-roshchodesh']);
+        assert.equal(options.eventClass({ event: rosh }), 'fc-event fc-daygrid-event cal-cat-roshchodesh');
 
         const chip = page.document.createElement('div');
         chip.innerHTML = '<div class="fc-event-main"><span>name</span></div>';
@@ -846,7 +851,7 @@ test('reopening starts at the top of the card and redraws the picked day\'s agen
         assert.equal(scroller.scrollTop, 0);
         assert.equal(page.$('#calendarAgendaList').textContent, 'No holidays or special days.');
         await page.settle();
-        assert.equal(page.calendar.instances[0].sized, true);
+        assert.notEqual(page.$('#calendarAgendaHeading').textContent, '');
     } finally {
         page.close();
     }

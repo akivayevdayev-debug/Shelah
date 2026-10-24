@@ -122,7 +122,12 @@
          once the visitor moves or a few seconds after load (static/js/motion.js
          falls back to instant state changes until then).
          window.ShelahLibs.load(name) resolves true once the library's global
-         exists, false if it could not be loaded; callers keep going without it. -->
+         exists, false if it could not be loaded; callers keep going without it.
+         An entry's deps load first, in order (Clerk 6 needs @clerk/ui's
+         window.__internal_ClerkUICtor before Clerk.load; FullCalendar 7 needs
+         Temporal, which the polyfill only supplies where the browser lacks it,
+         and its Classic theme needs the core). An entry's css loads before its
+         script, so the calendar never paints unstyled. -->
     
     
     

@@ -42,14 +42,27 @@ body.theme-dark {
 /* FULLCALENDAR — CSS VARIABLE INTEGRATION */
 /* ═══════════════════════════════════════════════════════ */
 
-.fc {
-    --fc-border-color: var(--cal-border);
-    --fc-today-bg-color: var(--cal-today-bg);
-    --fc-page-bg-color: var(--cal-cell-bg);
-    --fc-neutral-bg-color: var(--cal-cell-bg);
-    --fc-neutral-text-color: var(--cal-number-color);
-    --fc-small-font-size: 0.82rem;
+/* FullCalendar 7's Classic theme reads these (its palette.css sets them on
+   :root). The "+more" popover renders outside the calendar, so it gets them
+   too (popoverClass in shell.js). */
+.fc,
+.fc-popover {
+    --fc-classic-border: var(--cal-border);
+    --fc-classic-strong-border: var(--cal-border);
+    --fc-classic-today: var(--cal-today-bg);
+    --fc-classic-background: var(--cal-cell-bg);
+    --fc-classic-foreground: var(--cal-header-color);
+    --fc-classic-muted-foreground: var(--cal-number-color);
+    --fc-classic-faint-foreground: var(--cal-number-color);
+    --fc-classic-primary: var(--cal-toolbar-btn-color);
+    --fc-classic-highlight: color-mix(in srgb, var(--cal-today-border) 18%, transparent);
     font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* The theme spaces the toolbar from the grid with a 20px gap; the toolbar's
+   own margin below already does that. */
+#calendarModal .fc {
+    gap: 0;
 }
 
 /* Toolbar */
@@ -59,9 +72,8 @@ body.theme-dark {
     border-bottom: 1px solid var(--cal-border);
 }
 
-/* FullCalendar's own `.fc .fc-toolbar.fc-header-toolbar` margin is more
-   specific than the class rules here, so this one is scoped by the modal's
-   id (as are the button, today and day-number rules below). */
+/* Scoped by the modal's id, like the button, today and day-number rules
+   below, so the theme's own toolbar spacing never wins. */
 #calendarModal .fc .fc-toolbar {
     margin-bottom: 0.75rem;
 }
@@ -132,19 +144,10 @@ body.theme-dark {
     padding: 0.34rem 0.52rem;
 }
 
-.fc .fc-button .fc-icon {
+/* The theme draws the chevrons as 20px SVGs. */
+.fc .fc-button svg {
     width: 0.95rem;
     height: 0.95rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    font-size: 0.95rem;
-}
-
-.fc .fc-icon.fc-icon-chevron-left,
-.fc .fc-icon.fc-icon-chevron-right {
-    transform: translateY(-0.5px);
 }
 
 /* Day grid cells */
@@ -171,6 +174,12 @@ body.theme-dark {
     font-size: 0.8rem;
     font-weight: 600;
     padding: 0.35rem 0.5rem;
+    margin: 0;
+}
+
+/* Days from the neighbouring months, faded as FullCalendar 6 did. */
+.fc .fc-day-other .fc-daygrid-day-top {
+    opacity: 0.3;
 }
 
 .fc-day-today .fc-daygrid-day-number {
@@ -223,13 +232,13 @@ body.theme-dark {
     transform: translateY(-1px);
 }
 
-/* style.css paints the dark day frame with --surface-base and the day
+/* style.css paints the dark day cell with --surface-base and the day
    number cream; the tint and colour have to win there. */
-:is([data-theme="dark"], body.theme-dark) .fc .cal-day-shabbat .fc-daygrid-day-frame {
+:is([data-theme="dark"], body.theme-dark) .fc .fc-daygrid-day.cal-day-shabbat {
     background: color-mix(in srgb, var(--cal-day-shabbat-fg) 8%, var(--surface-base));
 }
 
-:is([data-theme="dark"], body.theme-dark) .fc .cal-day-holiday .fc-daygrid-day-frame {
+:is([data-theme="dark"], body.theme-dark) .fc .fc-daygrid-day.cal-day-holiday {
     background: color-mix(in srgb, var(--cal-day-holiday-fg) 9%, var(--surface-base));
 }
 
@@ -281,7 +290,7 @@ body.theme-dark {
 }
 
 /* Classes are assigned per-event from the backend's `category` field via
-   FullCalendar's eventClassNames (templates/index.html, ensureCalendarReady). */
+   FullCalendar's eventClass (static/js/shell.js, CALENDAR_CLASS_HOOKS). */
 .fc-event.cal-cat-major,
 .fc-event.cal-cat-holiday {
     background: var(--cal-event-holiday) !important;
@@ -414,6 +423,7 @@ body.theme-dark {
 
 /* Keep the chips single-line with an ellipsis; the full name is in the agenda + tooltip. */
 .fc-daygrid-event {
+    position: relative;
     white-space: nowrap;
     overflow: hidden;
     /* Hover shade (below): isolation keeps its z-index:-1 layer above the chip's own fill. */
@@ -656,6 +666,13 @@ html.rtl .fc .fc-daygrid-day {
 }
 .cal-agenda-btn > .cal-event-icon {
     margin: 0.2em 0 0;
+}
+/* FullCalendar 7 gives each chip role="button", which the site-wide
+   `[role="button"] svg` rules would mute (style.css's dark one skips
+   .cal-event-icon); the icon follows the label. */
+.fc .fc-event .cal-event-icon {
+    color: inherit;
+    opacity: 1;
 }
 
 /* Hover darkens a chip instead of fading it (fading washed the white label

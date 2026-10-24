@@ -75,6 +75,17 @@ devDependency) or the CDN `<script>`/`<link>` tags in `templates/index.html`
   https://github.com/tailwindlabs/tailwindcss
 - **marked** `18.1.1` (CDN, `templates/index.html`) — MIT —
   https://github.com/markedjs/marked
+- **FullCalendar** `7.1.3` (CDN, `templates/index.html`; loaded from
+  `cdn.jsdelivr.net/npm/fullcalendar@7.1.3/`: `all/global.js`,
+  `themes/classic/global.js`, `skeleton.css`, `themes/classic/theme.css`,
+  `themes/classic/palette.css`) — MIT — https://github.com/fullcalendar/fullcalendar
+- **temporal-polyfill** `1.0.6` (CDN, `templates/index.html`; loaded from
+  `cdn.jsdelivr.net/npm/temporal-polyfill@1.0.6/global.js` only when the browser
+  lacks native `Temporal`) — MIT — by Adam Shaw / FullCalendar —
+  https://github.com/fullcalendar/temporal-polyfill
+- **Clerk** (CDN, `templates/index.html` and `templates/components/legal_scripts.html`):
+  `@clerk/clerk-js` `6.40.1` and `@clerk/ui` `1.41.2` (`cdn.jsdelivr.net/npm/`) — MIT —
+  https://github.com/clerk/javascript
 
 A typical MIT notice (see each project for its exact copyright line):
 

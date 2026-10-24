@@ -5,9 +5,13 @@
     };
 </script>
 {% if clerk_publishable_key %}
+{# Clerk 6 ships its sign-in UI separately; Clerk.load gets it as ui.ClerkUI. #}
+<script crossorigin="anonymous"
+    src="https://cdn.jsdelivr.net/npm/@clerk/ui@1.41.2/dist/ui.browser.js"
+    integrity="sha384-FYXAFwPN7TccH+1GBGhfSmj4kqvVseEdP5OAvO5JnZp3fArgoYkLmW0MLwnxJFUB"></script>
 <script crossorigin="anonymous" data-clerk-publishable-key="{{ clerk_publishable_key }}"
-    src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5.128.1/dist/clerk.browser.js"
-    integrity="sha384-GpRJv2HyaO/k/gGXDuz7JGje1Fi8IlJziMrg39G2mi5Bw6Foi6mBC3iIxYVDsLmA"></script>
+    src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@6.40.1/dist/clerk.browser.js"
+    integrity="sha384-JcUoKGgU3fVbZOepxOhFBTSImBs/0xQTLYLqy0CLEkd2sMiA4wn5VDTC6IJYRSaj"></script>
 {% endif %}
 <script src="{{ asset_url('js/clerk-appearance.js') }}"></script>
 <script src="{{ asset_url('js/topbar_shared.js') }}"></script>
@@ -246,7 +250,10 @@
         }
 
         if (window.Clerk) {
-            window.Clerk.load({ appearance: window.ShelahClerkAppearance?.() }).then(() => {
+            window.Clerk.load({
+                appearance: window.ShelahClerkAppearance?.(),
+                ui: window.__internal_ClerkUICtor ? { ClerkUI: window.__internal_ClerkUICtor } : undefined,
+            }).then(() => {
                 refreshAuthUi();
                 window.Clerk.addListener(refreshAuthUi);
             });

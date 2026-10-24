@@ -1769,9 +1769,6 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
 
 .fc {
     font-family: 'Inter', sans-serif;
-    --fc-border-color: #e2e8f0;
-    --fc-button-bg-color: #002147;
-    --fc-button-border-color: #002147;
 }
 
 .fc .fc-toolbar-title {
@@ -4057,27 +4054,8 @@ html.theme-dark,
     color: var(--text-main);
 }
 
-:is([data-theme="dark"], body.theme-dark) .fc {
-    --fc-page-bg-color: var(--surface-subtle);
-    --fc-neutral-bg-color: var(--surface-elevated);
-    --fc-border-color: var(--surface-border);
-    --fc-neutral-text-color: var(--text-muted);
-    --fc-list-event-hover-bg-color: var(--control-bg);
-}
-
-:is([data-theme="dark"], body.theme-dark) .fc-theme-standard td,
-:is([data-theme="dark"], body.theme-dark) .fc-theme-standard th,
-:is([data-theme="dark"], body.theme-dark) .fc-scrollgrid,
-:is([data-theme="dark"], body.theme-dark) .fc-scrollgrid-section>* {
-    border-color: var(--surface-border);
-}
-
 :is([data-theme="dark"], body.theme-dark) .fc .fc-col-header-cell,
 :is([data-theme="dark"], body.theme-dark) .fc .fc-daygrid-day {
-    background: var(--surface-elevated);
-}
-
-:is([data-theme="dark"], body.theme-dark) .fc .fc-scrollgrid-section-header>th {
     background: var(--surface-elevated);
 }
 
@@ -4089,7 +4067,7 @@ html.theme-dark,
     background: var(--surface-elevated);
 }
 
-:is([data-theme="dark"], body.theme-dark) .fc .fc-daygrid-day-frame {
+:is([data-theme="dark"], body.theme-dark) .fc .fc-daygrid-day {
     background: var(--surface-base);
 }
 
@@ -4282,7 +4260,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) button svg,
-:is([data-theme="dark"], body.theme-dark) [role="button"] svg,
+:is([data-theme="dark"], body.theme-dark) [role="button"] svg:not(.cal-event-icon),
 :is([data-theme="dark"], body.theme-dark) .navigator-pane svg,
 :is([data-theme="dark"], body.theme-dark) .pulse-pane svg {
     color: var(--icon-muted) !important;

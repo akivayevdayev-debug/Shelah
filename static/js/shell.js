@@ -2726,6 +2726,9 @@ function hasParenthetical(text) {
                 await window.Clerk.load({
                     publishableKey,
                     appearance: window.ShelahClerkAppearance?.(),
+                    // Clerk 6 ships its sign-in UI as @clerk/ui (loaded before
+                    // clerk-js by ShelahLibs); without it every modal throws.
+                    ui: window.__internal_ClerkUICtor ? { ClerkUI: window.__internal_ClerkUICtor } : undefined,
                     // Where Clerk sends someone it cannot place from a redirect_url
                     // (the same fields as the Dashboard's "after sign-in/up fallback").
                     signInFallbackRedirectUrl: `${window.location.origin}/`,
@@ -11619,7 +11622,7 @@ function hasParenthetical(text) {
                         // FullCalendar only exposes non-standard fields via
                         // extendedProps when they're nested there in the source
                         // data — a bare top-level `category` is silently dropped,
-                        // not auto-promoted, so eventClassNames never saw it.
+                        // not auto-promoted, so eventClass never saw it.
                         return items.map((item) => {
                             const { title, icon } = splitCalendarEmoji(item.title);
                             return {
@@ -11872,16 +11875,60 @@ function hasParenthetical(text) {
             el.append(msg, retryBtn);
         }
 
+        // FullCalendar 7 renders hashed class names only; these hooks put back
+        // the v6 names calendar.css and the code here select on.
+        const CALENDAR_WEEKDAY_CLASSES = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const CALENDAR_CLASS_HOOKS = {
+            class: 'fc',
+            viewClass: 'fc-view',
+            toolbarClass: 'fc-toolbar',
+            toolbarTitleClass: 'fc-toolbar-title',
+            buttonGroupClass: 'fc-button-group',
+            buttonClass: (info) => [
+                'fc-button fc-button-primary',
+                `fc-${info.name}-button`,
+                info.isSelected ? 'fc-button-active' : '',
+            ].join(' ').trim(),
+            dayHeaderClass: 'fc-col-header-cell',
+            dayHeaderInnerClass: 'fc-col-header-cell-cushion',
+            // Markers are UTC midnights, so the weekday is the UTC one.
+            dayCellClass: (info) => [
+                'fc-daygrid-day',
+                `fc-day-${CALENDAR_WEEKDAY_CLASSES[info.date.getUTCDay()]}`,
+                info.isToday ? 'fc-day-today' : '',
+                info.isOther ? 'fc-day-other' : '',
+            ].join(' ').trim(),
+            dayCellTopClass: 'fc-daygrid-day-top',
+            dayCellTopInnerClass: 'fc-daygrid-day-number',
+            // Backend sends a fixed inline `color` per event (theme-agnostic) plus
+            // a `category`; deriving a class from category lets dark-mode CSS
+            // recolor events per-category instead of flattening them all to one gray.
+            eventClass: (arg) => `fc-event fc-daygrid-event cal-cat-${calendarVisualCategory(arg.event.extendedProps)}`,
+            eventInnerClass: 'fc-event-main',
+            eventTitleClass: 'fc-event-title',
+            popoverClass: 'fc-popover',
+        };
+
         function calendarLanguageOptions() {
             const he = isHebrewMode();
             return {
                 direction: he ? 'rtl' : 'ltr',
-                buttonText: { today: he ? 'היום' : 'Today' },
-                buttonHints: he
-                    ? { prev: 'החודש הקודם', next: 'החודש הבא', today: 'עבור להיום' }
-                    : { prev: 'Previous month', next: 'Next month', today: 'Go to today' },
+                todayText: he ? 'היום' : 'Today',
+                prevHint: he ? 'החודש הקודם' : 'Previous month',
+                nextHint: he ? 'החודש הבא' : 'Next month',
+                todayHint: he ? 'עבור להיום' : 'Go to today',
             };
         }
+
+        // v7 sizes every week row from the grid's width (width / aspectRatio / 6),
+        // so phones get a taller ratio to keep v6's roomy rows.
+        const calendarPhoneQuery = window.matchMedia?.('(max-width: 640px)');
+        function calendarAspectRatio() {
+            return calendarPhoneQuery?.matches ? 0.75 : 1.7;
+        }
+        calendarPhoneQuery?.addEventListener?.('change', () => {
+            holidaysCalendar?.setOption('aspectRatio', calendarAspectRatio());
+        });
 
         // Grid direction, weekday headers and the month title follow the
         // reader's language; called on a language switch even while closed.
@@ -11923,7 +11970,6 @@ function hasParenthetical(text) {
                 }
                 ensureCalendarReady();
                 if (document.getElementById('calendarModal')?.open) {
-                    holidaysCalendar?.updateSize();
                     markCalendarDayKinds();
                     if (calendarSelectedKey) renderCalendarAgenda();
                 }
@@ -11937,14 +11983,17 @@ function hasParenthetical(text) {
                 initialView: 'dayGridMonth',
                 ...(calendarGotoDate ? { initialDate: calendarGotoDate } : {}),
                 ...calendarLanguageOptions(),
+                // FullCalendar 7 shows no toolbar unless asked; this is v6's default.
+                headerToolbar: { start: 'title', end: 'today prev,next' },
+                ...CALENDAR_CLASS_HOOKS,
                 // FullCalendar's global build ships English only; these read
                 // the language at render time, so a language switch re-renders
                 // them (syncCalendarLanguage).
                 // arg.date is a UTC-midnight marker, so formatting it in local
-                // time west of UTC names the day before: go by arg.dow instead
-                // (4 Jan 2026 was a Sunday).
+                // time west of UTC names the day before: go by its UTC weekday
+                // instead (4 Jan 2026 was a Sunday).
                 dayHeaderContent: (arg) => new Intl.DateTimeFormat(isHebrewMode() ? 'he-IL' : 'en-US', { weekday: 'short', timeZone: 'UTC' })
-                    .format(new Date(Date.UTC(2026, 0, 4 + arg.dow))),
+                    .format(new Date(Date.UTC(2026, 0, 4 + arg.date.getUTCDay()))),
                 titleFormat: (arg) => new Intl.DateTimeFormat(isHebrewMode() ? 'he-IL' : 'en-US', { month: 'long', year: 'numeric' })
                     .format(new Date(arg.date.year, arg.date.month, 1)),
                 // Busy while a month's holidays are on their way (audit §6).
@@ -11984,7 +12033,7 @@ function hasParenthetical(text) {
                     else if (shown.getMonth() >= 10) neighbour = shown.getFullYear() + 1;
                     if (neighbour) fetchCalendarHolidays(neighbour).catch(() => {});
                     if (_calendarDidMount && window.ShelahMotion) {
-                        const harness = calendarEl.querySelector('.fc-view-harness');
+                        const harness = calendarEl.querySelector('.fc-view');
                         if (harness) window.ShelahMotion.animateIn(harness, { y: 6 });
                     }
                     _calendarDidMount = true;
@@ -12023,9 +12072,8 @@ function hasParenthetical(text) {
                 eventDidMount: function (info) {
                     info.el.title = translateHolidayName(info.event.title);
                     const icon = calendarIconEl(info.event.extendedProps.icon);
-                    // eventContent above replaces FullCalendar's inner markup (no
-                    // .fc-event-title / -main-frame), so fall back to .fc-event-main.
-                    const slot = info.el.querySelector('.fc-event-title, .fc-event-main-frame, .fc-event-main');
+                    // eventContent above fills the inner wrapper (eventInnerClass).
+                    const slot = info.el.querySelector('.fc-event-main');
                     if (icon && slot) slot.prepend(icon);
                 },
                 dayCellDidMount: function (info) {
@@ -12034,13 +12082,12 @@ function hasParenthetical(text) {
                     }
                     applyCalendarDayKind(info.el);
                 },
-                // Backend sends a fixed inline `color` per event (theme-agnostic) plus
-                // a `category`; deriving a class from category lets dark-mode CSS
-                // recolor events per-category instead of flattening them all to one gray.
-                eventClassNames: (arg) => [`cal-cat-${calendarVisualCategory(arg.event.extendedProps)}`],
                 eventColor: '#002147',
-                dayMaxEvents: true,
-                height: 'auto'
+                // A row grows past its aspect-ratio height to fit its chips; with
+                // dayMaxEvents on, v7 folds them into "+1" links instead.
+                dayMaxEvents: false,
+                height: 'auto',
+                aspectRatio: calendarAspectRatio()
             });
             calendarGotoDate = null;
             holidaysCalendar.render();
@@ -12071,11 +12118,12 @@ function hasParenthetical(text) {
             // a fraction of the card's width until something else re-laid it out.
             if (card) card.style.transform = 'none';
             ensureCalendarLibrary();
-            holidaysCalendar?.updateSize();
             markCalendarDayKinds();
             if (calendarSelectedKey) renderCalendarAgenda(); // re-localise if the language changed
-            // Fades in like every other window (modalMotion).
-            presentEl(modal, { ...modalMotion(modal), replay: true }).then(() => holidaysCalendar?.updateSize());
+            // Fades in like every other window (modalMotion). FullCalendar 7
+            // follows the card's size itself (a ResizeObserver), so nothing
+            // re-measures it afterwards.
+            presentEl(modal, { ...modalMotion(modal), replay: true });
         };
 
         // Closing steps Back off the calendar's entry when the app pushed it

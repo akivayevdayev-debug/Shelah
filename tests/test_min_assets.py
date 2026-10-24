@@ -168,9 +168,13 @@ class TestLazyThirdPartyLibraries:
     page's CSP by tests/test_csp.py."""
 
     LIBRARIES = {
-        "fullcalendar": "fullcalendar@6.1.22/index.global.min.js",
+        "temporal": "temporal-polyfill@1.0.6/global.js",
+        "fullcalendarcore": "fullcalendar@7.1.3/all/global.js",
+        "fullcalendar": "fullcalendar@7.1.3/themes/classic/global.js",
         "motion": "motion@14.6.0/dist/motion.js",
     }
+    # An entry may name the entries it waits for, and stylesheets of its own.
+    ENTRY_HEAD = r"(?:deps:\[[^\]]*\],)?(?:css:\[\[.*?\]\],)?"
 
     @staticmethod
     def _loader(html):
@@ -186,22 +190,38 @@ class TestLazyThirdPartyLibraries:
     @pytest.mark.parametrize("name", sorted(LIBRARIES))
     def test_the_loader_pins_each_library_with_an_sri_hash(self, test_client, name):
         loader = self._loader(test_client.get("/").get_data(as_text=True))
-        entry = re.search(rf"{name}:\{{src:\"([^\"]+)\",integrity:\"(sha384-[A-Za-z0-9+/=]+)\"", loader)
+        entry = re.search(rf"\b{name}:\{{{self.ENTRY_HEAD}src:\"([^\"]+)\",integrity:\"(sha384-[A-Za-z0-9+/=]+)\"", loader)
         assert entry, f"{name} is not described by the loader"
         assert entry.group(1) == f"https://cdn.jsdelivr.net/npm/{self.LIBRARIES[name]}"
+
+    def test_the_calendar_theme_stylesheets_are_pinned_with_an_sri_hash(self, test_client):
+        loader = self._loader(test_client.get("/").get_data(as_text=True))
+        css = re.search(r"\bfullcalendar:\{deps:\[\"fullcalendarcore\"\],css:\[(\[.*?\])\],src:", loader)
+        assert css, "the calendar theme stylesheets are not described by the loader"
+        sheets = re.findall(r"\[\"(https://[^\"]+)\",\"sha384-[A-Za-z0-9+/=]+\"\]", css.group(1))
+        assert [s.rsplit("@7.1.3/", 1)[-1] for s in sheets] == [
+            "skeleton.css",
+            "themes/classic/theme.css",
+            "themes/classic/palette.css",
+        ]
 
     def test_clerk_is_described_only_when_the_site_has_a_publishable_key(self, test_client, monkeypatch):
         import app as app_module
 
         monkeypatch.setattr(app_module, "CLERK_PUBLISHABLE_KEY", "")
-        assert "clerk:" not in self._loader(test_client.get("/").get_data(as_text=True))
+        loader = self._loader(test_client.get("/").get_data(as_text=True))
+        assert "clerk:" not in loader
+        assert "clerkui:" not in loader
 
         monkeypatch.setattr(app_module, "CLERK_PUBLISHABLE_KEY", "pk_test_example")
         loader = self._loader(test_client.get("/").get_data(as_text=True))
-        entry = re.search(r"clerk:\{src:\"([^\"]+)\",integrity:\"sha384-[A-Za-z0-9+/=]+\",attrs:\{\"data-clerk-publishable-key\":\"(pk_test_[^\"]+)\"\}", loader)
+        entry = re.search(r"\bclerk:\{deps:\[\"clerkui\"\],src:\"([^\"]+)\",integrity:\"sha384-[A-Za-z0-9+/=]+\",attrs:\{\"data-clerk-publishable-key\":\"(pk_test_[^\"]+)\"\}", loader)
         assert entry, "clerk is not described by the loader"
         assert entry.group(1).startswith("https://cdn.jsdelivr.net/npm/@clerk/clerk-js@")
         assert entry.group(2) == "pk_test_example"
+        ui = re.search(r"\bclerkui:\{src:\"([^\"]+)\",integrity:\"sha384-[A-Za-z0-9+/=]+\"", loader)
+        assert ui, "@clerk/ui is not described by the loader"
+        assert ui.group(1).startswith("https://cdn.jsdelivr.net/npm/@clerk/ui@")
 
 
 class TestServedFiles:

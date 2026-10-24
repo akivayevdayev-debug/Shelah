@@ -75,8 +75,9 @@
                 colorDanger: danger,
                 colorSuccess: success,
                 colorShadow: dark ? '#000000' : main,
-                // Clerk applies its own alpha to the backdrop, so this stays opaque.
-                colorModalBackdrop: '#000000',
+                // Clerk 6 paints this as given (5.x dropped it to 73% itself), so the
+                // alpha is spelled out to keep the page dimmed, not blacked out.
+                colorModalBackdrop: 'rgba(0, 0, 0, 0.73)',
                 fontFamily: sans,
                 fontFamilyButtons: sans,
                 borderRadius: radius,
