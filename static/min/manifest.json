@@ -60,7 +60,7 @@
         "source": "sha256:3d36bef570f2709b3b6846db2393298e67cdaa2e94cfb8726c30eb4d64a76045"
       },
       "clerk-appearance.js": {
-        "source": "sha256:f1c54b0760a5e4d05486d65a5802453bbdfcd6e9026ac25c640e69d17179b25d"
+        "source": "sha256:1e4def33484fcd6c411e489b7a4925afa1ee99bef7edaae69ccbc504b1d16d70"
       },
       "community-labels.js": {
         "source": "sha256:585382fbd366bc7e90c46d1ce91c0d44330efd939c7cc290c121cb48de01836b"
@@ -129,7 +129,7 @@
         "js/calendar-detail.js": "f7455b20b943",
         "js/chunks/chunk-GI7XZAIM.js": "7f7dabe88234",
         "js/chunks/chunk-YSI2UDVM.js": "7920ec4717b4",
-        "js/clerk-appearance.js": "9a44f13bc69b",
+        "js/clerk-appearance.js": "4387b39a7112",
         "js/community-labels.js": "87dfbcba156b",
         "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/load-region.js": "2833ed602bea",

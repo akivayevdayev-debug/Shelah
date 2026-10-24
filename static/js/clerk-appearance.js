@@ -82,8 +82,23 @@
                 borderRadius: radius,
             },
             elements: {
-                cardBox: { borderRadius: cardRadius },
-                card: { borderRadius: cardRadius, border: `1px solid ${edge}` },
+                // The box draws the one outline and clips; the card fills it exactly.
+                // (Clerk pulls the card 1px outward to overlap its own hairline, which
+                // left our bordered card wider than the box, cut at the edges, and its
+                // rounded bottom sitting on the square footer.)
+                cardBox: { borderRadius: cardRadius, border: `1px solid ${edge}` },
+                card: {
+                    borderRadius: 0,
+                    margin: 0,
+                    width: '100%',
+                    boxShadow: 'none',
+                    borderBottom: `1px solid ${edge}`,
+                    // Clerk's 32px/40px padding leaves ~210px of content on a phone.
+                    '@media (max-width: 480px)': { padding: '24px 20px', gap: '24px' },
+                },
+                formFieldLabelRow: { gap: '8px' },
+                formFieldLabel: { textAlign: 'start' },
+                formFieldAction: { whiteSpace: 'nowrap' },
                 headerTitle: {
                     fontFamily: serif,
                     fontWeight: 700,
