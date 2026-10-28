@@ -46,6 +46,7 @@
     // data-onclick/-oninput value in a template that is not here is a bug
     // (tests/test_inline_handlers.py fails the build on it).
     const ACTIONS = Object.freeze([
+        'acceptCityInput',
         'closeCalendarModal',
         'closePrivacyDataModal',
         'closeTextsMenu',
@@ -64,7 +65,6 @@
         'openTodayInCalendar',
         'readText',
         'renderSelectionInsightsChooser',
-        'searchByCity',
         'toggleLanguage',
     ]);
 

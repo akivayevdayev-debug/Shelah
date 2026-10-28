@@ -127,6 +127,18 @@ def geocode_city():
     })
 
 
+@routes_calendar.route("/api/geocode/suggest", methods=["GET"])
+def geocode_suggest():
+    """Places for the zmanim city box as the reader types (backend/place_suggest.py):
+    each with its time zone, and a country with several zones as one choice per
+    zone. Always 200 with {"results": [...]}, empty on a short query or an outage,
+    so a keystroke never shows an error."""
+    from backend import place_suggest
+
+    lang = 'he' if request.args.get('lang') == 'he' else 'en'
+    return jsonify({"results": place_suggest.suggest(request.args.get('q') or '', lang)})
+
+
 def _remember_location_if_same_origin(lat, lon):
     """Persist lat/lon into the session, but only for same-origin callers.
 

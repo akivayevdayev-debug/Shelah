@@ -166,3 +166,94 @@ def test_a_paragraph_ref_names_its_chapter():
 
 def test_a_chapter_ref_in_the_keyword_tables_form_matches():
     assert source_search._chapter("Shulchan_Arukh,_Orach_Chayim.250") == "shulchan arukh, orach chayim 250"
+
+
+LAND_QUESTION = "where else in the torah does it say the land ate the people"
+LAND_PLAN = {"refs": ["Numbers 13:32"], "hebrew": ["אכלת יושביה"], "english": ["devourest men"]}
+
+
+def _with_plan(monkeypatch, plan, hits_by_query):
+    monkeypatch.setattr(source_search.question_plan, "plan", lambda question: plan)
+    monkeypatch.setattr(source_search, "_run_searches", lambda queries: [
+        hit for query in queries for hit in hits_by_query.get(query[0] if isinstance(query, tuple) else query, [])])
+
+
+def test_a_question_about_the_torah_is_a_tanakh_question():
+    assert source_search.is_tanakh_question(LAND_QUESTION) is True
+
+
+def test_a_question_about_a_law_is_not_a_tanakh_question():
+    assert source_search.is_tanakh_question("can i carry on shabbat") is False
+
+
+def test_a_paragraph_holding_every_word_of_a_phrase_holds_it():
+    assert source_search._holds_phrase("a land that eateth up the inhabitants", ["eateth inhabitants"]) is True
+
+
+def test_a_paragraph_missing_a_word_does_not_hold_the_phrase():
+    assert source_search._holds_phrase("a land that eateth up men", ["eateth inhabitants"]) is False
+
+
+def test_the_planner_named_ref_comes_first(monkeypatch):
+    _with_plan(monkeypatch, LAND_PLAN, {})
+    assert source_search.find_sources(LAND_QUESTION)["refs"] == ["Numbers 13:32"]
+
+
+def test_a_phrase_hit_is_found(monkeypatch):
+    _with_plan(monkeypatch, LAND_PLAN, {"devourest men": [_hit("Ezekiel 36:13", "a land that devourest men")]})
+    assert "Ezekiel 36:13" in source_search.find_sources(LAND_QUESTION)["refs"]
+
+
+def test_a_phrase_hit_is_matched(monkeypatch):
+    _with_plan(monkeypatch, LAND_PLAN, {"devourest men": [_hit("Ezekiel 36:13", "a land that devourest men")]})
+    assert source_search.find_sources(LAND_QUESTION)["matched"] == ["Ezekiel 36:13"]
+
+
+def test_the_named_ref_is_vouched_for(monkeypatch):
+    _with_plan(monkeypatch, LAND_PLAN, {})
+    assert source_search.find_sources(LAND_QUESTION)["vouched"] == ["Numbers 13:32"]
+
+
+def test_the_plan_phrases_are_passed_on(monkeypatch):
+    _with_plan(monkeypatch, LAND_PLAN, {})
+    assert source_search.find_sources(LAND_QUESTION)["phrases"] == ["אכלת יושביה", "devourest men"]
+
+
+def test_no_plan_still_searches_the_question(monkeypatch):
+    _with_plan(monkeypatch, None, {})
+    assert source_search.find_sources(LAND_QUESTION)["refs"] == []
+
+
+def _land_sources():
+    return [
+        _source("Numbers 13:32", "The land eateth up the inhabitants thereof; all the people are men of stature."),
+        _source("Ezekiel 36:13", "Thou land devourest men."),
+    ]
+
+
+def test_a_weak_optional_source_is_dropped():
+    ranked = source_search.rank_sources(LAND_QUESTION, _land_sources(), optional_refs=["Ezekiel 36:13"])
+    assert [s["ref"] for s in ranked] == ["Numbers 13:32"]
+
+
+def test_a_vouched_source_sharing_a_word_is_kept():
+    ranked = source_search.rank_sources(
+        LAND_QUESTION, _land_sources(), optional_refs=["Ezekiel 36:13"], vouched_refs=["Ezekiel 36:13"])
+    assert [s["ref"] for s in ranked] == ["Numbers 13:32", "Ezekiel 36:13"]
+
+
+def test_a_vouched_source_sharing_no_word_is_dropped():
+    sources = [*_land_sources(), _source("Psalms 1:1", "Happy is the one who walks not in the counsel.")]
+    ranked = source_search.rank_sources(
+        LAND_QUESTION, sources, optional_refs=["Psalms 1:1"], vouched_refs=["Psalms 1:1"])
+    assert "Psalms 1:1" not in [s["ref"] for s in ranked]
+
+
+def test_a_phrase_matched_source_ranks_ahead_of_a_keyword_match():
+    sources = [
+        _source("Shulchan Arukh, Orach Chayim 580:2", "On the twenty-eighth Samuel the prophet died."),
+        _source("I Samuel 3:20", "All Israel knew that Samuel was a prophet."),
+    ]
+    ranked = source_search.rank_sources(
+        "what book is samuel the prophet in", sources, matched_refs=["I Samuel 3:20"])
+    assert ranked[0]["ref"] == "I Samuel 3:20"

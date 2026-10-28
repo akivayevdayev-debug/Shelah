@@ -187,7 +187,7 @@ class APIHealth:
     # around each real network call (used by backend/utils/search_provider.py
     # for translation providers and general web/global-source search).
     # community_knowledge covers backend/rag.py::_retrieve_community_knowledge.
-    _PASSIVE_SERVICES = ("translate_google", "translate_mymemory", "web", "nominatim", "community_knowledge")
+    _PASSIVE_SERVICES = ("translate_google", "translate_mymemory", "web", "nominatim", "photon", "community_knowledge")
 
     _COOLDOWN_POLICIES: Dict[str, _CooldownPolicy] = {
         "gemini": _CooldownPolicy(GEMINI_FAIL_THRESHOLD, gemini_cooldown_seconds),
@@ -225,6 +225,14 @@ class APIHealth:
                 return self._probe(service)
             return True
         return circuit.status != "down"
+
+    def is_up(self, service: str) -> bool:
+        """True while the service's circuit is closed. Unlike is_healthy, this
+        never takes the half-open probe slot, so an optional extra call
+        (backend/question_plan.py) leaves the probe to the call that needs it."""
+        with self._lock:
+            circuit = self._circuits.get(service)
+            return circuit is None or circuit.status == "up"
 
     def check(self, service: str) -> bool:
         """Explicitly probe a service and update circuit state. Returns bool."""

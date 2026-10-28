@@ -1391,15 +1391,22 @@
                                     data-en="Search by City" data-he="חיפוש לפי עיר">Search by City</p>
                                 <div class="flex gap-2">
                                     <input id="citySearchInput" type="text" aria-label="Search by city" placeholder="e.g. Jerusalem, New York..."
+                                        role="combobox" aria-autocomplete="both" aria-expanded="false"
+                                        aria-controls="citySuggestList" autocomplete="off" spellcheck="false"
                                         class="flex-1 text-sm px-3 py-1.5 rounded-lg border border-[#d7cebc] bg-white focus:outline-hidden focus:border-[#a09060] focus:ring-2 focus:ring-[#d9cdb8]/50"
                                         data-en-placeholder="e.g. Jerusalem, New York..."
                                         data-he-placeholder="לדוגמה: ירושלים, ניו יורק" />
-                                    <button id="citySearchSubmit" type="button" data-onclick="searchByCity"
+                                    <button id="citySearchSubmit" type="button" data-onclick="acceptCityInput"
                                         aria-label="Search city"
                                         class="px-3 py-1.5 rounded-lg bg-[#1f3f63] text-white text-sm font-semibold hover:bg-[#162d4a] transition">
                                         <span class="contents" aria-hidden="true">{{ phosphor('magnifying-glass', size=16, class='h-4 w-4') }}</span>
                                     </button>
                                 </div>
+                                <!-- Places as the reader types (shell.js, /api/geocode/suggest): a country
+                                     with several time zones lists one city per zone. -->
+                                <ul id="citySuggestList" role="listbox" class="city-suggest-list hidden"
+                                    aria-label="Matching places"></ul>
+                                <p id="citySuggestStatus" class="sr-only" role="status" aria-live="polite"></p>
                                 <p id="citySearchError" class="hidden mt-1.5 text-xs text-red-600"></p>
                                 <p id="citySearchStatus" class="hidden mt-1.5 text-xs text-[#1f3f63] italic"></p>
                             </div>

@@ -1563,26 +1563,8 @@ body.theme-dark .answer-link-btn {
     }
 }
 
-/* M-7: opening a citation marks the verse it landed on, once, then fades.
-   A layer (compositor-only, audit M-9) rather than a background-color
-   transition, so it never repaints the row underneath. */
+/* Rows are the positioning box for the verse-target wash (reader.css) and
+   the other per-row overlays. */
 .segment-row {
     position: relative;
-}
-
-.segment-row.cite-highlight::after {
-    content: '';
-    position: absolute;
-    inset: -2px -4px;
-    border-radius: var(--radius-sm, 4px);
-    background: color-mix(in srgb, var(--accent-primary) 22%, transparent);
-    opacity: 0;
-    pointer-events: none;
-    animation: shelah-cite-highlight 1.2s var(--motion-ease-out) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .segment-row.cite-highlight::after {
-        animation: none;
-    }
 }

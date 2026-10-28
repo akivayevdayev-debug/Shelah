@@ -144,10 +144,11 @@ async def _collect_primary_sources(
         *((question, context) if context else (question,)),
     )
     refs = primary_refs if isinstance(primary_refs, list) else []
-    # Sefaria's own search for the question's words runs while the keyword
-    # table's refs load; its best paragraphs join them, and all of them are
-    # then ordered by how well they match (backend/source_search.py).
-    search_task = asyncio.create_task(asyncio.to_thread(_source_search.search_refs, question, refs))
+    # Sefaria's own search (the question's words, and the refs and phrases a
+    # small model expects the answer in) runs while the keyword table's refs
+    # load; what it finds joins them, and all of them are then ordered by how
+    # well their own text matches (backend/source_search.py).
+    search_task = asyncio.create_task(asyncio.to_thread(_source_search.find_sources, question, refs))
     if refs:
         ask_progress.detail(
             ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs, count=len(refs))
@@ -163,10 +164,11 @@ async def _collect_primary_sources(
 
     results = await asyncio.gather(*[_load_one(ref) for ref in refs])
     try:
-        extra_refs = await search_task
+        found = await search_task
     except Exception as exc:
         logger.debug("Source search failed: %s", exc)
-        extra_refs = []
+        found = {}
+    extra_refs = list(found.get("refs") or [])
     if extra_refs:
         ask_progress.detail(
             ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS,
@@ -174,7 +176,10 @@ async def _collect_primary_sources(
         results += await asyncio.gather(*[_load_one(ref) for ref in extra_refs])
     loaded = [s for s in results if s is not None]
     primary_sources = _source_search.rank_sources(
-        question, loaded, optional_refs=extra_refs)[:_backend_sefaria.MAX_REFS]
+        question, loaded, optional_refs=extra_refs,
+        extra_terms=found.get("terms") or (), phrases=found.get("phrases") or (),
+        vouched_refs=found.get("vouched") or (), matched_refs=found.get("matched") or (),
+    )[:_backend_sefaria.MAX_REFS]
     return refs + extra_refs, primary_sources
 
 

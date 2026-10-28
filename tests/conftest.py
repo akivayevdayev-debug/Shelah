@@ -211,10 +211,12 @@ async def fastapi_client():
 def _no_live_source_search(monkeypatch):
     """The /ask source search (backend/source_search.py) finds nothing unless a
     test gives it hits: its Sefaria calls would otherwise fail against the HTTP
-    mock and count as Sefaria outages in the health breaker."""
-    from backend import source_search
+    mock and count as Sefaria outages in the health breaker. The search planner
+    (backend/question_plan.py) returns no plan, so no test calls Claude for one."""
+    from backend import question_plan, source_search
 
     monkeypatch.setattr(source_search, "_run_searches", lambda queries: [])
+    monkeypatch.setattr(question_plan, "_ask_model", lambda question: None)
     source_search._cache.clear()
     yield
     source_search._cache.clear()

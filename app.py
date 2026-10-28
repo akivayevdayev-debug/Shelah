@@ -1573,23 +1573,28 @@ def _collect_primary_sources_sync(question, engine, context=()):
     sefaria.find_refs_for_question).
     """
     refs = list(_primary_ref_candidates(question, context))
-    # Sefaria's own search for the question's words runs while these load; its
-    # best paragraphs join them, and all of them are then ordered by how well
-    # they match the question (backend/source_search.py).
-    search_future = submit_with_context(_THREAD_POOL, source_search.search_refs, question, refs)
+    # Sefaria's own search (the question's words, and the refs and phrases a
+    # small model expects the answer in) runs while these load; what it finds
+    # joins them, and all of them are then ordered by how well their own text
+    # matches (backend/source_search.py).
+    search_future = submit_with_context(_THREAD_POOL, source_search.find_sources, question, refs)
     if refs:
         ask_progress.detail(
             ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs, count=len(refs))
     primary_sources = _load_primary_sources_sync(refs, engine)
     try:
-        extra_refs = search_future.result(timeout=4)
+        found = search_future.result(timeout=source_search.MAX_WAIT_SECONDS)
     except Exception:
-        extra_refs = []
+        found = {}
+    extra_refs = list(found.get("refs") or [])
     if extra_refs:
         ask_progress.detail(
             ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=extra_refs, count=len(extra_refs))
         primary_sources += _load_primary_sources_sync(extra_refs, engine)
-    ranked = source_search.rank_sources(question, primary_sources, optional_refs=extra_refs)
+    ranked = source_search.rank_sources(
+        question, primary_sources, optional_refs=extra_refs,
+        extra_terms=found.get("terms") or (), phrases=found.get("phrases") or (),
+        vouched_refs=found.get("vouched") or (), matched_refs=found.get("matched") or ())
     return ranked[:_primary_source_limit()]
 
 

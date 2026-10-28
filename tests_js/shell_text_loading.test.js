@@ -1057,3 +1057,56 @@ test('a haftarah that cannot be loaded ends the reading quietly', async () => {
         page.close();
     }
 });
+
+// ── One verse opens its whole chapter ──────────────────────────────────────
+
+test('a ref naming one verse splits into its chapter and the verse', async () => {
+    const page = await openPage();
+    try {
+        assert.deepEqual(plain(call(page, 'verseInChapter', 'Leviticus 26:33')), { chapterRef: 'Leviticus 26', segment: '33' });
+    } finally {
+        page.close();
+    }
+});
+
+test('a chapter, a range or an empty ref names no single verse', async () => {
+    const page = await openPage();
+    try {
+        assert.deepEqual(['Genesis 1', 'Genesis 1:3-5', 'Genesis 12:1-17:27', ''].map((ref) => call(page, 'verseInChapter', ref)), [null, null, null, null]);
+    } finally {
+        page.close();
+    }
+});
+
+test('reading one verse fetches its whole chapter, not the verse alone', async () => {
+    const page = await openPage({ fetch: { [textUrl('Genesis 1')]: chapter(1) } });
+    try {
+        page.takeCalls();
+        await call(page, 'readText', 'Genesis 1:2', { skipNavigationGrid: true });
+        assert.deepEqual(fetched(page), [`${textUrl('Genesis 1')}?autotranslate=0`]);
+    } finally {
+        page.close();
+    }
+});
+
+test('the verse read is marked in its chapter', async () => {
+    const page = await openPage({ fetch: { [textUrl('Genesis 1')]: chapter(1) } });
+    try {
+        await call(page, 'readText', 'Genesis 1:2', { skipNavigationGrid: true });
+        const marked = page.$$('#readerSources .segment-row.verse-target').map((row) => row.dataset.segment);
+        assert.deepEqual(marked, ['2']);
+    } finally {
+        page.close();
+    }
+});
+
+test('Back to a verse puts its chapter back without fetching the verse alone', async () => {
+    const page = await openPage({ fetch: { [textUrl('Genesis 1')]: chapter(1) } });
+    try {
+        page.takeCalls();
+        await call(page, 'readText', 'Genesis 1:2', { skipNavigationGrid: true, restoreScroll: { view: 'text', top: 0 } });
+        assert.deepEqual(fetched(page), [`${textUrl('Genesis 1')}?autotranslate=0`]);
+    } finally {
+        page.close();
+    }
+});

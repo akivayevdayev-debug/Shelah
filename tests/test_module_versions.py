@@ -155,4 +155,5 @@ class TestShellAssetTags:
         for path in ("/terms", "/about", "/definitely-not-a-page"):
             html = test_client.get(path).get_data(as_text=True)
             assert re.search(r'/static/css/tokens\.css\?v=[0-9a-f]{12}"', html), path
-            assert not re.search(r'/static/[\w./-]+\?v=\d{8}', html), path
+            # An 8-digit date version, not the first 8 digits of a hex hash ("12695443e6e5").
+            assert not re.search(r'/static/[\w./-]+\?v=\d{8}(?![0-9a-f])', html), path

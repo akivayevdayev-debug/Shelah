@@ -263,3 +263,16 @@ class TestReset:
 
         summary = health.status_summary()
         assert all(status == "up" for status in summary.values())
+
+
+class TestIsUp:
+    def test_a_fresh_service_is_up(self, health):
+        assert health.is_up("claude") is True
+
+    def test_an_unknown_service_is_up(self, health):
+        assert health.is_up("completely_unknown_service_xyz") is True
+
+    def test_an_open_circuit_is_not_up(self, health):
+        for _ in range(FAIL_THRESHOLD):
+            health._circuits["claude"].record_failure()
+        assert health.is_up("claude") is False

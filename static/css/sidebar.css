@@ -221,6 +221,74 @@ html.rtl #citySearchInput {
     text-align: right;
 }
 
+/* Places as the reader types (shell.js renderCitySuggestions). The popover keeps
+   its own light paper in both themes, so the list uses its fixed inks too. */
+.city-suggest-list {
+    list-style: none;
+    margin: var(--sp-1) 0 0;
+    padding: var(--sp-1) 0;
+    max-height: min(18rem, 50vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-top: 1px solid #e6dcc6;
+}
+
+.city-suggest-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 44px;
+    justify-content: center;
+    padding: var(--sp-1) var(--sp-2);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out);
+}
+
+.city-suggest-item:hover,
+.city-suggest-item[aria-selected="true"] {
+    background-color: #efe6d0;
+}
+
+.city-suggest-item[aria-selected="true"] {
+    box-shadow: inset 3px 0 0 #1f3f63;
+}
+
+html.rtl .city-suggest-item[aria-selected="true"] {
+    box-shadow: inset -3px 0 0 #1f3f63;
+}
+
+.city-suggest-name {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1f2a37;
+}
+
+.city-suggest-detail {
+    font-size: 0.75rem;
+    color: #566175;
+}
+
+.city-suggest-badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #1f3f63;
+    background-color: #e3ebf5;
+    border-radius: var(--radius-full);
+    padding: 1px 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .city-suggest-item {
+        transition: none;
+    }
+}
+
 /* Commentary sidebar should scroll independently */
 #rightSidebar {
     isolation: isolate;

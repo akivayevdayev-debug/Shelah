@@ -821,53 +821,18 @@ test('a source opened on a page with no reader still shrinks the panel and break
     }
 });
 
-test('the verse a citation names is highlighted once in the reader; a whole page is not', async () => {
+test('a cited source opens in the reader as it is named, straight to the text', async () => {
     const page = await openAnswerPage({ routes: sourceRoutes() });
     try {
-        page.document.body.insertAdjacentHTML('beforeend',
-            '<div id="readerSources"><div class="reader-source-clean" data-text-chunk-ref="genesis-1-3"><div class="segment-row" id="verse"></div></div></div>');
-        page.window.getRefTrackingKey = (ref) => ref.toLowerCase().replace(/\W+/g, '-');
-        page.window.readText = () => Promise.resolve();
+        const opened = [];
+        page.window.readText = (ref, options) => {
+            opened.push({ ref, skipNavigationGrid: options.skipNavigationGrid });
+            return Promise.resolve();
+        };
         await showAnswer(page);
-        const verse = page.$('#verse');
         page.click(row(page, 2).querySelector('.conv-cite__ref'));
         await page.flush();
-        assert.equal(verse.classList.contains('cite-highlight'), true);
-        page.clock.tick(1200);
-        assert.equal(verse.classList.contains('cite-highlight'), false);
-
-        // A page-level ref has no single row to mark.
-        page.click(row(page, 1).querySelector('.conv-cite__ref'));
-        await page.flush();
-        assert.equal(verse.classList.contains('cite-highlight'), false);
-    } finally {
-        page.close();
-    }
-});
-
-test('with no tracking key the first chunk in the reader is used, and reduced motion or a missing row skip the highlight', async () => {
-    const page = await openAnswerPage({ routes: sourceRoutes() });
-    try {
-        page.document.body.insertAdjacentHTML('beforeend',
-            '<div id="readerSources"><div class="reader-source-clean" data-text-chunk-ref="whatever"><div class="segment-row" id="verse"></div></div></div>');
-        page.window.readText = () => Promise.resolve();
-        await showAnswer(page);
-        const verse = page.$('#verse');
-        page.click(row(page, 2).querySelector('.conv-cite__ref'));
-        await page.flush();
-        assert.equal(verse.classList.contains('cite-highlight'), true);
-
-        verse.classList.remove('cite-highlight');
-        page.window.ShelahMotion = { isMotionReduced: () => true };
-        page.click(row(page, 2).querySelector('.conv-cite__ref'));
-        await page.flush();
-        assert.equal(verse.classList.contains('cite-highlight'), false);
-
-        page.window.ShelahMotion = undefined;
-        page.$('#readerSources').innerHTML = '';
-        page.click(row(page, 2).querySelector('.conv-cite__ref'));
-        await page.flush();
-        assert.deepEqual(page.errors, []);
+        assert.deepEqual(opened, [{ ref: 'Genesis 1:3', skipNavigationGrid: true }]);
     } finally {
         page.close();
     }

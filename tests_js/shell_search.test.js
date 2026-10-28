@@ -1554,3 +1554,267 @@ test('a verse ref without a trailing number opens as it is', async () => {
         page.close();
     }
 });
+
+// ── the city box's places as the reader types ───────────────────────────────
+
+const OWN_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const JERUSALEM = { name: 'Jerusalem', detail: 'Jerusalem District, Israel', lat: 31.77, lon: 35.21, timezone: 'Asia/Jerusalem', kind: 'place' };
+const JERSEY = { name: 'Jersey City', detail: 'New Jersey, United States', lat: 40.72, lon: -74.08, timezone: 'America/New_York', kind: 'place' };
+const zone = (name, zoneName, timezone) => ({ name, detail: `${zoneName} time, United States`, lat: 1, lon: 2, timezone, kind: 'zone' });
+const OTHER_ZONE = OWN_ZONE === 'Pacific/Honolulu' ? 'America/Anchorage' : 'Pacific/Honolulu';
+
+/** Types `text` into the city box as the reader would, and waits out the pause. */
+async function typeCity(page, text, inputType = 'insertText') {
+    const input = page.$('#citySearchInput');
+    input.focus();
+    input.value = text;
+    input.setSelectionRange(text.length, text.length);
+    input.dispatchEvent(new page.window.InputEvent('input', { inputType, bubbles: true }));
+    await sleep(200);
+}
+
+const pressInCityBox = (page, key) => page.$('#citySearchInput').dispatchEvent(
+    new page.window.KeyboardEvent('keydown', { key, bubbles: true }));
+
+const placeNames = (page) => [...page.$('#citySuggestList').querySelectorAll('.city-suggest-name')]
+    .map((el) => el.childNodes[0].textContent);
+
+async function openCityPage(results, log = []) {
+    const page = await openPage({
+        fetch: { '/api/geocode/suggest': { results }, '/api/geocode': { results: [] }, '/set_location': {} },
+        before: (window) => fakeZmanimModules(window, log),
+    });
+    page.window.openCitySearch();
+    page.takeCalls();
+    return page;
+}
+
+test('typing two letters asks for places once the reader pauses', async () => {
+    const page = await openCityPage([JERUSALEM]);
+    try {
+        await typeCity(page, 'Je');
+        assert.equal(page.takeCalls()[0].url, '/api/geocode/suggest?q=Je&lang=en');
+    } finally {
+        page.close();
+    }
+});
+
+test('one letter asks for nothing', async () => {
+    const page = await openCityPage([JERUSALEM]);
+    try {
+        await typeCity(page, 'J');
+        assert.deepEqual(page.takeCalls(), []);
+    } finally {
+        page.close();
+    }
+});
+
+test('the places are listed under the box', async () => {
+    const page = await openCityPage([JERUSALEM, JERSEY]);
+    try {
+        await typeCity(page, 'Je');
+        assert.deepEqual(placeNames(page), ['Jerusalem', 'Jersey City']);
+    } finally {
+        page.close();
+    }
+});
+
+test('the box says the list is open', async () => {
+    const page = await openCityPage([JERUSALEM]);
+    try {
+        await typeCity(page, 'Je');
+        assert.equal(page.$('#citySearchInput').getAttribute('aria-expanded'), 'true');
+    } finally {
+        page.close();
+    }
+});
+
+test('the rest of the top place is filled in after the letters typed', async () => {
+    const page = await openCityPage([JERUSALEM]);
+    try {
+        await typeCity(page, 'jer');
+        assert.equal(page.$('#citySearchInput').value, 'jerusalem');
+    } finally {
+        page.close();
+    }
+});
+
+test('the filled-in part is selected, so the next letter replaces it', async () => {
+    const page = await openCityPage([JERUSALEM]);
+    try {
+        await typeCity(page, 'Jer');
+        const input = page.$('#citySearchInput');
+        assert.deepEqual([input.selectionStart, input.selectionEnd], [3, 9]);
+    } finally {
+        page.close();
+    }
+});
+
+test('nothing is filled in while deleting', async () => {
+    const page = await openCityPage([JERUSALEM]);
+    try {
+        await typeCity(page, 'Jer', 'deleteContentBackward');
+        assert.equal(page.$('#citySearchInput').value, 'Jer');
+    } finally {
+        page.close();
+    }
+});
+
+test('a country with several zones lists the reader\'s own zone first', async () => {
+    const page = await openCityPage([zone('Honolulu-ish', 'Other', OTHER_ZONE), zone('Home City', 'Own', OWN_ZONE)]);
+    try {
+        await typeCity(page, 'United');
+        assert.deepEqual(placeNames(page), ['Home City', 'Honolulu-ish']);
+    } finally {
+        page.close();
+    }
+});
+
+test('the reader\'s own zone is marked as theirs', async () => {
+    const page = await openCityPage([zone('Honolulu-ish', 'Other', OTHER_ZONE), zone('Home City', 'Own', OWN_ZONE)]);
+    try {
+        await typeCity(page, 'United');
+        assert.equal(page.$('#citySuggestList .city-suggest-badge').textContent, 'Your time zone');
+    } finally {
+        page.close();
+    }
+});
+
+test('Enter takes the top place and sets the zmanim there', async () => {
+    const log = [];
+    const page = await openCityPage([JERUSALEM, JERSEY], log);
+    try {
+        await typeCity(page, 'Je');
+        pressInCityBox(page, 'Enter');
+        await sleep(20);
+        assert.deepEqual(plain(log[0]), ['cacheZmanimLocation', { lat: 31.77, lon: 35.21 }]);
+    } finally {
+        page.close();
+    }
+});
+
+test('the chosen place is named in the zmanim label', async () => {
+    const log = [];
+    const page = await openCityPage([JERUSALEM], log);
+    try {
+        await typeCity(page, 'Je');
+        pressInCityBox(page, 'Enter');
+        await sleep(20);
+        assert.equal(log.find(([name]) => name === 'label')[1], 'Jerusalem, Jerusalem District');
+    } finally {
+        page.close();
+    }
+});
+
+test('the arrow keys move the choice, and Enter takes it', async () => {
+    const log = [];
+    const page = await openCityPage([JERUSALEM, JERSEY], log);
+    try {
+        await typeCity(page, 'Je');
+        pressInCityBox(page, 'ArrowDown');
+        pressInCityBox(page, 'Enter');
+        await sleep(20);
+        assert.deepEqual(plain(log[0][1]), { lat: 40.72, lon: -74.08 });
+    } finally {
+        page.close();
+    }
+});
+
+test('the highlighted place is the box\'s active option', async () => {
+    const page = await openCityPage([JERUSALEM, JERSEY]);
+    try {
+        await typeCity(page, 'Je');
+        pressInCityBox(page, 'ArrowDown');
+        assert.equal(page.$('#citySearchInput').getAttribute('aria-activedescendant'), 'cityOption-1');
+    } finally {
+        page.close();
+    }
+});
+
+test('Enter right after a letter waits for that letter\'s places', async () => {
+    const log = [];
+    const page = await openCityPage([JERSEY], log);
+    try {
+        const input = page.$('#citySearchInput');
+        input.focus();
+        input.value = 'Jers';
+        input.dispatchEvent(new page.window.InputEvent('input', { inputType: 'insertText', bubbles: true }));
+        pressInCityBox(page, 'Enter');
+        await sleep(50);
+        assert.deepEqual(plain(log[0][1]), { lat: 40.72, lon: -74.08 });
+    } finally {
+        page.close();
+    }
+});
+
+test('Enter with no places listed asks the geocoder instead', async () => {
+    const page = await openCityPage([]);
+    try {
+        await typeCity(page, 'Nowhere');
+        page.takeCalls();
+        pressInCityBox(page, 'Enter');
+        await sleep(20);
+        assert.equal(page.takeCalls()[0].url, '/api/geocode?q=Nowhere&lang=en');
+    } finally {
+        page.close();
+    }
+});
+
+test('clicking a place chooses it', async () => {
+    const log = [];
+    const page = await openCityPage([JERUSALEM, JERSEY], log);
+    try {
+        await typeCity(page, 'Je');
+        page.$('#cityOption-1').click();
+        assert.deepEqual(plain(log[0][1]), { lat: 40.72, lon: -74.08 });
+    } finally {
+        page.close();
+    }
+});
+
+test('choosing a place closes the list', async () => {
+    const page = await openCityPage([JERUSALEM]);
+    try {
+        await typeCity(page, 'Je');
+        page.$('#cityOption-0').click();
+        assert.equal(page.$('#citySuggestList').classList.contains('hidden'), true);
+    } finally {
+        page.close();
+    }
+});
+
+test('Escape in the box closes the list first', async () => {
+    const page = await openCityPage([JERUSALEM]);
+    try {
+        await typeCity(page, 'Je');
+        pressInCityBox(page, 'Escape');
+        assert.equal(page.$('#citySuggestList').classList.contains('hidden'), true);
+    } finally {
+        page.close();
+    }
+});
+
+test('the places are asked for in Hebrew in Hebrew mode', async () => {
+    const page = await openCityPage([JERUSALEM]);
+    try {
+        page.eval(`displayedLanguage = 'he'`);
+        await typeCity(page, 'ירו');
+        assert.equal(page.takeCalls()[0].url, `/api/geocode/suggest?q=${encodeURIComponent('ירו')}&lang=he`);
+    } finally {
+        page.close();
+    }
+});
+
+test('a zone named differently but on the reader\'s clock is marked as theirs', async () => {
+    const page = await openCityPage([zone('Elsewhere', 'Other', OTHER_ZONE), zone('Twin City', 'Twin', 'Etc/GMT+1')]);
+    try {
+        page.eval(`Intl.DateTimeFormat.prototype.formatToParts = function () {
+            const zone = this.resolvedOptions().timeZone;
+            return [{ type: 'timeZoneName', value: zone === '${OTHER_ZONE}' ? 'GMT+9' : 'GMT-1' }];
+        }`);
+        await typeCity(page, 'United');
+        assert.deepEqual(placeNames(page), ['Twin City', 'Elsewhere']);
+    } finally {
+        page.close();
+    }
+});

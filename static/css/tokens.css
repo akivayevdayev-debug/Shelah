@@ -430,8 +430,8 @@
     to   { opacity: 0; }
 }
 
-/* M-7: the verse a citation opened at gets a one-shot wash, so the reader
-   doesn't just "jump somewhere" (ai.css .segment-row.cite-highlight). */
+/* M-7: the verse a citation or search opened at gets a one-shot wash, so the
+   reader doesn't just "jump somewhere" (reader.css .segment-row.verse-target). */
 @keyframes shelah-cite-highlight {
     0%, 60% { opacity: 1; }
     100%    { opacity: 0; }

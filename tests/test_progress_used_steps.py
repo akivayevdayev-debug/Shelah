@@ -190,7 +190,7 @@ def test_sync_sources_add_the_searched_paragraphs(monkeypatch):
     engine = mock.Mock()
     engine.get_library_text = lambda ref: {"ref": ref, "lines": [{"en": f"{ref} text", "he": ""}]}
     monkeypatch.setattr(flask_app_module, "_primary_ref_candidates", lambda q, c: ["A 1"])
-    monkeypatch.setattr(flask_app_module.source_search, "search_refs", lambda q, refs: ["B 2:3"])
+    monkeypatch.setattr(flask_app_module.source_search, "find_sources", lambda q, refs: {"refs": ["B 2:3"]})
     monkeypatch.setattr(flask_app_module, "is_usable_primary_source", lambda s: True)
     sources = flask_app_module._collect_primary_sources_sync("q", engine)
     assert [s["ref"] for s in sources] == ["A 1", "B 2:3"]
@@ -206,7 +206,7 @@ async def test_async_sources_put_the_best_match_first(monkeypatch):
             return {"ref": ref, "lines": [{"en": texts[ref], "he": ""}]}
 
     monkeypatch.setattr(asgi._backend_sefaria, "find_refs_for_question", lambda q: ["A"])
-    monkeypatch.setattr(asgi._source_search, "search_refs", lambda q, refs: ["B"])
+    monkeypatch.setattr(asgi._source_search, "find_sources", lambda q, refs: {"refs": ["B"]})
     monkeypatch.setattr(asgi, "ShelahEngine", Engine)
     _, sources = await asgi._collect_primary_sources("must an important person prepare for shabbat")
     assert [s["ref"] for s in sources] == ["B", "A"]
@@ -221,7 +221,7 @@ async def test_async_sources_survive_a_failed_search(monkeypatch):
         raise RuntimeError("search down")
 
     monkeypatch.setattr(asgi._backend_sefaria, "find_refs_for_question", lambda q: ["A"])
-    monkeypatch.setattr(asgi._source_search, "search_refs", broken)
+    monkeypatch.setattr(asgi._source_search, "find_sources", broken)
     monkeypatch.setattr(asgi, "ShelahEngine", Engine)
     _, sources = await asgi._collect_primary_sources("q")
     assert [s["ref"] for s in sources] == ["A"]

@@ -2012,33 +2012,11 @@ function openCitation(ref) {
     // corner widget on desktop, the bar above the tabs on phones.
     if (ui.size !== "mini") setSize("mini");
     // skipNavigationGrid: a cited ref is already specific ("Berakhot 2a"),
-    // so go straight to the text rather than a chapter picker.
+    // so go straight to the text rather than a chapter picker. A cited verse
+    // opens its whole chapter, scrolled to the verse and marked (readText).
     if (typeof window.readText === "function") {
-        void window.readText(ref, { skipNavigationGrid: true }).then(() => highlightCitedSegment(ref));
+        void window.readText(ref, { skipNavigationGrid: true });
     }
-}
-
-// M-7: the reader opens at the ref without marking which line it is; a
-// one-shot highlight (ai.css .segment-row.cite-highlight) says "here",
-// same as the anchor Back/Forward restores to. Only the specific verse a
-// citation names ("Genesis 1:3") gets one; a whole-page ref ("Berakhot
-// 2a") has no single row to mark. Fetching one verse renders it as the
-// chunk's sole row (its data-segment is always "1", not the verse
-// number), so the target is "the row in the chunk this ref opened",
-// matched by the same tracking key the reader anchors with, not a
-// verse-number lookup.
-function highlightCitedSegment(ref) {
-    if (!/:\d+\s*$/.test(String(ref || "").trim()) || window.ShelahMotion?.isMotionReduced?.()) return;
-    const key = window.getRefTrackingKey?.(ref);
-    const chunk = key
-        ? document.querySelector(`#readerSources .reader-source-clean[data-text-chunk-ref="${CSS.escape(key)}"]`)
-        : document.querySelector("#readerSources .reader-source-clean[data-text-chunk-ref]");
-    const row = chunk?.querySelector(".segment-row");
-    if (!row) return;
-    row.classList.remove("cite-highlight");
-    row.getBoundingClientRect(); // restart the animation if the same verse is cited twice in a row
-    row.classList.add("cite-highlight");
-    window.setTimeout(() => row.classList.remove("cite-highlight"), 1200);
 }
 
 // ── topbar Ask button + discovery tip ─────────────────────────────────

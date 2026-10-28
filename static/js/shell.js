@@ -7253,7 +7253,8 @@ function hasParenthetical(text) {
             const canonical = String(ref || '').trim();
             if (!router || !canonical) return;
             const route = router.readRoute();
-            if (!route.text || route.text === canonical) return;
+            // A verse link stays on its verse, inside the chapter shown.
+            if (!route.text || route.text === canonical || textRefWithin(route.text, canonical)) return;
             router.pushRoute({ text: canonical }, { replace: true });
         }
 
@@ -10118,15 +10119,24 @@ function hasParenthetical(text) {
             return Math.min(160, Math.round((window.innerHeight || 800) * 0.2));
         }
 
-        async function openVerse(ref) {
-            const match = /^(.+?)\s*:\s*(\d+)$/.exec(String(ref || '').trim());
-            if (!match) {
-                await readText(ref);
+        // "Genesis 1:3" -> { chapterRef: "Genesis 1", segment: "3" }; null for a
+        // ref with no single trailing segment ("Genesis 1", "Genesis 1:3-5").
+        function verseInChapter(ref) {
+            const match = /^([^:]+?)\s*:\s*(\d+)$/.exec(String(ref || '').replace(/\s+/g, ' ').trim());
+            return match ? { chapterRef: match[1], segment: match[2] } : null;
+        }
+
+        // `options` are readText's: a link (fromRoute) keeps the verse in the
+        // address bar, so a refresh or a shared link lands on it again.
+        async function openVerse(ref, options = {}) {
+            const verse = verseInChapter(ref);
+            if (!verse) {
+                await readText(ref, options);
                 return;
             }
-            const [, chapterRef, segment] = match;
+            const { chapterRef, segment } = verse;
             const anchor = { ref: getRefTrackingKey(chapterRef), segment, offset: verseTargetOffset() };
-            const loading = readText(chapterRef, { restoreScroll: { view: 'text', top: 0, anchor } });
+            const loading = readText(chapterRef, { ...options, wholeRef: true, restoreScroll: { view: 'text', top: 0, anchor } });
             const requestId = _readTextRequestGen;
             await loading;
             // A newer text was opened meanwhile: the verse is not on screen.
@@ -10981,6 +10991,12 @@ function hasParenthetical(text) {
         }
 
         async function readText(ref, options = {}) {
+            // One verse ("Leviticus 26:33", an AI answer's source or a link)
+            // opens its whole chapter, scrolled to the verse and marked. Back/
+            // Forward (restoreScroll) puts the chapter back where it was left.
+            const verse = options.wholeRef ? null : verseInChapter(ref);
+            if (verse && options.restoreScroll) return readText(verse.chapterRef, { ...options, wholeRef: true });
+            if (verse) return openVerse(ref, options);
             const myRequestId = ++_readTextRequestGen;
             const normalizedRequestRef = String(ref || '').replace(/\s+/g, ' ').trim();
 
@@ -12232,7 +12248,32 @@ function hasParenthetical(text) {
 
         function closeCitySearchPopover() {
             citySearchOpen = false;
+            clearCitySuggestions();
             dismissEl(document.getElementById('citySearchPopover'), { preset: 'popover' });
+        }
+
+        // Sets the zmanim location the city box found, for this visit and the session.
+        function applyCityLocation(location, shortName) {
+            const statusEl = document.getElementById('citySearchStatus');
+            if (!window.ShelahModules?.fetchZmanimAPI) {
+                throw new Error('Zmanim module unavailable');
+            }
+            window.ShelahModules.cacheZmanimLocation(location);
+
+            // Update server session
+            fetch('/set_location', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(location)
+            }).catch(() => { });
+
+            // Fetch new zmanim
+            window.ShelahModules.fetchZmanimAPI(location, buildZmanimDeps());
+            window.ShelahModules.setCurrentZmanimLocationLabel(shortName);
+
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = `${t('Using:', 'משתמש ב:')} ${shortName}`;
+            setTimeout(closeCitySearchPopover, 1200);
         }
 
         window.searchByCity = async function () {
@@ -12272,27 +12313,9 @@ function hasParenthetical(text) {
 
                 const { lat, lon, display_name } = results[0];
                 const location = { lat: Number.parseFloat(lat), lon: Number.parseFloat(lon) };
-                if (!window.ShelahModules?.fetchZmanimAPI) {
-                    throw new Error('Zmanim module unavailable');
-                }
-                window.ShelahModules.cacheZmanimLocation(location);
-
-                // Update server session
-                fetch('/set_location', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(location)
-                }).catch(() => { });
-
-                // Fetch new zmanim
-                window.ShelahModules.fetchZmanimAPI(location, buildZmanimDeps());
-
                 // Show short city name in location label
                 const shortName = display_name.split(',').slice(0, 2).map((part) => part.trim()).join(', ');
-                window.ShelahModules.setCurrentZmanimLocationLabel(shortName);
-
-                statusEl.textContent = `${t('Using:', 'משתמש ב:')} ${shortName}`;
-                setTimeout(closeCitySearchPopover, 1200);
+                applyCityLocation(location, shortName);
 
             } catch {
                 errorEl.textContent = t('Search failed. Check your connection.', 'החיפוש נכשל. בדוק את החיבור שלך.');
@@ -12303,10 +12326,232 @@ function hasParenthetical(text) {
             }
         };
 
-        // Allow Enter key to submit city search
+        // ── Places as the reader types ──────────────────────────────────────
+        // /api/geocode/suggest answers each pause in typing with up to six places,
+        // each with its time zone; a country with several zones ("United States")
+        // comes back as one city per zone. The zone the reader's own clock is in
+        // goes first. The top place's name is filled in after what was typed
+        // (selected, so the next letter replaces it), and Enter takes the
+        // highlighted place, or the top one.
+        const CITY_SUGGEST_DELAY_MS = 150;
+        const citySuggest = { items: [], active: -1, serial: 0, timer: 0, abort: null, queued: null, inflight: null };
+
+        function readerTimeZone() {
+            try {
+                return Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+            } catch {
+                return '';
+            }
+        }
+
+        // "GMT-5" for a zone, or '' where the browser cannot say.
+        function zoneOffsetLabel(timeZone) {
+            if (!timeZone) return '';
+            try {
+                const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'shortOffset' }).formatToParts(new Date());
+                return parts.find((part) => part.type === 'timeZoneName')?.value || '';
+            } catch {
+                return '';
+            }
+        }
+
+        function foldPlaceName(text) {
+            return String(text || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        }
+
+        // The reader's own zone first, marked, when the list is a country's zones:
+        // the same zone name, or else the first zone whose clock reads the same now
+        // (America/Toronto for a reader on America/New_York).
+        function orderCitySuggestions(items) {
+            const own = readerTimeZone();
+            const zones = items.filter((item) => item.kind === 'zone' && own);
+            let mine = zones.filter((item) => item.timezone === own);
+            if (!mine.length) {
+                const ownOffset = zoneOffsetLabel(own);
+                mine = zones.filter((item) => ownOffset && zoneOffsetLabel(item.timezone) === ownOffset).slice(0, 1);
+            }
+            if (!mine.length) return items;
+            return [...mine.map((item) => ({ ...item, yours: true })), ...items.filter((item) => !mine.includes(item))];
+        }
+
+        function cityOptionId(index) {
+            return `cityOption-${index}`;
+        }
+
+        function cityShortName(item) {
+            const region = String(item.detail || '').split(',')[0].trim();
+            return region ? `${item.name}, ${region}` : item.name;
+        }
+
+        function renderCitySuggestions() {
+            const list = document.getElementById('citySuggestList');
+            const input = document.getElementById('citySearchInput');
+            const statusEl = document.getElementById('citySuggestStatus');
+            if (!list || !input) return;
+            const { items, active } = citySuggest;
+            list.setAttribute('aria-label', t('Matching places', 'מקומות מתאימים'));
+            list.innerHTML = items.map((item, index) => {
+                const offset = zoneOffsetLabel(item.timezone);
+                const detail = [item.detail, offset].filter(Boolean).map(escapeHtml).join(' · ');
+                const yours = item.yours
+                    ? `<span class="city-suggest-badge">${escapeHtml(t('Your time zone', 'אזור הזמן שלך'))}</span>`
+                    : '';
+                return `<li role="option" id="${cityOptionId(index)}" data-index="${index}" class="city-suggest-item"
+                    aria-selected="${index === active ? 'true' : 'false'}">
+                    <span class="city-suggest-name">${escapeHtml(item.name)}${yours}</span>
+                    <span class="city-suggest-detail">${detail}</span>
+                </li>`;
+            }).join('');
+            const open = items.length > 0;
+            list.classList.toggle('hidden', !open);
+            input.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (active >= 0 && open) {
+                input.setAttribute('aria-activedescendant', cityOptionId(active));
+                document.getElementById(cityOptionId(active))?.scrollIntoView?.({ block: 'nearest' });
+            } else {
+                input.removeAttribute('aria-activedescendant');
+            }
+            if (statusEl) {
+                statusEl.textContent = open
+                    ? t(`${items.length} places`, `${items.length} מקומות`)
+                    : '';
+            }
+        }
+
+        function clearCitySuggestions() {
+            citySuggest.serial += 1;
+            citySuggest.abort?.abort();
+            citySuggest.abort = null;
+            clearTimeout(citySuggest.timer);
+            citySuggest.queued = null;
+            citySuggest.inflight = null;
+            citySuggest.items = [];
+            citySuggest.active = -1;
+            renderCitySuggestions();
+        }
+
+        // Fills in the rest of the top place's name after what was typed, selected.
+        function completeCityInput(input, typed) {
+            const top = citySuggest.items[0];
+            if (!top || input.value !== typed || document.activeElement !== input) return;
+            const name = String(top.name || '');
+            if (!typed || name.length <= typed.length || !foldPlaceName(name).startsWith(foldPlaceName(typed))) return;
+            input.value = typed + name.slice(typed.length);
+            input.setSelectionRange(typed.length, input.value.length);
+        }
+
+        async function fetchCitySuggestions(typed, complete) {
+            const serial = ++citySuggest.serial;
+            citySuggest.abort?.abort();
+            const controller = typeof AbortController === 'function' ? new AbortController() : null;
+            citySuggest.abort = controller;
+            try {
+                const url = `/api/geocode/suggest?q=${encodeURIComponent(typed.trim())}&lang=${isHebrewMode() ? 'he' : 'en'}`;
+                const res = await fetch(url, controller ? { signal: controller.signal } : undefined);
+                const payload = res.ok ? await res.json() : null;
+                if (serial !== citySuggest.serial) return;
+                const results = Array.isArray(payload?.results) ? payload.results : [];
+                citySuggest.items = orderCitySuggestions(results);
+                citySuggest.active = citySuggest.items.length ? 0 : -1;
+                renderCitySuggestions();
+                const input = document.getElementById('citySearchInput');
+                if (complete && input) completeCityInput(input, typed);
+            } catch {
+                if (serial === citySuggest.serial) clearCitySuggestions();
+            }
+        }
+
+        function onCityInput(event) {
+            const input = event.target;
+            const typed = input.value;
+            document.getElementById('citySearchError')?.classList.add('hidden');
+            document.getElementById('citySearchStatus')?.classList.add('hidden');
+            clearTimeout(citySuggest.timer);
+            if (typed.trim().length < 2) {
+                clearCitySuggestions();
+                return;
+            }
+            // Only a letter typed at the end is completed: never while deleting or editing mid-word.
+            const complete = String(event.inputType || 'insertText').startsWith('insert')
+                && input.selectionStart === typed.length;
+            citySuggest.queued = typed;
+            citySuggest.timer = setTimeout(() => {
+                citySuggest.queued = null;
+                citySuggest.inflight = fetchCitySuggestions(typed, complete);
+            }, CITY_SUGGEST_DELAY_MS);
+        }
+
+        // Enter right after a letter: wait for that letter's places, so the
+        // choice is never a place listed for an earlier, shorter text.
+        async function settleCitySuggestions() {
+            if (citySuggest.queued !== null) {
+                clearTimeout(citySuggest.timer);
+                const typed = citySuggest.queued;
+                citySuggest.queued = null;
+                citySuggest.inflight = fetchCitySuggestions(typed, false);
+            }
+            await citySuggest.inflight;
+        }
+
+        async function acceptCityInput() {
+            await settleCitySuggestions();
+            if (!chooseCitySuggestion(Math.max(citySuggest.active, 0))) searchByCity();
+        }
+        window.acceptCityInput = acceptCityInput;
+
+        function chooseCitySuggestion(index) {
+            const item = citySuggest.items[index];
+            const input = document.getElementById('citySearchInput');
+            if (!item) return false;
+            if (input) input.value = item.name;
+            document.getElementById('citySearchError')?.classList.add('hidden');
+            clearCitySuggestions();
+            try {
+                applyCityLocation({ lat: Number(item.lat), lon: Number(item.lon) }, cityShortName(item));
+            } catch {
+                const errorEl = document.getElementById('citySearchError');
+                errorEl.textContent = t('Search failed. Check your connection.', 'החיפוש נכשל. בדוק את החיבור שלך.');
+                errorEl.classList.remove('hidden');
+            }
+            return true;
+        }
+        window.chooseCitySuggestion = chooseCitySuggestion;
+
+        function moveCitySuggestion(step) {
+            const count = citySuggest.items.length;
+            if (!count) return;
+            citySuggest.active = (citySuggest.active + step + count) % count;
+            renderCitySuggestions();
+        }
+
+        document.addEventListener('input', function (e) {
+            if (e.target?.id === 'citySearchInput') onCityInput(e);
+        });
+
+        const citySuggestList = document.getElementById('citySuggestList');
+        // mousedown keeps the focus in the box, so the click lands on the place.
+        citySuggestList?.addEventListener('mousedown', (e) => e.preventDefault());
+        citySuggestList?.addEventListener('click', function (e) {
+            const option = e.target.closest?.('[role="option"]');
+            if (option) chooseCitySuggestion(Number(option.dataset.index));
+        });
+
+        // Enter takes the highlighted place (else asks the geocoder); arrows move.
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' && document.activeElement?.id === 'citySearchInput') {
-                searchByCity();
+            const inCityBox = document.activeElement?.id === 'citySearchInput';
+            if (inCityBox && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && citySuggest.items.length) {
+                e.preventDefault();
+                moveCitySuggestion(e.key === 'ArrowDown' ? 1 : -1);
+                return;
+            }
+            if (e.key === 'Enter' && inCityBox) {
+                e.preventDefault();
+                acceptCityInput();
+                return;
+            }
+            if (e.key === 'Escape' && citySuggest.items.length && inCityBox) {
+                clearCitySuggestions();
+                return;
             }
             if (e.key === 'Escape' && citySearchOpen) {
                 closeCitySearchPopover();
