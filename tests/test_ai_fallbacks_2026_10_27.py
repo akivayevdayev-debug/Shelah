@@ -1,11 +1,9 @@
 """The 2026-10-27 fixes: a chosen community with nothing on the topic falls back
 to every community, plain "candle lighting" finds the Shabbat candle chapters,
-"who says..." questions get the full prompt, and the Shulchan Arukh
-translator's chapter heading no longer runs into the first paragraph."""
+and "who says..." questions get the full prompt."""
 
 import app
 from backend import claude, rag, sefaria
-from backend import sefaria_library as library
 
 CANDLE_ROW = {"id": "1", "community_name": "Ashkenaz", "topic": "shabbat candles",
               "halakhic_source": "SA", "content": "lighting rules"}
@@ -84,26 +82,3 @@ def test_the_short_prompt_carries_the_unclear_wording_rule():
 
 def test_the_full_prompt_carries_the_unclear_wording_rule():
     assert "never answer that no source exists" in claude.CORE_SYSTEM_PROMPT
-
-
-HEADING_LINE = ("<b>Who should kindle and an Error a cloudy day. Containing 17 paragraphshs:</b>"
-                "<br> One should take care to make a beautiful candle/lamp")
-
-
-def test_the_translator_chapter_heading_is_dropped_from_the_english():
-    assert library._drop_translator_heading(HEADING_LINE, "יְהֵא זָהִיר לַעֲשׂוֹת נֵר יָפֶה") == (
-        "One should take care to make a beautiful candle/lamp")
-
-
-def test_a_heading_the_hebrew_also_has_is_kept():
-    assert library._drop_translator_heading(HEADING_LINE, "<b>כותרת</b><br>טקסט") == HEADING_LINE
-
-
-def test_bold_text_without_a_line_break_is_kept():
-    line = "<b>Rema:</b> One may add a third candle"
-    assert library._drop_translator_heading(line, "הגה") == line
-
-
-def test_the_built_lines_carry_the_cleaned_english():
-    [line] = library._build_v3_lines(["יְהֵא זָהִיר"], [HEADING_LINE])
-    assert line["en"] == "One should take care to make a beautiful candle/lamp"

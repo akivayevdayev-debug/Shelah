@@ -661,23 +661,6 @@ def _classify_v3_version_texts(versions):
     return he_raw, en_raw
 
 
-# A bold heading at the start of a translated line, ended by a line break.
-_TRANSLATOR_HEADING_RE = re.compile(r"^\s*<b>[^<]{1,300}</b>\s*(?:<br\s*/?>\s*)+", re.IGNORECASE)
-
-
-def _drop_translator_heading(en_line, he_line):
-    """Some translations (the Shulchan Arukh's) open a chapter's first line with
-    the translator's own chapter heading, e.g. "<b>Who should kindle and an
-    Error a cloudy day. Containing 17 paragraphshs:</b><br>". The Hebrew has
-    no such heading, so it is not part of the text; once tags were stripped it
-    ran into the passage. Kept when the Hebrew line opens with a heading too."""
-    if not isinstance(en_line, str) or not en_line.lstrip().lower().startswith("<b>"):
-        return en_line
-    if isinstance(he_line, str) and he_line.lstrip().lower().startswith("<b>"):
-        return en_line
-    return _TRANSLATOR_HEADING_RE.sub("", en_line, count=1)
-
-
 def _build_v3_lines(he_raw, en_raw):
     """Align Hebrew/English v3 text arrays (both nested-array text fields)
     into per-segment line dicts, reusing the same flattening logic as
@@ -689,10 +672,9 @@ def _build_v3_lines(he_raw, en_raw):
 
     lines = []
     for path in all_paths:
-        he_line = he_by_path.get(path, "")
         lines.append({
-            "he": he_line,
-            "en": _drop_translator_heading(en_by_path.get(path, ""), he_line),
+            "he": he_by_path.get(path, ""),
+            "en": en_by_path.get(path, ""),
             "segment": ".".join(str(i) for i in path) if path else "1",
         })
     return lines
