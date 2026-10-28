@@ -207,7 +207,7 @@ function currentMode() {
 
 // The community a new thread starts with: a link's community, else the
 // visitor's own preference (which the link never overwrites). "All" (shown
-// as "My community") means the community picked in the site settings.
+// as "All communities") lets the AI draw on every community.
 function defaultMinhag() {
     return ui.routeMinhag || aiCommunityLens(window.appState?.prefs?.community);
 }
@@ -403,7 +403,11 @@ function renderHeader(state, { l, name, title, options }) {
         els.title.textContent = title;
         els.title.dataset.script = mostlyHebrew(title) ? "he" : "";
     }
-    els.subtitle.textContent = ui.layout === "mobile" ? tr(`${name} practice`, `מנהג ${name}`) : "";
+    // "All communities" is already a phrase; a single community reads "<name> practice".
+    const minhag = String((state.minhagLocked ? conversation?.minhag : state.draftMinhag) || "").trim();
+    const isAll = !minhag || minhag.toLowerCase() === "all";
+    const subtitle = isAll ? name : tr(`${name} practice`, `מנהג ${name}`);
+    els.subtitle.textContent = ui.layout === "mobile" ? subtitle : "";
     els.chipLabel.textContent = name;
     els.menuBtn.dataset.locked = state.minhagLocked ? "true" : "false";
     const settingsLabel = state.minhagLocked

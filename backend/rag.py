@@ -376,13 +376,22 @@ def _retrieve_community_knowledge(query, canonical_lens="All", max_rows=None):
             supabase, _app.SUPABASE_COMMUNITY_KNOWLEDGE_TABLE,
             community_filter, text_or_filter, query_row_cap, apply_text_filter=True,
         )
+        ranked = _rank_community_knowledge_rows(rows, keywords, community_filter, canonical_lens)
+        if community_filter and not ranked:
+            # The chosen community has nothing on this topic: look across every
+            # community instead of answering with no customs at all.
+            rows = _run_community_knowledge_query(
+                supabase, _app.SUPABASE_COMMUNITY_KNOWLEDGE_TABLE,
+                None, text_or_filter, query_row_cap, apply_text_filter=True,
+            )
+            # Ranked with the same filter, so a row still has to earn its
+            # place on keywords, not on the chosen community's bonus.
+            ranked = _rank_community_knowledge_rows(rows, keywords, community_filter, canonical_lens)
     except Exception as e:
         health.record_failure("community_knowledge")
         _capture_backend_error("community_knowledge_query_failed", e, {})
         return []
     health.record_success("community_knowledge")
-
-    ranked = _rank_community_knowledge_rows(rows, keywords, community_filter, canonical_lens)
 
     ranked.sort(
         key=lambda item: (

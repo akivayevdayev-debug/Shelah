@@ -68,13 +68,13 @@ test('announceMinhag fires after prefs arrive from the server, and only on a cha
     assert.deepEqual(seen, ['sephardi', 'ashkenazi']);
 });
 
-test('the AI lens is the chat pick when it names a community, else the minhag', async () => {
+test('the AI lens is the chat pick when it names a community, else all communities', async () => {
     const { state } = await loadState({});
-    assert.equal(state.aiCommunityLens('All', 'sephardi'), 'Sefardic');
-    assert.equal(state.aiCommunityLens('', 'mizrahi'), 'Iraqi');
-    assert.equal(state.aiCommunityLens(undefined, 'ashkenazi'), 'Ashkenaz');
-    assert.equal(state.aiCommunityLens('Yemenite', 'ashkenazi'), 'Yemenite');
-    assert.equal(state.aiCommunityLens('all'), 'Sefardic');
+    assert.equal(state.aiCommunityLens('All'), 'All');
+    assert.equal(state.aiCommunityLens(''), 'All');
+    assert.equal(state.aiCommunityLens(undefined), 'All');
+    assert.equal(state.aiCommunityLens('all'), 'All');
+    assert.equal(state.aiCommunityLens('Yemenite'), 'Yemenite');
 });
 
 test('haftarahFor picks the Sephardi haftarah only where Hebcal lists one', async () => {

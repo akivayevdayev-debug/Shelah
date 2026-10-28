@@ -68,6 +68,10 @@ def _same(keywords, refs):
     return {keyword: list(refs) for keyword in keywords}
 
 
+# Plain candle-lighting phrases (no "Shabbat" in them).
+_PLAIN_CANDLE_KEYWORDS = ("candle lighting", "lighting candles", "light candles", "candlelighting",
+                          "hadlakat nerot", "hadlakas neiros", "הדלקת נרות")
+
 TOPIC_REFS = {
     # SHABBAT -- "shabbat" itself is only an umbrella (see UMBRELLA_KEYWORDS)
     **_same(("shabbat", "shabbos", "shabbes", "שבת"), [
@@ -82,6 +86,11 @@ TOPIC_REFS = {
     **_same(("electricity", "electric", "חשמל"), [*_oc(334), _mt("Sabbath", 12)]),
     **_same(("cook", "cooking", "בישול", "בשל"), _oc(318)),
     **_same(("shabbat candle", "shabbos candle", "נרות שבת"), _oc(263, 264)),
+    # SA OC 250:1: even an important person prepares for Shabbat himself.
+    **_same(("preparing for shabbat", "prepare for shabbat", "adam gadol", "adam hagadol",
+             "adam chashuv", "important person", "אדם גדול", "אדם חשוב"), _oc(250)),
+    # Plain "candle lighting" is Shabbat's unless the question is about Chanukah.
+    **_same(_PLAIN_CANDLE_KEYWORDS, _oc(263, 264)),
     **_same(("muktzeh", "muktzah", "muktze", "מוקצה"), _oc(308)),
     **_same(("carry", "carrying", "הוצאה"), _oc(301)),
     **_same(("kiddush", "קידוש"), _oc(271, 272)),
@@ -255,6 +264,7 @@ _AMBIGUOUS_KEYWORDS = frozenset({
 _SHABBAT_ONLY_KEYWORDS = frozenset({
     "cook", "cooking", "בישול", "בשל", "electricity", "electric", "חשמל", "writing",
     "carry", "carrying", "הוצאה", "muktzeh", "muktzah", "muktze", "מוקצה",
+    "adam gadol", "adam hagadol", "adam chashuv", "important person", "אדם גדול", "אדם חשוב",
 })
 
 _TORAH_CONTEXT_RE = re.compile(
@@ -266,6 +276,7 @@ _TORAH_CONTEXT_RE = re.compile(
     r"seder|chametz|megillah|shofar|lulav|etrog|sefaria|hashem|davening|daven)"
     r"|[֐-׿]"
 )
+_CHANUKAH_RE = re.compile(r"chanuk|hanuk|חנוכ")
 _SHABBAT_CONTEXT_RE = re.compile(
     r"(?<![a-z0-9'])(?:shabbat|shabbos|shabbes|sabbath|saturday|friday night)|שבת"
 )
@@ -397,6 +408,8 @@ def _keyword_matches(keyword, text, torah_context, on_shabbat):
         return None
     if keyword in _SHABBAT_ONLY_KEYWORDS and not on_shabbat:
         return None
+    if keyword in _PLAIN_CANDLE_KEYWORDS and _CHANUKAH_RE.search(text):
+        return None
     whole_pattern, partial_patterns = _MATCHERS[keyword]
     if whole_pattern.search(text):
         return "phrase" if " " in keyword else "word"
@@ -424,7 +437,10 @@ def _match_topic_refs(text):
     also bring the refs of "eruv". Empty when text names no topic."""
     lowered = str(text or "").lower().replace("’", "'").replace("‘", "'")
     torah_context = _TORAH_CONTEXT_RE.search(lowered) is not None
-    on_shabbat = _SHABBAT_CONTEXT_RE.search(lowered) is not None
+    # Plain candle lighting (not Chanukah) is about Shabbat too.
+    on_shabbat = _SHABBAT_CONTEXT_RE.search(lowered) is not None or (
+        any(phrase in lowered for phrase in _PLAIN_CANDLE_KEYWORDS)
+        and not _CHANUKAH_RE.search(lowered))
 
     phrases, words, umbrellas = [], [], []
     for keyword in TOPIC_REFS:

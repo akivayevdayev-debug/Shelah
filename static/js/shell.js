@@ -11891,13 +11891,23 @@ function hasParenthetical(text) {
             ].join(' ').trim(),
             dayHeaderClass: 'fc-col-header-cell',
             dayHeaderInnerClass: 'fc-col-header-cell-cushion',
-            // Markers are UTC midnights, so the weekday is the UTC one.
-            dayCellClass: (info) => [
-                'fc-daygrid-day',
-                `fc-day-${CALENDAR_WEEKDAY_CLASSES[info.date.getUTCDay()]}`,
-                info.isToday ? 'fc-day-today' : '',
-                info.isOther ? 'fc-day-other' : '',
-            ].join(' ').trim(),
+            // Markers are UTC midnights, so the weekday is the UTC one. The day
+            // kind and selection are here too: v7 rebuilds a cell's class list
+            // on every re-render (a language switch, say), which wiped the
+            // classes applyCalendarDayKind / markCalendarSelectedDay add by hand.
+            dayCellClass: (info) => {
+                const dow = info.date.getUTCDay();
+                const key = info.date.toISOString().slice(0, 10);
+                const kind = calendarDayKinds.get(key) || (dow === 6 ? 'shabbat' : null);
+                return [
+                    'fc-daygrid-day',
+                    `fc-day-${CALENDAR_WEEKDAY_CLASSES[dow]}`,
+                    info.isToday ? 'fc-day-today' : '',
+                    info.isOther ? 'fc-day-other' : '',
+                    kind ? `cal-day-${kind}` : '',
+                    key === calendarSelectedKey ? 'cal-day-selected' : '',
+                ].filter(Boolean).join(' ');
+            },
             dayCellTopClass: 'fc-daygrid-day-top',
             dayCellTopInnerClass: 'fc-daygrid-day-number',
             // Backend sends a fixed inline `color` per event (theme-agnostic) plus

@@ -55,8 +55,8 @@ test('installing twice returns the same API', async () => {
             assert.equal(typeof first[name], 'function', name);
         }
         assert.equal(first.isShowingAnswer(), false);
-        // "All" ("My community") is the site's community setting: Sephardi by default.
-        assert.deepEqual({ ...first.aiRoute() }, { minhag: 'Sefardic', mode: 'balanced' });
+        // "All" ("All communities") is the default: the AI draws on every community.
+        assert.deepEqual({ ...first.aiRoute() }, { minhag: 'All', mode: 'balanced' });
     } finally {
         page.close();
     }
@@ -341,14 +341,15 @@ test('a question creates the conversation and shows both turns, locked to its co
         assert.equal(page.$('#convSendBtn').disabled, true);
 
         await page.ask('When do we light candles?');
-        // "My community" locks the thread to the site's community setting (Sephardi by default).
-        assert.deepEqual(page.api.calls.filter(([name]) => name === 'create').map(([, options]) => options.minhag), ['Sefardic']);
+        // The default, "All communities", is sent as no single community.
+        assert.deepEqual(page.api.calls.filter(([name]) => name === 'create').map(([, options]) => options.minhag), [null]);
         assert.equal(turns(page).length, 2);
         assert.match(turns(page)[0].textContent, /When do we light candles\?/);
         assert.ok(turns(page)[1].querySelector('.conv-answer'));
         assert.match(page.text('#convTitle'), /When do we light candles\?/);
         assert.equal(page.$('#convInput').value, '');
         assert.equal(page.hidden('#convEmpty'), true);
+        // The fake server answers with its own Sefardic thread (c1).
         assert.match(page.text('#convLockLine'), /follow Sefardic practice/);
         assert.match(page.text('#convMenuMinhagLocked'), /locked for this conversation/);
         assert.equal(page.$('#convMenuBtn').dataset.locked, 'true');
@@ -726,7 +727,7 @@ test('a new conversation from the popover starts a fresh draft', async () => {
         await page.flush();
         assert.equal(page.store.getState().conversation, null);
         assert.equal(turns(page).length, 0);
-        assert.equal(page.store.getState().draftMinhag, 'Sefardic');
+        assert.equal(page.store.getState().draftMinhag, 'All');
         // The phone's search bar folds away so the fresh panel is not under it.
         assert.equal(collapsed, 1);
     } finally {
@@ -734,19 +735,15 @@ test('a new conversation from the popover starts a fresh draft', async () => {
     }
 });
 
-test("a new thread follows the site's community setting, live until its first question", async () => {
+test("a new thread draws on all communities, whatever the site's minhag", async () => {
     const page = await openAsk({ prefs: { minhag: 'ashkenazi' } });
     try {
-        assert.equal(page.store.getState().draftMinhag, 'Ashkenaz');
+        assert.equal(page.store.getState().draftMinhag, 'All');
         page.window.ShelahState.setMinhag('mizrahi');
         await page.flush();
-        assert.equal(page.store.getState().draftMinhag, 'Iraqi');
+        assert.equal(page.store.getState().draftMinhag, 'All');
         await page.ask('A question');
-        assert.deepEqual(page.api.calls.filter(([name]) => name === 'create').map(([, options]) => options.minhag), ['Iraqi']);
-        page.window.ShelahState.setMinhag('sephardi');
-        await page.flush();
-        assert.equal(page.store.getState().minhagLocked, true, 'an asked thread keeps its community');
-        assert.equal(page.store.getState().draftMinhag, 'Iraqi');
+        assert.deepEqual(page.api.calls.filter(([name]) => name === 'create').map(([, options]) => options.minhag), [null]);
     } finally {
         page.close();
     }
@@ -1372,7 +1369,8 @@ test('on a phone the panel is a bottom sheet; swiping it down minimises it to th
         await page.flush();
         assert.equal(panel(page).dataset.layout, 'mobile');
         assert.equal(panel(page).dataset.size, 'overlay');
-        assert.match(page.text('#convSubtitle'), /practice$/);
+        // The default draws on every community, so no "... practice" suffix.
+        assert.equal(page.text('#convSubtitle'), 'All communities');
 
         const grabber = page.$('.conv-grabber');
         // A short, slow drag springs back.

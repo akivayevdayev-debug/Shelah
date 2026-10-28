@@ -344,7 +344,7 @@
                                 </fieldset>
                             </div>
                             <template id="communityOptions">
-                                <option value="All" data-en="My community" data-he="הקהילה שלי">My community</option>
+                                <option value="All" data-en="All communities" data-he="כל הקהילות">All communities</option>
                                 <option value="Ashkenaz" data-en="Ashkenaz" data-he="אשכנז">Ashkenaz</option>
                                 <option value="Sefardic" data-en="Sefardic" data-he="ספרדי">Sefardic</option>
                                 <option value="Bukharian" data-en="Bukharian" data-he="בוכרי">Bukharian</option>

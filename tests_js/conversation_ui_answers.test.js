@@ -96,7 +96,7 @@ test('a search-bar question opens the overlay on a pending answer, then shows th
         assert.equal(turns(page)[1].getAttribute('aria-busy'), 'true');
         assert.equal(page.ui.isShowingAnswer(), true);
         // The search bar's own mode is what follow-ups and the URL use.
-        assert.deepEqual(plain(page.ui.aiRoute()), { minhag: 'Sefardic', mode: 'deep' });
+        assert.deepEqual(plain(page.ui.aiRoute()), { minhag: 'All', mode: 'deep' });
 
         release(answerData());
         const data = await pending;

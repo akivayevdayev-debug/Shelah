@@ -65,6 +65,43 @@ body.theme-dark {
     gap: 0;
 }
 
+/* The v7 theme sets its own tight line-heights, font sizes and margins on
+   these parts; these put back the v6 metrics the rest of this file assumes
+   (1.5 line-height, chip text at the chip's size, a 1px gap above a chip). */
+#calendarModal .fc .fc-toolbar-title {
+    width: 100%;
+    line-height: 1.5;
+}
+
+#calendarModal .fc .fc-button,
+#calendarModal .fc .fc-daygrid-day-number {
+    line-height: 1.5;
+}
+
+#calendarModal .fc .fc-col-header-cell-cushion {
+    margin: 0;
+    line-height: 1.5;
+}
+
+#calendarModal .fc .fc-daygrid-event {
+    margin: 1px 2px 0;
+    border-radius: 0.3rem;
+}
+
+/* v7 draws the prev/next chevrons as stroked SVGs (v6 used an icon font).
+   The site's dark theme fills every svg, which turned them into solid
+   triangles; they keep the button's own text colour. */
+.fc .fc-button svg {
+    fill: none;
+    color: inherit;
+}
+
+#calendarModal .fc .fc-event-main {
+    padding: 0;
+    font-size: inherit;
+    line-height: inherit;
+}
+
 /* Toolbar */
 .fc .fc-toolbar {
     align-items: center;

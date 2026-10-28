@@ -82,11 +82,6 @@ export const MINHAGIM = Object.freeze(["sephardi", "mizrahi", "ashkenazi"]);
 export const DEFAULT_MINHAG = "sephardi";
 export const MINHAG_CHANGE_EVENT = "shelah:minhagchange";
 
-// The AI's community lens for each minhag when the reader hasn't picked a
-// specific community in the chat settings ("Mizrahi" has long been an alias
-// of the Iraqi lens, backend/helpers.py COMMUNITY_ALIASES).
-const MINHAG_AI_LENS = Object.freeze({ sephardi: "Sefardic", mizrahi: "Iraqi", ashkenazi: "Ashkenaz" });
-
 export function normalizeMinhag(value) {
     const key = String(value ?? "").trim().toLowerCase();
     return MINHAGIM.includes(key) ? key : null;
@@ -131,11 +126,11 @@ export function onMinhagChange(listener) {
 }
 
 // The community lens /ask gets: the chat's own pick when it names one, else
-// the minhag's.
-export function aiCommunityLens(community, minhag = getMinhag()) {
+// "All" (every community). The reader's minhag shapes the siddur and the
+// calendar, not which communities the AI may draw on.
+export function aiCommunityLens(community) {
     const picked = String(community ?? "").trim();
-    if (picked && picked.toLowerCase() !== "all") return picked;
-    return MINHAG_AI_LENS[normalizeMinhag(minhag) || DEFAULT_MINHAG];
+    return picked && picked.toLowerCase() !== "all" ? picked : "All";
 }
 
 // The haftarah from one Hebcal `leyning` object: Hebcal only sends

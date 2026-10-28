@@ -4259,7 +4259,7 @@ html.theme-dark,
     fill: currentColor;
 }
 
-:is([data-theme="dark"], body.theme-dark) button svg,
+:is([data-theme="dark"], body.theme-dark) button:not(.fc-button) svg,
 :is([data-theme="dark"], body.theme-dark) [role="button"] svg:not(.cal-event-icon),
 :is([data-theme="dark"], body.theme-dark) .navigator-pane svg,
 :is([data-theme="dark"], body.theme-dark) .pulse-pane svg {
