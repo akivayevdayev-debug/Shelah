@@ -2142,15 +2142,21 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
     }
 }
 
+/* 36x20 track on the 4px grid; the row around it (.reader-toggle-row in
+   sidebar.css) is the 44px target. The off-state outline is --conv-edge, 3:1
+   against the panel (WCAG 1.4.11); on, the fill is --control-accent, the
+   same colour as a range slider's filled track. */
 .reader-switch {
     -webkit-appearance: none;
     appearance: none;
     position: relative;
-    width: 2.2rem;
-    height: 1.2rem;
-    border-radius: 9999px;
-    border: 1px solid #c4b9a4;
-    background: #e8dfd0;
+    flex: none;
+    width: 36px;
+    height: 20px;
+    margin: 0;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--conv-edge);
+    background: var(--ctrl-bg);
     transition: background var(--motion-dur-fast) var(--motion-ease-out), border-color var(--motion-dur-fast) var(--motion-ease-out);
     cursor: pointer;
 }
@@ -2158,14 +2164,18 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
 .reader-switch::after {
     content: "";
     position: absolute;
-    top: 0.1rem;
-    left: 0.12rem;
-    width: 0.9rem;
-    height: 0.9rem;
+    top: 1px;
+    left: 1px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     background: #fffaf2;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     transition: transform var(--motion-dur-fast) var(--motion-ease-out);
+}
+
+.reader-switch:focus-visible {
+    outline: none;
 }
 
 .reader-switch:checked {
@@ -2174,7 +2184,23 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
 }
 
 .reader-switch:checked::after {
-    transform: translateX(1rem);
+    transform: translateX(16px);
+}
+
+[dir="rtl"] .reader-switch::after {
+    left: auto;
+    right: 1px;
+}
+
+[dir="rtl"] .reader-switch:checked::after {
+    transform: translateX(-16px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reader-switch,
+    .reader-switch::after {
+        transition: none;
+    }
 }
 
 .sidebar-show-tab {
@@ -4698,7 +4724,7 @@ html.theme-dark,
 
 :is([data-theme="dark"], body.theme-dark) .reader-switch {
     background: var(--surface-pill);
-    border-color: var(--control-border);
+    border-color: var(--conv-edge);
 }
 
 :is([data-theme="dark"], body.theme-dark) .reader-switch::after {
