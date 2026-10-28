@@ -57,6 +57,7 @@ from backend.search import (
     async_search_halachipedia,
     async_search_hebrewbooks,
     async_search_wikipedia,
+    context_page,
 )
 from backend.utils.text_engine import format_source_citation
 
@@ -170,7 +171,12 @@ async def _h_search_responsa_external(arguments: dict, context: dict) -> dict:
         if withhold_injected(hit, source="search_responsa_external") is None:
             continue
         results.append(hit)
-    return {"query": query, "results": results[:max_results]}
+    results = results[:max_results]
+    # The pages the model is reading, as links on the live progress line.
+    ask_progress.sites(ask_progress.STAGE_THINKING, [
+        context_page(hit, "halachipedia") for hit in results
+    ])
+    return {"query": query, "results": results}
 
 
 # ── 4. get_zmanim ────────────────────────────────────────────────────────────

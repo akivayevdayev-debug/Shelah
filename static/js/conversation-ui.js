@@ -787,12 +787,26 @@ function applyStatus(host, view, l) {
     }
     const doneEl = host.querySelector("[data-status-done]");
     const doneText = view.done.map((id) => doneLabel(id, l)).join(" · ");
-    const doneKey = `${l}:${doneText}`;
+    const sites = view.sites || [];
+    const doneKey = `${l}:${doneText}:${sites.map((site) => site.url).join(" ")}`;
     if (doneEl.dataset.key !== doneKey) {
         doneEl.dataset.key = doneKey;
-        doneEl.dataset.empty = doneText ? "false" : "true";
-        doneEl.innerHTML = doneText ? `${phosphorIcon("check", { size: 14, weight: "bold" })}<span>${escapeText(doneText)}</span>` : "";
+        const filled = Boolean(doneText || sites.length);
+        doneEl.dataset.empty = filled ? "false" : "true";
+        doneEl.innerHTML = filled
+            ? `${phosphorIcon("check", { size: 14, weight: "bold" })}`
+                + (doneText ? `<span class="conv-status__steps">${escapeText(doneText)}</span>` : "")
+                + sites.map(siteLinkHtml).join("")
+            : "";
     }
+}
+
+// A web page the answer is reading, linked by its site's name (the page's
+// title is the tooltip). Only https links reach here (ask-progress.js).
+function siteLinkHtml(site) {
+    const title = site.title ? ` title="${escapeText(site.title)}"` : "";
+    return `<a class="conv-status__site" href="${escapeText(site.url)}" target="_blank" rel="noopener noreferrer"${title}>`
+        + `${escapeText(site.host)}${phosphorIcon("arrow-up-right", { size: 12, weight: "bold" })}</a>`;
 }
 
 function renderStatus(state, l) {

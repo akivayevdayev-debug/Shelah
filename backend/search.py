@@ -404,3 +404,28 @@ async def async_search_hebrewbooks(query):
     except Exception as e:
         logger.warning("[HebrewBooks Async Error] %s", e)
         return None
+
+
+_SITE_TAG_RE = re.compile(r"^\[(?:Halachipedia|HebrewBooks)\]\s*")
+
+
+def context_page(item, site=None):
+    """The web page a Halachipedia, Wikipedia or HebrewBooks lookup result came
+    from, as {"title", "url"} (for the live progress links), or None. A result
+    that carries its own "url" (HebrewBooks) uses it; otherwise `site`
+    ("halachipedia" or "wikipedia") says how to build it from the title."""
+    if not isinstance(item, dict):
+        return None
+    title = _SITE_TAG_RE.sub("", str(item.get("title") or "").strip()).strip()
+    url = str(item.get("url") or "").strip()
+    if url:
+        return {"title": title, "url": url}
+    if not title:
+        return None
+    if site == "halachipedia":
+        base = "https://halachipedia.com/index.php?title="
+    elif site == "wikipedia":
+        base = "https://en.wikipedia.org/wiki/"
+    else:
+        return None
+    return {"title": title, "url": base + quote(title.replace(" ", "_"), safe="_()")}

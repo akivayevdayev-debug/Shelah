@@ -818,6 +818,9 @@ body.search-loading .search-liftoff-underlay::before {
     transition-delay: 0s;
 }
 .search-live .conv-status__done[data-empty="true"] { display: none; }
+/* The card ignores the pointer so it never blocks the page under it; the
+   links to the pages being read are the exception. */
+.search-live[data-active="true"] .conv-status__site { pointer-events: auto; }
 
 /* Reduced motion: no turning. The halo is a still soft ring that fades in and
    out over 120ms (gentler, not none), like the other fades. The status card

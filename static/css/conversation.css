@@ -1204,6 +1204,28 @@ body.conv-modal-open {
 }
 .conv-status__done[data-empty="true"] { visibility: hidden; }
 .conv-status__done svg { flex: none; width: 14px; height: 14px; }
+/* The row holds one line: the finished steps give way (ellipsis) before the
+   links to the web pages being read do. */
+.conv-status__done { min-width: 0; white-space: nowrap; }
+.conv-status__steps { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.conv-status__site {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: var(--sp-1);
+    border-radius: var(--radius-sm);
+    color: var(--ink-primary);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+    text-underline-offset: 2px;
+    transition: text-decoration-color var(--motion-dur-fast, 150ms) var(--motion-ease-out, ease-out);
+}
+/* A 44px-tall hit area without growing the row. */
+.conv-status__site::after { content: ''; position: absolute; inset: -14px -4px; }
+.conv-status__site svg { width: 12px; height: 12px; }
+.conv-status__site:hover { text-decoration-color: currentColor; }
+.conv-status__site:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
 
 .conv-turn__status {
     display: flex;

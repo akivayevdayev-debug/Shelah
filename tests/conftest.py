@@ -207,6 +207,19 @@ async def fastapi_client():
         yield client
 
 
+@pytest.fixture(autouse=True)
+def _no_live_source_search(monkeypatch):
+    """The /ask source search (backend/source_search.py) finds nothing unless a
+    test gives it hits: its Sefaria calls would otherwise fail against the HTTP
+    mock and count as Sefaria outages in the health breaker."""
+    from backend import source_search
+
+    monkeypatch.setattr(source_search, "_run_searches", lambda queries: [])
+    source_search._cache.clear()
+    yield
+    source_search._cache.clear()
+
+
 # ─── Outbound HTTP mocking (autouse) ──────────────────────────────────────────
 
 @pytest.fixture(autouse=True)

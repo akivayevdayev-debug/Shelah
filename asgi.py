@@ -31,6 +31,7 @@ from backend.device_identity import (
 )
 from backend.utils.search_provider import get_halakhic_sources
 from backend import sefaria as _backend_sefaria
+from backend import source_search as _source_search
 from backend.data_service import ShelahEngine
 from backend.rag import _build_ask_tool_context, _retrieve_community_knowledge, _compose_answer_with_prefixes
 from backend.rag import _knowledge_rows_to_customs, RAG_TOP_KNOWLEDGE_ROWS, RAG_MEMORY_ROWS
@@ -143,8 +144,13 @@ async def _collect_primary_sources(
         *((question, context) if context else (question,)),
     )
     refs = primary_refs if isinstance(primary_refs, list) else []
-    ask_progress.detail(
-        ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs, count=len(refs))
+    # Sefaria's own search for the question's words runs while the keyword
+    # table's refs load; its best paragraphs join them, and all of them are
+    # then ordered by how well they match (backend/source_search.py).
+    search_task = asyncio.create_task(asyncio.to_thread(_source_search.search_refs, question, refs))
+    if refs:
+        ask_progress.detail(
+            ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs, count=len(refs))
 
     async def _load_one(ref: str) -> dict[str, Any] | None:
         engine = ShelahEngine()
@@ -156,8 +162,20 @@ async def _collect_primary_sources(
             return None
 
     results = await asyncio.gather(*[_load_one(ref) for ref in refs])
-    primary_sources = [s for s in results if s is not None]
-    return refs, primary_sources
+    try:
+        extra_refs = await search_task
+    except Exception as exc:
+        logger.debug("Source search failed: %s", exc)
+        extra_refs = []
+    if extra_refs:
+        ask_progress.detail(
+            ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS,
+            refs=extra_refs, count=len(extra_refs))
+        results += await asyncio.gather(*[_load_one(ref) for ref in extra_refs])
+    loaded = [s for s in results if s is not None]
+    primary_sources = _source_search.rank_sources(
+        question, loaded, optional_refs=extra_refs)[:_backend_sefaria.MAX_REFS]
+    return refs + extra_refs, primary_sources
 
 
 async def _build_tool_context() -> dict[str, Any]:
@@ -345,6 +363,14 @@ async def _within(stage: str, awaitable, default):
         return default
 
 
+def _report_used_context(halachipedia_list, wiki_list, has_customs) -> None:
+    """The live-progress steps for the lookups the answer really uses, with
+    links to the pages read (backend/ask_progress.used_context)."""
+    pages = [search.context_page(item, "halachipedia") for item in halachipedia_list]
+    pages += [search.context_page(item, "wikipedia") for item in wiki_list]
+    ask_progress.used_context(pages, has_customs)
+
+
 async def _collect_ask_async_context(
     question, canonical_lens, user_id, answer_language, bearer_token=None,
     retrieval_context=(),
@@ -360,39 +386,35 @@ async def _collect_ask_async_context(
     context ever pushed, so that chain cannot fall back to reading Flask's
     global `request` proxy the way Flask-side callers do.
     """
-    # Each lookup also reports to the optional live-progress stream
-    # (backend/ask_progress.py); with no stream bound that is a no-op.
+    # The live-progress stream (backend/ask_progress.py; a no-op with none
+    # bound) shows the source search while it runs. The lookups that may find
+    # nothing are reported after the gather, and only when their findings go
+    # into the answer (_report_used_context).
     # Earlier questions go in only when a guest follow-up has some, so every
     # other call is exactly what it was before they existed.
     primary_args = (question, retrieval_context) if retrieval_context else (question,)
-    # Which community's customs are being read, said as that step starts.
-    if canonical_lens and canonical_lens != "All":
-        ask_progress.detail(ask_progress.STAGE_CUSTOMS, ask_progress.DETAIL_COMMUNITY, community=canonical_lens)
     primary_task = asyncio.create_task(ask_progress.track(
         ask_progress.STAGE_SOURCES,
-        _within("primary", _collect_primary_sources(*primary_args), ([], []))))
-    halachipedia_task = asyncio.create_task(ask_progress.track(
-        ask_progress.STAGE_COMMENTARY,
-        _within("halachipedia", search.async_search_halachipedia(question), None)))
-    wiki_task = asyncio.create_task(ask_progress.track(
-        ask_progress.STAGE_COMMENTARY,
-        _within("wiki", search.async_search_wikipedia(question), None)))
-    knowledge_task = asyncio.create_task(ask_progress.track(
-        ask_progress.STAGE_CUSTOMS,
+        _within("primary", _collect_primary_sources(*primary_args), ([], [])),
+        found=lambda result: bool(result and result[1])))
+    halachipedia_task = asyncio.create_task(
+        _within("halachipedia", search.async_search_halachipedia(question), None))
+    wiki_task = asyncio.create_task(
+        _within("wiki", search.async_search_wikipedia(question), None))
+    knowledge_task = asyncio.create_task(
         _within("knowledge", asyncio.to_thread(
             _retrieve_community_knowledge,
             question,
             canonical_lens,
             RAG_TOP_KNOWLEDGE_ROWS,
-        ), [])))
-    memory_task = asyncio.create_task(ask_progress.track(
-        ask_progress.STAGE_CUSTOMS,
+        ), []))
+    memory_task = asyncio.create_task(
         _within("memory", asyncio.to_thread(
             _fetch_user_memory_summaries,
             user_id,
             RAG_MEMORY_ROWS,
             bearer_token,
-        ), [])))
+        ), []))
     # Reported (with its topic) only when the question is about a time; every
     # answer still gets the date and zmanim, the step is just not announced.
     tool_context_task = asyncio.create_task(ask_progress.track_times(
@@ -428,6 +450,7 @@ async def _collect_ask_async_context(
         not has_primary_sources and not has_customs and not has_whitelisted_external
     )
     wiki_context_for_ai = wiki_list if use_tertiary_web_context else []
+    _report_used_context(halachipedia_list, wiki_context_for_ai, has_customs)
 
     return {
         "primary_sources": primary_sources,

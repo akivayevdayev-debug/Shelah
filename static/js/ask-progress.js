@@ -8,7 +8,11 @@
 // (ai-service.js and conversation-api.js).
 //
 // Wire events:
-//   { type: "stage", stage, state: "start" | "done" }
+//   { type: "stage", stage, state: "start" | "done" | "none" }
+//        "none": the step ran but found nothing the answer uses; it is dropped.
+//   { type: "site", stage, site: { title, url } }
+//        a web page the answer reads, shown as a link (https only, at most
+//        MAX_SITES, one per address).
 //   { type: "detail", stage, detail: { kind, ...params } | null }
 //        what a running step is doing right now; null when that work ends.
 //        Kinds are a closed set (refs, community, times, tool, step); this module
@@ -51,10 +55,43 @@ const ACTIVE_PRIORITY = Object.freeze(["thinking", "sources", "commentary", "cus
 export const STAGE_IDS = Object.freeze(Object.keys(STAGES));
 
 export function createProgress() {
-    return { order: [], status: {}, details: {} };
+    return { order: [], status: {}, details: {}, sites: [] };
 }
 
 const STEP_STATE = new Map([["start", "active"], ["done", "done"]]);
+
+export const MAX_SITES = 6;
+
+// The page as {title, url, host}, or null unless it is a plain https link.
+function cleanSite(site) {
+    if (!site || typeof site !== "object" || typeof site.url !== "string") return null;
+    let parsed;
+    try { parsed = new URL(site.url); } catch { return null; }
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password) return null;
+    const host = parsed.hostname.replace(/^www\./, "");
+    const title = typeof site.title === "string" ? site.title.trim().slice(0, 120) : "";
+    return { title, url: parsed.href, host };
+}
+
+function applySite(state, event) {
+    const site = cleanSite(event.site);
+    const sites = state.sites || [];
+    if (!site || sites.length >= MAX_SITES || sites.some((s) => s.url === site.url)) return state;
+    return { ...state, sites: [...sites, site] };
+}
+
+// A step that ran and found nothing: gone, as if it never started.
+function dropStage(state, stage) {
+    if (!Object.hasOwn(state.status, stage)) return state;
+    const status = { ...state.status };
+    delete status[stage];
+    return {
+        ...state,
+        order: state.order.filter((id) => id !== stage),
+        status,
+        details: withoutDetail(state.details, stage),
+    };
+}
 
 const DETAIL_KINDS = Object.freeze(["refs", "community", "times", "tool", "step"]);
 
@@ -80,10 +117,13 @@ function applyDetail(state, event) {
 // Pure: returns a new state, or the same object when the event changes nothing.
 export function applyProgressEvent(state, event) {
     if (event?.type === "detail") return applyDetail(state, event);
+    if (event?.type === "site") return applySite(state, event);
     if (event?.type !== "stage" || !Object.hasOwn(STAGES, event.stage)) return state;
+    if (event.state === "none") return dropStage(state, event.stage);
     const next = STEP_STATE.get(event.state);
     if (!next || state.status[event.stage] === next) return state;
     return {
+        ...state,
         order: state.order.includes(event.stage) ? state.order : [...state.order, event.stage],
         status: { ...state.status, [event.stage]: next },
         // A step that has finished is no longer doing the thing it described.
@@ -93,19 +133,21 @@ export function applyProgressEvent(state, event) {
 
 // What the status line should show: `active` is the step to name (null before
 // anything has started), `detail` what that step is doing right now (or null),
-// `done` the finished steps in the order they began.
+// `done` the finished steps in the order they began, `sites` the web pages
+// read so far ({title, url, host}).
 export function progressView(state) {
     const done = state.order.filter((id) => state.status[id] === "done" && STAGES[id].done);
+    const sites = state.sites || [];
     const running = ACTIVE_PRIORITY.filter((id) => state.status[id] === "active");
     // The model call outranks everything. Among the lookups, one that can say
     // exactly what it is doing beats one that can only say its name.
     const shown = running[0] === "thinking"
         ? "thinking"
         : (running.find((id) => state.details[id]) || running[0] || null);
-    if (shown) return { active: shown, detail: state.details[shown] || null, done };
+    if (shown) return { active: shown, detail: state.details[shown] || null, done, sites };
     // Everything reported has finished but no answer yet (between the last
     // lookup and the model call): the model is the only thing left to wait on.
-    return { active: state.order.length ? "thinking" : null, detail: state.details.thinking || null, done };
+    return { active: state.order.length ? "thinking" : null, detail: state.details.thinking || null, done, sites };
 }
 
 // Identity of what the line says, so a caller redraws only when it changes.

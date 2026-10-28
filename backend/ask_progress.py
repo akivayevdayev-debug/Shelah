@@ -21,6 +21,12 @@ Design constraints:
 * Steps that fan out into several lookups (Halachipedia and Wikipedia are one
   "commentary" step) are reference-counted, so the client sees one start when
   the first lookup begins and one done when the last one ends.
+* A step is shown only for work the answer really uses. A lookup that may
+  find nothing (Halachipedia, Wikipedia, community customs) is not announced
+  while it runs; once the context for the model is settled, used() reports
+  the ones whose findings went in, with the web pages they read (a `site`
+  event the client turns into a link). A step that ran but found nothing
+  ends as "none", and the client drops it.
 * A step can also say exactly what it is doing right now ("Reading Shulchan
   Arukh, Orach Chayim 261", "Checking sunset and nightfall for Shabbat
   times"). That is a separate `detail` event with a closed vocabulary of
@@ -70,6 +76,11 @@ STEP_SECOND_MODEL = "second_model"  # the first model failed; asking another
 STEP_SECOND_LOOK = "second_look"    # the answer is being checked once more
 STEPS = frozenset({STEP_LONG, STEP_RETRY, STEP_SECOND_MODEL, STEP_SECOND_LOOK})
 
+# Web pages reported per step (`site` events), and how long their fields may be.
+MAX_SITES = 6
+MAX_SITE_URL_CHARS = 500
+MAX_SITE_TITLE_CHARS = 120
+
 NDJSON_MIMETYPE = "application/x-ndjson"
 
 
@@ -90,7 +101,9 @@ class ProgressReporter:
                 return
             self._deliver({"type": "stage", "stage": stage, "state": "start"})
 
-    def end(self, stage: str) -> None:
+    def end(self, stage: str, empty: bool = False) -> None:
+        """`empty`: the step found nothing the answer uses, so the client drops
+        it instead of listing it as done."""
         with self._lock:
             depth = self._depth.get(stage, 0)
             if depth <= 0:
@@ -98,7 +111,11 @@ class ProgressReporter:
             self._depth[stage] = depth - 1
             if depth > 1:
                 return
-            self._deliver({"type": "stage", "stage": stage, "state": "done"})
+            self._deliver({"type": "stage", "stage": stage, "state": "none" if empty else "done"})
+
+    def event(self, event: dict[str, Any]) -> None:
+        with self._lock:
+            self._deliver(event)
 
     def detail(self, stage: str, detail: dict[str, Any] | None) -> None:
         """What `stage` is doing right now; None clears it. Not reference
@@ -152,6 +169,49 @@ def end(stage: str) -> None:
     reporter = _reporter.get()
     if reporter is not None and stage in STAGES:
         reporter.end(stage)
+
+
+def _clean_site(page: Any) -> dict[str, str] | None:
+    """{"title", "url"} for a web page the answer reads, or None when it is not
+    a plain https link (the client renders it as a link, so nothing else may
+    pass)."""
+    if not isinstance(page, dict):
+        return None
+    url = str(page.get("url") or "").strip()
+    if not url.startswith("https://") or len(url) > MAX_SITE_URL_CHARS or any(ch.isspace() for ch in url):
+        return None
+    title = " ".join(str(page.get("title") or "").split())[:MAX_SITE_TITLE_CHARS]
+    return {"title": title, "url": url}
+
+
+def sites(stage_id: str, pages: Any) -> None:
+    """Report the web pages `stage_id` read, one `site` event each (at most
+    MAX_SITES). A no-op with no stream bound."""
+    reporter = _reporter.get()
+    if reporter is None or stage_id not in STAGES or not isinstance(pages, (list, tuple)):
+        return
+    cleaned = [site for site in (_clean_site(page) for page in pages) if site][:MAX_SITES]
+    for site in cleaned:
+        reporter.event({"type": "site", "stage": stage_id, "site": site})
+
+
+def used(stage_id: str, pages: Any = ()) -> None:
+    """A lookup whose findings go into the answer, reported once it is known
+    to be used: its web pages, then the step as finished."""
+    sites(stage_id, pages)
+    begin(stage_id)
+    end(stage_id)
+
+
+def used_context(commentary_pages: Any, customs_used: bool) -> None:
+    """Report the background lookups whose findings go into the answer: the
+    Halachipedia / Wikipedia pages (`commentary_pages`, [{"title", "url"}])
+    and the community customs. Nothing for the ones left out."""
+    pages = [page for page in (commentary_pages or ()) if page]
+    if pages:
+        used(STAGE_COMMENTARY, pages)
+    if customs_used:
+        used(STAGE_CUSTOMS)
 
 
 def _clean_detail(kind: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -210,10 +270,19 @@ TIMES_PARASHA = "parasha"
 TIMES_HOLIDAY = "holiday"
 TIMES_TOPICS = (TIMES_SHABBAT, TIMES_ZMANIM, TIMES_OMER, TIMES_PARASHA, TIMES_HOLIDAY)
 
+# A question names a moment (Shabbat, candle lighting, a holiday) without asking
+# about its time ("who should light the candles?", "how many candles on
+# Chanukah?"): the lookup then is not part of the answer, so nothing is shown.
+_WHEN = (
+    r"\b(?:when|what time|times?|until|till|starts?|begins?|ends?|finish(?:es)?|how long|how late"
+    r"|how early|minutes|tonight|today|this week|this year|next)\b"
+)
+_SHABBAT_MOMENT = (
+    r"(?:candle[\s-]?light\w*|light(?:ing)? (?:the )?candles|havdal\w*|motz[ae]i|kabbalat shabbat"
+    r"|shabbat|shabbos|sabbath|yom tov|erev)"
+)
 _SHABBAT_TIMING = re.compile(
-    r"candle[\s-]?light|havdal|motz[ae]i|kabbalat shabbat"
-    r"|(?:shabbat|shabbos|sabbath|yom tov|erev)\b.*\b(?:when|time|until|till|before|after|start|begin|end|finish|over|out)\b"
-    r"|\b(?:when|time|until|till|before|after|start|begin|end|finish|over|out)\b.*\b(?:shabbat|shabbos|sabbath|yom tov)\b",
+    rf"{_SHABBAT_MOMENT}.*{_WHEN}|{_WHEN}.*{_SHABBAT_MOMENT}",
     re.IGNORECASE,
 )
 _ZMANIM = re.compile(
@@ -223,9 +292,12 @@ _ZMANIM = re.compile(
 )
 _OMER = re.compile(r"\bomer\b", re.IGNORECASE)
 _PARASHA = re.compile(r"parash(?:a|ah)\b|\bparsha\b|weekly (?:torah )?portion|torah portion", re.IGNORECASE)
+_HOLIDAY_NAME = (
+    r"(?:rosh chodesh|rosh hashana\w*|yom kippur|sukkot|simchat torah|chanukah|hanukkah|\bpurim\b|pesach|passover"
+    r"|shavuot|tisha b'?av|tu b'?shvat|lag b'?omer|fast day|\bholiday)"
+)
 _HOLIDAY = re.compile(
-    r"rosh chodesh|rosh hashana|yom kippur|sukkot|simchat torah|chanukah|hanukkah|\bpurim\b|pesach|passover"
-    r"|shavuot|tisha b'?av|tu b'?shvat|lag b'?omer|fast day|hebrew date|what day is|\bholiday\b",
+    rf"hebrew date|what day is|{_HOLIDAY_NAME}.*{_WHEN}|{_WHEN}.*{_HOLIDAY_NAME}",
     re.IGNORECASE,
 )
 _TIMES_PATTERNS = (
@@ -261,23 +333,51 @@ def times_stage(question: str | None):
         yield
 
 
+class _StageScope:
+    """What `with stage(...) as scope:` yields: `scope.empty()` says the step
+    found nothing the answer uses."""
+
+    def __init__(self) -> None:
+        self.found_nothing = False
+
+    def empty(self) -> None:
+        self.found_nothing = True
+
+
 @contextmanager
 def stage(stage_id: str):
-    """`with ask_progress.stage("sources"):` around a blocking step."""
+    """`with ask_progress.stage("sources") as scope:` around a blocking step;
+    call `scope.empty()` when it found nothing, and the client drops it."""
     begin(stage_id)
+    scope = _StageScope()
     try:
-        yield
+        yield scope
     finally:
-        end(stage_id)
+        reporter = _reporter.get()
+        if reporter is not None and stage_id in STAGES:
+            reporter.end(stage_id, empty=scope.found_nothing)
 
 
-async def track(stage_id: str, awaitable):
-    """Await `awaitable` as one progress step."""
+async def track(stage_id: str, awaitable, found: Callable[[Any], bool] | None = None):
+    """Await `awaitable` as one progress step. With `found`, a result it calls
+    empty ends the step as "none", so the client drops it."""
     begin(stage_id)
+    result = None
     try:
-        return await awaitable
+        result = await awaitable
+        return result
     finally:
-        end(stage_id)
+        empty = found is not None and not _safe_found(found, result)
+        reporter = _reporter.get()
+        if reporter is not None and stage_id in STAGES:
+            reporter.end(stage_id, empty=empty)
+
+
+def _safe_found(found: Callable[[Any], bool], result: Any) -> bool:
+    try:
+        return bool(found(result))
+    except Exception:  # noqa: BLE001 -- progress is best-effort by design
+        return True
 
 
 async def track_times(question: str | None, awaitable):

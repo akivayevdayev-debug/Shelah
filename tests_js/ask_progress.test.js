@@ -56,6 +56,64 @@ test('events build up an ordered state, ignoring duplicates and unknown steps', 
     assert.equal(unchanged, state, 'an event that changes nothing returns the same object');
 });
 
+const none = (stage) => ({ type: 'stage', stage, state: 'none' });
+const site = (url, title = 'Page') => ({ type: 'site', stage: 'commentary', site: { title, url } });
+
+test('a step that found nothing is dropped as if it never ran', async () => {
+    const ns = await load();
+    const state = apply(ns, [start('sources'), none('sources')]);
+    assert.deepEqual(state.order, []);
+});
+
+test('a dropped step is not listed as finished', async () => {
+    const ns = await load();
+    const state = apply(ns, [start('sources'), start('commentary'), none('sources'), done('commentary')]);
+    assert.deepEqual(ns.progressView(state).done, ['commentary']);
+});
+
+test('none for a step that never started changes nothing', async () => {
+    const ns = await load();
+    const state = ns.createProgress();
+    assert.equal(ns.applyProgressEvent(state, none('customs')), state);
+});
+
+test('a site arrives as a link with its host', async () => {
+    const ns = await load();
+    const state = apply(ns, [site('https://www.halachipedia.com/index.php?title=X', 'X')]);
+    assert.deepEqual(ns.progressView(state).sites, [{ title: 'X', url: 'https://www.halachipedia.com/index.php?title=X', host: 'halachipedia.com' }]);
+});
+
+test('the same page is linked once', async () => {
+    const ns = await load();
+    const state = apply(ns, [site('https://a.org/x'), site('https://a.org/x')]);
+    assert.equal(state.sites.length, 1);
+});
+
+for (const url of ['http://a.org/x', 'javascript:alert(1)', 'https://user:pw@a.org/', 'not a url']) {
+    test(`a site that is not a plain https link is ignored: ${url}`, async () => {
+        const ns = await load();
+        assert.deepEqual(apply(ns, [site(url)]).sites, []);
+    });
+}
+
+test('at most MAX_SITES pages are linked', async () => {
+    const ns = await load();
+    const state = apply(ns, Array.from({ length: 9 }, (_, i) => site(`https://a.org/${i}`)));
+    assert.equal(state.sites.length, ns.MAX_SITES);
+});
+
+test('a site keeps the steps already reported', async () => {
+    const ns = await load();
+    const state = apply(ns, [start('sources'), site('https://a.org/x')]);
+    assert.equal(state.status.sources, 'active');
+});
+
+test('a step event keeps the sites already linked', async () => {
+    const ns = await load();
+    const state = apply(ns, [site('https://a.org/x'), start('sources')]);
+    assert.equal(state.sites.length, 1);
+});
+
 test('a step can run again after it finished', async () => {
     const ns = await load();
     const state = apply(ns, [start('commentary'), done('commentary'), start('commentary')]);
@@ -65,7 +123,7 @@ test('a step can run again after it finished', async () => {
 
 test('before anything starts there is nothing to name', async () => {
     const ns = await load();
-    assert.deepEqual(ns.progressView(ns.createProgress()), { active: null, detail: null, done: [] });
+    assert.deepEqual(ns.progressView(ns.createProgress()), { active: null, detail: null, done: [], sites: [] });
     assert.equal(ns.activeLabel(null, 'en'), 'Getting started');
     assert.equal(ns.activeLabel(null, 'he'), 'מתחילים');
 });
@@ -154,7 +212,7 @@ test('details that change nothing, or that the page has no words for, return the
 test('a detail may arrive before its step starts, as the times topic does', async () => {
     const ns = await load();
     const state = apply(ns, [detail('times', { kind: 'times', topic: 'shabbat' }), start('times')]);
-    assert.deepEqual(ns.progressView(state), { active: 'times', detail: { kind: 'times', topic: 'shabbat' }, done: [] });
+    assert.deepEqual(ns.progressView(state), { active: 'times', detail: { kind: 'times', topic: 'shabbat' }, done: [], sites: [] });
 });
 
 test('a step that can say what it is doing outranks a lookup that only has a name; the model call outranks both', async () => {
@@ -177,7 +235,7 @@ test('a step that can say what it is doing outranks a lookup that only has a nam
 test('between the last lookup and the model call the model\'s own detail, if any, still shows', async () => {
     const ns = await load();
     const state = apply(ns, [start('sources'), done('sources'), detail('thinking', toolOf('web_search'))]);
-    assert.deepEqual(ns.progressView(state), { active: 'thinking', detail: toolOf('web_search'), done: ['sources'] });
+    assert.deepEqual(ns.progressView(state), { active: 'thinking', detail: toolOf('web_search'), done: ['sources'], sites: [] });
 });
 
 test('viewKey changes when the step or what it is doing changes, and only then', async () => {

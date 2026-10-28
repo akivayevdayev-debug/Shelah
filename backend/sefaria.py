@@ -291,6 +291,7 @@ _PARTIAL_MATCH_WORDS = frozenset({
 })
 
 _MAX_REFS = 7  # Max 7 refs to balance coverage and token cost
+MAX_REFS = _MAX_REFS  # the same cap, for callers that add searched refs (backend/source_search.py)
 
 
 def get_daily_study():

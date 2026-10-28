@@ -1005,7 +1005,7 @@ test('send: the server\'s steps land in state.progress, starting fresh for every
 
     const sending = store.send('Q?');
     await new Promise((r) => setImmediate(r));
-    assert.deepEqual(store.getState().progress, { order: [], status: {}, details: {} });
+    assert.deepEqual(store.getState().progress, { order: [], status: {}, details: {}, sites: [] });
 
     sink(stage('sources', 'start'));
     sink(stage('sources', 'done'));
@@ -1015,6 +1015,7 @@ test('send: the server\'s steps land in state.progress, starting fresh for every
         order: ['sources', 'thinking'],
         status: { sources: 'done', thinking: 'active' },
         details: {},
+        sites: [],
     });
 
     gate.resolve();
@@ -1024,7 +1025,7 @@ test('send: the server\'s steps land in state.progress, starting fresh for every
     // The next send does not inherit the previous answer's steps.
     const second = store.send('again');
     await new Promise((r) => setImmediate(r));
-    assert.deepEqual(store.getState().progress, { order: [], status: {}, details: {} });
+    assert.deepEqual(store.getState().progress, { order: [], status: {}, details: {}, sites: [] });
     gate.resolve();
     await second;
 });
@@ -1078,7 +1079,7 @@ test('steps from an answer the user has since left are dropped', async () => {
     store.startNew({ minhag: 'Persian' });
     sink(stage('sources', 'start'));
 
-    assert.deepEqual(store.getState().progress, { order: [], status: {}, details: {} });
+    assert.deepEqual(store.getState().progress, { order: [], status: {}, details: {}, sites: [] });
     gate.resolve();
     await sending;
 });

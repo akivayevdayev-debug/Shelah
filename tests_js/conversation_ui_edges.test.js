@@ -209,6 +209,68 @@ test('a step that changes at once is held back until the one before it has been 
     }
 });
 
+// --- web pages being read ------------------------------------------------------
+
+async function pageReading(events) {
+    let emit;
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    const page = await openConversationPage({
+        signedIn: true,
+        api: {
+            askInConversation: async (id, { question }, hooks) => {
+                emit = hooks.onProgress;
+                await gate;
+                return {
+                    user_message: { id: 'u1', role: 'user', content: question, status: 'complete' },
+                    assistant_message: { id: 'a1', role: 'assistant', content: 'Done.', status: 'complete', citations: [] },
+                    conversation: { id, title: question, minhag: 'All' },
+                };
+            },
+        },
+    });
+    await page.ui.open({ fresh: true });
+    await page.flush();
+    const sending = page.ask('Is this gum kosher?');
+    await page.flush();
+    events.forEach((event) => emit(event));
+    await page.flush();
+    return { page, finish: async () => { release(); await sending; page.close(); } };
+}
+
+const OU = { type: 'site', stage: 'thinking', site: { title: 'OU Kosher', url: 'https://www.oukosher.org/gum' } };
+
+test('a web page the answer reads is linked under the status line by its site', async () => {
+    const { page, finish } = await pageReading([OU]);
+    try {
+        assert.equal(page.document.querySelector('[data-status-done] a').getAttribute('href'), 'https://www.oukosher.org/gum');
+    } finally {
+        await finish();
+    }
+});
+
+test('the link is named by its site and opens in a new tab', async () => {
+    const { page, finish } = await pageReading([OU]);
+    try {
+        const link = page.document.querySelector('[data-status-done] a');
+        assert.deepEqual([link.textContent, link.target, link.rel], ['oukosher.org', '_blank', 'noopener noreferrer']);
+    } finally {
+        await finish();
+    }
+});
+
+test('a step that found nothing never shows as finished', async () => {
+    const { page, finish } = await pageReading([
+        { type: 'stage', stage: 'sources', state: 'start' },
+        { type: 'stage', stage: 'sources', state: 'none' },
+    ]);
+    try {
+        assert.equal(page.document.querySelector('[data-status-done]').dataset.empty, 'true');
+    } finally {
+        await finish();
+    }
+});
+
 // --- notices ------------------------------------------------------------------
 
 test('a conversation that would not load offers Retry, which opens it again', async () => {

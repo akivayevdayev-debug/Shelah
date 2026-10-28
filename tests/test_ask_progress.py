@@ -349,7 +349,9 @@ class TestCollectContextReportsSteps:
         # Stubs that answer instantly can open and close a step more than
         # once (its second lookup starts after its first already finished), so
         # compare first appearances, not raw counts.
-        assert list(dict.fromkeys(started)) == ["sources", "commentary", "customs", "times"]
+        # Halachipedia is reported once the context is settled (it is used);
+        # no customs were found, so that step never shows.
+        assert list(dict.fromkeys(started)) == ["sources", "times", "commentary"]
         assert set(started) == set(done)
         # No step is left open: every start has a matching done.
         for stage in set(started):
@@ -363,7 +365,7 @@ class TestCollectContextReportsSteps:
         finally:
             ask_progress.unbind(token)
         stages = {e["stage"] for e in events if e["type"] == "stage"}
-        assert stages == {"sources", "commentary", "customs"}
+        assert stages == {"sources", "commentary"}
 
     async def test_the_times_step_names_the_kind_of_time_before_it_starts(self, stubbed):
         events = []
@@ -379,37 +381,50 @@ class TestCollectContextReportsSteps:
         first_times = next(i for i, e in enumerate(events) if e.get("stage") == "times")
         assert events[first_times]["type"] == "detail"
 
-    async def test_a_community_lens_is_named_as_the_customs_step_starts(self, stubbed):
+    async def _events(self, question="q", lens="All"):
         events = []
         token = ask_progress.bind(events.append)
         try:
-            await asgi._collect_ask_async_context("q", "Sephardi", None, "en")
+            await asgi._collect_ask_async_context(question, lens, None, "en")
         finally:
             ask_progress.unbind(token)
-        assert {"type": "detail", "stage": "customs", "detail": {"kind": "community", "community": "Sephardi"}} in events
+        return events
 
-    async def test_no_lens_means_no_community_detail(self, stubbed):
-        events = []
-        token = ask_progress.bind(events.append)
-        try:
-            await asgi._collect_ask_async_context("q", "All", None, "en")
-        finally:
-            ask_progress.unbind(token)
-        assert not [e for e in events if e["type"] == "detail" and e["stage"] == "customs"]
+    async def test_customs_found_are_reported_as_a_finished_step(self, stubbed, monkeypatch):
+        row = {"id": "1", "community_name": "Sephardi", "topic": "t", "halakhic_source": "SA", "content": "c"}
+        monkeypatch.setattr(asgi, "_retrieve_community_knowledge", lambda *a, **k: [row])
+        events = await self._events(lens="Sephardi")
+        assert {"type": "stage", "stage": "customs", "state": "done"} in events
 
-    async def test_a_timed_out_lookup_still_closes_its_step(self, stubbed, monkeypatch):
+    async def test_customs_that_found_nothing_are_never_shown(self, stubbed):
+        events = await self._events(lens="Sephardi")
+        assert not [e for e in events if e.get("stage") == "customs"]
+
+    async def test_the_halachipedia_page_read_is_sent_as_a_link(self, stubbed):
+        events = await self._events()
+        site = {"title": "Shabbat", "url": "https://halachipedia.com/index.php?title=Shabbat"}
+        assert {"type": "site", "stage": "commentary", "site": site} in events
+
+    async def test_a_wikipedia_page_the_answer_does_not_use_is_not_linked(self, stubbed):
+        events = await self._events()
+        assert not [e for e in events if e["type"] == "site" and "wikipedia" in e["site"]["url"]]
+
+    async def test_a_timed_out_lookup_is_not_shown(self, stubbed, monkeypatch):
         async def hung(question):
             await asyncio.sleep(30)
 
         monkeypatch.setattr(asgi.search, "async_search_halachipedia", hung)
         monkeypatch.setitem(asgi._ASK_CONTEXT_TIMEOUT_SECONDS, "halachipedia", 0.05)
-        events = []
-        token = ask_progress.bind(events.append)
-        try:
-            await asgi._collect_ask_async_context("q", "All", None, "en")
-        finally:
-            ask_progress.unbind(token)
-        assert {"type": "stage", "stage": "commentary", "state": "done"} in events
+        events = await self._events()
+        assert not [e for e in events if e.get("stage") == "commentary"]
+
+    async def test_a_source_search_that_found_nothing_ends_as_none(self, stubbed, monkeypatch):
+        async def nothing(question):
+            return [], []
+
+        monkeypatch.setattr(asgi, "_collect_primary_sources", nothing)
+        events = await self._events()
+        assert {"type": "stage", "stage": "sources", "state": "none"} in events
 
 
 class TestAskStreamRoute:

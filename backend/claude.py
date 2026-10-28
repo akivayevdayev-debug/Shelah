@@ -3279,6 +3279,7 @@ def _web_second_pass_sync(first, started, answer_again, answer_language):
         found = web_lookup.lookup_sync(query, answer_language)
     if not found:
         return _finish_web_lookup(first, query, None)
+    ask_progress.sites(ask_progress.STAGE_THINKING, found.get("sources"))
     second = answer_again(found)
     if second.get("error"):
         return _finish_web_lookup(first, query, None)
@@ -3830,6 +3831,7 @@ async def _web_second_pass_async(first, started, answer_again, answer_language):
         found = await web_lookup.lookup_async(query, answer_language)
     if not found:
         return _finish_web_lookup(first, query, None)
+    ask_progress.sites(ask_progress.STAGE_THINKING, found.get("sources"))
     second = await answer_again(found)
     if second.get("error"):
         return _finish_web_lookup(first, query, None)

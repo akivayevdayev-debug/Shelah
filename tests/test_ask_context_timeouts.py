@@ -16,7 +16,6 @@ import pytest
 
 import app as flask_app_module
 import asgi
-from backend import ask_progress
 
 
 async def _sleeps(seconds, value):
@@ -142,42 +141,3 @@ class TestSyncContextOverlapsStages:
         assert order.index("primary") == len(order) - 1
         assert len([o for o in order if o.startswith("submit:")]) == 4
 
-
-class TestProgressTracked:
-    """The sync route reports each secondary lookup as a live-progress step
-    without changing what it submits to the pool."""
-
-    def test_keeps_the_wrapped_lookups_name(self):
-        def get_wiki(question):
-            return question
-
-        assert flask_app_module._progress_tracked("commentary", get_wiki).__name__ == "get_wiki"
-
-    def test_reports_the_step_around_the_call_and_passes_arguments_through(self):
-        events = []
-        token = ask_progress.bind(events.append)
-        try:
-            out = flask_app_module._progress_tracked("commentary", lambda q, n=1: (q, n))("x", n=2)
-        finally:
-            ask_progress.unbind(token)
-
-        assert out == ("x", 2)
-        assert [(e["stage"], e["state"]) for e in events] == [("commentary", "start"), ("commentary", "done")]
-
-    def test_ends_the_step_when_the_lookup_raises(self):
-        def boom():
-            raise RuntimeError("upstream down")
-
-        events = []
-        tracked = flask_app_module._progress_tracked("customs", boom)
-        token = ask_progress.bind(events.append)
-        try:
-            with pytest.raises(RuntimeError, match="upstream down"):
-                tracked()
-        finally:
-            ask_progress.unbind(token)
-
-        assert [e["state"] for e in events] == ["start", "done"]
-
-    def test_is_silent_when_no_request_is_listening(self):
-        assert flask_app_module._progress_tracked("customs", lambda: "ok")() == "ok"

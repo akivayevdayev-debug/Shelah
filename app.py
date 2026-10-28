@@ -14,7 +14,6 @@ How to navigate this file:
 """
 
 import asyncio
-import functools
 import json
 import re
 from concurrent.futures import ThreadPoolExecutor
@@ -33,7 +32,8 @@ from backend.data_service import ShelahEngine
 from backend import sefaria
 from backend import claude
 from backend import ask_pipeline
-from backend import ask_progress, web_lookup
+from backend import ask_progress, source_search, web_lookup
+from backend import search as _backend_search
 from backend.ai_notes import record_ai_note
 from backend import cost_gates
 from backend import page_meta
@@ -1542,13 +1542,18 @@ def _ask_question_prayer_payload(question, mode, answer_language, canonical_lens
     }
 
 
+def _primary_source_limit():
+    """ASK_PRIMARY_SOURCE_LIMIT: 4 by default, for speed; never below 1 or above 8."""
+    return max(1, min(_env_int("ASK_PRIMARY_SOURCE_LIMIT", 4), 8))
+
+
 def _primary_ref_candidates(question, context):
     """The refs worth fetching for a question: the non-blank ones from
     sefaria.find_refs_for_question, capped at ASK_PRIMARY_SOURCE_LIMIT
     (4 by default, for speed; never below 1 or above 8)."""
     primary_refs = (sefaria.find_refs_for_question(question, context) if context
                     else sefaria.find_refs_for_question(question))
-    max_primary_refs = max(1, min(_env_int("ASK_PRIMARY_SOURCE_LIMIT", 4), 8))
+    max_primary_refs = _primary_source_limit()
     candidates = []
     for ref in primary_refs:
         normalized_ref = str(ref or "").strip()
@@ -1568,8 +1573,28 @@ def _collect_primary_sources_sync(question, engine, context=()):
     sefaria.find_refs_for_question).
     """
     refs = list(_primary_ref_candidates(question, context))
-    ask_progress.detail(
-        ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs, count=len(refs))
+    # Sefaria's own search for the question's words runs while these load; its
+    # best paragraphs join them, and all of them are then ordered by how well
+    # they match the question (backend/source_search.py).
+    search_future = submit_with_context(_THREAD_POOL, source_search.search_refs, question, refs)
+    if refs:
+        ask_progress.detail(
+            ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=refs, count=len(refs))
+    primary_sources = _load_primary_sources_sync(refs, engine)
+    try:
+        extra_refs = search_future.result(timeout=4)
+    except Exception:
+        extra_refs = []
+    if extra_refs:
+        ask_progress.detail(
+            ask_progress.STAGE_SOURCES, ask_progress.DETAIL_REFS, refs=extra_refs, count=len(extra_refs))
+        primary_sources += _load_primary_sources_sync(extra_refs, engine)
+    ranked = source_search.rank_sources(question, primary_sources, optional_refs=extra_refs)
+    return ranked[:_primary_source_limit()]
+
+
+def _load_primary_sources_sync(refs, engine):
+    """The usable texts for `refs`, loaded in parallel, each within 3 seconds."""
     source_futures = [
         submit_with_context(_THREAD_POOL, engine.get_library_text, ref)
         for ref in refs
@@ -1619,18 +1644,6 @@ def _flatten_primary_sources_for_claude(primary_sources, answer_language):
     return flat_sources_for_claude
 
 
-def _progress_tracked(stage_id, fn):
-    """`fn` as one live-progress step (backend/ask_progress.py). The pool
-    worker carries the submitting request's context, so the step reports to
-    that request's stream, and to nobody when none is bound. The wrapper
-    keeps `fn`'s name, so what is submitted still reads as that lookup."""
-    @functools.wraps(fn)
-    def run(*args, **kwargs):
-        with ask_progress.stage(stage_id):
-            return fn(*args, **kwargs)
-    return run
-
-
 def _submit_ask_question_context_futures(question, canonical_lens, user_id, engine):
     """Start the secondary-context lookups (halachipedia, community
     knowledge, user memory, wiki) on the module-level thread pool and return
@@ -1640,30 +1653,24 @@ def _submit_ask_question_context_futures(question, canonical_lens, user_id, engi
     submitting them afterwards made every follow-up pay the primary-source
     stage and then the slowest secondary lookup back to back.
     """
-    if canonical_lens and canonical_lens != "All":
-        ask_progress.detail(ask_progress.STAGE_CUSTOMS, ask_progress.DETAIL_COMMUNITY, community=canonical_lens)
+    # None of these is announced while it runs: the ones whose findings go
+    # into the answer are reported afterwards (_collect_ask_question_context).
     return (
+        submit_with_context(_THREAD_POOL, engine.get_halachipedia_summary, question),
         submit_with_context(
             _THREAD_POOL,
-            _progress_tracked(ask_progress.STAGE_COMMENTARY, engine.get_halachipedia_summary),
-            question),
-        submit_with_context(
-            _THREAD_POOL,
-            _progress_tracked(ask_progress.STAGE_CUSTOMS, _retrieve_community_knowledge),
+            _retrieve_community_knowledge,
             question,
             canonical_lens=canonical_lens,
             max_rows=RAG_TOP_KNOWLEDGE_ROWS,
         ),
         submit_with_context(
             _THREAD_POOL,
-            _progress_tracked(ask_progress.STAGE_CUSTOMS, _fetch_user_memory_summaries),
+            _fetch_user_memory_summaries,
             user_id,
             limit=RAG_MEMORY_ROWS,
         ),
-        submit_with_context(
-            _THREAD_POOL,
-            _progress_tracked(ask_progress.STAGE_COMMENTARY, engine.get_wiki),
-            question),
+        submit_with_context(_THREAD_POOL, engine.get_wiki, question),
     )
 
 
@@ -1729,8 +1736,10 @@ def _collect_ask_question_context(question, canonical_lens, user_id, answer_lang
     secondary_futures = _submit_ask_question_context_futures(
         question, canonical_lens, user_id, engine)
 
-    with ask_progress.stage(ask_progress.STAGE_SOURCES):
+    with ask_progress.stage(ask_progress.STAGE_SOURCES) as sources_step:
         primary_sources = _collect_primary_sources_sync(question, engine, retrieval_context)
+        if not primary_sources:
+            sources_step.empty()
 
     halachipedia_info, knowledge_rows, user_memory_summaries, wiki_info = (
         _collect_ask_question_context_futures(secondary_futures)
@@ -1751,6 +1760,10 @@ def _collect_ask_question_context(question, canonical_lens, user_id, answer_lang
     has_primary_sources, has_customs, has_whitelisted_external, use_tertiary_web_context, wiki_context_for_claude = (
         _derive_ask_question_context_flags(flat_sources_for_claude, knowledge_rows, halachipedia_list, wiki_list)
     )
+    ask_progress.used_context(
+        [_backend_search.context_page(item, "halachipedia") for item in halachipedia_list]
+        + [_backend_search.context_page(item, "wikipedia") for item in wiki_context_for_claude],
+        has_customs)
 
     return {
         "primary_sources": primary_sources,

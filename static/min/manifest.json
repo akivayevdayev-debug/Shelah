@@ -11,27 +11,27 @@
       "css/halacha.css": "sha256:d56991aac19afaa3175434312588862a5a63b32c46d7d07d2f70e23fd9e049bf",
       "css/prayer.css": "sha256:70cf28909030c0816176889df96729aca7618f9088de74d324f9c9a38812c78d",
       "css/siddur.css": "sha256:5026bdd17f89bc51fa2b37963ad4770c22d9b9ac1d8ab3f1a67d0b588963be72",
-      "css/ai.css": "sha256:42455413aaf552a740ccfd493d56b8db8dc0b641934329139a4fe03d371156b6",
-      "css/conversation.css": "sha256:8da9d4414b9762e61c4a6614048bb82816a6f9c3d39bd1e76695ab7696b35f0a",
+      "css/ai.css": "sha256:a87914e2fdc7dbc92e9dbef11b46c6c63313f5600d69e03d4fb59a711f1f7a83",
+      "css/conversation.css": "sha256:4e8dc3f3d473ef4b4d80a41da1eeb53479015a49c1cc0086ae9eb2e7dee6fb9c",
       "css/history.css": "sha256:ff1556ed62eceadb953ed9a9b4325d70410a97e1bceff2271a07b5ebe213218c",
       "css/calendar.css": "sha256:f39a09296d423b712c488044935b02e7f991764807c6146026925101d62934ee",
       "css/calendar-detail.css": "sha256:d14b9c9ed0a63a3d7f396d41e264781bf319897b773fd2ea2e7d7189cafed9ed",
       "css/loading.css": "sha256:10eaad855917d62df7a5d396c0bbb8a487d529d846bc3233637e7eb42e5a3211",
       "css/tailwind.css": "sha256:a761fbf4b1e65c859b6579eb66bbe4817b376d0ae1a26d8e292898c252a3b250"
     },
-    "sourcesHash": "8a4ef2001244008a6406b47b38a46fa39bd302300900c9061199577d95ec4a40",
+    "sourcesHash": "76b96f7ec6e14260778df03797fae150bfc59b7f7d349e61233b940929456a78",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "8a4ef2001244008a6406b47b38a46fa39bd302300900c9061199577d95ec4a40",
+        "sourcesHash": "76b96f7ec6e14260778df03797fae150bfc59b7f7d349e61233b940929456a78",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "8a4ef2001244008a6406b47b38a46fa39bd302300900c9061199577d95ec4a40",
+        "sourcesHash": "76b96f7ec6e14260778df03797fae150bfc59b7f7d349e61233b940929456a78",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "8a4ef2001244008a6406b47b38a46fa39bd302300900c9061199577d95ec4a40",
+        "sourcesHash": "76b96f7ec6e14260778df03797fae150bfc59b7f7d349e61233b940929456a78",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
@@ -95,7 +95,7 @@
         "answer-link.js": "sha256:16580c38da75feedb19e3770626816a8e2eb08a7253cbe7a08ffa5cf58caa706",
         "answer-share.js": "sha256:a7c174bd7f175002b1e33a3f5cad94ce7eb74a850a52be0837ce5e4b545fc537",
         "ask-history.js": "sha256:fe28ba5343b9134744d6203d93a3725361d214b40a21927b62b2d1b428ffc352",
-        "ask-progress.js": "sha256:57b8ee5b40be49811e9b65ee4eb53b0b48c521d7e533adffef6d57cc9e20559d",
+        "ask-progress.js": "sha256:395651a112acfd2824618f10ca46e6431e9fdad438803c7b73e4e4476c7b349c",
         "calendar-detail.js": "sha256:14f7eb4242d2dfde242c8d14382584dba381a79ab14fa28b7996bf6c39d1e75d",
         "citation-markers.js": "sha256:4a6039289400517dfa19bb0fff4aa4971c3e1191371ecd20b814f98e90693e6e",
         "citation-popover.js": "sha256:2452698153bb4f782f2787f88ec31a17633c5004c2a7627d8038de30491586e5",
@@ -106,7 +106,7 @@
         "conversation-share.js": "sha256:558e3e593caba8f29042c936d285ff8eb1564712f1d44255b92d651f3b0faa08",
         "conversation-store.js": "sha256:b57b45534c99e26c745ccc9e2e9582f52a91d70b8d5d28b1fbcfd31ea21e0c6c",
         "conversation-ui-helpers.js": "sha256:707d151c8ebb6fe0b3d2d21f9d85d0240627683df8d17a1cd0b5de9080cb5add",
-        "conversation-ui.js": "sha256:ec907037db672c6ad2b81a6e80d14470a2db384fc4d9e7f00d4e0551bb408975",
+        "conversation-ui.js": "sha256:86e96e2494280c3fc270220de9ba8253acadb453e779cc05868c9902496e63b1",
         "conversation-voice.js": "sha256:34f9ccb1fa67d5db791ff1c8bcabe61977d56a7354c4f60c35b19fdfefeedc94",
         "hebrew-keyboard.js": "sha256:70c1ce2b633381c4ee0d9cafa04324c15e5cc7578fda303ef5d7983dc72112b3",
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
@@ -133,7 +133,7 @@
         "js/community-labels.js": "87dfbcba156b",
         "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/load-region.js": "2833ed602bea",
-        "js/main.js": "a0ec5a9c1731",
+        "js/main.js": "55c6b765c7ca",
         "js/motion.js": "78836d5f6141",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
