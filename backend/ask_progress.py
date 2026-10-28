@@ -74,7 +74,14 @@ STEP_LONG = "long"                  # a long, detailed answer was asked for
 STEP_RETRY = "retry"                # the first model was busy; asking it again
 STEP_SECOND_MODEL = "second_model"  # the first model failed; asking another
 STEP_SECOND_LOOK = "second_look"    # the answer is being checked once more
-STEPS = frozenset({STEP_LONG, STEP_RETRY, STEP_SECOND_MODEL, STEP_SECOND_LOOK})
+STEP_DETAILS = "details"            # the opening is written; the sources and details follow
+STEPS = frozenset({STEP_LONG, STEP_RETRY, STEP_SECOND_MODEL, STEP_SECOND_LOOK, STEP_DETAILS})
+
+# The answer's opening as the model writes it (`draft` events). Shown in place
+# of the skeleton until the finished answer replaces it. Plain text, capped,
+# without [n] markers: their numbers are final only once the source list is.
+MAX_DRAFT_CHARS = 4000
+_DRAFT_MARKER_RE = re.compile(r"\s?\[\d{1,2}(?:\s*[,\-\u2013]\s*\d{1,2})*\]")
 
 # Web pages reported per step (`site` events), and how long their fields may be.
 MAX_SITES = 6
@@ -157,6 +164,21 @@ def bind(send: Callable[[dict[str, Any]], None]) -> Token:
 
 def unbind(token: Token) -> None:
     _reporter.reset(token)
+
+
+def listening() -> bool:
+    """Whether anyone hears this context's progress (a streamed ask)."""
+    return _reporter.get() is not None
+
+
+def draft(text: str) -> None:
+    """The answer so far ({"type": "draft", "text"}); "" clears it, for a
+    second model or a second look that starts the answer over."""
+    reporter = _reporter.get()
+    if reporter is None:
+        return
+    clean = _DRAFT_MARKER_RE.sub("", str(text or ""))[:MAX_DRAFT_CHARS]
+    reporter.event({"type": "draft", "text": clean})
 
 
 def begin(stage: str) -> None:

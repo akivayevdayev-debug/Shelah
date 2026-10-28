@@ -171,7 +171,7 @@ class TestDetails:
         ))
         assert events == [{
             "type": "detail", "stage": "thinking", "detail": {"kind": "step", "step": "second_look"}}]
-        assert ask_progress.STEPS == {"long", "retry", "second_model", "second_look"}
+        assert ask_progress.STEPS == {"long", "retry", "second_model", "second_look", "details"}
 
     def test_a_detail_scope_clears_when_the_last_overlapping_piece_of_work_ends(self):
         def work():

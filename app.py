@@ -2428,6 +2428,7 @@ _BLUEPRINTS = [
     ("backend.routes_privacy", "routes_privacy"),
     ("backend.routes_pages", "routes_pages"),
     ("backend.routes_feedback", "routes_feedback"),
+    ("backend.routes_common_answers", "routes_common_answers"),
     ("backend.routes_webhooks", "routes_webhooks"),
 ]
 

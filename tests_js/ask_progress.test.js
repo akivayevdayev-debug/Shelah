@@ -423,3 +423,78 @@ test('only an ndjson content type is treated as a progress stream', async () => 
     assert.equal(ns.isProgressResponse(withType('application/json')), false);
     assert.equal(ns.isProgressResponse({}), false);
 });
+
+// ── the step list (trail) and the answer being written (draft) ─────────────
+
+const startStage = (stage) => ({ type: 'stage', stage, state: 'start' });
+const doneStage = (stage) => ({ type: 'stage', stage, state: 'done' });
+
+test('the trail lists each step the line named, in order', async () => {
+    const ns = await load();
+    const state = apply(ns, [startStage('sources'), doneStage('sources'), startStage('thinking')]);
+    assert.deepEqual(state.trail.map((step) => step.active), ['sources', 'thinking']);
+});
+
+test('a step the line names again keeps its first place in the trail', async () => {
+    const ns = await load();
+    const state = apply(ns, [
+        startStage('thinking'),
+        { type: 'detail', stage: 'thinking', detail: { kind: 'step', step: 'second_look' } },
+        { type: 'detail', stage: 'thinking', detail: null },
+    ]);
+    assert.deepEqual(state.trail.map((step) => step.detail?.step || step.active), ['thinking', 'second_look']);
+});
+
+test('trailView splits the steps passed from the one running now', async () => {
+    const ns = await load();
+    const state = apply(ns, [startStage('sources'), doneStage('sources'), startStage('thinking')]);
+    assert.deepEqual(ns.trailView(state).done.map((step) => step.active), ['sources']);
+});
+
+test('trailView names the running step as current', async () => {
+    const ns = await load();
+    const state = apply(ns, [startStage('sources'), doneStage('sources'), startStage('thinking')]);
+    assert.equal(ns.trailView(state).current.active, 'thinking');
+});
+
+test('a finished trailView has no current step', async () => {
+    const ns = await load();
+    const state = apply(ns, [startStage('thinking')]);
+    assert.equal(ns.trailView(state, { finished: true }).current, null);
+});
+
+test('the trail stops at MAX_TRAIL steps', async () => {
+    const ns = await load();
+    const events = [startStage('thinking')];
+    for (let i = 0; i < ns.MAX_TRAIL + 5; i += 1) {
+        events.push({ type: 'detail', stage: 'thinking', detail: { kind: 'tool', tool: 'get_text_by_ref', ref: `Genesis ${i + 1}` } });
+    }
+    assert.equal(apply(ns, events).trail.length, ns.MAX_TRAIL);
+});
+
+test('a draft event sets the answer being written', async () => {
+    const ns = await load();
+    assert.equal(apply(ns, [{ type: 'draft', text: 'Two candles' }]).draft, 'Two candles');
+});
+
+test('an empty draft clears it, for an answer that starts over', async () => {
+    const ns = await load();
+    assert.equal(apply(ns, [{ type: 'draft', text: 'Two' }, { type: 'draft', text: '' }]).draft, '');
+});
+
+test('a draft is cut at MAX_DRAFT_CHARS', async () => {
+    const ns = await load();
+    const state = apply(ns, [{ type: 'draft', text: 'x'.repeat(ns.MAX_DRAFT_CHARS + 10) }]);
+    assert.equal(state.draft.length, ns.MAX_DRAFT_CHARS);
+});
+
+test('a draft that is not text changes nothing', async () => {
+    const ns = await load();
+    const state = ns.createProgress();
+    assert.equal(ns.applyProgressEvent(state, { type: 'draft', text: 42 }), state);
+});
+
+test('the details step has words in both languages', async () => {
+    const ns = await load();
+    assert.equal(ns.detailLabel({ kind: 'step', step: 'details' }, 'he'), 'מוסיפים מקורות ופרטים');
+});

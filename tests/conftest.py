@@ -208,6 +208,28 @@ async def fastapi_client():
 
 
 @pytest.fixture(autouse=True)
+def _gemini_answers_first(monkeypatch):
+    """Most model-call tests were written for Gemini first, Claude as the
+    fallback, and still check that chain. Production puts Claude Haiku first
+    (backend/claude.py AI_ANSWER_PROVIDER); tests/test_answer_provider.py
+    covers that order."""
+    from backend import claude
+
+    monkeypatch.setattr(claude, "AI_ANSWER_PROVIDER", "gemini")
+
+
+@pytest.fixture(autouse=True)
+def _no_shared_common_answers():
+    """backend/common_answers.py serves one reader's answer to the next: each
+    test starts with none, so an answer from another test is never served."""
+    from backend import common_answers
+
+    common_answers.clear()
+    yield
+    common_answers.clear()
+
+
+@pytest.fixture(autouse=True)
 def _no_live_source_search(monkeypatch):
     """The /ask source search (backend/source_search.py) finds nothing unless a
     test gives it hits: its Sefaria calls would otherwise fail against the HTTP

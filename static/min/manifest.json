@@ -12,26 +12,26 @@
       "css/prayer.css": "sha256:70cf28909030c0816176889df96729aca7618f9088de74d324f9c9a38812c78d",
       "css/siddur.css": "sha256:5026bdd17f89bc51fa2b37963ad4770c22d9b9ac1d8ab3f1a67d0b588963be72",
       "css/ai.css": "sha256:eec9fa7ae0f61773abffd439624472a821e8a27ebb080cb8bea81692c4c28058",
-      "css/conversation.css": "sha256:4e8dc3f3d473ef4b4d80a41da1eeb53479015a49c1cc0086ae9eb2e7dee6fb9c",
+      "css/conversation.css": "sha256:101e37b2df09030ac83d9c5bcab4245a41d1cf87c9a26361fd2f1e8cb7532758",
       "css/history.css": "sha256:ff1556ed62eceadb953ed9a9b4325d70410a97e1bceff2271a07b5ebe213218c",
       "css/calendar.css": "sha256:f39a09296d423b712c488044935b02e7f991764807c6146026925101d62934ee",
       "css/calendar-detail.css": "sha256:d14b9c9ed0a63a3d7f396d41e264781bf319897b773fd2ea2e7d7189cafed9ed",
       "css/loading.css": "sha256:10eaad855917d62df7a5d396c0bbb8a487d529d846bc3233637e7eb42e5a3211",
       "css/tailwind.css": "sha256:a761fbf4b1e65c859b6579eb66bbe4817b376d0ae1a26d8e292898c252a3b250"
     },
-    "sourcesHash": "be76778e97b46fb7aca40a24eef6514ed66356b8a3095f6134ab3d03e4171d11",
+    "sourcesHash": "6ed545288b459624a243de1acf59ae27b41c391a977410c06fd1b5ac56c2830a",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "be76778e97b46fb7aca40a24eef6514ed66356b8a3095f6134ab3d03e4171d11",
+        "sourcesHash": "6ed545288b459624a243de1acf59ae27b41c391a977410c06fd1b5ac56c2830a",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "be76778e97b46fb7aca40a24eef6514ed66356b8a3095f6134ab3d03e4171d11",
+        "sourcesHash": "6ed545288b459624a243de1acf59ae27b41c391a977410c06fd1b5ac56c2830a",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "be76778e97b46fb7aca40a24eef6514ed66356b8a3095f6134ab3d03e4171d11",
+        "sourcesHash": "6ed545288b459624a243de1acf59ae27b41c391a977410c06fd1b5ac56c2830a",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
@@ -78,7 +78,7 @@
         "source": "sha256:968aced3c444af8bc1de8da0954ad3704ee3acf4a2df7812da324e62c3890547"
       },
       "shell.js": {
-        "source": "sha256:450c0f0b7921b0864c0d81e267a6faa97cf3355f358f5090a6c517fe26039b45"
+        "source": "sha256:b4af768dcad9ebd752036f0c9e8008c8f2e49c621eec2f56bf1568be3c231b86"
       },
       "topbar_shared.js": {
         "source": "sha256:27a797b3deffea688349051bba6539490d19d018205f4c9721cd4d69e0bb17c3"
@@ -95,18 +95,19 @@
         "answer-link.js": "sha256:16580c38da75feedb19e3770626816a8e2eb08a7253cbe7a08ffa5cf58caa706",
         "answer-share.js": "sha256:a7c174bd7f175002b1e33a3f5cad94ce7eb74a850a52be0837ce5e4b545fc537",
         "ask-history.js": "sha256:fe28ba5343b9134744d6203d93a3725361d214b40a21927b62b2d1b428ffc352",
-        "ask-progress.js": "sha256:395651a112acfd2824618f10ca46e6431e9fdad438803c7b73e4e4476c7b349c",
+        "ask-progress.js": "sha256:c9a21e8fd12338e86cba44806b67e4dd0173243d562fda2088da73d0a495e492",
         "calendar-detail.js": "sha256:14f7eb4242d2dfde242c8d14382584dba381a79ab14fa28b7996bf6c39d1e75d",
         "citation-markers.js": "sha256:4a6039289400517dfa19bb0fff4aa4971c3e1191371ecd20b814f98e90693e6e",
         "citation-popover.js": "sha256:2452698153bb4f782f2787f88ec31a17633c5004c2a7627d8038de30491586e5",
         "commentary-preload.js": "sha256:cf65eaeb787cf274935198f04b0272ea693fef7c565c5516c3fd6bf203e706ff",
+        "common-answers.js": "sha256:3324a4bd6c1e7c20a7bf3a6dd99dac6f8999ace1c7d22f66cbc0430a2af6e5e4",
         "conversation-api.js": "sha256:90e204fc21e4d650d8209f53b4196d27c49a5b3abf33aefd32f550b8450d508a",
         "conversation-entry.js": "sha256:25f9b62da24bcf0965429fa8162bc3b9dfa348b17ce0fdfa0d898ef945d24677",
         "conversation-mini.js": "sha256:b1ed8b20567e41cab3b25d1fed8870b759ccdf561314ebbbe51f384dc97171ab",
         "conversation-share.js": "sha256:558e3e593caba8f29042c936d285ff8eb1564712f1d44255b92d651f3b0faa08",
-        "conversation-store.js": "sha256:b57b45534c99e26c745ccc9e2e9582f52a91d70b8d5d28b1fbcfd31ea21e0c6c",
+        "conversation-store.js": "sha256:97256defebd702514d1bf26361c19b55d52bcf9cd166386ff7ca868baabac27f",
         "conversation-ui-helpers.js": "sha256:707d151c8ebb6fe0b3d2d21f9d85d0240627683df8d17a1cd0b5de9080cb5add",
-        "conversation-ui.js": "sha256:3b5d0fb121ffc15a970568085710fea2d4486cac2df3117d08fccb3e9a3750ce",
+        "conversation-ui.js": "sha256:26c8773da2b863f1cd96d8146aac1f379efa901b07f7461beac312aa5461b810",
         "conversation-voice.js": "sha256:34f9ccb1fa67d5db791ff1c8bcabe61977d56a7354c4f60c35b19fdfefeedc94",
         "hebrew-keyboard.js": "sha256:70c1ce2b633381c4ee0d9cafa04324c15e5cc7578fda303ef5d7983dc72112b3",
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
@@ -133,11 +134,11 @@
         "js/community-labels.js": "87dfbcba156b",
         "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/load-region.js": "2833ed602bea",
-        "js/main.js": "a4894f73fa5c",
+        "js/main.js": "c9e9c98fd33f",
         "js/motion.js": "78836d5f6141",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
-        "js/shell.js": "60a45dd16aa0",
+        "js/shell.js": "4634442488c1",
         "js/topbar_shared.js": "55aa1d245dcc"
       },
       "unreached": []

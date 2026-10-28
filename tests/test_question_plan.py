@@ -96,3 +96,13 @@ def test_the_call_cost_is_recorded(monkeypatch):
     monkeypatch.setattr(cost_meter, "record_llm_call", record)
     question_plan._ask_model("where does it say the land ate the people")
     assert rows[0]["output_tokens"] == 12
+
+
+def test_a_ref_led_by_a_book_number_is_kept():
+    plan = question_plan.parse('{"refs": ["1 Samuel 1:11"], "hebrew": [], "english": []}')
+    assert plan["refs"] == ["1 Samuel 1:11"]
+
+
+def test_a_ref_led_by_a_roman_book_number_is_kept():
+    plan = question_plan.parse('{"refs": ["II Kings 2:11"], "hebrew": [], "english": []}')
+    assert plan["refs"] == ["II Kings 2:11"]

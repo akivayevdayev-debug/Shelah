@@ -1227,6 +1227,69 @@ body.conv-modal-open {
 .conv-status__site:hover { text-decoration-color: currentColor; }
 .conv-status__site:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
 
+/* The status line opens into every step taken so far, like a model's visible
+   thinking (conversation-ui.js statusHtml); a finished answer keeps the same
+   list behind "Thought for 6s" (.conv-thought). */
+.conv-status__box { min-width: 0; }
+.conv-status__head {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    max-width: 100%;
+    list-style: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+}
+.conv-status__head::-webkit-details-marker { display: none; }
+/* A 44px-tall hit area without growing the line. */
+.conv-status__head::after { content: ''; position: absolute; inset: -12px -4px; }
+.conv-status__head:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+.conv-status__caret {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    color: var(--ink-secondary);
+    transition: transform var(--motion-dur-fast) var(--motion-ease-out),
+        color var(--motion-dur-fast) var(--motion-ease-out);
+}
+.conv-status__head:hover .conv-status__caret { color: var(--ink-primary); }
+.conv-status__box[open] .conv-status__caret { transform: rotate(180deg); }
+.conv-steps {
+    display: grid;
+    gap: var(--sp-1);
+    margin: var(--sp-2) 0 0;
+    padding: 0;
+    padding-inline-start: var(--sp-3);
+    border-inline-start: 1px solid var(--conv-edge);
+    list-style: none;
+    color: var(--ink-secondary);
+}
+.conv-steps__item { display: flex; align-items: flex-start; gap: var(--sp-2); }
+.conv-steps__item svg { flex: none; width: 14px; height: 14px; margin-block-start: 3px; }
+.conv-steps__item[data-state="now"] { color: var(--ink-primary); }
+.conv-steps__dot {
+    flex: none;
+    width: 6px;
+    height: 6px;
+    margin: 8px 4px 0;
+    border-radius: var(--radius-full);
+    background: var(--accent-primary);
+    animation: conv-status-dot 2.6s ease-in-out infinite;
+}
+.conv-thought { margin-block-end: var(--sp-3); font-size: var(--text-sm); line-height: 1.5; }
+.conv-thought__title {
+    color: var(--ink-secondary);
+    transition: color var(--motion-dur-fast) var(--motion-ease-out);
+}
+.conv-thought .conv-status__head:hover .conv-thought__title { color: var(--ink-primary); }
+
+/* The answer's opening as it is written; one skeleton line stays for the
+   sources and details still to come. */
+.conv-turn__draft { margin-block-end: var(--sp-2); animation: conv-rise 200ms var(--motion-ease-out) both; }
+.conv-turn__draft[hidden] { display: none; }
+[data-drafting="true"] > .conv-turn__skel ~ .conv-turn__skel { display: none; }
+
 .conv-turn__status {
     display: flex;
     flex-wrap: wrap;
@@ -2508,6 +2571,8 @@ body.theme-dark .topbar-ask-btn {
     .conv-live-dot,
     .conv-status__now,
     .conv-status__now::before,
+    .conv-steps__dot,
+    .conv-turn__draft,
     .conv-skel::after,
     .conv-list__skel::after,
     .conv-turn__skel::after {

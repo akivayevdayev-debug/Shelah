@@ -42,11 +42,11 @@ def client(monkeypatch):
     return fake
 
 
-def test_there_are_exactly_four_places_that_send_a_request_to_anthropic():
+def test_there_are_exactly_five_places_that_send_a_request_to_anthropic():
     sites = []
     for path in sorted(BACKEND.glob("*.py")):
         sites += [path.name for _ in re.findall(r"\.messages\.(?:create|stream|parse)\(", path.read_text(encoding="utf-8"))]
-    assert sites == ["claude.py", "claude.py", "question_plan.py", "web_lookup.py"], "a new Anthropic call site needs the same pin and options"
+    assert sites == ["claude.py", "claude.py", "claude.py", "question_plan.py", "web_lookup.py"], "a new Anthropic call site needs the same pin and options"
 
 
 @pytest.mark.asyncio

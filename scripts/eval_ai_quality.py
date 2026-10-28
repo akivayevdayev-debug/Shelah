@@ -16,6 +16,8 @@ Suites:
     context   a third turn that must use turns one and two
     latency   time to the first progress event, to the model call and in all, per question
     coverage  multi-part Jewish-life requests: refusals, and each part answered (judged by Claude)
+    accuracy  questions answered wrong before (scripts/eval_accuracy_cases.py): the right source
+              retrieved and cited, no known-wrong source or "only in" claim. --no-model: retrieval only
 
 --provider claude turns Gemini off, so every answer comes from the Claude fallback.
 --save writes the rows to build/eval/latest.json (git-ignored; the path is a constant, not
@@ -51,6 +53,7 @@ dotenv.load_dotenv = lambda *args, **kwargs: False
 
 import asgi  # noqa: E402
 from backend import ask_progress, claude  # noqa: E402
+from scripts import eval_accuracy_cases as accuracy  # noqa: E402
 
 CONCURRENCY = 3
 RESULTS_PATH = Path(__file__).resolve().parent.parent / "build" / "eval" / "latest.json"
@@ -318,6 +321,9 @@ async def _ask_once(question, history, lens, language, mode, marks, started, ste
     ctx = await asgi._collect_ask_async_context(
         question, lens, None, language, retrieval_context=earlier_questions(history))
     marks["context_seconds"] = round(time.perf_counter() - started, 2)
+    marks["primary_refs"] = accuracy.refs_of(ctx.get("primary_sources") or [])
+    if marks.get("retrieval_only"):
+        return {}
     if history:
         ctx["conversation_history"] = history
     ctx["web_search"] = None
@@ -513,6 +519,36 @@ async def suite_coverage():
     return rows
 
 
+async def suite_accuracy(skip_model=False):
+    async def one(case):
+        marks = {"retrieval_only": skip_model}
+        result = await ask(case.question, marks=marks)
+        retrieved = marks.get("primary_refs") or []
+        if skip_model:
+            verdict = accuracy.grade_retrieval(case, retrieved)
+            cited, text = [], ""
+        else:
+            structured = result.get("structured") if isinstance(result.get("structured"), dict) else {}
+            cited = accuracy.refs_of(structured.get("sources") or result.get("ai_cited_sources") or [])
+            text = answer_text(result)
+            verdict = accuracy.grade(case, retrieved, cited, text)
+        return {"question": case.question, **verdict, "model": result.get("model"),
+                "seconds": marks.get("seconds") or marks.get("context_seconds"),
+                "retrieved_refs": retrieved, "cited_refs": cited, "answer": text}
+
+    rows = await run_all([lambda c=c: one(c) for c in accuracy.CASES])
+    for row in rows:
+        print(json.dumps({k: v for k, v in row.items() if k not in ("answer", "retrieved_refs")}, ensure_ascii=False), flush=True)
+    graded = [r for r in rows if "passed" in r]
+    print(f"passed {sum(r['passed'] for r in graded)}/{len(rows)}; "
+          f"retrieved {sum(r['retrieved'] for r in graded)}; "
+          f"cited {sum(bool(r.get('cited')) for r in graded)}; errors {len(rows) - len(graded)}")
+    for row in graded:
+        if not row["passed"]:
+            print("  FAIL:", row["question"], "| cited:", row.get("cited_refs"), "|", row.get("bad_claim") or "")
+    return rows
+
+
 # ── readability ─────────────────────────────────────────────────────────────
 
 FANCY = (
@@ -542,6 +578,7 @@ def readability(text):
 SUITES = {
     "long": suite_long, "style": suite_style, "refusal": suite_refusal,
     "context": suite_context, "latency": suite_latency, "coverage": suite_coverage,
+    "accuracy": suite_accuracy,
 }
 
 
@@ -550,13 +587,14 @@ def main():
     parser.add_argument("suite", choices=sorted(SUITES))
     parser.add_argument("--provider", choices=("gemini", "claude"), default="gemini")
     parser.add_argument("--save", action="store_true", help="write the rows to build/eval/latest.json")
-    parser.add_argument("--no-model", action="store_true", help="refusal suite: the keyword gate only")
+    parser.add_argument("--no-model", action="store_true",
+                        help="refusal: the keyword gate only; accuracy: retrieval only")
     args = parser.parse_args()
     if args.provider == "claude":
         os.environ["GEMINI_API_KEY"] = ""
         os.environ["GOOGLE_API_KEY"] = ""
     suite = SUITES[args.suite]
-    rows = asyncio.run(suite(skip_model=args.no_model) if args.suite == "refusal" else suite())
+    rows = asyncio.run(suite(skip_model=args.no_model) if args.suite in ("refusal", "accuracy") else suite())
     report(rows, args.save)
 
 

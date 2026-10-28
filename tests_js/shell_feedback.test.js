@@ -270,7 +270,7 @@ test('with a row id, the thumbs-down comment edits that row instead of adding a 
         assert.deepEqual(calls.filter((request) => request.url === '/api/feedback'), []);
         const [edit] = editRequests(calls);
         assert.equal(edit.init.method, 'PATCH');
-        assert.deepEqual(sent(edit), { verdict: 'not_helpful', comment: 'Wrong verse' });
+        assert.deepEqual(sent(edit), { verdict: 'not_helpful', comment: 'Wrong verse', question: 'What is Shabbat?' });
         assert.equal(state(page), 'done');
     } finally {
         page.close();
@@ -301,7 +301,7 @@ test('Edit reopens the rating and comment, and Save changes the same row', async
         page.click(page.$('.answer-feedback-submit'));
         await page.settle();
         const [edit] = editRequests(page.takeCalls());
-        assert.deepEqual(sent(edit), { verdict: 'helpful', comment: 'Fine on a second read' });
+        assert.deepEqual(sent(edit), { verdict: 'helpful', comment: 'Fine on a second read', question: 'What is Shabbat?' });
         assert.equal(state(page), 'done');
 
         page.click(page.$('.answer-feedback-edit'));

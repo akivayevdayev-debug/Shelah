@@ -1,0 +1,141 @@
+{
+  "rules": {
+    "variants": {
+      "shabbos": "shabbat",
+      "shabbes": "shabbat",
+      "shabbas": "shabbat",
+      "shabat": "shabbat",
+      "sabbath": "shabbat",
+      "hanukkah": "chanukah",
+      "hanukah": "chanukah",
+      "chanuka": "chanukah",
+      "chanukkah": "chanukah",
+      "hanuka": "chanukah",
+      "chanukka": "chanukah",
+      "succos": "sukkot",
+      "sukkos": "sukkot",
+      "succot": "sukkot",
+      "sukkoth": "sukkot",
+      "pesah": "pesach",
+      "tzitzis": "tzitzit",
+      "tsitsit": "tzitzit",
+      "mezuza": "mezuzah",
+      "mezuzza": "mezuzah",
+      "tfillin": "tefillin",
+      "tefilin": "tefillin",
+      "kashrus": "kashrut",
+      "halakha": "halacha",
+      "halakhah": "halacha",
+      "halachah": "halacha",
+      "bracha": "beracha",
+      "brocha": "beracha",
+      "berakha": "beracha",
+      "berakhah": "beracha",
+      "brachos": "berachot",
+      "brachot": "berachot",
+      "berakhot": "berachot",
+      "berachos": "berachot",
+      "kidush": "kiddush",
+      "hashana": "hashanah",
+      "kipur": "kippur",
+      "moses": "moshe"
+    },
+    "leading": [
+      "can you please tell me",
+      "could you please tell me",
+      "can you tell me",
+      "could you tell me",
+      "please tell me",
+      "tell me",
+      "i want to know",
+      "i wanted to know",
+      "i would like to know",
+      "do you know",
+      "quick question",
+      "question",
+      "please",
+      "hey",
+      "hi",
+      "hello"
+    ],
+    "trailing": [
+      "thank you very much",
+      "thank you so much",
+      "thank you",
+      "thanks a lot",
+      "thanks",
+      "thx",
+      "please"
+    ]
+  },
+  "cases": [
+    {
+      "question": "Can I cook on Shabbat?",
+      "key": "can i cook on shabbat"
+    },
+    {
+      "question": "can i cook on shabbos",
+      "key": "can i cook on shabbat"
+    },
+    {
+      "question": "Can you tell me: can I cook on Shabbes?? Thanks!",
+      "key": "can i cook on shabbat"
+    },
+    {
+      "question": "Can I not cook on Shabbat?",
+      "key": "can i not cook on shabbat"
+    },
+    {
+      "question": "How long between meat and milk?",
+      "key": "how long between meat and milk"
+    },
+    {
+      "question": "How long between milk and meat?",
+      "key": "how long between milk and meat"
+    },
+    {
+      "question": "Is it OK to light Chanukah candles—before sunset?",
+      "key": "is it ok to light chanukah candles before sunset"
+    },
+    {
+      "question": "Hi, how do I put up a mezuza",
+      "key": "how do i put up a mezuzah"
+    },
+    {
+      "question": "What is the halakha of tzitzis",
+      "key": "what is the halacha of tzitzit"
+    },
+    {
+      "question": "“Who wrote” the book of Samuel?",
+      "key": "who wrote the book of samuel"
+    },
+    {
+      "question": "Who wrote Samuel 1 or Samuel 2",
+      "key": "who wrote samuel 1 or samuel 2"
+    },
+    {
+      "question": "מה הדין בשַׁבָּת־קודש?",
+      "key": "מה הדין בשבת קודש"
+    },
+    {
+      "question": "מה הדין בשבת קודש",
+      "key": "מה הדין בשבת קודש"
+    },
+    {
+      "question": "Café au lait after meat",
+      "key": "cafe au lait after meat"
+    },
+    {
+      "question": "please",
+      "key": "please"
+    },
+    {
+      "question": "thanks",
+      "key": "thanks"
+    }
+  ],
+  "fingerprint": {
+    "key": "can i cook on shabbat",
+    "print": "585be44bceb78aef770e8a2c20e3a697"
+  }
+}

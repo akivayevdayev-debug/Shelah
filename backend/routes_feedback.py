@@ -37,6 +37,7 @@ import re
 
 from flask import Blueprint, jsonify, request
 
+from backend import common_answers
 from backend.claude import sanitize_user_query
 from backend.auth import maybe_require_clerk_auth
 from backend.device_identity import DEVICE_COOKIE, owner_for_token
@@ -142,6 +143,18 @@ def _owner_filter(user_id):
     return ("device_owner", device) if device else None
 
 
+def _block_common_answer(verdict, question):
+    """A "not helpful" answer is not handed to the next reader who asks the
+    same question (backend/common_answers.py). Best-effort: the rating is
+    saved whether or not the block is."""
+    if verdict != "not_helpful" or not question.strip():
+        return
+    try:
+        common_answers.block(question)
+    except Exception as e:
+        _capture_backend_error("common_answer_block_failed", e, {})
+
+
 @routes_feedback.route("/api/feedback", methods=["POST"])
 @maybe_require_clerk_auth
 def submit_feedback():
@@ -155,6 +168,7 @@ def submit_feedback():
     if not question:
         return jsonify({"error": "question is required"}), 400
     question_hash = hashlib.sha256(question.encode("utf-8")).hexdigest()
+    _block_common_answer(verdict, question)
 
     comment = sanitize_user_query(
         str(payload.get("comment") or ""), max_chars=_MAX_COMMENT_CHARS)
@@ -213,6 +227,7 @@ def edit_feedback(row_id):
     if invalid:
         return invalid
     verdict, comment = fields
+    _block_common_answer(verdict, str(payload.get("question") or ""))
 
     owner = _owner_filter(_get_request_user_id())
     if not owner:

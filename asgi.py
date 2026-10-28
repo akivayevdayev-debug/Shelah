@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 import app as flask_app_module
-from backend import ask_pipeline, ask_progress, claude, guest_cap, search, text_trust, web_lookup
+from backend import ask_pipeline, ask_progress, claude, common_answers, guest_cap, search, text_trust, web_lookup
 from backend.ask_payloads import (
     build_ai_answer_payload,
     build_source_fallback_payload,
@@ -1185,6 +1185,44 @@ def _ask_async_cache_key(question, answer_language, mode, canonical_lens, user_i
     return key
 
 
+def _common_answer_scope(answer_language, mode, canonical_lens, web_search) -> str:
+    return common_answers.scope(
+        answer_language, mode, canonical_lens, web_search,
+        common_answers.version(claude.PROMPT_VERSION, claude.AI_ANSWER_PROVIDER))
+
+
+async def _serve_common_answer(question, scope_id, asker, user_id):
+    """Another reader's answer to this same question (backend/common_answers.py),
+    stored in this reader's history, or None."""
+    stored = await asyncio.to_thread(
+        common_answers.lookup, question, scope_id, common_answers.KIND_ASK, asker)
+    if not isinstance(stored, dict):
+        return None
+    meta = stored.get("meta") or {}
+    history_id = await asyncio.to_thread(
+        _store_ask_history,
+        user_id,
+        question,
+        stored.get("answer", ""),
+        sources=stored.get("sources") or [],
+        ai_cited_sources=stored.get("ai_cited_sources") or [],
+        web_sources=meta.get("web_sources") or [],
+        community=meta.get("community_lens"),
+        mode=meta.get("mode"),
+        language=meta.get("language"),
+        safety_class=meta.get("safety_class", "ok"),
+        prompt_version=claude.PROMPT_VERSION,
+    )
+    return common_answers.ask_to_serve(stored, history_id, user_id)
+
+
+async def _remember_common_answer(question, scope_id, asker, result) -> None:
+    if common_answers.ask_worth_keeping(result):
+        await asyncio.to_thread(
+            common_answers.remember, question, scope_id, common_answers.KIND_ASK,
+            asker, common_answers.ask_to_store(result))
+
+
 async def _ask_async_impl(
     request: Request,
     payload: AskRequest,
@@ -1235,6 +1273,15 @@ async def _ask_async_impl(
                 {"knowledge_rows": [], "user_memory_summaries": []},
             ))
 
+        # A first question another reader already asked is answered at once.
+        common_scope = asker = None
+        if not (guest is not None and guest.rows) and not question_was_sanitized:
+            common_scope = _common_answer_scope(answer_language, mode, canonical_lens, payload.web_search)
+            asker = common_answers.asker_id(user_id, client_ip)
+            common = await _serve_common_answer(question, common_scope, asker, user_id)
+            if common is not None:
+                return _attach_guest_usage(guest, common)
+
         ctx = await _collect_ask_async_context(
             question, canonical_lens, user_id, answer_language, bearer_token=authorization,
             retrieval_context=guest.retrieval_context if guest is not None else (),
@@ -1252,10 +1299,13 @@ async def _ask_async_impl(
         if breaker_response is not None:
             return _attach_guest_usage(guest, breaker_response)
 
-        return _attach_guest_usage(guest, await _run_ask_async_synthesis_or_fallback(
+        result = await _run_ask_async_synthesis_or_fallback(
             question, mode, canonical_lens, answer_language, user_id,
             question_was_sanitized, ctx, ask_cache_key,
-        ))
+        )
+        if common_scope is not None:
+            await _remember_common_answer(question, common_scope, asker, result)
+        return _attach_guest_usage(guest, result)
 
     except HTTPException:
         raise

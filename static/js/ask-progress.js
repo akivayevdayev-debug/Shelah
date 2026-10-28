@@ -17,6 +17,9 @@
 //        what a running step is doing right now; null when that work ends.
 //        Kinds are a closed set (refs, community, times, tool, step); this module
 //        owns the English and Hebrew wording, the server only names the work.
+//   { type: "draft", text }
+//        the answer's opening so far, as the model writes it ("" clears it:
+//        a second model or a second look starts over). Plain text.
 //   { type: "ping" }                                   (keep-alive, ignored)
 //   { type: "result", payload | body, status? }        (terminal)
 //   { type: "error",  status, detail | body }          (terminal)
@@ -54,9 +57,14 @@ const ACTIVE_PRIORITY = Object.freeze(["thinking", "sources", "commentary", "cus
 
 export const STAGE_IDS = Object.freeze(Object.keys(STAGES));
 
+// `trail` is every step the line has named, in order (each {key, active,
+// detail}), for the expandable step list; `draft` the answer's opening so far.
 export function createProgress() {
-    return { order: [], status: {}, details: {}, sites: [] };
+    return { order: [], status: {}, details: {}, sites: [], trail: [], draft: "", startedAt: Date.now() };
 }
+
+export const MAX_DRAFT_CHARS = 4000;
+export const MAX_TRAIL = 24;
 
 const STEP_STATE = new Map([["start", "active"], ["done", "done"]]);
 
@@ -114,8 +122,42 @@ function applyDetail(state, event) {
     return { ...state, details: { ...state.details, [event.stage]: detail } };
 }
 
+function applyDraft(state, event) {
+    if (typeof event.text !== "string") return state;
+    const draft = event.text.slice(0, MAX_DRAFT_CHARS);
+    return draft === (state.draft || "") ? state : { ...state, draft };
+}
+
+// Adds what the line now names to the trail, once: a step named again later
+// (back to "Thinking it through") keeps its first place.
+function withTrail(state) {
+    const view = progressView(state);
+    if (!view.active) return state;
+    const key = viewKey(view);
+    const trail = state.trail || [];
+    if (trail.some((step) => step.key === key) || trail.length >= MAX_TRAIL) return state;
+    return { ...state, trail: [...trail, { key, active: view.active, detail: view.detail }] };
+}
+
 // Pure: returns a new state, or the same object when the event changes nothing.
 export function applyProgressEvent(state, event) {
+    const next = applyEvent(state, event);
+    return next === state ? state : withTrail(next);
+}
+
+// The steps for the list under the line: the ones already passed (`done`)
+// and the one running now (`current`, null once the answer is in).
+export function trailView(state, { finished = false } = {}) {
+    const trail = state?.trail || [];
+    const nowKey = finished ? null : viewKey(progressView(state));
+    return {
+        done: trail.filter((step) => step.key !== nowKey),
+        current: finished ? null : trail.find((step) => step.key === nowKey) || null,
+    };
+}
+
+function applyEvent(state, event) {
+    if (event?.type === "draft") return applyDraft(state, event);
     if (event?.type === "detail") return applyDetail(state, event);
     if (event?.type === "site") return applySite(state, event);
     if (event?.type !== "stage" || !Object.hasOwn(STAGES, event.stage)) return state;
@@ -203,6 +245,7 @@ const STEP_LABELS = Object.freeze({
     retry: ["The first model is busy, trying again", "המודל הראשון עמוס, מנסים שוב"],
     second_model: ["Asking a second model", "פונים למודל נוסף"],
     second_look: ["Taking a second look", "בודקים שוב"],
+    details: ["Adding the sources and details", "מוסיפים מקורות ופרטים"],
 });
 
 function refsLabel(detail, lang, names) {

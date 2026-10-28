@@ -72,7 +72,7 @@ TOP_LEVEL_KEYS = TestAskTransportKeySetParity.TOP_LEVEL_KEYS
 # "guest" is the signed-out caller's allowance (backend/guest_cap.py). Only the
 # FastAPI route enforces it, as it is the only one reachable in production, and
 # it sits in meta (never top level) so the top-level key set stays identical.
-KNOWN_TRANSPORT_TAGS = {"cached", "async", "guest"}
+KNOWN_TRANSPORT_TAGS = {"cached", "async", "guest", "cached_common"}
 
 
 def _meta_keys_minus_transport_tag(meta: dict) -> set:

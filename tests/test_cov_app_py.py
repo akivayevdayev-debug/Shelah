@@ -739,7 +739,7 @@ class TestStartupBlueprintRegistration:
     def test_a_clean_import_registers_every_blueprint_on_the_new_app(self, monkeypatch, startup_stubs):
         module = _load_copy(monkeypatch)
 
-        assert len(module.app.blueprints) == 16
+        assert len(module.app.blueprints) == 17
         assert module.app.blueprints.keys() == flask_app_module.app.blueprints.keys()
         # The registration list and its helper names are cleaned up afterwards.
         for leaked in ("_BLUEPRINTS", "_importlib", "_mod_path", "_bp_name", "_mod", "_bp"):
@@ -748,7 +748,7 @@ class TestStartupBlueprintRegistration:
     @pytest.mark.parametrize("failing_path, blueprints_registered_before", [
         ("backend.routes_library", 0),
         ("backend.routes_calendar", 4),
-        ("backend.routes_webhooks", 15),
+        ("backend.routes_webhooks", 16),
     ])
     def test_a_failing_import_aborts_startup_with_the_offending_module_named(
         self, monkeypatch, startup_stubs, caplog, failing_path, blueprints_registered_before,

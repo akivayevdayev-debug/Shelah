@@ -32,7 +32,7 @@ Every route is served from one Vercel deployment. The base URL in production is 
 |---|---|
 | [Pages](#pages) | `/`, `/settings`, `/profile`, `/terms`, `/privacy`, `/accessibility`, `/about`, `/help`, `/glossary`, `/ai-disclosure`, `/acceptable-use`, `/dmca`, `/licenses`, `/robots.txt`, `/sitemap.xml`, `/llms.txt`, `/manifest.webmanifest`, `/favicon.ico`, `/service-worker.js` |
 | [Deep-link paths](#deep-link-paths) | `/text/…`, `/prayer/…`, `/siddur[/…]`, `/community/…`, `/calendar/…`, `/answer/…`, `/a/…`, `/chat/…`, `/history[/…]`, `/signin`, `/signup` |
-| [Ask](#ask-pipeline) | `POST /ask` |
+| [Ask](#ask-pipeline) | `POST /ask`, `GET /api/ai/common-answers` (+ `/<fingerprint>`) |
 | [Conversations](#conversations) | `/api/conversations` (+ `/<id>`, `/<id>/messages`, `/<id>/restore`, `/<id>/ask`, `/<id>/share`) |
 | [History and sharing](#answer-history-and-sharing) | `/api/user/history` (+ `/<id>`, `/<id>/share`), `/api/public/answer/<token>`; [conversation sharing](#conversation-sharing) and [device identity](#device-identity) |
 | [Library and texts](#library-and-texts) | `/api/library/*`, `/api/texts-index`, `/api/text/<ref>` (+ `/links`, `/graph`), `/api/sidebar/<ref>`, `/api/search/suggest`, `/api/search/verses`, `/api/word/meaning`, `/api/export/chapter`, `/api/diagnostics/sefaria` |
@@ -192,7 +192,7 @@ The question is sanitised before use (hidden and control characters removed, whi
 | `429` | Rate limit exceeded, either the per-minute bucket or the signed-in daily quota |
 | `500` | An internal error occurred (reported to Sentry) |
 
-When the primary provider (Gemini) fails the answer comes from the Claude fallback and `meta.fallback` is `true`. When both providers fail the answer is built from the retrieved sources alone, without a model summary.
+Claude Haiku (`claude-haiku-5-5`) writes the answer. When it fails, Gemini takes over and `meta.fallback` is `true`. `AI_ANSWER_PROVIDER=gemini` puts Gemini first and Haiku second instead (`backend/claude.py: answer_provider_from_env`). When both providers fail the answer is built from the retrieved sources alone, without a model summary.
 
 **Live progress stream (opt-in).** A client that sends `Accept: application/x-ndjson` gets the same answer preceded by one line per pipeline step, so the UI can say what is happening while it waits. `POST /api/conversations/<id>/ask` behaves identically. Any other `Accept` header gets the single JSON response above, unchanged. Implementation: `backend/ask_progress.py` (server), `static/js/ask-progress.js` (client). Both ask routes (`asgi.py` and the Flask `app.py`) emit the same events (`tests/test_ask_progress.py`).
 
@@ -202,16 +202,28 @@ The body is newline-delimited JSON, one object per line:
 {"type":"stage","stage":"sources","state":"start"}
 {"type":"detail","stage":"sources","detail":{"kind":"refs","refs":["Berakhot 2a"],"count":4}}
 {"type":"stage","stage":"sources","state":"done"}
+{"type":"draft","text":"Cooking on Shabbat is forbidden"}
 {"type":"ping"}
 {"type":"result","payload":{ ...the JSON body above... }}
 ```
 
 - `stage` is one of `sources`, `commentary`, `customs`, `times`, `thinking`; `state` is `start` or `done`. Steps overlap, and a step that fans out into several lookups reports one `start` and one `done`.
-- `detail` says what a running step is doing right now, so the status line can be specific ("Reading Berakhot 2a and 3 more", "Checking sunset and nightfall for Shabbat times") instead of only naming the step. `detail` is `null` when that work ends, and a step that finishes drops its detail. It is data, never prose: `kind` is one of `refs` (`refs`: up to three references, `count`: how many in all), `community` (`community`: the reader's lens), `times` (`topic`: `shabbat`, `zmanim`, `omer`, `parasha` or `holiday`), `tool` (`tool`: the AI tool being run, plus `ref` for a text it opens) or `step` (`step`: why the model call is taking longer, one of `long` for a long answer, `retry` when the first model is asked again, `second_model` when a second model has taken over, `second_look` when the answer gets another check). The client owns the English and Hebrew wording (`static/js/ask-progress.js`), so a detail can never carry markup or the wrong language; a kind or value it has no words for is ignored and the line keeps naming the step. Overlapping lookups never stack: the model's own tool calls report through a counted scope and the line returns to the step's name when the last one ends.
+- `detail` says what a running step is doing right now, so the status line can be specific ("Reading Berakhot 2a and 3 more", "Checking sunset and nightfall for Shabbat times") instead of only naming the step. `detail` is `null` when that work ends, and a step that finishes drops its detail. It is data, never prose: `kind` is one of `refs` (`refs`: up to three references, `count`: how many in all), `community` (`community`: the reader's lens), `times` (`topic`: `shabbat`, `zmanim`, `omer`, `parasha` or `holiday`), `tool` (`tool`: the AI tool being run, plus `ref` for a text it opens) or `step` (`step`: why the model call is taking longer, one of `long` for a long answer, `retry` when the first model is asked again, `second_model` when a second model has taken over, `second_look` when the answer gets another check, `details` once the opening ruling is written and the model is adding the sources and details). The client owns the English and Hebrew wording (`static/js/ask-progress.js`), so a detail can never carry markup or the wrong language; a kind or value it has no words for is ignored and the line keeps naming the step. Overlapping lookups never stack: the model's own tool calls report through a counted scope and the line returns to the step's name when the last one ends.
+- `draft` is the answer's opening ruling as the model writes it (Claude only, streamed with `messages.stream`), at most every 100 ms and once more when it is complete. `text` is the whole ruling so far, not a delta, with `[n]` source markers left out and capped at 4000 characters. `""` clears it: a new model call starts, or a second model takes over. The `result` line replaces the draft with the finished answer. The client shows the draft in the answer's place and keeps the steps it went through as a collapsible "Thought for N s" list on the finished answer.
 - `ping` is a keep-alive sent after 10 s of silence; clients ignore it.
 - The last line is always a terminal `result` (the normal response body in `payload`; the conversation route sends `status` and `body`) or `error` (`status` plus `detail`). A stream that ends without one was interrupted.
 - The HTTP status stays real. Streaming starts only after the pre-flight checks (validation, auth, Turnstile, budget) pass, so a refusal is still an ordinary `400`/`401`/`402`/`403`/`429`; an answer that never reports a step (the prayer shortcut) comes back as plain JSON. After streaming starts, failures arrive as an `error` line.
 - A client that disconnects mid-stream does not cancel the answer: it still finishes, is recorded, and is charged as on the plain path.
+
+**Common answers.** When another reader already asked the same first question in the same setting (language, mode, community, web search on or off, prompt version, answer model), the stored answer is returned straight away with `meta.cached_common: true`, and is still saved to this reader's history (`backend/common_answers.py`). Matching folds case, accents, niqqud, punctuation, quote marks, a few transliterations (`shabbos` → `shabbat`) and polite filler at either end ("can you tell me …", "… thanks"); it never drops a word, number or negation, so "can I cook on Shabbat" and "can I not cook on Shabbat" stay apart. Never cached or served: follow-ups, time-bound questions ("today", "when is", zmanim, a year), fallback or source-only answers, answers that cite nothing, answers shaped by the reader's saved memories, anything a safety check flagged, and any question a reader marked not helpful (blocked for three days). A reader is never served the cached copy of their own earlier ask. `POST /api/conversations/<id>/ask` does the same for a conversation's first question. Entries live for three days, in Redis when `RATE_LIMIT_REDIS_URL` is set.
+
+### `GET /api/ai/common-answers`
+
+The panel's list of common questions, loaded the first time the AI panel opens (`static/js/common-answers.js`). Query: `lang`, `mode`, `lens`, `web` (`0` when web search is off), `kind` (`thread` for a signed-in conversation, else `ask`). Returns `{"variants", "leading", "trailing", "keys"}`: the folding rules and the fingerprints (first 32 hex characters of the SHA-256 of the folded question) of questions at least three different readers asked, most asked first, at most 40. Never the question text. `Cache-Control: private, max-age=300`.
+
+### `GET /api/ai/common-answers/<fingerprint>`
+
+One listed answer's text, `{"answer"}`, same query parameters; `404` when the fingerprint is not listed or the question was blocked. The panel fetches it while the reader types (debounced 200 ms) and shows it as the draft the moment they send; the real request still runs and replaces it. `Cache-Control: private, max-age=120`.
 
 **Source markers.** `answer` ties a claim to a source with a numbered marker, `[n]` (the 1-based position in `ai_cited_sources`), placed after the claim instead of naming the source in the prose: `"Kindling is forbidden on Shabbat.[1][2]"`. The server finalises the list in `backend/citation_markers.py` before it is returned or stored (empty entries dropped, a source named twice kept once, capped at 10, the way the conversation UI caps its citations) and renumbers every marker to match, so a number always points at the right entry; a marker whose source did not survive is removed rather than left dangling. Each marker sits at the end of the excerpt it backs (`place_markers`): a run of consecutive single sentences resting on the same source carries one marker, after the last of them ("Kindling is forbidden. Cooking too.[1][2]" rather than a `[1]` after every sentence), and a source cited again after a passage from a different source is shown again. A marker group is ascending and sits flush against the text it follows; code fences are left alone, and applying it twice changes nothing. Only digits count (`[1]`, `[1, 2]` and `[1-3]` are markers; `[2a]` and `[the Rema]` stay text). Answers stored before markers existed simply have none. When an earlier turn is shown to the model as history its markers are stripped, since their numbers belong to another answer's list.
 
@@ -697,6 +709,8 @@ Submit a thumbs up or down, a comment, or both, on an AI answer. A comment alone
 }
 ```
 
+A `not_helpful` verdict (here or through `PATCH`) also blocks the question from the common-answers cache for three days, so the answer is not handed to the next reader who asks it.
+
 A search-bar answer sends `history_id` (or `share_token` on a shared link). A reply in a conversation thread (a follow-up, or a thread reopened from history) is a stored conversation message, not an `ask_history` row, so its rating is sent with neither link: the verdict, the comment and the hashed question still arrive, just not tied to a stored answer.
 
 **Response (200):** `{"success": true, "id": "<the new row's uuid, or null>"}`. The id is what `PATCH /api/feedback/<id>` edits. A signed-out reader's row also stores `device_owner`, the hash of their `shelah_device` cookie (never the cookie), so the same browser can edit it later. Until `scripts/sql/migrate_answer_feedback_edit.sql` has run, the row is saved without that column and a guest can't edit it.
@@ -717,7 +731,7 @@ Change the rating or comment on feedback the caller left: the widget's "Edit fee
 - **Auth:** Optional, as for `POST`.
 - **Rate-limit class:** `feedback` (shared with `POST`).
 
-**Request body:** `{"verdict": "'helpful' | 'not_helpful' | 'comment'", "comment": "string, optional, sanitised and capped at 500 characters"}`. `comment` replaces the stored comment; `verdict: "comment"` drops the rating and needs a non-empty comment.
+**Request body:** `{"verdict": "'helpful' | 'not_helpful' | 'comment'", "comment": "string, optional, sanitised and capped at 500 characters", "question": "string, optional, only used to block a common answer"}`. `comment` replaces the stored comment; `verdict: "comment"` drops the rating and needs a non-empty comment.
 
 **Response (200):** `{"success": true, "id": "<id>"}`
 

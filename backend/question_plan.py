@@ -49,7 +49,8 @@ _MAX_QUESTION_CHARS = 600
 
 # A ref the reader can open: a title, then a chapter/page and optionally a
 # verse ("Numbers 13:32", "Bava Batra 14b:3", "Shulchan Arukh, Orach Chayim 263:2").
-_REF_RE = re.compile(r"^[A-Za-z][A-Za-z' ,.-]{1,70} \d{1,3}[ab]?(?::\d{1,3})?(?:-\d{1,3})?$")
+# A book number may lead ("1 Samuel 1:11", "II Kings 2:11").
+_REF_RE = re.compile(r"^(?:[12] |I{1,2} )?[A-Za-z][A-Za-z' ,.-]{1,70} \d{1,3}[ab]?(?::\d{1,3})?(?:-\d{1,3})?$")
 _HEBREW_RE = re.compile(r"[א-ת]")
 
 _SYSTEM = (

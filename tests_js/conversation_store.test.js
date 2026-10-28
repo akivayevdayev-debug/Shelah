@@ -989,6 +989,12 @@ test('a delete made while an undo is in flight is not cleared by that undo', asy
 
 const stage = (id, state) => ({ type: 'stage', stage: id, state });
 
+// The step state these tests are about; trail, draft and startedAt have their own tests.
+const progressCore = (store) => {
+    const { order, status, details, sites } = store.getState().progress;
+    return { order, status, details, sites };
+};
+
 test('send: the server\'s steps land in state.progress, starting fresh for every send', async () => {
     const { createConversationStore } = await loadStore();
     const gate = deferred();
@@ -1005,13 +1011,13 @@ test('send: the server\'s steps land in state.progress, starting fresh for every
 
     const sending = store.send('Q?');
     await new Promise((r) => setImmediate(r));
-    assert.deepEqual(store.getState().progress, { order: [], status: {}, details: {}, sites: [] });
+    assert.deepEqual(progressCore(store), { order: [], status: {}, details: {}, sites: [] });
 
     sink(stage('sources', 'start'));
     sink(stage('sources', 'done'));
     sink(stage('thinking', 'start'));
     sink({ type: 'ping' });
-    assert.deepEqual(store.getState().progress, {
+    assert.deepEqual(progressCore(store), {
         order: ['sources', 'thinking'],
         status: { sources: 'done', thinking: 'active' },
         details: {},
@@ -1025,7 +1031,7 @@ test('send: the server\'s steps land in state.progress, starting fresh for every
     // The next send does not inherit the previous answer's steps.
     const second = store.send('again');
     await new Promise((r) => setImmediate(r));
-    assert.deepEqual(store.getState().progress, { order: [], status: {}, details: {}, sites: [] });
+    assert.deepEqual(progressCore(store), { order: [], status: {}, details: {}, sites: [] });
     gate.resolve();
     await second;
 });
@@ -1079,7 +1085,7 @@ test('steps from an answer the user has since left are dropped', async () => {
     store.startNew({ minhag: 'Persian' });
     sink(stage('sources', 'start'));
 
-    assert.deepEqual(store.getState().progress, { order: [], status: {}, details: {}, sites: [] });
+    assert.deepEqual(progressCore(store), { order: [], status: {}, details: {}, sites: [] });
     gate.resolve();
     await sending;
 });
@@ -1197,4 +1203,121 @@ test('a signed-out follow-up and a send are asked in the panel, whatever the thr
     const sending = sender.send('Q?');
     assert.equal(sender.getState().surface, 'panel');
     await sending;
+});
+
+test('send: the finished answer keeps the steps it took and how long', async () => {
+    const { createConversationStore } = await loadStore();
+    const gate = deferred();
+    let sink = null;
+    const base = makeApi();
+    const api = makeApi({
+        askInConversation: async (id, payload, { onProgress }) => {
+            sink = onProgress;
+            await gate.promise;
+            return base.askInConversation(id, payload);
+        },
+    });
+    const store = createConversationStore({ api });
+    const sending = store.send('Q?');
+    await new Promise((r) => setImmediate(r));
+    sink(stage('sources', 'start'));
+    sink(stage('thinking', 'start'));
+    gate.resolve();
+    await sending;
+    const answer = store.getState().messages.at(-1);
+    assert.deepEqual(answer.thinking.steps.map((step) => step.active), ['sources', 'thinking']);
+});
+
+test('send: an answer that reported no steps carries no thinking', async () => {
+    const { createConversationStore } = await loadStore();
+    const store = createConversationStore({ api: makeApi() });
+    await store.send('Q?');
+    assert.equal(store.getState().messages.at(-1).thinking, null);
+});
+
+test('send: the answer being written lands in state.progress.draft', async () => {
+    const { createConversationStore } = await loadStore();
+    const gate = deferred();
+    let sink = null;
+    const base = makeApi();
+    const api = makeApi({
+        askInConversation: async (id, payload, { onProgress }) => {
+            sink = onProgress;
+            await gate.promise;
+            return base.askInConversation(id, payload);
+        },
+    });
+    const store = createConversationStore({ api });
+    const sending = store.send('Q?');
+    await new Promise((r) => setImmediate(r));
+    sink({ type: 'draft', text: 'Two candles are lit' });
+    assert.equal(store.getState().progress.draft, 'Two candles are lit');
+    gate.resolve();
+    await sending;
+});
+
+// ── common answers (static/js/common-answers.js) ─────────────────────────
+
+function gatedApi() {
+    const gate = deferred();
+    const base = makeApi();
+    const api = makeApi({
+        askInConversation: async (id, payload) => {
+            await gate.promise;
+            return base.askInConversation(id, payload);
+        },
+    });
+    return { api, gate };
+}
+
+test('send: a known common answer shows at once as the draft', async () => {
+    const { createConversationStore } = await loadStore();
+    const { api, gate } = gatedApi();
+    const store = createConversationStore({ api, instantAnswer: () => 'Not on Shabbat.' });
+    const sending = store.send('Can I cook on Shabbat?');
+    assert.equal(store.getState().progress.draft, 'Not on Shabbat.');
+    gate.resolve();
+    await sending;
+});
+
+test('send: the instant answer is looked up in the thread setting', async () => {
+    const { createConversationStore } = await loadStore();
+    const { api, gate } = gatedApi();
+    const asked = [];
+    const store = createConversationStore({
+        api,
+        getPrefs: () => ({ community: 'Sefardic', mode: 'balanced', language: 'en', webSearch: false }),
+        instantAnswer: (question, setting) => { asked.push(setting); return null; },
+    });
+    const sending = store.send('Can I cook on Shabbat?');
+    gate.resolve();
+    await sending;
+    assert.deepEqual(asked, [{ kind: 'thread', mode: 'balanced', language: 'en', lens: 'Sefardic', web: false }]);
+});
+
+test('send: a follow-up never gets an instant answer', async () => {
+    const { createConversationStore } = await loadStore();
+    let calls = 0;
+    const store = createConversationStore({ api: makeApi(), instantAnswer: () => { calls += 1; return 'x'; } });
+    await store.send('First?');
+    await store.send('And on Yom Tov?');
+    assert.equal(calls, 1);
+});
+
+test('send: a failing lookup does not stop the question', async () => {
+    const { createConversationStore } = await loadStore();
+    const store = createConversationStore({ api: makeApi(), instantAnswer: () => { throw new Error('boom'); } });
+    assert.equal(await store.send('Q?'), true);
+});
+
+test('askSearch: a known common answer shows at once as the draft', async () => {
+    const { createConversationStore } = await loadStore();
+    const pending = deferred();
+    const store = createConversationStore({
+        api: makeApi(), askAnswer: () => pending.promise, instantAnswer: () => 'Not on Shabbat.',
+    });
+    const asking = store.askSearch('Can I cook on Shabbat?', { mode: 'balanced', community: 'All', language: 'en' });
+    assert.equal(store.getState().progress.draft, 'Not on Shabbat.');
+    pending.resolve(askPayload());
+    await asking;
 });

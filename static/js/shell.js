@@ -12816,7 +12816,7 @@ function hasParenthetical(text) {
                     const response = await fetch(`/api/feedback/${rowId}`, {
                         method: 'PATCH',
                         headers,
-                        body: JSON.stringify({ verdict, comment }),
+                        body: JSON.stringify({ verdict, comment, question: queryTitle || '' }),
                     });
                     return response?.ok !== false;
                 } catch {

@@ -246,7 +246,10 @@ function sourcesFor(answer) {
         : { phase: SOURCES_PHASE.UNAVAILABLE, citations: [], messageId: answer.id };
 }
 
-export function createConversationStore({ api = defaultApi, getPrefs = () => ({}), askAnswer = null } = {}) {
+// `instantAnswer(question, setting)`: an answer already known for this
+// question in this setting (static/js/common-answers.js), shown as the draft
+// while the request runs; null for none.
+export function createConversationStore({ api = defaultApi, getPrefs = () => ({}), askAnswer = null, instantAnswer = null } = {}) {
     let state = {
         ...initialThreadState(getPrefs()?.community),
         list: { status: "idle", items: [], error: null },
@@ -283,6 +286,32 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
             const progress = applyProgressEvent(state.progress, event);
             if (progress !== state.progress) setState({ progress });
         };
+    }
+
+    // The setting a question sent now is answered in, as common-answers.js
+    // keys it: "thread" for a signed-in conversation, "ask" for /ask.
+    function instantSetting(kind = "thread", { mode, language, community } = {}) {
+        const options = askOptions(mode, language);
+        const lens = kind === "thread" ? state.draftMinhag : (community ?? getPrefs()?.community);
+        return {
+            kind: kind === "ask" ? "ask" : "thread",
+            mode: options.mode,
+            language: options.language,
+            lens: lens || "All",
+            web: options.webSearch !== false,
+        };
+    }
+
+    function showInstantAnswer(question, setting) {
+        if (typeof instantAnswer !== "function") return;
+        let text = null;
+        try {
+            text = instantAnswer(question, setting);
+        } catch {
+            return;
+        }
+        if (typeof text !== "string" || !text) return;
+        setState({ progress: applyProgressEvent(state.progress, { type: "draft", text }) });
     }
 
     function upsertListItem(header) {
@@ -335,6 +364,20 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
     }
 
     // ── search-bar answers ──────────────────────────────────────────────
+
+    // How the answer was reached, for the "Thought for 6s" list over it: the
+    // steps the status line named, and how long it took. On screen only; a
+    // thread reopened later shows the answer alone.
+    function thinkingOf(progress) {
+        const steps = progress?.trail || [];
+        if (!steps.length) return null;
+        return { steps, ms: Math.max(0, Date.now() - (progress.startedAt || Date.now())) };
+    }
+
+    function withThinking(turns) {
+        const thinking = thinkingOf(state.progress);
+        return thinking ? [turns[0], { ...turns[1], thinking }] : turns;
+    }
 
     function answerTurns(question, data, ids = [nextLocalId(), nextLocalId()]) {
         return [
@@ -398,10 +441,11 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
             ],
             sources: { phase: SOURCES_PHASE.SEARCHING, citations: [], messageId: ids[1] },
         });
+        showInstantAnswer(text, instantSetting("ask", request));
         try {
             const data = await askAnswer(text, request, { onProgress: progressSink(myGeneration) });
             if (myGeneration !== generation) return null;
-            const messages = answerTurns(text, data, ids);
+            const messages = withThinking(answerTurns(text, data, ids));
             setState({
                 sending: false,
                 answerView: viewFor(data, request),
@@ -488,7 +532,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
         try {
             const data = await askAnswer(text, request, { onProgress: progressSink(myGeneration), historyIds });
             if (myGeneration !== generation) return null;
-            const turns = answerTurns(text, data, ids);
+            const turns = withThinking(answerTurns(text, data, ids));
             setState({
                 sending: false,
                 answerView: viewFor(data, request),
@@ -614,6 +658,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
         const myGeneration = generation;
         const userLocalId = nextLocalId();
         const answerLocalId = nextLocalId();
+        const firstQuestion = !state.messages.length && !state.conversation;
 
         setState({
             sending: true,
@@ -627,6 +672,9 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
             ],
             sources: { phase: SOURCES_PHASE.SEARCHING, citations: [], messageId: answerLocalId },
         });
+        // Only a thread's first question can have a common answer (a follow-up
+        // depends on the turns before it).
+        if (firstQuestion) showInstantAnswer(text, instantSetting("thread", { mode, language }));
 
         try {
             const conversation = await ensureConversation(myGeneration);
@@ -641,7 +689,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
             if (myGeneration !== generation) return false;
 
             const userMessage = normalizeMessage(result?.user_message);
-            const answer = normalizeMessage({ role: "assistant", ...result?.assistant_message });
+            const answer = { ...normalizeMessage({ role: "assistant", ...result?.assistant_message }), thinking: thinkingOf(state.progress) };
             if (!answer.id) answer.id = answerLocalId; // client-only error placeholder
             const header = normalizeHeader(result?.conversation) || state.conversation;
             setState({
@@ -712,7 +760,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
             if (myGeneration !== generation) return false;
 
             const userMessage = result?.user_message ? normalizeMessage(result.user_message) : asked;
-            const answer = normalizeMessage({ role: "assistant", ...result?.assistant_message });
+            const answer = { ...normalizeMessage({ role: "assistant", ...result?.assistant_message }), thinking: thinkingOf(state.progress) };
             if (!answer.id) answer.id = answerLocalId;
             const header = normalizeHeader(result?.conversation) || state.conversation;
             setState({
@@ -870,6 +918,7 @@ export function createConversationStore({ api = defaultApi, getPrefs = () => ({}
         showAnswer,
         showSharedConversation,
         askSearch,
+        instantSetting,
         askGuestFollowUp,
         setSurface,
         canContinueAsGuest,

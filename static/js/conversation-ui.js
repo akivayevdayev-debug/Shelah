@@ -46,11 +46,12 @@
 // showPublicConversation.
 
 import { createConversationStore, MESSAGE_STATUS } from "./conversation-store.js";
+import { createCommonAnswers, TYPE_DELAY_MS as COMMON_ANSWER_TYPE_DELAY_MS } from "./common-answers.js";
 import { aiCommunityLens, onMinhagChange } from "./state.js";
 import { isSignedIn } from "./conversation-entry.js";
 import { closeOverlay, pushRoute, readRoute, routeUrl } from "./router.js";
 import { icon as phosphorIcon } from "./icons.js";
-import { activeLabel, createProgress, doneLabel, progressView, viewKey } from "./ask-progress.js";
+import { activeLabel, createProgress, doneLabel, progressView, trailView, viewKey } from "./ask-progress.js";
 import { sourceBadgeHtml, externalLinksHtml, previewHtml, hebrewRefName, readerRef, isWebRef, webSourceHeadHtml } from "./source-cards.js";
 import { citeIdPrefix, injectMarkers, placeMarkers, stripSourcesBlock } from "./citation-markers.js";
 import { createCitationPopover } from "./citation-popover.js";
@@ -140,6 +141,9 @@ let store = null;
 let shareControl = null;
 let voice = null;
 let mini = null;
+// Answers to common questions (common-answers.js): created, and its list
+// loaded, the first time the panel opens.
+let commonAnswers = null;
 let els = null;
 // The card a numbered source chip opens (citation-popover.js); made in bindEvents.
 let citePop = null;
@@ -198,6 +202,41 @@ function communityOptions() {
 // The "Web search" switch in the chat menu; on unless the reader turned it off.
 function webSearchOn() {
     return window.appState?.prefs?.webSearch !== false;
+}
+
+// The setting the composer's next question goes out in: a signed-in reader's
+// first question opens a conversation, a signed-out one asks /ask.
+function composerSetting() {
+    const options = { mode: currentMode(), language: lang(), community: defaultMinhag() };
+    return store?.instantSetting(ui.signedIn ? "thread" : "ask", options) || null;
+}
+
+function composerStartsThread() {
+    const state = store?.getState();
+    return Boolean(state) && !state.messages.length && !state.conversation;
+}
+
+// Loads the common-answers list when the browser is idle, so opening the panel
+// stays instant. Once per setting (the module remembers what it loaded).
+function loadCommonAnswers() {
+    const setting = composerSetting();
+    if (!setting) return;
+    commonAnswers ||= createCommonAnswers();
+    const run = () => void commonAnswers.load(setting);
+    if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(run, { timeout: 2000 });
+    else setTimeout(run, 300);
+}
+
+let commonAnswerTimer = 0;
+function prefetchCommonAnswer() {
+    clearTimeout(commonAnswerTimer);
+    if (!commonAnswers || !composerStartsThread()) return;
+    commonAnswerTimer = setTimeout(() => {
+        const question = String(els?.input?.value || "").trim();
+        const setting = composerSetting();
+        if (question.length < 6 || !setting) return;
+        void commonAnswers.load(setting).then(() => commonAnswers.prefetch(question, setting));
+    }, COMMON_ANSWER_TYPE_DELAY_MS);
 }
 
 function currentMode() {
@@ -491,6 +530,15 @@ function render() {
     els.panel.dataset.sending = panelLoading ? "true" : "false";
     els.pip.dataset.sending = panelLoading ? "true" : "false";
     renderBarStatus(barLoading, state, l);
+    // A bar question whose answer has started to arrive: the panel opens on it
+    // as it is written, instead of after it is finished.
+    if (barLoading && state.progress?.draft && !ui.draftOpening) {
+        ui.draftOpening = true;
+        queueMicrotask(() => {
+            ui.draftOpening = false;
+            if (store?.getState().sending && !ui.open) presentAnswer();
+        });
+    }
 
     const title = panelTitle(state, answerView, hasMessages);
     renderHeader(state, { l, name, title, options });
@@ -752,11 +800,75 @@ function statusRow({ tone = "", text, action = null, actionLabel = "", messageId
 // under it, the steps already finished. The two rows are always laid out so
 // steps arriving never move the skeleton below. renderStatus() fills them in
 // place, so a state change never rebuilds the turn (and restarts the blink).
+//
+// Like a model's visible thinking, the line opens (it is a <details>) into
+// the list of every step taken so far, the running one last; and the answer's
+// opening shows under it as the model writes it (renderDraft), with one
+// skeleton line left for the sources and details still to come.
 function statusHtml() {
-    return '<div class="conv-status" data-conv-status role="status">'
-        + '<span class="conv-status__now" data-status-now dir="auto"></span>'
+    return '<div class="conv-status" data-conv-status>'
+        + '<details class="conv-status__box" data-status-box>'
+        + `<summary class="conv-status__head" aria-label="${escapeText(tr("Steps so far", "השלבים עד כה"))}">`
+        + '<span class="conv-status__now" data-status-now dir="auto" role="status"></span>'
+        + icon("caret-down", "conv-status__caret")
+        + '</summary>'
+        + '<ol class="conv-steps" data-status-trail dir="auto"></ol>'
+        + '</details>'
         + '<span class="conv-status__done" data-status-done dir="auto" data-empty="true"></span>'
-        + '</div>';
+        + '</div>'
+        + '<div class="conv-answer conv-turn__draft" data-status-draft dir="auto" hidden></div>';
+}
+
+function stepLabel(step, l) {
+    const names = { community: (community) => communityDisplayName(community, l) };
+    return activeLabel(step.active, l, step.detail, names);
+}
+
+// One <li> per step: finished ones carry a check, the running one the dot.
+function stepsHtml({ done, current }, l) {
+    const item = (step, state) => `<li class="conv-steps__item" data-state="${state}">`
+        + (state === "done" ? phosphorIcon("check", { size: 14, weight: "bold" }) : '<span class="conv-steps__dot" aria-hidden="true"></span>')
+        + `<span>${escapeText(stepLabel(step, l))}</span></li>`;
+    return done.map((step) => item(step, "done")).join("") + (current ? item(current, "now") : "");
+}
+
+function renderTrail(host, progress, l) {
+    const list = host.querySelector("[data-status-trail]");
+    if (!list) return;
+    const steps = trailView(progress);
+    const key = `${l}:${steps.done.map((s) => s.key).join(",")}|${steps.current?.key || ""}`;
+    if (list.dataset.key === key) return;
+    list.dataset.key = key;
+    list.innerHTML = stepsHtml(steps, l);
+}
+
+// The answer's opening while it is written. The turn drops two of its three
+// skeleton lines once there is text (conversation.css [data-drafting]).
+function renderDraft(host, progress) {
+    const box = host.parentElement?.querySelector("[data-status-draft]");
+    if (!box) return;
+    const text = progress.draft || "";
+    if (box.dataset.text === text) return;
+    box.dataset.text = text;
+    box.hidden = !text;
+    host.parentElement.dataset.drafting = text ? "true" : "false";
+    if (text) {
+        box.innerHTML = answerHtml(text);
+        if (mostlyHebrew(text)) box.dataset.script = "he";
+        else delete box.dataset.script;
+    }
+}
+
+// Over a finished answer: "Thought for 6s", opening into the steps it took.
+function thoughtHtml(message, l) {
+    const steps = message.thinking?.steps;
+    if (!Array.isArray(steps) || !steps.length) return "";
+    const seconds = Math.max(1, Math.round((message.thinking.ms || 0) / 1000));
+    const title = tr(`Thought for ${seconds}s`, `חשבה ${seconds} שניות`);
+    return '<details class="conv-status__box conv-thought">'
+        + `<summary class="conv-status__head"><span class="conv-thought__title">${escapeText(title)}</span>${icon("caret-down", "conv-status__caret")}</summary>`
+        + `<ol class="conv-steps" dir="auto">${stepsHtml({ done: steps, current: null }, l)}</ol>`
+        + '</details>';
 }
 
 // The line naming what is happening now. References stay in the form the
@@ -810,9 +922,14 @@ function siteLinkHtml(site) {
 }
 
 function renderStatus(state, l) {
-    const view = progressView(state.progress || createProgress());
+    const progress = state.progress || createProgress();
+    const view = progressView(progress);
     const host = els.messages.querySelector("[data-conv-status]");
-    if (host) applyStatus(host, view, l);
+    if (host) {
+        applyStatus(host, view, l);
+        renderTrail(host, progress, l);
+        renderDraft(host, progress);
+    }
     return view;
 }
 
@@ -877,12 +994,14 @@ function turnInnerHtml(message, index, messages, l) {
             // carries its safety banner, community customs, feedback and
             // Copy link; decorateAnswerTurn fills the hosts.
             const data = message.answer;
-            if (!data) return `${answerBox(message, body)}${cites}${threadReplyActionsHtml(message)}`;
+            const thought = thoughtHtml(message, l);
+            if (!data) return `${thought}${answerBox(message, body)}${cites}${threadReplyActionsHtml(message)}`;
             // Paused answers: the banner says it, in the reader's language;
             // the server's English sentence under it would only repeat it.
             const paused = data.meta?.breaker_tripped && typeof window.renderDisclaimerBanner === "function";
             const answer = paused ? "" : answerBox(message, body);
             return '<div class="conv-turn__banner" data-answer-banner></div>'
+                + thought
                 + answer
                 + customsHtml(data, l)
                 + cites
@@ -1407,6 +1526,7 @@ function openPanel({ size = null, origin = null, fromRoute = false, routeId = nu
     ui.layout = effectiveLayout();
     ui.size = nextSize;
     markAiUsed();
+    loadCommonAnswers();
     // Opening the panel while the search bar waits for an answer hands the
     // wait to the panel: its status line and halo take over from the bar's.
     store?.setSurface("panel");
@@ -2754,6 +2874,7 @@ function bindEvents() {
         void submitComposer();
     });
     els.input.addEventListener("input", autosize);
+    els.input.addEventListener("input", prefetchCommonAnswer);
     installComposerResize();
     els.input.addEventListener("keydown", (event) => {
         if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
@@ -2862,7 +2983,9 @@ export function installConversationUI({ storeFactory = createConversationStore }
             community: defaultMinhag(),
             mode: currentMode(),
             language: lang(),
+            webSearch: webSearchOn(),
         }),
+        instantAnswer: (question, setting) => commonAnswers?.instant(question, setting) ?? null,
     });
     store.subscribe(scheduleRender);
     shareControl = createConversationShare();

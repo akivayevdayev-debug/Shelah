@@ -43,7 +43,7 @@ from flask import Blueprint, Response, copy_current_request_context, current_app
 
 from backend.auth import require_clerk_auth
 from backend.device_identity import filter_owner, history_owners
-from backend import ask_progress, claude, text_trust, web_lookup
+from backend import ask_progress, claude, common_answers, text_trust, web_lookup
 from backend.ai_notes import record_ai_note
 from backend.cost_gates import (
     bind_cost_attribution,
@@ -756,9 +756,19 @@ def _synthesize_and_store_assistant_reply(
         # A question that is plainly not about Jewish law or learning is refused
         # before any retrieval, whatever the thread so far was about.
         ctx = None
+        common = common_scope = None
+        asker = common_answers.asker_id(user_id, None)
         result = claude.off_topic_block_result(
             question, answer_language, in_thread=bool(conversation_history))
-        if result is not None:
+        if result is None and not conversation_history:
+            # A first question another reader already asked is answered at once.
+            common_scope = common_answers.scope(
+                answer_language, mode, canonical_lens, web_search,
+                common_answers.version(claude.PROMPT_VERSION, claude.AI_ANSWER_PROVIDER))
+            common = common_answers.lookup(question, common_scope, common_answers.KIND_THREAD, asker)
+        if isinstance(common, dict):
+            result, result_error = {}, ""
+        elif result is not None:
             result_error = str(result.get("error") or "")
         else:
             engine = get_engine()
@@ -773,7 +783,10 @@ def _synthesize_and_store_assistant_reply(
             result, result_error = _coerce_and_validate_ai_result(
                 result, question, mode, answer_language)
 
-        if result_error.startswith("security_blocked"):
+        if isinstance(common, dict):
+            answer_text = str(common.get("answer") or "")
+            citations = list(common.get("citations") or [])
+        elif result_error.startswith("security_blocked"):
             answer_text = str(result.get("answer") or "").strip() or (
                 "Request blocked by security policy. Please submit a direct halakhic question."
             )
@@ -796,6 +809,11 @@ def _synthesize_and_store_assistant_reply(
                 community=canonical_lens,
                 source_count=len(ctx["primary_sources"]),
             )
+            if common_scope is not None and common_answers.thread_worth_keeping(
+                    result, structured_payload, extract_ai_cited(structured_payload), ctx):
+                common_answers.remember(
+                    question, common_scope, common_answers.KIND_THREAD, asker,
+                    {"answer": answer_text, "citations": citations})
 
         message_result = supabase.table(SUPABASE_MESSAGES_TABLE).insert({
             "conversation_id": str(conversation_id),

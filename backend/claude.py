@@ -72,6 +72,14 @@ _DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"
 # (see _anthropic_request_options).
 _CLAUDE_FALLBACK_MODEL = "claude-haiku-5-5"
 _ERR_AI_PROVIDER_UNAVAILABLE = "AI provider is currently unavailable."
+# Which model writes the answer: Claude Haiku (the default since 2026-10-28),
+# with Gemini stepping in only when Haiku fails. AI_ANSWER_PROVIDER=gemini puts
+# Gemini first again, with Haiku as its fallback.
+def answer_provider_from_env(env=os.environ) -> str:
+    return "gemini" if (env.get("AI_ANSWER_PROVIDER") or "").strip().lower() == "gemini" else "claude"
+
+
+AI_ANSWER_PROVIDER = answer_provider_from_env()
 # Subject label _detect_out_of_scope_subject() returns for content the assistant
 # refuses outright, compared against at the refusal call sites (python:S1192).
 _SUBJECT_INAPPROPRIATE = "inappropriate subject matter"
@@ -2885,6 +2893,58 @@ async def _call_primary_model(prompt: str, dynamic_system_context: str = "", max
     # _model_call_timeout). Kept if an outer caller already set one.
     if _model_deadline.get() is None:
         _model_deadline.set(time.monotonic() + AI_TOTAL_BUDGET_SECONDS)
+    if _claude_answers_first():
+        return await _claude_then_gemini(
+            lambda: _call_claude_model(
+                prompt,
+                dynamic_system_context=dynamic_system_context,
+                **_model_call_extras(history_turns or [], max_tokens),
+            ),
+            lambda: _gemini_leg_sync_path(prompt, dynamic_system_context, max_tokens, history_turns),
+        )
+    primary_result = await _gemini_leg_sync_path(prompt, dynamic_system_context, max_tokens, history_turns)
+    primary_error = str(primary_result.get("error") or "")
+    if not primary_error or primary_error.startswith("security_blocked"):
+        return primary_result
+
+    return await _call_claude_model(
+        prompt,
+        dynamic_system_context=dynamic_system_context,
+        gemini_error=primary_error,
+        **_model_call_extras(history_turns or [], max_tokens),
+    )
+
+
+def _claude_answers_first() -> bool:
+    return AI_ANSWER_PROVIDER != "gemini"
+
+
+def _answer_failed(result: Dict[str, Any]) -> bool:
+    """An error other than a security block (which is a finished answer)."""
+    error = str(result.get("error") or "")
+    return bool(error) and not error.startswith("security_blocked")
+
+
+async def _claude_then_gemini(ask_claude, ask_gemini) -> Dict[str, Any]:
+    """Haiku's answer, or Gemini's when Haiku fails. Both errors are kept
+    when both fail, so the log says why each one did."""
+    result = await ask_claude()
+    if not _answer_failed(result):
+        result["is_fallback"] = False
+        return result
+    ask_progress.step(ask_progress.STEP_SECOND_MODEL)
+    ask_progress.draft("")
+    claude_error = str(result.get("error") or "")
+    backup = await ask_gemini()
+    if _answer_failed(backup):
+        backup["error"] = f"anthropic_error: {claude_error}; {backup.get('error')}"
+        return backup
+    backup["is_fallback"] = True
+    return backup
+
+
+async def _gemini_leg_sync_path(prompt, dynamic_system_context, max_tokens, history_turns) -> Dict[str, Any]:
+    """The sync pipeline's Gemini call, with its cost row recorded."""
     primary_result = _call_gemini_model(
         prompt,
         dynamic_system_context=dynamic_system_context,
@@ -2905,17 +2965,7 @@ async def _call_primary_model(prompt: str, dynamic_system_context: str = "", max
             route="/ask",
             request_id=get_request_id(),
         )
-
-    primary_error = str(primary_result.get("error") or "")
-    if not primary_error or primary_error.startswith("security_blocked"):
-        return primary_result
-
-    return await _call_claude_model(
-        prompt,
-        dynamic_system_context=dynamic_system_context,
-        gemini_error=primary_error,
-        **_model_call_extras(history_turns or [], max_tokens),
-    )
+    return primary_result
 
 
 # Escape-hatch executor for _call_primary_model_sync's loop-bridge path (see
@@ -3517,13 +3567,19 @@ async def _call_anthropic_httpx_model(
     thinks = answer_ceiling >= LONG_ANSWER_MAX_TOKENS
 
     try:
-        message = await client.messages.create(
-            model=model_name,
-            system=_anthropic_system_blocks(CORE_SYSTEM_PROMPT, dynamic_system_context),
-            max_tokens=answer_ceiling + (CLAUDE_THINKING_HEADROOM_TOKENS if thinks else 0),
-            messages=_anthropic_messages(prompt, history_turns),
-            timeout=timeout,
+        request = {
+            "model": model_name,
+            "system": _anthropic_system_blocks(CORE_SYSTEM_PROMPT, dynamic_system_context),
+            "max_tokens": answer_ceiling + (CLAUDE_THINKING_HEADROOM_TOKENS if thinks else 0),
+            "messages": _anthropic_messages(prompt, history_turns),
+            "timeout": timeout,
             **_anthropic_request_options(model_name, "medium" if is_study_ceiling else "low", thinking=thinks),
+        }
+        # A reader watching a streamed ask sees the answer's opening as it is
+        # written; otherwise one plain call.
+        message = await (
+            _stream_with_draft(client, request) if ask_progress.listening()
+            else client.messages.create(**request)
         )
         input_tokens, output_tokens = _anthropic_usage_tokens(getattr(message, "usage", None))
         await record_llm_call(
@@ -3568,6 +3624,49 @@ async def _call_anthropic_httpx_model(
     except Exception as exc:
         health.record_failure('claude')
         return _anthropic_error_result(f"anthropic_sdk_error: {exc}", gemini_error, model_name)
+
+
+class _RulingDraft:
+    """Reports the "ruling" (the answer's opening) of a JSON answer while it
+    streams in: at most every DRAFT_INTERVAL_SECONDS, and once more when the
+    field is complete, followed by the "details" step for the rest."""
+
+    DRAFT_INTERVAL_SECONDS = 0.1
+
+    def __init__(self) -> None:
+        self._raw = ""
+        self._sent = ""
+        self._sent_at = 0.0
+        self._done = False
+
+    def feed(self, chunk: str) -> None:
+        if self._done:
+            return
+        self._raw += chunk
+        found = _RULING_KEY_RE.search(self._raw)
+        if not found:
+            return
+        now = time.monotonic()
+        text, closed, _end = _read_json_string(self._raw, found.end())
+        if not closed and now - self._sent_at < self.DRAFT_INTERVAL_SECONDS:
+            return
+        if text.strip() and text != self._sent:
+            ask_progress.draft(text)
+            self._sent, self._sent_at = text, now
+        if closed:
+            self._done = True
+            ask_progress.step(ask_progress.STEP_DETAILS)
+
+
+async def _stream_with_draft(client: Any, request: Dict[str, Any]) -> Any:
+    """The same request as the plain answer call, streamed so the answer's opening
+    reaches the reader as it is written. Returns the same final message."""
+    draft = _RulingDraft()
+    ask_progress.draft("")
+    async with client.messages.stream(**request) as stream:
+        async for text in stream.text_stream:
+            draft.feed(text)
+        return await stream.get_final_message()
 
 
 def _split_agentic_content(content: Any) -> Tuple[List[str], List[Dict[str, Any]]]:
@@ -3922,6 +4021,13 @@ async def ask_ai_async(
     extras = _model_call_extras(build_history_turns(conversation_history), max_tokens)
 
     async def _generate(prompt: str) -> Dict[str, Any]:
+        if _claude_answers_first():
+            return await _claude_then_gemini(
+                lambda: _call_anthropic_httpx_model(
+                    prompt, dynamic_system_context=dynamic_system_context, **extras),
+                lambda: _call_gemini_httpx_model(
+                    prompt, dynamic_system_context=dynamic_system_context, is_simple=is_simple, **extras),
+            )
         result = await _call_gemini_httpx_model(
             prompt,
             dynamic_system_context=dynamic_system_context,
