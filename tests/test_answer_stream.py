@@ -2,6 +2,7 @@
 (backend/claude.py _RulingDraft / _stream_with_draft, ask_progress.draft)."""
 
 import asyncio
+from types import SimpleNamespace
 
 import pytest
 
@@ -145,3 +146,59 @@ def test_a_second_model_taking_over_clears_the_draft(events):
 
     asyncio.run(claude._claude_then_gemini(failing, backup))
     assert _drafts(events) == [""]
+
+
+class _FakeGeminiModels:
+    def __init__(self, chunks):
+        self.chunks = chunks
+        self.streamed = []
+
+    async def generate_content_stream(self, **request):
+        self.streamed.append(request)
+
+        async def _chunks():
+            for chunk in self.chunks:
+                yield chunk
+        return _chunks()
+
+
+class _FakeGeminiClient:
+    def __init__(self, chunks):
+        self.aio = SimpleNamespace(models=_FakeGeminiModels(chunks))
+
+
+_GEMINI_CHUNKS = [
+    SimpleNamespace(text='{"ruling": "Light two', usage_metadata=None),
+    SimpleNamespace(text=' candles."', usage_metadata=None),
+    SimpleNamespace(text=', "sources": []}', usage_metadata=SimpleNamespace(prompt_token_count=9)),
+]
+
+
+def _stream_gemini(chunks=_GEMINI_CHUNKS):
+    return asyncio.run(claude._stream_gemini_with_draft(_FakeGeminiClient(chunks), {"model": "m"}))
+
+
+@pytest.mark.usefixtures("no_wait")
+class TestGeminiStream:
+    def test_the_ruling_is_reported_as_gemini_writes_it(self, events):
+        _stream_gemini()
+        assert _drafts(events) == ["", "Light two", "Light two candles."]
+
+    def test_the_whole_reply_text_is_returned(self, events):
+        assert _stream_gemini().text == '{"ruling": "Light two candles.", "sources": []}'
+
+    def test_the_last_chunks_usage_is_returned(self, events):
+        assert _stream_gemini().usage_metadata.prompt_token_count == 9
+
+    def test_a_chunk_with_no_text_is_skipped(self, events):
+        chunks = [SimpleNamespace(text=None, usage_metadata=None), *_GEMINI_CHUNKS]
+        assert _stream_gemini(chunks).text.startswith('{"ruling"')
+
+
+def test_a_listened_gemini_call_streams(events, monkeypatch):
+    client = _FakeGeminiClient(_GEMINI_CHUNKS)
+    monkeypatch.setattr(claude, "_gemini_call_timeout", lambda: 30.0)
+    monkeypatch.setattr(claude, "genai_types", SimpleNamespace(
+        GenerateContentConfig=dict, HttpOptions=dict))
+    reply = asyncio.run(claude._generate_gemini_content_async_with_retry(client, "m", "q", "sys", 100))
+    assert reply.text.endswith('"sources": []}')

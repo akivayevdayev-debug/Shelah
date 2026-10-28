@@ -192,7 +192,7 @@ The question is sanitised before use (hidden and control characters removed, whi
 | `429` | Rate limit exceeded, either the per-minute bucket or the signed-in daily quota |
 | `500` | An internal error occurred (reported to Sentry) |
 
-Claude Haiku (`claude-haiku-5-5`) writes the answer. When it fails, Gemini takes over and `meta.fallback` is `true`. `AI_ANSWER_PROVIDER=gemini` puts Gemini first and Haiku second instead (`backend/claude.py: answer_provider_from_env`). When both providers fail the answer is built from the retrieved sources alone, without a model summary.
+A simple question (short and single-part, by `question_profile`) is answered by Gemini Flash Lite (`gemini-3.5-flash-lite`); anything harder (multi-part, a request for a long or detailed answer, a study request, "which rabbi says") by Claude Haiku (`claude-haiku-5-5`). Each model backs up the other: when the first one fails the other takes over and `meta.fallback` is `true`. Both stream the answer's opening as `draft` events. `AI_ANSWER_PROVIDER=claude` or `=gemini` puts that model first for every question instead (`backend/claude.py: answer_provider_from_env`). When both providers fail the answer is built from the retrieved sources alone, without a model summary.
 
 **Live progress stream (opt-in).** A client that sends `Accept: application/x-ndjson` gets the same answer preceded by one line per pipeline step, so the UI can say what is happening while it waits. `POST /api/conversations/<id>/ask` behaves identically. Any other `Accept` header gets the single JSON response above, unchanged. Implementation: `backend/ask_progress.py` (server), `static/js/ask-progress.js` (client). Both ask routes (`asgi.py` and the Flask `app.py`) emit the same events (`tests/test_ask_progress.py`).
 

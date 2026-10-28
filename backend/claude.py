@@ -15,6 +15,7 @@ import contextvars
 import os
 import re
 import logging
+from types import SimpleNamespace
 import json
 import threading
 import time
@@ -72,11 +73,18 @@ _DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"
 # (see _anthropic_request_options).
 _CLAUDE_FALLBACK_MODEL = "claude-haiku-5-5"
 _ERR_AI_PROVIDER_UNAVAILABLE = "AI provider is currently unavailable."
-# Which model writes the answer: Claude Haiku (the default since 2026-10-28),
-# with Gemini stepping in only when Haiku fails. AI_ANSWER_PROVIDER=gemini puts
-# Gemini first again, with Haiku as its fallback.
+# Which model writes the answer. "auto" (the default) gives a simple question
+# (question_profile) to Gemini Flash Lite and anything harder -- multi-part,
+# long, study, "which rabbi says" -- to Claude Haiku, each backed up by the
+# other. On the 13-question accuracy set the two were level (60 vs 58 of 65
+# over five runs each) and Flash Lite about a second faster. AI_ANSWER_PROVIDER
+# =claude or =gemini puts that model first for every question.
+ANSWER_PROVIDERS = ("auto", "claude", "gemini")
+
+
 def answer_provider_from_env(env=os.environ) -> str:
-    return "gemini" if (env.get("AI_ANSWER_PROVIDER") or "").strip().lower() == "gemini" else "claude"
+    chosen = (env.get("AI_ANSWER_PROVIDER") or "").strip().lower()
+    return chosen if chosen in ANSWER_PROVIDERS else "auto"
 
 
 AI_ANSWER_PROVIDER = answer_provider_from_env()
@@ -2893,7 +2901,7 @@ async def _call_primary_model(prompt: str, dynamic_system_context: str = "", max
     # _model_call_timeout). Kept if an outer caller already set one.
     if _model_deadline.get() is None:
         _model_deadline.set(time.monotonic() + AI_TOTAL_BUDGET_SECONDS)
-    if _claude_answers_first():
+    if _claude_answers_first(max_tokens <= SIMPLE_ANSWER_MAX_TOKENS):
         return await _claude_then_gemini(
             lambda: _call_claude_model(
                 prompt,
@@ -2915,8 +2923,12 @@ async def _call_primary_model(prompt: str, dynamic_system_context: str = "", max
     )
 
 
-def _claude_answers_first() -> bool:
-    return AI_ANSWER_PROVIDER != "gemini"
+def _claude_answers_first(is_simple: bool = False) -> bool:
+    """Haiku for a question that needs more than a short answer, Flash Lite for
+    a simple one, unless AI_ANSWER_PROVIDER names one model for all."""
+    if AI_ANSWER_PROVIDER == "auto":
+        return not is_simple
+    return AI_ANSWER_PROVIDER == "claude"
 
 
 def _answer_failed(result: Dict[str, Any]) -> bool:
@@ -3842,17 +3854,39 @@ async def _generate_gemini_content_async_with_retry(
     timeout = _gemini_call_timeout()
     if timeout < _GEMINI_MIN_TIMEOUT_SECONDS:
         raise TimeoutError("ai_budget_exhausted")
-    return await client.aio.models.generate_content(
-        model=model_name,
-        contents=contents,
-        config=genai_types.GenerateContentConfig(
+    request = {
+        "model": model_name,
+        "contents": contents,
+        "config": genai_types.GenerateContentConfig(
             system_instruction=system_text,
             max_output_tokens=max_tokens,
             temperature=0.3,
             response_mime_type="application/json",
             http_options=genai_types.HttpOptions(timeout=int(timeout * 1000)),
         ),
-    )
+    }
+    # A reader watching a streamed ask sees the answer's opening as it is
+    # written, as with Haiku; otherwise one plain call.
+    if ask_progress.listening():
+        return await _stream_gemini_with_draft(client, request)
+    return await client.aio.models.generate_content(**request)
+
+
+async def _stream_gemini_with_draft(client: Any, request: Dict[str, Any]) -> Any:
+    """The Gemini request streamed, its ruling reported as it arrives. Returns
+    what the plain call would: an object with the whole ``text`` and the
+    ``usage_metadata`` (which comes with the last chunk)."""
+    draft = _RulingDraft()
+    ask_progress.draft("")
+    parts: List[str] = []
+    usage = None
+    async for chunk in await client.aio.models.generate_content_stream(**request):
+        text = getattr(chunk, "text", None)
+        if isinstance(text, str) and text:
+            parts.append(text)
+            draft.feed(text)
+        usage = getattr(chunk, "usage_metadata", None) or usage
+    return SimpleNamespace(text="".join(parts), usage_metadata=usage)
 
 
 async def _call_gemini_httpx_model(
@@ -4021,7 +4055,7 @@ async def ask_ai_async(
     extras = _model_call_extras(build_history_turns(conversation_history), max_tokens)
 
     async def _generate(prompt: str) -> Dict[str, Any]:
-        if _claude_answers_first():
+        if _claude_answers_first(is_simple):
             return await _claude_then_gemini(
                 lambda: _call_anthropic_httpx_model(
                     prompt, dynamic_system_context=dynamic_system_context, **extras),

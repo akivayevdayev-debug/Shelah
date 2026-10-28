@@ -210,9 +210,9 @@ async def fastapi_client():
 @pytest.fixture(autouse=True)
 def _gemini_answers_first(monkeypatch):
     """Most model-call tests were written for Gemini first, Claude as the
-    fallback, and still check that chain. Production puts Claude Haiku first
-    (backend/claude.py AI_ANSWER_PROVIDER); tests/test_answer_provider.py
-    covers that order."""
+    fallback, and still check that chain. Production routes by question
+    (backend/claude.py AI_ANSWER_PROVIDER "auto"); tests/test_answer_provider.py
+    covers the routing."""
     from backend import claude
 
     monkeypatch.setattr(claude, "AI_ANSWER_PROVIDER", "gemini")
