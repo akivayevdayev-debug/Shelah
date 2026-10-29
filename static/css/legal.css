@@ -121,6 +121,14 @@ html.rtl .prose ol {
     line-height: 1.7;
 }
 
+/* Tailwind Typography's `.prose :where(dt)` sets color: var(--tw-prose-headings),
+   which resolves to Tailwind's slate-900 (#101828) because the page never
+   sets prose-invert -- 1.1:1 on the dark surface (the glossary terms).
+   Use the page's heading ink so dt follows the theme tokens. */
+.prose dt {
+    color: var(--ink-heading);
+}
+
 .prose a {
     overflow-wrap: anywhere; /* long repo URLs would push /licenses 14px wide at 320px */
     color: var(--accent-primary);

@@ -14,24 +14,24 @@
       "css/ai.css": "sha256:eec9fa7ae0f61773abffd439624472a821e8a27ebb080cb8bea81692c4c28058",
       "css/conversation.css": "sha256:101e37b2df09030ac83d9c5bcab4245a41d1cf87c9a26361fd2f1e8cb7532758",
       "css/history.css": "sha256:ff1556ed62eceadb953ed9a9b4325d70410a97e1bceff2271a07b5ebe213218c",
-      "css/calendar.css": "sha256:f39a09296d423b712c488044935b02e7f991764807c6146026925101d62934ee",
+      "css/calendar.css": "sha256:7979a00cb3c9aa8580560fc3f3e33aeb2777fcf5067a78585287767e98cbbd0d",
       "css/calendar-detail.css": "sha256:d14b9c9ed0a63a3d7f396d41e264781bf319897b773fd2ea2e7d7189cafed9ed",
       "css/loading.css": "sha256:10eaad855917d62df7a5d396c0bbb8a487d529d846bc3233637e7eb42e5a3211",
       "css/tailwind.css": "sha256:a761fbf4b1e65c859b6579eb66bbe4817b376d0ae1a26d8e292898c252a3b250"
     },
-    "sourcesHash": "6ed545288b459624a243de1acf59ae27b41c391a977410c06fd1b5ac56c2830a",
+    "sourcesHash": "b3a1c6da07e0d7c9cbfdddc1a704c778a8017937c2c464a5ae7388440f70d8c0",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "6ed545288b459624a243de1acf59ae27b41c391a977410c06fd1b5ac56c2830a",
+        "sourcesHash": "b3a1c6da07e0d7c9cbfdddc1a704c778a8017937c2c464a5ae7388440f70d8c0",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "6ed545288b459624a243de1acf59ae27b41c391a977410c06fd1b5ac56c2830a",
+        "sourcesHash": "b3a1c6da07e0d7c9cbfdddc1a704c778a8017937c2c464a5ae7388440f70d8c0",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "6ed545288b459624a243de1acf59ae27b41c391a977410c06fd1b5ac56c2830a",
+        "sourcesHash": "b3a1c6da07e0d7c9cbfdddc1a704c778a8017937c2c464a5ae7388440f70d8c0",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
@@ -60,7 +60,7 @@
         "source": "sha256:3d36bef570f2709b3b6846db2393298e67cdaa2e94cfb8726c30eb4d64a76045"
       },
       "clerk-appearance.js": {
-        "source": "sha256:1ac45ceb65361cd7c8f53caf996838558519dc9b4318dae6b6cfd9290b68a20b"
+        "source": "sha256:727270d6866fda615a45e9421aa8b0121d3fd9488ab65e153273aafde8084156"
       },
       "community-labels.js": {
         "source": "sha256:585382fbd366bc7e90c46d1ce91c0d44330efd939c7cc290c121cb48de01836b"
@@ -78,7 +78,7 @@
         "source": "sha256:968aced3c444af8bc1de8da0954ad3704ee3acf4a2df7812da324e62c3890547"
       },
       "shell.js": {
-        "source": "sha256:b4af768dcad9ebd752036f0c9e8008c8f2e49c621eec2f56bf1568be3c231b86"
+        "source": "sha256:0c83ed5a299ef3738db88f4acebed722f9b7e79bba6c5f8e9928e0ff892cd3df"
       },
       "topbar_shared.js": {
         "source": "sha256:27a797b3deffea688349051bba6539490d19d018205f4c9721cd4d69e0bb17c3"
@@ -107,7 +107,7 @@
         "conversation-share.js": "sha256:558e3e593caba8f29042c936d285ff8eb1564712f1d44255b92d651f3b0faa08",
         "conversation-store.js": "sha256:97256defebd702514d1bf26361c19b55d52bcf9cd166386ff7ca868baabac27f",
         "conversation-ui-helpers.js": "sha256:707d151c8ebb6fe0b3d2d21f9d85d0240627683df8d17a1cd0b5de9080cb5add",
-        "conversation-ui.js": "sha256:82a78c536dd964596876f2e105a70011160b94d2c3c580c9d3b963406ad0602f",
+        "conversation-ui.js": "sha256:d5e0e487b1d6ada7c9b0896a75ecb71803bd9ffbd19964342f85606854798aa5",
         "conversation-voice.js": "sha256:34f9ccb1fa67d5db791ff1c8bcabe61977d56a7354c4f60c35b19fdfefeedc94",
         "hebrew-keyboard.js": "sha256:70c1ce2b633381c4ee0d9cafa04324c15e5cc7578fda303ef5d7983dc72112b3",
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
@@ -130,15 +130,15 @@
         "js/calendar-detail.js": "42d77c653d87",
         "js/chunks/chunk-53BJF4LM.js": "2905904ee1e6",
         "js/chunks/chunk-GI7XZAIM.js": "7f7dabe88234",
-        "js/clerk-appearance.js": "61fad70c0aad",
+        "js/clerk-appearance.js": "2b87f5183189",
         "js/community-labels.js": "87dfbcba156b",
         "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/load-region.js": "2833ed602bea",
-        "js/main.js": "e8d5aa85b604",
+        "js/main.js": "9df6899d525f",
         "js/motion.js": "78836d5f6141",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
-        "js/shell.js": "4634442488c1",
+        "js/shell.js": "33d543156b6d",
         "js/topbar_shared.js": "55aa1d245dcc"
       },
       "unreached": []

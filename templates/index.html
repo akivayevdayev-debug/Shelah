@@ -856,7 +856,7 @@
                     <summary class="font-semibold hover:text-[#004e5f] border-b pb-2 mb-2">
                         <span data-en="Tanakh" data-he="תנ״ך">Tanakh</span>
                     </summary>
-                    <ul class="ml-2 space-y-1 border-l-2 pl-3 border-[#004e5f]/30">
+                    <div class="ml-2 space-y-1 border-l-2 pl-3 border-[#004e5f]/30">
                         <details class="group">
                             <summary class="text-slate-600 hover:text-[#004e5f] cursor-pointer font-medium text-sm">
                                 Torah (5 Books)</summary>
@@ -1011,7 +1011,7 @@
                                         Chronicles</button></li>
                             </ul>
                         </details>
-                    </ul>
+                    </div>
                 </details>
 
                 <details class="group cursor-pointer">
@@ -1279,6 +1279,7 @@
             <!-- HOME: BROWSE THE LIBRARY GRID -->
             <div id="homeGrid"{% if ssr_text %} style="display: none"{% endif %}
                 class="home-typography w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-12">
+                <h1 class="sr-only" data-en="Sh'elah: Torah Encyclopedia" data-he="שאלה: אנציקלופדיית תורה">Sh'elah: Torah Encyclopedia</h1>
                 <section class="home-topic-hero mb-10">
                     <p class="home-section-label" data-en="Parasha of the Week" data-he="פרשת השבוע">Parasha of the Week
                     </p>
@@ -1366,7 +1367,7 @@
 
                     <aside id="dailyPulseColumn" class="space-y-8" aria-label="Daily pulse">
                         <section class="home-today-section relative">
-                            <h4 class="home-section-label flex justify-between items-center mb-3">
+                            <h2 class="home-section-label flex justify-between items-center mb-3">
                                 <span data-en="Zmanim" data-he="זמנים">Zmanim</span>
                                 <span class="flex items-center gap-1.5">
                                     <span id="zmanLoc" class="text-xs normal-case tracking-normal text-slate-500 sk-line"
@@ -1378,7 +1379,7 @@
                                         <span class="contents" aria-hidden="true">{{ phosphor('map-pin', size=12, class='w-3 h-3') }}</span>
                                     </button>
                                 </span>
-                            </h4>
+                            </h2>
 
                             <!-- City Search Popover -->
                             <div id="citySearchPopover"
@@ -1552,8 +1553,8 @@
                         </section>
 
                         <section class="home-today-section">
-                            <h4 class="home-section-label mb-3" data-en="Holiday Season" data-he="עונת חגים">Holiday
-                                Season</h4>
+                            <h2 class="home-section-label mb-3" data-en="Holiday Season" data-he="עונת חגים">Holiday
+                                Season</h2>
                             <div class="space-y-2 text-sm">
                                 <div class="flex justify-between items-center py-1.5 border-b border-slate-100">
                                     <span class="text-slate-500" data-en="Today" data-he="היום">Today</span>
@@ -1581,8 +1582,8 @@
                         </section>
 
                         <section class="home-today-section">
-                            <h4 class="home-section-label mb-3" data-en="Daily Study" data-he="לימוד יומי">Daily Study
-                            </h4>
+                            <h2 class="home-section-label mb-3" data-en="Daily Study" data-he="לימוד יומי">Daily Study
+                            </h2>
                             <div id="dailyStudyList" class="space-y-4" aria-busy="true">
                                 <div class="home-daily-entry" aria-hidden="true">
                                     <span class="sk-line sk-daily-label"></span>
@@ -1780,7 +1781,7 @@
                     padding: 0 var(--sp-1);
                 }
             </style>
-            <footer class="site-footer" role="contentinfo">
+            <div class="site-footer">
                 <p class="site-footer-inner">
                     <span class="site-footer-copyright" style="display: block; margin-bottom: 0.35rem;"
                         data-en="© Sh'elah {{ current_year }}. All rights reserved."
@@ -1816,7 +1817,7 @@
                             data-he="רישיונות">Licenses</a>
                     </span>
                 </p>
-            </footer>
+            </div>
 
         </main>
 
@@ -2111,7 +2112,7 @@
 
         <div class="conv-main">
             <div class="conv-grabber" aria-hidden="true"><span></span></div>
-            <header class="conv-header">
+            <div class="conv-header">
                 <span class="conv-grip" aria-hidden="true">{{ phosphor('dots-six-vertical', size=14, class='h-3.5 w-3.5') }}</span>
                 <span class="conv-live-dot" aria-hidden="true"></span>
                 <button type="button" id="convHistoryBtn" class="conv-icon-btn conv-history-trigger"
@@ -2261,7 +2262,7 @@
                         <span class="contents" aria-hidden="true">{{ phosphor('x', size=14, class='h-3.5 w-3.5') }}</span>
                     </button>
                 </div>
-            </header>
+            </div>
 
             <p id="convLockLine" class="conv-lockline"></p>
 

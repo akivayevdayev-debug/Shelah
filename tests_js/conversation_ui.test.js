@@ -169,8 +169,8 @@ test('the sizes set the dialog semantics, lock the page behind a modal, and Esca
 
         page.ui.setSize('mini');
         await page.flush();
-        assert.equal(panel(page).getAttribute('role'), 'region');
-        assert.equal(panel(page).getAttribute('aria-modal'), 'false');
+        assert.equal(panel(page).getAttribute('role'), null);
+        assert.equal(panel(page).getAttribute('aria-modal'), null);
         assert.equal(page.document.body.classList.contains('conv-modal-open'), false);
         assert.match(page.$('#convExpandBtn').getAttribute('aria-label'), /Expand/);
 

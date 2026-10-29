@@ -2852,12 +2852,38 @@ function hasParenthetical(text) {
             authModal = null;
         }
 
+        const AUTH_DIALOG_NAMES = {
+            signin: ['Sign in', 'התחברות'],
+            signup: ['Sign up', 'הרשמה'],
+            profile: ['Account', 'חשבון'],
+        };
+
+        // Clerk's modal is a role="dialog" with no name, so a screen reader
+        // announced only "dialog" (axe aria-dialog-name). It is named by its
+        // own visible title, so the name follows a switch to sign-up or a
+        // language change; until a title renders, by what was opened.
+        function nameAuthDialog(kind) {
+            const dialog = document.querySelector('.cl-modalContent[role="dialog"]');
+            if (!dialog) return;
+            const title = dialog.querySelector('.cl-headerTitle');
+            if (title) {
+                title.id ||= 'clerkDialogTitle';
+                dialog.removeAttribute('aria-label');
+                if (dialog.getAttribute('aria-labelledby') !== title.id) dialog.setAttribute('aria-labelledby', title.id);
+                return;
+            }
+            const [en, he] = AUTH_DIALOG_NAMES[kind] || AUTH_DIALOG_NAMES.signin;
+            const name = isHebrewMode() ? he : en;
+            if (dialog.getAttribute('aria-label') !== name) dialog.setAttribute('aria-label', name);
+        }
+
         function watchAuthModal(page, kind) {
             stopWatchingAuthModal();
             let seen = Boolean(document.querySelector(CLERK_MODAL_SELECTOR));
             const observer = new MutationObserver(() => {
                 if (document.querySelector(CLERK_MODAL_SELECTOR)) {
                     seen = true;
+                    nameAuthDialog(kind);
                     clearTimeout(watch.timer);
                 } else if (seen) {
                     onAuthModalClosed(watch);

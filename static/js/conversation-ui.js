@@ -1387,8 +1387,16 @@ function applyAttributes() {
     const rtl = document.documentElement.dir === "rtl";
     els.panel.dataset.corner = logicalCorner(readCorner(), rtl);
     const modal = isModalSize(ui.size);
-    els.panel.setAttribute("aria-modal", modal ? "true" : "false");
-    els.panel.setAttribute("role", modal ? "dialog" : "region");
+    // #convPanel is a <dialog>: axe allows only role dialog/alertdialog on it,
+    // and aria-modal only on dialogs. Modal: explicit dialog + aria-modal.
+    // Docked: no role and no aria-modal (the native non-modal dialog role).
+    if (modal) {
+        els.panel.setAttribute("role", "dialog");
+        els.panel.setAttribute("aria-modal", "true");
+    } else {
+        els.panel.removeAttribute("role");
+        els.panel.removeAttribute("aria-modal");
+    }
     if (els.expandBtn) {
         const toFull = expandedSize(ui.size) === "full";
         const label = toFull ? tr("Open full page", "פתח בעמוד מלא") : tr("Expand", "הרחב");

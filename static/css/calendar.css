@@ -214,11 +214,6 @@ body.theme-dark {
     margin: 0;
 }
 
-/* Days from the neighbouring months, faded as FullCalendar 6 did. */
-.fc .fc-day-other .fc-daygrid-day-top {
-    opacity: 0.3;
-}
-
 .fc-day-today .fc-daygrid-day-number {
     font-weight: 700;
 }
@@ -250,6 +245,29 @@ body.theme-dark {
 
 .fc .cal-day-shabbat .fc-daygrid-day-number { color: var(--cal-day-shabbat-fg); }
 .fc .cal-day-holiday .fc-daygrid-day-number { color: var(--cal-day-holiday-fg); }
+
+/* Days from the neighbouring months. No opacity on the cell top: it dimmed
+   the number below 4.5:1. The number takes the muted text token at a lighter
+   weight, so it reads quieter than the current month's. Holiday and Shabbat
+   numbers keep their colour (both clear 4.5:1 on their tint); the dot marker carries the
+   kind either way. */
+/* The dark selector is repeated with #calendarModal and :is() so it outranks
+   style.css's dark `.fc .fc-daygrid-day-number { color: cream }` (0,3,1). */
+.fc .fc-day-other .fc-daygrid-day-number,
+:is([data-theme="dark"], body.theme-dark) #calendarModal .fc .fc-day-other .fc-daygrid-day-number {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.fc .fc-day-other.cal-day-holiday .fc-daygrid-day-number,
+:is([data-theme="dark"], body.theme-dark) #calendarModal .fc .fc-day-other.cal-day-holiday .fc-daygrid-day-number {
+    color: var(--cal-day-holiday-fg);
+}
+
+.fc .fc-day-other.cal-day-shabbat .fc-daygrid-day-number,
+:is([data-theme="dark"], body.theme-dark) #calendarModal .fc .fc-day-other.cal-day-shabbat .fc-daygrid-day-number {
+    color: var(--cal-day-shabbat-fg);
+}
 
 .fc .cal-day-shabbat .fc-daygrid-day-number::before,
 .fc .cal-day-holiday .fc-daygrid-day-number::before,

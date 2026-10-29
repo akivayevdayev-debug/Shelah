@@ -7,7 +7,7 @@
  * matching set.  Two colours carry the brand — a MAIN (the blue) and an ACCENT (the
  * gold) — on top of the site's surface and ink tokens.
  *
- *   light   main #1f3f63 (label #ffffff, 10.77:1)      accent #8a6a10 (4.84:1 on the card)
+ *   light   main #1f3f63 (label #ffffff, 10.77:1)      accent #7a5c0c (5.34:1 on the footer pill)
  *   dark    main #6888a8 (label #0c0c0b,  5.29:1)      accent #c9ac5e (7.66:1 on the card)
  *
  * The tokens are read at call time, so call `ShelahClerkAppearance()` when opening a
@@ -38,8 +38,9 @@
         // it, so dark uses the near-black page colour for the label (5.29:1).
         const onMain = dark ? token('--surface-0', '#0c0c0b') : token('--ink-on-accent', '#ffffff');
         // --accent-gold is decorative-only on cream (1.97:1), so light mode uses a deeper
-        // gold that is safe for text and focus rings; dark mode uses the token as is.
-        const accent = dark ? token('--accent-gold', '#c9ac5e') : '#8a6a10';
+        // gold that is safe for text and focus rings (5.34:1 on the footer pill, 5.97:1 on
+        // the card); dark mode uses the token as is.
+        const accent = dark ? token('--accent-gold', '#c9ac5e') : '#7a5c0c';
 
         const card = token('--surface-2', dark ? '#1e1d1a' : '#fff9f1');
         const page = token('--surface-0', dark ? '#0c0c0b' : '#faf7f0');
@@ -109,6 +110,13 @@
                 headerSubtitle: { color: muted },
                 formButtonPrimary: { ...control, fontWeight: 600, textTransform: 'none', boxShadow: 'none' },
                 socialButtonsBlockButton: control,
+                // Clerk draws this label at ink with a 62% alpha (3.46:1 light, 4.17:1 dark);
+                // a solid muted colour clears 4.5:1 on the card in both themes.
+                socialButtonsBlockButtonText: { color: muted },
+                // The "Last used" badge (Clerk key lastAuthenticationStrategyBadge): axe saw it
+                // as muted text on an orange fill (1.8:1 light, 1.0:1 dark). Use the neutral
+                // chip pair instead: ink on the pill (8.86:1 light, 8.32:1 dark).
+                lastAuthenticationStrategyBadge: { backgroundColor: pill, color: ink, border: `1px solid ${edge}` },
                 formFieldInput: control,
                 footerActionLink: { color: accent, fontWeight: 600 },
             },
