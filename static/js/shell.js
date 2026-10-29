@@ -12520,7 +12520,11 @@ function hasParenthetical(text) {
         }
 
         async function acceptCityInput() {
-            await settleCitySuggestions();
+            try {
+                await settleCitySuggestions();
+            } catch {
+                // No suggestions to choose from; the plain search below still runs.
+            }
             if (!chooseCitySuggestion(Math.max(citySuggest.active, 0))) searchByCity();
         }
         window.acceptCityInput = acceptCityInput;
@@ -12572,7 +12576,7 @@ function hasParenthetical(text) {
             }
             if (e.key === 'Enter' && inCityBox) {
                 e.preventDefault();
-                acceptCityInput();
+                void acceptCityInput();
                 return;
             }
             if (e.key === 'Escape' && citySuggest.items.length && inCityBox) {

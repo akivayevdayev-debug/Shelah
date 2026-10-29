@@ -78,7 +78,7 @@
         "source": "sha256:968aced3c444af8bc1de8da0954ad3704ee3acf4a2df7812da324e62c3890547"
       },
       "shell.js": {
-        "source": "sha256:0c83ed5a299ef3738db88f4acebed722f9b7e79bba6c5f8e9928e0ff892cd3df"
+        "source": "sha256:c418c04d2fccd8c91b33da85ce94aadca85230c58eb8d2330763b70bc8e40bcc"
       },
       "topbar_shared.js": {
         "source": "sha256:27a797b3deffea688349051bba6539490d19d018205f4c9721cd4d69e0bb17c3"
@@ -100,7 +100,7 @@
         "citation-markers.js": "sha256:4a6039289400517dfa19bb0fff4aa4971c3e1191371ecd20b814f98e90693e6e",
         "citation-popover.js": "sha256:2452698153bb4f782f2787f88ec31a17633c5004c2a7627d8038de30491586e5",
         "commentary-preload.js": "sha256:cf65eaeb787cf274935198f04b0272ea693fef7c565c5516c3fd6bf203e706ff",
-        "common-answers.js": "sha256:3324a4bd6c1e7c20a7bf3a6dd99dac6f8999ace1c7d22f66cbc0430a2af6e5e4",
+        "common-answers.js": "sha256:86fa4cd291bf9dee16748edb6ad074200f2af82f0a80d2cee05523cd1d9849de",
         "conversation-api.js": "sha256:90e204fc21e4d650d8209f53b4196d27c49a5b3abf33aefd32f550b8450d508a",
         "conversation-entry.js": "sha256:25f9b62da24bcf0965429fa8162bc3b9dfa348b17ce0fdfa0d898ef945d24677",
         "conversation-mini.js": "sha256:b1ed8b20567e41cab3b25d1fed8870b759ccdf561314ebbbe51f384dc97171ab",
@@ -138,7 +138,7 @@
         "js/motion.js": "78836d5f6141",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
-        "js/shell.js": "33d543156b6d",
+        "js/shell.js": "ebaffb05378b",
         "js/topbar_shared.js": "55aa1d245dcc"
       },
       "unreached": []

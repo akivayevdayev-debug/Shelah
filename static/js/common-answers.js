@@ -168,7 +168,7 @@ export function createCommonAnswers({ fetchJson = defaultFetchJson, subtle = glo
             clearTimeout(timer);
             timer = setTimeout(() => {
                 const question = String(getQuestion() || "").trim();
-                if (question) prefetch(question, getSetting());
+                if (question) void prefetch(question, getSetting());
             }, delay);
         };
     }
