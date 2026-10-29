@@ -2956,6 +2956,87 @@ async def _claude_then_gemini(ask_claude, ask_gemini) -> Dict[str, Any]:
     return backup
 
 
+# How long Gemini may take to start its answer before Haiku is asked as well,
+# the first good answer of the two being used. Gemini's first words normally
+# come within a second or two; on a bad day the same call sat for 30-70 s.
+GEMINI_HEDGE_SECONDS = max(1.0, float(_int_env("AI_GEMINI_HEDGE_SECONDS", 4)))
+# Set around the Gemini call so its stream can say it has started and be told
+# to stop drafting once Haiku is asked too: {"started": Event, "muted": bool}.
+_gemini_stream_state: contextvars.ContextVar[Optional[Dict[str, Any]]] = contextvars.ContextVar(
+    "_gemini_stream_state", default=None)
+
+
+def _settled(task: "asyncio.Task") -> Dict[str, Any]:
+    """A finished model task's result, an exception turned into a failed one."""
+    try:
+        return task.result()
+    except Exception as exc:  # the model-call functions return errors, so this is a bug guard
+        return {"answer": "", "error": f"model_call_crashed: {exc}"}
+
+
+async def _drop(tasks) -> None:
+    for task in tasks:
+        task.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
+
+
+async def _gemini_then_haiku(ask_gemini, ask_haiku) -> Dict[str, Any]:
+    """Gemini's answer, with Haiku taking over when Gemini fails, and asked as
+    well when Gemini has not started answering within GEMINI_HEDGE_SECONDS (or
+    finished, when nothing is streamed): then the first good answer of the two
+    is used and the other call is cancelled. A Gemini that had not even started
+    by the time Haiku answered counts as a Gemini error, so a slow day puts the
+    app on Haiku alone (the cooldown) instead of making every reader wait.
+    ``ask_haiku`` takes Gemini's error ("" when it is only slow)."""
+    state: Dict[str, Any] = {"started": asyncio.Event(), "muted": False}
+    token = _gemini_stream_state.set(state)
+    try:
+        gemini = asyncio.create_task(ask_gemini())
+    finally:
+        _gemini_stream_state.reset(token)
+    started = asyncio.create_task(state["started"].wait())
+    hedge_after = GEMINI_HEDGE_SECONDS * (1 if ask_progress.listening() else 2)
+    await asyncio.wait({gemini, started}, timeout=hedge_after, return_when=asyncio.FIRST_COMPLETED)
+    await _drop([started])
+
+    if gemini.done() or state["started"].is_set():
+        if not gemini.done():
+            await asyncio.wait({gemini})
+        result = _settled(gemini)
+        if not _answer_failed(result):
+            return result
+        ask_progress.step(ask_progress.STEP_SECOND_MODEL)
+        return await ask_haiku(str(result.get("error") or ""))
+
+    state["muted"] = True
+    ask_progress.step(ask_progress.STEP_SECOND_MODEL)
+    haiku = asyncio.create_task(ask_haiku(""))
+    pending = {gemini, haiku}
+    errors: Dict[str, str] = {}
+    while pending:
+        done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+        for task in done:
+            result = _settled(task)
+            if _answer_failed(result):
+                errors["haiku" if task is haiku else "gemini"] = str(result.get("error") or "")
+                continue
+            if gemini in pending:
+                gemini_started = state["started"].is_set()
+                await _drop([gemini])
+                if gemini_started:
+                    health.release_probe("gemini")
+                else:
+                    await asyncio.to_thread(_record_gemini_error, TimeoutError("gemini_slow_start"))
+            else:
+                await _drop(list(pending))
+            result["is_fallback"] = task is haiku
+            return result
+    failed = _settled(gemini)
+    # Shaped like _anthropic_error_result's, which the plain fallback returns.
+    failed["error"] = f"gemini_error: {errors.get('gemini', '')}; {errors.get('haiku', '')}"
+    return failed
+
+
 async def _gemini_leg_sync_path(prompt, dynamic_system_context, max_tokens, history_turns) -> Dict[str, Any]:
     """The sync pipeline's Gemini call, with its cost row recorded."""
     primary_result = _call_gemini_model(
@@ -3878,14 +3959,20 @@ async def _stream_gemini_with_draft(client: Any, request: Dict[str, Any]) -> Any
     what the plain call would: an object with the whole ``text`` and the
     ``usage_metadata`` (which comes with the last chunk)."""
     draft = _RulingDraft()
-    ask_progress.draft("")
+    state = _gemini_stream_state.get() or {}
+    if not state.get("muted"):
+        ask_progress.draft("")
     parts: List[str] = []
     usage = None
     async for chunk in await client.aio.models.generate_content_stream(**request):
         text = getattr(chunk, "text", None)
         if isinstance(text, str) and text:
             parts.append(text)
-            draft.feed(text)
+            if state.get("started"):
+                state["started"].set()
+            # Once Haiku is asked too, its draft is the one on screen.
+            if not state.get("muted"):
+                draft.feed(text)
         usage = getattr(chunk, "usage_metadata", None) or usage
     return SimpleNamespace(text="".join(parts), usage_metadata=usage)
 
@@ -4063,22 +4150,12 @@ async def ask_ai_async(
                 lambda: _call_gemini_httpx_model(
                     prompt, dynamic_system_context=dynamic_system_context, is_simple=is_simple, **extras),
             )
-        result = await _call_gemini_httpx_model(
-            prompt,
-            dynamic_system_context=dynamic_system_context,
-            is_simple=is_simple,
-            **extras,
+        return await _gemini_then_haiku(
+            lambda: _call_gemini_httpx_model(
+                prompt, dynamic_system_context=dynamic_system_context, is_simple=is_simple, **extras),
+            lambda gemini_error: _call_anthropic_httpx_model(
+                prompt, dynamic_system_context=dynamic_system_context, gemini_error=gemini_error, **extras),
         )
-        result_error = str(result.get("error") or "")
-        if result_error and not result_error.startswith("security_blocked"):
-            ask_progress.step(ask_progress.STEP_SECOND_MODEL)
-            result = await _call_anthropic_httpx_model(
-                prompt,
-                dynamic_system_context=dynamic_system_context,
-                gemini_error=result_error,
-                **extras,
-            )
-        return result
 
     if max_tokens >= LONG_ANSWER_MAX_TOKENS:
         ask_progress.step(ask_progress.STEP_LONG)

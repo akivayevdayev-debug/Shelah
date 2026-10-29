@@ -156,3 +156,119 @@ class TestClaudeFirstSyncPath:
 
     def test_gemini_backs_up_a_failed_haiku(self, monkeypatch):
         assert self._run_sync(monkeypatch, "anthropic_sdk_error: x") == ["anthropic", "gemini"]
+
+
+GEMINI_ANSWER = {"answer": "gemini", "is_fallback": False}
+HAIKU_ANSWER = {"answer": "haiku", "is_fallback": True}
+
+
+def _hedge(monkeypatch, gemini_steps, haiku_delay=0.0, haiku_error=""):
+    """Runs _gemini_then_haiku with a 50 ms hedge. ``gemini_steps`` is a list
+    of ("sleep", s) / ("start",) / ("answer",) / ("fail", error) actions."""
+    calls, recorded = [], []
+    monkeypatch.setattr(claude, "GEMINI_HEDGE_SECONDS", 0.05)
+    monkeypatch.setattr(claude, "_record_gemini_error", recorded.append)
+
+    async def gemini():
+        calls.append("gemini")
+        for step in gemini_steps:
+            if step[0] == "sleep":
+                await asyncio.sleep(step[1])
+            elif step[0] == "start":
+                claude._gemini_stream_state.get()["started"].set()
+            elif step[0] == "fail":
+                return {"answer": "", "error": step[1]}
+        return dict(GEMINI_ANSWER)
+
+    async def haiku(gemini_error):
+        calls.append(f"haiku:{gemini_error}")
+        await asyncio.sleep(haiku_delay)
+        return {"answer": "", "error": haiku_error} if haiku_error else dict(HAIKU_ANSWER)
+
+    async def run():
+        token = ask_progress.bind(lambda _event: None)
+        try:
+            return await claude._gemini_then_haiku(gemini, haiku)
+        finally:
+            ask_progress.unbind(token)
+
+    return asyncio.run(run()), calls, recorded
+
+
+class TestSlowGemini:
+    def test_a_quick_gemini_answer_needs_no_haiku(self, monkeypatch):
+        _, calls, _ = _hedge(monkeypatch, [("answer",)])
+        assert calls == ["gemini"]
+
+    def test_a_gemini_that_started_in_time_is_waited_for(self, monkeypatch):
+        result, _, _ = _hedge(monkeypatch, [("start",), ("sleep", 0.15), ("answer",)])
+        assert result["answer"] == "gemini"
+
+    def test_a_gemini_that_started_in_time_does_not_bring_in_haiku(self, monkeypatch):
+        _, calls, _ = _hedge(monkeypatch, [("start",), ("sleep", 0.15), ("answer",)])
+        assert calls == ["gemini"]
+
+    def test_a_gemini_that_has_not_started_brings_in_haiku(self, monkeypatch):
+        result, _, _ = _hedge(monkeypatch, [("sleep", 5)])
+        assert result["answer"] == "haiku"
+
+    def test_haiku_is_asked_with_no_gemini_error_when_gemini_is_only_slow(self, monkeypatch):
+        _, calls, _ = _hedge(monkeypatch, [("sleep", 5)])
+        assert calls == ["gemini", "haiku:"]
+
+    def test_haikus_answer_after_a_slow_gemini_is_a_fallback(self, monkeypatch):
+        result, _, _ = _hedge(monkeypatch, [("sleep", 5)])
+        assert result["is_fallback"] is True
+
+    def test_a_gemini_that_never_started_counts_as_a_gemini_error(self, monkeypatch):
+        _, _, recorded = _hedge(monkeypatch, [("sleep", 5)])
+        assert [str(e) for e in recorded] == ["gemini_slow_start"]
+
+    def test_a_late_gemini_still_wins_when_it_beats_haiku(self, monkeypatch):
+        result, _, _ = _hedge(monkeypatch, [("sleep", 0.1), ("answer",)], haiku_delay=1)
+        assert result["answer"] == "gemini"
+
+    def test_a_late_gemini_that_wins_is_not_counted_as_an_error(self, monkeypatch):
+        _, _, recorded = _hedge(monkeypatch, [("sleep", 0.1), ("answer",)], haiku_delay=1)
+        assert recorded == []
+
+    def test_a_slow_gemini_that_then_fails_leaves_haikus_answer(self, monkeypatch):
+        result, _, _ = _hedge(monkeypatch, [("sleep", 0.1), ("fail", "gemini_sdk_error: 504")], haiku_delay=0.3)
+        assert result["answer"] == "haiku"
+
+    def test_a_quick_gemini_failure_hands_its_error_to_haiku(self, monkeypatch):
+        _, calls, _ = _hedge(monkeypatch, [("fail", "gemini_sdk_error: 503")])
+        assert calls == ["gemini", "haiku:gemini_sdk_error: 503"]
+
+    def test_when_both_fail_in_the_race_the_error_names_both(self, monkeypatch):
+        result, _, _ = _hedge(monkeypatch, [("sleep", 0.1), ("fail", "gemini_sdk_error: 504")],
+                              haiku_error="anthropic_sdk_error: overloaded")
+        assert result["error"] == "gemini_error: gemini_sdk_error: 504; anthropic_sdk_error: overloaded"
+
+
+@pytest.mark.usefixtures("no_wait_drafts")
+def test_a_muted_gemini_stream_sends_no_draft(monkeypatch):
+    sent = []
+
+    class _Models:
+        async def generate_content_stream(self, **_request):
+            async def chunks():
+                yield type("C", (), {"text": '{"ruling": "Yes."', "usage_metadata": None})()
+            return chunks()
+
+    async def run():
+        token = ask_progress.bind(sent.append)
+        state_token = claude._gemini_stream_state.set({"started": asyncio.Event(), "muted": True})
+        try:
+            await claude._stream_gemini_with_draft(type("Client", (), {"aio": type("A", (), {"models": _Models()})()})(), {})
+        finally:
+            claude._gemini_stream_state.reset(state_token)
+            ask_progress.unbind(token)
+
+    asyncio.run(run())
+    assert [e for e in sent if e.get("type") == "draft"] == []
+
+
+@pytest.fixture
+def no_wait_drafts(monkeypatch):
+    monkeypatch.setattr(claude._RulingDraft, "DRAFT_INTERVAL_SECONDS", 0)
