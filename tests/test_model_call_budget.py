@@ -366,3 +366,83 @@ def test_gemini_probe_failure_log_does_not_contain_the_key(monkeypatch, caplog, 
 
     assert "probe error" in caplog.text
     assert "SECRET-GEMINI-KEY" not in caplog.text
+
+
+def test_ask_ai_async_clears_its_deadline_when_done(monkeypatch):
+    """A second question from the same context gets a full budget, not what
+    the first one left."""
+    async def _fake(*args, **kwargs):
+        return {"answer": "ok"}
+
+    monkeypatch.setattr(claude, "_ask_ai_async", _fake)
+
+    async def _run():
+        await claude.ask_ai_async("q", [], [])
+        return claude._model_deadline.get()
+
+    assert asyncio.run(_run()) is None
+
+
+def test_ask_ai_async_gives_each_question_the_full_budget(monkeypatch):
+    seen = []
+
+    async def _fake(*args, **kwargs):
+        seen.append(claude._remaining_model_budget())
+        return {"answer": "ok"}
+
+    monkeypatch.setattr(claude, "_ask_ai_async", _fake)
+
+    async def _run():
+        await claude.ask_ai_async("q1", [], [])
+        await claude.ask_ai_async("q2", [], [])
+
+    asyncio.run(_run())
+    assert seen[1] == pytest.approx(claude.AI_TOTAL_BUDGET_SECONDS, abs=0.5)
+
+
+def test_ask_ai_async_keeps_an_outer_deadline(monkeypatch):
+    seen = []
+
+    async def _fake(*args, **kwargs):
+        seen.append(claude._model_deadline.get())
+        return {"answer": "ok"}
+
+    monkeypatch.setattr(claude, "_ask_ai_async", _fake)
+
+    async def _run():
+        claude._model_deadline.set(123.0)
+        await claude.ask_ai_async("q", [], [])
+
+    asyncio.run(_run())
+    assert seen == [123.0]
+
+
+def test_long_first_claude_call_may_run_past_the_plain_ceiling():
+    token = claude._model_deadline.set(time.monotonic() + claude.AI_TOTAL_BUDGET_SECONDS)
+    try:
+        timeout = claude._claude_call_timeout(long_first_leg=True)
+    finally:
+        claude._model_deadline.reset(token)
+    assert timeout == pytest.approx(claude.MODEL_LONG_REQUEST_TIMEOUT_SECONDS, abs=0.1)
+
+
+def test_long_first_claude_call_leaves_gemini_its_minimum():
+    token = claude._model_deadline.set(time.monotonic() + 40)
+    try:
+        timeout = claude._claude_call_timeout(long_first_leg=True)
+    finally:
+        claude._model_deadline.reset(token)
+    assert timeout == pytest.approx(40 - claude._GEMINI_MIN_TIMEOUT_SECONDS, abs=0.1)
+
+
+def test_claude_fallback_call_keeps_the_plain_ceiling():
+    token = claude._model_deadline.set(time.monotonic() + claude.AI_TOTAL_BUDGET_SECONDS)
+    try:
+        timeout = claude._claude_call_timeout(long_first_leg=False)
+    finally:
+        claude._model_deadline.reset(token)
+    assert timeout == float(claude.MODEL_REQUEST_TIMEOUT_SECONDS)
+
+
+def test_long_request_ceiling_stays_under_the_total_budget():
+    assert claude.MODEL_LONG_REQUEST_TIMEOUT_SECONDS + claude._GEMINI_MIN_TIMEOUT_SECONDS <= claude.AI_TOTAL_BUDGET_SECONDS

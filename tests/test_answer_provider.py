@@ -272,3 +272,56 @@ def test_a_muted_gemini_stream_sends_no_draft(monkeypatch):
 @pytest.fixture
 def no_wait_drafts(monkeypatch):
     monkeypatch.setattr(claude._RulingDraft, "DRAFT_INTERVAL_SECONDS", 0)
+
+
+class TestSlowGeminiOnTheSyncPath:
+    """The Flask pipeline's blocking Gemini call races Haiku the same way."""
+
+    def _run(self, monkeypatch, gemini_seconds):
+        import threading as _threading
+        import time as _time
+
+        finished = _threading.Event()
+
+        def _slow_gemini(prompt, dynamic_system_context="", max_tokens=3072, **_):
+            _time.sleep(gemini_seconds)
+            finished.set()
+            return {"answer": "gemini", "is_fallback": False, "model": "g",
+                    "_usage_tokens": {"input": 10, "output": 5}}
+
+        async def _cost(**kwargs):
+            self.costed.append(kwargs["provider"])
+
+        async def _haiku(prompt, dynamic_system_context="", gemini_error="", **_):
+            return {"answer": "haiku", "is_fallback": True, "model": "h"}
+
+        monkeypatch.setattr(claude, "AI_ANSWER_PROVIDER", "gemini")
+        monkeypatch.setattr(claude, "GEMINI_HEDGE_SECONDS", 0.05)
+        monkeypatch.setattr(claude, "_call_gemini_model", _slow_gemini)
+        monkeypatch.setattr(claude, "_call_claude_model", _haiku)
+        monkeypatch.setattr(claude, "_record_gemini_error", lambda exc: None)
+        monkeypatch.setattr(claude, "record_llm_call", _cost)
+        self.costed = []
+        started = _time.monotonic()
+        result = claude._call_primary_model_sync("prompt")
+        elapsed = _time.monotonic() - started
+        # The abandoned call finishes (and is costed) before the patches go.
+        finished.wait(gemini_seconds + 2)
+        _time.sleep(0.1)
+        return result, elapsed, finished
+
+    def test_haiku_answers_when_the_sync_gemini_is_slow(self, monkeypatch):
+        result, _, _ = self._run(monkeypatch, 1.0)
+        assert result["answer"] == "haiku"
+
+    def test_the_reader_does_not_wait_for_the_abandoned_gemini_call(self, monkeypatch):
+        _, elapsed, _ = self._run(monkeypatch, 2.0)
+        assert elapsed < 1.5
+
+    def test_a_quick_sync_gemini_answer_is_used(self, monkeypatch):
+        result, _, _ = self._run(monkeypatch, 0.0)
+        assert result["answer"] == "gemini"
+
+    def test_an_abandoned_sync_gemini_call_is_still_costed(self, monkeypatch):
+        self._run(monkeypatch, 0.3)
+        assert self.costed == ["gemini"]

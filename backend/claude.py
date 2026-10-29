@@ -12,6 +12,7 @@ then this file focuses on LLM formatting and call execution.
 
 import asyncio
 import contextvars
+import functools
 import os
 import re
 import logging
@@ -25,7 +26,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from dotenv import load_dotenv
 from tenacity import retry, wait_random_exponential, stop_after_attempt, retry_if_exception
 
-from backend import ask_progress, web_lookup
+from backend import ask_progress, hebrew_terms, web_lookup
 from backend.citation_markers import finalize_sources, note_head, place_markers, remap_markers, strip_markers
 from backend.cost_meter import record_llm_call
 from backend.customs import runtime_config as _customs_runtime_config
@@ -147,6 +148,11 @@ CLAUDE_THINKING_HEADROOM_TOKENS = 1536
 # call the effective timeout is further clamped to whatever budget remains --
 # see _model_call_timeout().
 MODEL_REQUEST_TIMEOUT_SECONDS = 30
+# A long answer from Haiku as the first model thinks first and then writes up
+# to 4096 tokens, which took 31s live (first words at 21s) and so ran into the
+# 30s ceiling above. That call alone may run this long, still leaving the
+# Gemini fallback its 10s minimum of the 45s budget (_claude_call_timeout()).
+MODEL_LONG_REQUEST_TIMEOUT_SECONDS = 35
 # Total wall-clock budget for a full /ask AI synthesis call (one shared constant
 # for both app.py and asgi.py so the two transports can't drift).
 # Must stay under functions.maxDuration in vercel.json so the platform never
@@ -199,6 +205,21 @@ def _model_call_timeout() -> float:
     return min(float(MODEL_REQUEST_TIMEOUT_SECONDS), remaining)
 
 
+def _claude_call_timeout(long_first_leg: bool = False) -> float:
+    """HTTP timeout for the next Claude request: _model_call_timeout(), or
+    for a long answer Claude writes before Gemini has failed, up to
+    MODEL_LONG_REQUEST_TIMEOUT_SECONDS, extended only as far as still leaves
+    Gemini its minimum deadline (never shorter than the plain timeout)."""
+    timeout = _model_call_timeout()
+    if not long_first_leg:
+        return timeout
+    remaining = _remaining_model_budget()
+    ceiling = float(MODEL_LONG_REQUEST_TIMEOUT_SECONDS)
+    if remaining is None:
+        return ceiling
+    return max(timeout, min(ceiling, remaining - _GEMINI_MIN_TIMEOUT_SECONDS))
+
+
 def _gemini_call_timeout() -> float:
     """HTTP timeout for the next Gemini attempt: _model_call_timeout() less the
     reserve kept for the Claude fallback, but never under Gemini's own minimum
@@ -238,7 +259,7 @@ RABBI_FINAL_RULING_FOOTER = "Please consult with your local Rabbi for a final ru
 # row (defensibility logging) so a stored answer's governing
 # prompt version is reconstructable during a dispute, without retaining the
 # full prompt text itself.
-PROMPT_VERSION = "2026-10-29-hebrew-terms-v19"
+PROMPT_VERSION = "2026-10-29-no-sources-v20"
 # INTERNAL_AI_KNOWLEDGE_DISCLAIMER: canonical copy lives in
 # backend/utils/search_provider.py (re-exported via backend/helpers.py) —
 # an unused, byte-identical duplicate previously lived here too;
@@ -2747,6 +2768,16 @@ def build_prompt(question, sefaria_sources, wiki, halachipedia=None, mode="balan
 
     format_instruction = _format_instruction(simple, study, long_request)
 
+    # Nothing was retrieved, so the answer rests on the model's own memory.
+    # Without this line Haiku stated a wrong bracha as plainly as a right one.
+    no_sources_instruction = (
+        "10b. NO SOURCES were retrieved for this QUESTION, so the answer rests on your own knowledge. "
+        "State as fact only what is well established and widely agreed. For any detail you are not sure "
+        "of (a particular bracha, a measure, a time, which community holds what), say plainly in the "
+        "ruling that you are not certain of it rather than stating a guess as fact, and leave `sources` "
+        "empty unless you are certain of the exact reference.\n"
+    ) if not (sefaria_text.strip() or halachipedia_text.strip() or web_text.strip() or web_findings) else ""
+
     follow_up_instruction = (
         '20. The QUESTION may point back to the earlier turns of this conversation ("that", "it", "the second one", '
         '"what about X?"): resolve those references from them, keep the community and facts already '
@@ -2811,7 +2842,7 @@ INSTRUCTIONS:
 8. Return strict JSON only, with keys: ruling, sources, is_prohibited, summary, practical_steps, rabbinic_disclaimer.
 9. Set rabbinic_disclaimer exactly to: "Please consult with your local Rabbi for a final ruling."
 10. If API snippets are missing or clearly irrelevant, you may use internal Halakhic knowledge only after steps 1 and 2 fail; then cite only a source you are certain exists, with its exact reference, or none.
-11. If relevant API evidence exists, do not use internal-only fallback. The snippets are keyword matches and some may not bear on the QUESTION (or may come from an earlier turn): use and cite only those that directly do, and never cite a snippet just because it was provided.
+{no_sources_instruction}11. If relevant API evidence exists, do not use internal-only fallback. The snippets are keyword matches and some may not bear on the QUESTION (or may come from an earlier turn): use and cite only those that directly do, and never cite a snippet just because it was provided.
 12. Do not emit debug or provenance labels such as "Conflict Flag", "Source: Community Knowledge", or "No primary Sefaria snippet".
 13. SCOPE: judge the QUESTION by its own subject, never by the earlier turns, the retrieved sources or the community lens. A halachic or Jewish-tradition question, or one asking what Jewish law says about something, is in scope even when it is sensitive, unusual or borderline: answer it.
 14. For modern halachic applications (technology, medicine, contemporary scenarios), prioritize Responsa and recent decisors.
@@ -2911,16 +2942,16 @@ async def _call_primary_model(prompt: str, dynamic_system_context: str = "", max
             ),
             lambda: _gemini_leg_sync_path(prompt, dynamic_system_context, max_tokens, history_turns),
         )
-    primary_result = await _gemini_leg_sync_path(prompt, dynamic_system_context, max_tokens, history_turns)
-    primary_error = str(primary_result.get("error") or "")
-    if not primary_error or primary_error.startswith("security_blocked"):
-        return primary_result
-
-    return await _call_claude_model(
-        prompt,
-        dynamic_system_context=dynamic_system_context,
-        gemini_error=primary_error,
-        **_model_call_extras(history_turns or [], max_tokens),
+    # Haiku takes over when Gemini fails, and is asked as well when Gemini is
+    # slow, the same as on the async path.
+    return await _gemini_then_haiku(
+        lambda: _gemini_leg_sync_path(prompt, dynamic_system_context, max_tokens, history_turns),
+        lambda gemini_error: _call_claude_model(
+            prompt,
+            dynamic_system_context=dynamic_system_context,
+            gemini_error=gemini_error,
+            **_model_call_extras(history_turns or [], max_tokens),
+        ),
     )
 
 
@@ -3037,8 +3068,10 @@ async def _gemini_then_haiku(ask_gemini, ask_haiku) -> Dict[str, Any]:
     return failed
 
 
-async def _gemini_leg_sync_path(prompt, dynamic_system_context, max_tokens, history_turns) -> Dict[str, Any]:
-    """The sync pipeline's Gemini call, with its cost row recorded."""
+def _gemini_call_with_cost(prompt, dynamic_system_context, max_tokens, history_turns) -> Dict[str, Any]:
+    """The sync pipeline's blocking Gemini call and its cost row, on a worker
+    thread. The cost is recorded here, not by the awaiting coroutine, so a
+    call the Haiku race abandoned is still counted when it finishes."""
     primary_result = _call_gemini_model(
         prompt,
         dynamic_system_context=dynamic_system_context,
@@ -3046,20 +3079,49 @@ async def _gemini_leg_sync_path(prompt, dynamic_system_context, max_tokens, hist
         **({"history_turns": history_turns} if history_turns else {}),
     )
     usage_tokens = primary_result.pop("_usage_tokens", None)
-    # Recorded unconditionally whenever tokens were actually billed (Gemini
-    # returned a response, even an empty one) — independent of whether we
-    # then return primary_result or fall through to the Claude fallback
-    # below, so spend from a failed-but-billed call is never lost.
+    # Recorded whenever tokens were billed (Gemini returned a response, even
+    # an empty one), whether or not this answer is the one used.
     if usage_tokens is not None:
-        await record_llm_call(
+        asyncio.run(record_llm_call(
             provider="gemini",
             model=str(primary_result.get("model") or _DEFAULT_GEMINI_MODEL),
             input_tokens=usage_tokens["input"],
             output_tokens=usage_tokens["output"],
             route="/ask",
             request_id=get_request_id(),
-        )
+        ))
     return primary_result
+
+
+async def _gemini_leg_sync_path(prompt, dynamic_system_context, max_tokens, history_turns) -> Dict[str, Any]:
+    """The sync pipeline's Gemini call, with its cost row recorded.
+
+    The SDK call blocks, so it runs on _sync_gemini_executor() (with this
+    context, for the deadline and request id) and the loop stays free for the
+    Haiku race in _gemini_then_haiku(). Not the loop's default executor:
+    asyncio.run() waits for that one's threads on exit, which would hold the
+    reader until the abandoned Gemini call timed out.
+    """
+    call = functools.partial(
+        contextvars.copy_context().run,
+        _gemini_call_with_cost, prompt, dynamic_system_context, max_tokens, history_turns)
+    return await asyncio.get_running_loop().run_in_executor(_sync_gemini_executor(), call)
+
+
+_sync_gemini_pool: Optional[ThreadPoolExecutor] = None
+_sync_gemini_pool_lock = threading.Lock()
+
+
+def _sync_gemini_executor() -> ThreadPoolExecutor:
+    """Threads for the sync path's blocking Gemini calls; each call is bounded
+    by the synthesis deadline, so an abandoned one frees its thread then."""
+    global _sync_gemini_pool
+    if _sync_gemini_pool is None:
+        with _sync_gemini_pool_lock:
+            if _sync_gemini_pool is None:
+                _sync_gemini_pool = ThreadPoolExecutor(
+                    max_workers=8, thread_name_prefix="claude-sync-gemini")
+    return _sync_gemini_pool
 
 
 # Escape-hatch executor for _call_primary_model_sync's loop-bridge path (see
@@ -3304,6 +3366,24 @@ def scope_second_look_note(question: str, in_thread: bool) -> str:
     return _SCOPE_UNFAMILIAR_NAME_NOTE
 
 
+def _normalize_hebrew_terms(result: Dict[str, Any]) -> None:
+    """An English answer's Hebrew terms in the "HEB (translit, meaning)" form
+    instruction 3 asks for (backend/hebrew_terms.py), in the answer text and in
+    the structured fields it is re-rendered from. `sources` are left alone."""
+    if isinstance(result.get("answer"), str):
+        result["answer"] = hebrew_terms.normalize(result["answer"])
+    structured = result.get("structured")
+    if not isinstance(structured, dict):
+        return
+    for key in ("ruling", "summary"):
+        if isinstance(structured.get(key), str):
+            structured[key] = hebrew_terms.normalize(structured[key])
+    steps = structured.get("practical_steps")
+    if isinstance(steps, list):
+        structured["practical_steps"] = [
+            hebrew_terms.normalize(step) if isinstance(step, str) else step for step in steps]
+
+
 def apply_output_validation(result, input_validation, answer_language, safety_class):
     """Validate the model's answer text, attach the security report, and stamp
     the structured payload with the safety class / age-safe flag.
@@ -3318,6 +3398,9 @@ def apply_output_validation(result, input_validation, answer_language, safety_cl
     if isinstance(flagged, dict) and flagged.get("out_of_scope") is True:
         return _build_out_of_scope_result(
             flagged.get("out_of_scope_subject", ""), answer_language, input_validation)
+
+    if str(answer_language).strip().lower() != "he":
+        _normalize_hebrew_terms(result)
 
     output_validation = validate_model_output(
         result.get("answer", ""), answer_language=answer_language)
@@ -3648,10 +3731,6 @@ async def _call_anthropic_httpx_model(
 
     # Whatever the Gemini leg left of the synthesis budget. Not a provider
     # failure, so the circuit is left alone.
-    timeout = _model_call_timeout()
-    if timeout < _MIN_MODEL_CALL_SECONDS:
-        return _anthropic_error_result("ai_budget_exhausted", gemini_error, model_name)
-
     answer_ceiling = max_tokens or COMPLEX_ANSWER_MAX_TOKENS
     is_study_ceiling = answer_ceiling >= STUDY_ANSWER_MAX_TOKENS
     # A short answer is built from sources already in the prompt, and thinking
@@ -3659,6 +3738,10 @@ async def _call_anthropic_httpx_model(
     # thinking earns its time: without it the same prompts came back about half
     # as long (docs/evals/2026-10-22-latency.md).
     thinks = answer_ceiling >= LONG_ANSWER_MAX_TOKENS
+
+    timeout = _claude_call_timeout(long_first_leg=thinks and not gemini_error)
+    if timeout < _MIN_MODEL_CALL_SECONDS:
+        return _anthropic_error_result("ai_budget_exhausted", gemini_error, model_name)
 
     try:
         request = {
@@ -4074,7 +4157,25 @@ async def _scope_second_look_async(result, started, sanitized_query, has_history
     return result if second.get("error") else second
 
 
-async def ask_ai_async(
+async def ask_ai_async(*args, **kwargs):
+    """Async AI entrypoint for ASGI deployments; see _ask_ai_async().
+
+    The question gets the full synthesis budget unless an outer caller already
+    set a deadline, and a deadline set here is cleared when the answer is done.
+    It used to stay set in the caller's context, so the next question asked
+    from that context started with whatever the last one left (14s after a
+    31s long answer) and its model calls timed out.
+    """
+    if _model_deadline.get() is not None:
+        return await _ask_ai_async(*args, **kwargs)
+    token = _model_deadline.set(time.monotonic() + AI_TOTAL_BUDGET_SECONDS)
+    try:
+        return await _ask_ai_async(*args, **kwargs)
+    finally:
+        _model_deadline.reset(token)
+
+
+async def _ask_ai_async(
     question,
     sefaria_sources,
     customs,
@@ -4088,7 +4189,9 @@ async def ask_ai_async(
     conversation_history=None,
     web_search=None,
 ):
-    """Async AI entrypoint for ASGI deployments.
+    """The answer itself, under the deadline ask_ai_async() set: the same
+    budget asgi.py's wait_for enforces, made visible to the model calls so a
+    Gemini retry never eats the Claude fallback's time.
 
     ``web_search`` is the reader's "Web search" setting (None = not sent, on);
     see ask_claude().
@@ -4096,10 +4199,6 @@ async def ask_ai_async(
     wiki = wiki or []
     halachipedia = halachipedia or []
     user_memories = user_memories or []
-    # The same budget asgi.py's wait_for enforces, made visible to the model
-    # calls so a Gemini retry never eats the Claude fallback's time.
-    if _model_deadline.get() is None:
-        _model_deadline.set(time.monotonic() + AI_TOTAL_BUDGET_SECONDS)
     dynamic_system_context = _build_dynamic_system_context(
         customs=customs,
         user_memories=user_memories,

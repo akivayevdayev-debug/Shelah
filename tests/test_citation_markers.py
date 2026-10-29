@@ -278,3 +278,16 @@ def test_removing_a_marker_never_joins_lines():
 
 def test_an_english_prompt_asks_for_hebrew_terms_in_hebrew_letters():
     assert '"מוקצה (muktzeh, an object you may not move on Shabbat)"' in claude.build_prompt("can I light a fire", [], [])
+
+
+def test_prompt_without_any_sources_asks_for_plain_uncertainty():
+    from backend import claude as _claude
+    prompt = _claude.build_prompt("What is the bracha on rice?", [], [], [])
+    assert "NO SOURCES were retrieved" in prompt
+
+
+def test_prompt_with_sources_leaves_out_the_no_sources_line():
+    from backend import claude as _claude
+    sources = [{"ref": "Berakhot 37a", "text": "Rice is mezonot."}]
+    prompt = _claude.build_prompt("What is the bracha on rice?", sources, [], [])
+    assert "NO SOURCES were retrieved" not in prompt
