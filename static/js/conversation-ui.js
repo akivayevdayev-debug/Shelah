@@ -773,9 +773,11 @@ function answerBodyHtml(message, idPrefix) {
     });
 }
 
+// The answer's direction comes from its language as a whole, not its first
+// letter: an English answer may open with a Hebrew term ("מוקצה (muktzeh)").
 function answerBox(message, body) {
-    const script = mostlyHebrew(message.content) ? ' data-script="he"' : "";
-    return `<div class="conv-answer" dir="auto"${script}>${body}</div>`;
+    const he = mostlyHebrew(message.content);
+    return `<div class="conv-answer" dir="${he ? "rtl" : "ltr"}"${he ? ' data-script="he"' : ""}>${body}</div>`;
 }
 
 function answerHtml(content) {
@@ -854,7 +856,9 @@ function renderDraft(host, progress) {
     host.parentElement.dataset.drafting = text ? "true" : "false";
     if (text) {
         box.innerHTML = answerHtml(text);
-        if (mostlyHebrew(text)) box.dataset.script = "he";
+        const he = mostlyHebrew(text);
+        box.dir = he ? "rtl" : "ltr";
+        if (he) box.dataset.script = "he";
         else delete box.dataset.script;
     }
 }

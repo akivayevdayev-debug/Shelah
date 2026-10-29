@@ -274,3 +274,7 @@ def test_other_refs_are_left_alone(ref):
 
 def test_removing_a_marker_never_joins_lines():
     assert remap_markers("First.\n[2] Second.", {1: 1}) == "First.\n Second."
+
+
+def test_an_english_prompt_asks_for_hebrew_terms_in_hebrew_letters():
+    assert '"מוקצה (muktzeh, an object you may not move on Shabbat)"' in claude.build_prompt("can I light a fire", [], [])

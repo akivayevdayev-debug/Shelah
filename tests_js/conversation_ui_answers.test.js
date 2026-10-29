@@ -1616,3 +1616,23 @@ test('a question asked in the panel never lights the bar', async () => {
         page.close();
     }
 });
+
+test('an English answer that opens with a Hebrew term still reads left to right', async () => {
+    const page = await openAnswerPage({ routes: sourceRoutes() });
+    try {
+        await showAnswer(page, answerData({ answer: 'מוקצה (muktzeh, an object you may not move on Shabbat) is not moved.', ai_cited_sources: [] }));
+        assert.equal(page.$('.conv-answer').dir, 'ltr');
+    } finally {
+        page.close();
+    }
+});
+
+test('a Hebrew answer reads right to left', async () => {
+    const page = await openAnswerPage({ routes: sourceRoutes() });
+    try {
+        await showAnswer(page, answerData({ answer: 'מותר להדליק נרות לפני השקיעה.', ai_cited_sources: [] }));
+        assert.equal(page.$('.conv-answer').dir, 'rtl');
+    } finally {
+        page.close();
+    }
+});
