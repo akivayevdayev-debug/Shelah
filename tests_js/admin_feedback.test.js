@@ -345,7 +345,7 @@ test('no ratings yet is a calm empty state, not an error', async () => {
 
 test('loaded rows fill the tiles, the split, the trend and the table', async () => {
     const rows = [
-        ...many(6, (i) => row({ created_at: new Date(NOW - (i + 1) * HOUR).toISOString(), verdict: 'helpful', comment: `up ${i}` })),
+        ...many(6, (i) => row({ created_at: new Date(Date.now() - (i + 1) * HOUR).toISOString(), verdict: 'helpful', comment: `up ${i}` })),
         ...many(2, (i) => row({ created_at: new Date(Date.now() - (i + 1) * HOUR).toISOString(), verdict: 'not_helpful', comment: `down ${i}`, user_id: null })),
     ];
     const page = await openAdmin({ digest: response(200, { rows }) });
