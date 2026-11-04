@@ -1595,7 +1595,7 @@ def _collect_primary_sources_sync(question, engine, context=()):
         question, primary_sources, optional_refs=extra_refs,
         extra_terms=found.get("terms") or (), phrases=found.get("phrases") or (),
         vouched_refs=found.get("vouched") or (), matched_refs=found.get("matched") or ())
-    return ranked[:_primary_source_limit()]
+    return source_search.cap_sources(ranked, found.get("wider") or (), _primary_source_limit())
 
 
 def _load_primary_sources_sync(refs, engine):

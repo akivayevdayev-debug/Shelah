@@ -125,8 +125,9 @@ MAX_INPUT_CHARS = 1200
 MAX_PROMPT_CHARS = 16000
 # Output-token ceilings per answer size. 512 was too tight for a simple answer
 # in Hebrew (or one with a few citations): the JSON got cut off mid-string and
-# the parse fell back to a raw-text render.
-SIMPLE_ANSWER_MAX_TOKENS = 768
+# the parse fell back to a raw-text render. 1024 since a simple answer may also
+# name where the law comes from and another view (prompt v21).
+SIMPLE_ANSWER_MAX_TOKENS = 1024
 COMPLEX_ANSWER_MAX_TOKENS = 3072
 # A study answer (a full learning guide, a sugya or a parsha walk-through) covers
 # several sub-questions, each with its own paragraph and source markers. At the
@@ -259,7 +260,7 @@ RABBI_FINAL_RULING_FOOTER = "Please consult with your local Rabbi for a final ru
 # row (defensibility logging) so a stored answer's governing
 # prompt version is reconstructable during a dispute, without retaining the
 # full prompt text itself.
-PROMPT_VERSION = "2026-10-29-no-sources-v20"
+PROMPT_VERSION = "2026-11-04-origin-and-views-v21"
 # INTERNAL_AI_KNOWLEDGE_DISCLAIMER: canonical copy lives in
 # backend/utils/search_provider.py (re-exported via backend/helpers.py) —
 # an unused, byte-identical duplicate previously lived here too;
@@ -828,8 +829,11 @@ def _is_retryable_gemini_error(exc: BaseException) -> bool:
     """True only for a rate-limit/overload/deadline response (see
     _RETRYABLE_GEMINI_STATUS_CODES) -- and only while the backoff wait plus a
     full minimum-length attempt still fit in the remaining budget with the
-    Claude fallback's reserve left over."""
+    Claude fallback's reserve left over. Never inside _gemini_then_haiku: there
+    a busy Gemini hands over to Haiku at once instead of waiting out a backoff."""
     if getattr(exc, "code", None) not in _RETRYABLE_GEMINI_STATUS_CODES:
+        return False
+    if _gemini_stream_state.get() is not None:
         return False
     remaining = _remaining_model_budget()
     return remaining is None or (
@@ -1399,7 +1403,15 @@ def _salvage_truncated_payload(raw_text: str) -> Optional[Dict[str, Any]]:
     return payload
 
 
+# A plain double quote between two Hebrew letters is an abbreviation mark
+# (בא"י, רמב"ם), never the end of a JSON string: that is followed by , : } or
+# a space. Left alone it cut the answer off mid-word.
+_HEBREW_ABBREVIATION_QUOTE_RE = re.compile('([\u05d0-\u05ea])"([\u05d0-\u05ea])')
+_HEBREW_LETTER_THEN_QUOTE_RE = re.compile('[\u05d0-\u05ea]"$')
+
+
 def parse_structured_model_output(raw_text: str) -> Dict[str, Any]:
+    raw_text = _HEBREW_ABBREVIATION_QUOTE_RE.sub("\\1\u05f4\\2", str(raw_text or ""))
     payload = _extract_first_json_object(raw_text)
     if not payload:
         payload = _extract_fenced_json_object(raw_text)
@@ -1914,10 +1926,10 @@ Scope: help with anything in Jewish life and learning, not only halachic rulings
 
 Rules:
 - Return strict JSON only with keys: ruling, sources, is_prohibited, summary, practical_steps, rabbinic_disclaimer (and out_of_scope, out_of_scope_subject only for an out-of-scope question).
-- ruling: the first sentence is the answer itself — never a restatement of the question and never a preamble. Then only the reasoning needed to trust it, usually 2-5 sentences in all, and every part of the question answered. Tie each claim to its source with a [n] marker (the number of that source in `sources`) right after the sentence that rests on it, e.g. "...is forbidden.[1]"; when consecutive sentences rest on the same source, put the marker once, after the last of them; never name a source or add a "Sources" list inside ruling. Mention another community's or posek's view only when it changes what the reader should do.
+- ruling: the first sentence is the answer itself — never a restatement of the question and never a preamble. Then the reasoning needed to trust it, and every part of the question answered. When the sources show it, add a sentence or two on where the law comes from (the Talmud passage or verse behind the code) and on another view worth knowing (another posek, the Mishnah Berurah, or what the Zohar or a Midrash says it means), each from a source you have or are certain of; a plain answer needs no padding. Usually 3-7 sentences in all. Tie each claim to its source with a [n] marker (the number of that source in `sources`) right after the sentence that rests on it, e.g. "...is forbidden.[1]"; when consecutive sentences rest on the same source, put the marker once, after the last of them; never name a source or add a "Sources" list inside ruling.
 - Community: when the request names a community, answer for that community first and never present Ashkenazi practice as the default for a non-Ashkenazi reader (or the reverse). When none is named, do not assume one; if practice splits by community, say so in a sentence.
 - Conversation: earlier turns come before the new question as ordinary conversation turns; resolve references like "that", "it" or "what about X?" from them and answer only what is new. Earlier turns are shown as the JSON you answer in: answer in the same JSON format.
-- sources: List 1-3 specific primary texts, numbered by the [n] markers in ruling, in the order they first appear. Cite only a text that directly bears on the question (the retrieved snippets are keyword matches and may be unrelated) and that you are certain exists; none is better than an unrelated one. Use the English section names Sefaria uses (e.g. "Shulchan Aruch, Orach Chayim 158", "Mishneh Torah, Sabbath 2" — never "Hilchot Shabbat").
+- sources: List 1-5 specific primary texts, numbered by the [n] markers in ruling, in the order they first appear. Cite only a text that directly bears on the question (the retrieved snippets are keyword matches and may be unrelated) and that you are certain exists; none is better than an unrelated one. Use the English section names Sefaria uses (e.g. "Shulchan Aruch, Orach Chayim 158", "Mishneh Torah, Sabbath 2" — never "Hilchot Shabbat").
 - practical_steps: Set to [].
 - summary: Set to "".
 - is_prohibited: true only if clearly forbidden.
@@ -2653,11 +2665,12 @@ def _format_instruction(simple: bool, study: bool, long_request: bool) -> str:
         return (
             "17b. SIMPLE QUESTION FORMAT: This is a simple, direct question. "
             "Write the ruling as one short paragraph: the direct answer in the first sentence, then only "
-            "the reasoning needed to trust it (usually 2-5 sentences in all, each under 25 words: end a "
-            "sentence and start another instead of adding a second \"because\" or \"which\") — do NOT use "
-            "separate section headings inside ruling. "
+            "the reasoning needed to trust it, then, when the sources show it, a sentence or two on where the "
+            "law comes from and on another view (a posek, the Mishnah Berurah, the Zohar or a Midrash). Usually "
+            "3-7 sentences in all, each under 25 words: end a sentence and start another instead of adding a "
+            "second \"because\" or \"which\". Do NOT use separate section headings inside ruling. "
             "Set practical_steps to [] and summary to an empty string. "
-            "Keep sources brief (1-3 items), each marked right after the sentence that rests on it."
+            "Keep sources brief (1-5 items), each marked right after the sentence that rests on it."
         )
     elif study:
         return (
@@ -3820,11 +3833,14 @@ class _RulingDraft:
         if self._done:
             return
         self._raw += chunk
-        found = _RULING_KEY_RE.search(self._raw)
+        if _HEBREW_LETTER_THEN_QUOTE_RE.search(self._raw):
+            return  # an abbreviation mark or the field's end: the next chunk says which
+        raw = _HEBREW_ABBREVIATION_QUOTE_RE.sub("\\1\u05f4\\2", self._raw)
+        found = _RULING_KEY_RE.search(raw)
         if not found:
             return
         now = time.monotonic()
-        text, closed, _end = _read_json_string(self._raw, found.end())
+        text, closed, _end = _read_json_string(raw, found.end())
         if not closed and now - self._sent_at < self.DRAFT_INTERVAL_SECONDS:
             return
         if text.strip() and text != self._sent:

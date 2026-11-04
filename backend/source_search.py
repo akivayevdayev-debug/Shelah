@@ -31,11 +31,12 @@ import re
 import threading
 import time
 import unicodedata
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from itertools import combinations
 from typing import Any, Iterable
 
 import requests
+from requests.adapters import HTTPAdapter
 
 from backend import question_plan
 from backend.health_check import health
@@ -67,6 +68,15 @@ TANAKH_PATHS = ("Tanakh",)
 # The planner's phrases (backend/question_plan.py) are searched across the
 # library's primary texts: Bible, Mishnah, Talmud and the codes.
 BROAD_PATHS = ("Tanakh", "Mishnah", "Talmud/Bavli", "Halakhah")
+# And, each in its own search so the codes above do not crowd them out, in the
+# Zohar and the Midrash (the meaning behind a law) and in the Mishnah Berurah
+# (how a ruling is practised). The best match of each group gets its own place
+# among the sources (WIDER_SLOTS), however the codes score.
+WIDER_PATHS = (
+    ("Kabbalah/Zohar", "Midrash"),
+    ("Halakhah/Shulchan Arukh/Commentary/Mishnah Berurah",),
+)
+WIDER_SLOTS = len(WIDER_PATHS)
 # Commentaries filed beside the codes (the Tur's path also holds the Beit Yosef),
 # whose refs carry no " on ".
 _COMMENTARY_PREFIXES = ("beit yosef", "bayit chadash", "darchei moshe", "perishah", "drishah")
@@ -75,11 +85,23 @@ _MAX_PLAN_REFS = 4
 # (or the one word a one-word question has).
 _MIN_SHARED_WORDS = 2
 
-_CACHE_TTL_SECONDS = 600
+# Once half of a round's searches are back, the rest get this long: one slow
+# answer from Sefaria used to hold the whole round to its full timeout.
+_STRAGGLER_GRACE_SECONDS = 0.6
+
+# The library does not change by the hour.
+_CACHE_TTL_SECONDS = 6 * 3600
 _CACHE_MAX = 256
 _cache: dict[str, tuple[float, dict[str, list[str]]]] = {}
 _cache_lock = threading.Lock()
-_executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="source-search")
+_executor = ThreadPoolExecutor(max_workers=16, thread_name_prefix="source-search")
+# The planner's named refs start loading while their phrases are searched for;
+# the caller then finds them in backend/sefaria_library's cache.
+_prefetch_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="source-prefetch")
+# One kept-alive connection pool for every search: a new TLS handshake per
+# search cost about as much as the search itself.
+_session = requests.Session()
+_session.mount("https://", HTTPAdapter(pool_connections=2, pool_maxsize=16))
 
 _STOPWORDS = frozenset({
     "the", "and", "for", "with", "from", "that", "this", "are", "was", "were", "have", "has",
@@ -332,7 +354,7 @@ def _payload(query: str, paths: Iterable[str] = SEARCH_PATHS) -> dict[str, Any]:
 def _post_search(query: str, paths: Iterable[str] = SEARCH_PATHS) -> list[dict[str, Any]]:
     """One search -> the hits' sources ({"ref", "exact", ...}); [] on any failure."""
     try:
-        resp = requests.post(SEARCH_URL, json=_payload(query, paths), timeout=_TIMEOUT_SECONDS)
+        resp = _session.post(SEARCH_URL, json=_payload(query, paths), timeout=_TIMEOUT_SECONDS)
         if not resp.ok:
             health.record_failure("sefaria")
             return []
@@ -361,14 +383,26 @@ def _queries(question: str, tanakh: bool = False) -> list[str]:
 
 def _run_searches(queries: list[str | tuple[str, tuple[str, ...]]]) -> list[dict[str, Any]]:
     """Every query at once; a query is its text (searched in the halachic codes) or
-    (text, paths). The hits of those that answered in time."""
+    (text, paths). The hits of those that answered in time, each with the "_paths"
+    it was searched in."""
     jobs = [(query, SEARCH_PATHS) if isinstance(query, str) else query for query in queries]
     futures = [_executor.submit(_post_search, text, paths) for text, paths in jobs]
-    done, _ = wait(futures, timeout=_TIMEOUT_SECONDS + 0.5)
+    deadline = time.monotonic() + _TIMEOUT_SECONDS + 0.5
+    pending = set(futures)
+    graced = False
+    while pending:
+        left = deadline - time.monotonic()
+        if left <= 0:
+            break
+        _, pending = wait(pending, timeout=left, return_when=FIRST_COMPLETED)
+        if not graced and len(pending) <= len(futures) // 2:
+            graced = True
+            deadline = min(deadline, time.monotonic() + _STRAGGLER_GRACE_SECONDS)
+    done = set(futures) - pending
     found: list[dict[str, Any]] = []
-    for future in futures:
+    for (_, paths), future in zip(jobs, futures):
         if future in done and future.exception() is None:
-            found.extend(future.result())
+            found.extend({**hit, "_paths": tuple(paths)} for hit in future.result())
     return found
 
 
@@ -422,6 +456,38 @@ def _plan_terms(plan: dict[str, list[str]]) -> list[str]:
     return terms
 
 
+def _prefetch(refs: list[str]) -> None:
+    """Start loading `refs` into the text cache; nothing waits for it."""
+    from backend.sefaria_library import get_text
+
+    for ref in refs:
+        _prefetch_executor.submit(contextvars.copy_context().run, get_text, ref)
+
+
+def _wider_queries(plan: dict[str, list[str]]) -> list[tuple[str, tuple[str, ...]]]:
+    """The plan's phrases (Hebrew first: these books are mostly untranslated) for
+    each WIDER_PATHS search."""
+    phrases = plan.get("hebrew") or plan.get("english") or []
+    return [(phrase, paths) for paths in WIDER_PATHS for phrase in phrases]
+
+
+def cap_sources(ranked: list[dict[str, Any]], wider_refs: Iterable[str], limit: int) -> list[dict[str, Any]]:
+    """The first `limit` of `ranked`, with up to WIDER_SLOTS of the sources found in
+    the Zohar, Midrash or Mishnah Berurah (find_sources' "wider") kept in place of the
+    last ones when they ranked below the cut."""
+    wider = {_chapter(ref) for ref in wider_refs}
+    kept = list(ranked[:limit])
+    missing = [s for s in ranked[limit:] if _chapter(s.get("ref", "")) in wider]
+    have = sum(1 for s in kept if _chapter(s.get("ref", "")) in wider)
+    room = max(0, WIDER_SLOTS - have)
+    for source in missing[:room]:
+        for i in range(len(kept) - 1, -1, -1):
+            if _chapter(kept[i].get("ref", "")) not in wider:
+                kept[i] = source
+                break
+    return kept
+
+
 def _plan_or_none(future) -> dict[str, list[str]] | None:
     try:
         plan = future.result(timeout=question_plan.PLAN_WAIT_SECONDS + 0.5)
@@ -439,7 +505,9 @@ def find_sources(question: str, known_refs: Iterable[str] = ()) -> dict[str, lis
     halachic codes (in the Bible, for a question about the Bible). Meanwhile a small
     model (backend/question_plan.py) names the refs it expects and the phrases the
     texts would use; those phrases are then searched across the library's primary
-    texts. The named refs come first, then the paragraphs that say a phrase word for
+    texts, and (each in its own search) in the Zohar and Midrash and in the Mishnah
+    Berurah, whose best match of each is returned as "wider" too (see cap_sources).
+    The named refs come first, then the paragraphs that say a phrase word for
     word, then the best-matching others. None of it is trusted: the caller loads each ref and keeps only the ones whose own text
     matches (rank_sources with these "terms"). Empty lists when Sefaria is down or
     nothing is found; never raises."""
@@ -447,7 +515,7 @@ def find_sources(question: str, known_refs: Iterable[str] = ()) -> dict[str, lis
     terms = question_terms(question, tanakh)
     queries = _queries(question, tanakh)
     if not (queries or terms) or not health.is_healthy("sefaria"):
-        return {"refs": [], "terms": [], "phrases": [], "vouched": [], "matched": []}
+        return {"refs": [], "terms": [], "phrases": [], "vouched": [], "matched": [], "wider": []}
     known_refs = list(known_refs)
     key = ("t|" if tanakh else "") + " ".join(terms) + "|" + "|".join(sorted(_chapter(ref) for ref in known_refs))
     now = time.monotonic()
@@ -461,10 +529,6 @@ def find_sources(question: str, known_refs: Iterable[str] = ()) -> dict[str, lis
     hits = _run_searches([(query, own_paths) for query in queries])
     plan = _plan_or_none(plan_future) or {}
     phrases = [*plan.get("hebrew", []), *plan.get("english", [])]
-    phrase_hits = _run_searches([(phrase, BROAD_PATHS) for phrase in phrases]) if phrases else []
-    hits += phrase_hits
-    phrase_chapters = {_chapter(hit.get("ref", "")) for hit in phrase_hits}
-    all_terms = list(dict.fromkeys([*terms, *_plan_terms(plan)]))
 
     known = {_chapter(ref) for ref in known_refs}
     named = []
@@ -472,10 +536,26 @@ def find_sources(question: str, known_refs: Iterable[str] = ()) -> dict[str, lis
         if _chapter(ref) not in known:
             known.add(_chapter(ref))
             named.append(ref)
+    _prefetch(named)
+    # One round: the phrases across the primary texts, and in the wider books.
+    broad = [(phrase, BROAD_PATHS) for phrase in phrases]
+    wider_jobs = _wider_queries(plan)
+    round_hits = _run_searches(broad + wider_jobs) if phrases else []
+    phrase_hits = [hit for hit in round_hits if hit.get("_paths") not in WIDER_PATHS]
+    hits += phrase_hits
+    phrase_chapters = {_chapter(hit.get("ref", "")) for hit in round_hits}
+    all_terms = list(dict.fromkeys([*terms, *_plan_terms(plan)]))
+
     found = _best_refs(all_terms, hits, [*known_refs, *named], phrases=phrases)
+    # The best match from each of the wider groups: one does not take the other's place.
+    wider: list[str] = []
+    for books in WIDER_PATHS:
+        group_hits = [hit for hit in round_hits if hit.get("_paths") == books]
+        wider += _best_refs(all_terms, group_hits, [*known_refs, *named, *found, *wider], limit=1, phrases=phrases)
+    found += wider
     matched = [ref for ref in named + found if _chapter(ref) in phrase_chapters]
     result = {"refs": named + found, "terms": all_terms, "phrases": phrases,
-              "vouched": list(dict.fromkeys(named + matched)), "matched": matched}
+              "vouched": list(dict.fromkeys(named + matched)), "matched": matched, "wider": wider}
     with _cache_lock:
         if len(_cache) >= _CACHE_MAX:
             _cache.pop(next(iter(_cache)))

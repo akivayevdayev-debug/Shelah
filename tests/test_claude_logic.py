@@ -869,7 +869,7 @@ class TestAnswerDepthCalibration:
         assert claude.SIMPLE_ANSWER_MAX_TOKENS < claude.COMPLEX_ANSWER_MAX_TOKENS
 
     def test_prompt_version_reflects_the_rewrite(self):
-        assert claude.PROMPT_VERSION.startswith("2026-10-2")
+        assert claude.PROMPT_VERSION >= "2026-10-2"  # this rewrite or a later one
 
 
 class TestBuildDynamicSystemContext:
@@ -1005,3 +1005,16 @@ class TestExtractGeminiResponseText:
             text = None
             candidates = []
         assert claude._extract_gemini_response_text(FakeResponse()) == ""
+
+
+class TestHebrewAbbreviationQuote:
+    """A Hebrew abbreviation written with a plain double quote (בא"י) used to end
+    the JSON string there, and the answer was cut off mid-word."""
+
+    RAW = '{"ruling": "The blessing is בא"י שנתן מכבודו לבשר ודם.", "sources": ["Berakhot 58a"]}'
+
+    def test_the_ruling_is_read_past_the_abbreviation(self):
+        assert "שנתן מכבודו" in claude.parse_structured_model_output(self.RAW)["ruling"]
+
+    def test_the_abbreviation_keeps_its_hebrew_mark(self):
+        assert 'בא״י' in claude.parse_structured_model_output(self.RAW)["ruling"]

@@ -412,6 +412,30 @@ class TestGeminiRetryPolicy:
         for code in (400, 401, 403, 404, 500):
             assert claude_module._is_retryable_gemini_error(_gemini_api_error(code)) is False
 
+    def test_no_retry_while_haiku_is_standing_by(self):
+        # Inside the Gemini-then-Haiku race a busy Gemini hands over at once:
+        # waiting out a backoff only delays the answer Haiku can give now.
+        import backend.claude as claude_module
+
+        token = claude_module._gemini_stream_state.set({})
+        try:
+            assert claude_module._is_retryable_gemini_error(_gemini_api_error(429)) is False
+        finally:
+            claude_module._gemini_stream_state.reset(token)
+
+    def test_a_busy_gemini_in_the_race_is_called_once(self):
+        import backend.claude as claude_module
+
+        busy = MagicMock()
+        busy.models.generate_content.side_effect = [_gemini_api_error(503), "ok"]
+        token = claude_module._gemini_stream_state.set({})
+        try:
+            with pytest.raises(Exception):
+                claude_module._generate_gemini_content_with_retry(busy, "model", "prompt")
+        finally:
+            claude_module._gemini_stream_state.reset(token)
+        assert busy.models.generate_content.call_count == 1
+
     def test_no_retry_once_the_synthesis_budget_is_spent(self):
         import backend.claude as claude_module
 

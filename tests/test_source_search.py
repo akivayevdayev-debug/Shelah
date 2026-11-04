@@ -1,7 +1,11 @@
 """backend/source_search.py: Sefaria's own search finds extra paragraphs for a
 question, and the loaded sources are ordered by how well they match it."""
 
+import time
+
 from backend import source_search
+
+_REAL_RUN_SEARCHES = source_search._run_searches
 
 IMPORTANT_PERSON = (
     'Even a very important person <sup class="footnote-marker">1</sup>'
@@ -152,7 +156,7 @@ def test_a_failed_search_call_finds_nothing(monkeypatch):
     def down(*args, **kwargs):
         raise source_search.requests.ConnectionError("down")
 
-    monkeypatch.setattr(source_search.requests, "post", down)
+    monkeypatch.setattr(source_search._session, "post", down)
     assert source_search._post_search("important person") == []
 
 
@@ -257,3 +261,82 @@ def test_a_phrase_matched_source_ranks_ahead_of_a_keyword_match():
     ranked = source_search.rank_sources(
         "what book is samuel the prophet in", sources, matched_refs=["I Samuel 3:20"])
     assert ranked[0]["ref"] == "I Samuel 3:20"
+
+
+def test_a_slow_search_does_not_hold_up_the_round(monkeypatch):
+    def search(query, paths):
+        if query == "slow":
+            time.sleep(source_search._TIMEOUT_SECONDS)
+        return []
+
+    monkeypatch.setattr(source_search, "_post_search", search)
+    started = time.monotonic()
+    _REAL_RUN_SEARCHES(["a", "b", "c", "slow"])
+    assert time.monotonic() - started < source_search._STRAGGLER_GRACE_SECONDS + 0.5
+
+
+def test_a_hit_carries_the_books_it_was_searched_in(monkeypatch):
+    monkeypatch.setattr(source_search, "_post_search", lambda query, paths: [{"ref": "Zohar, Noach 34:266"}])
+    assert _REAL_RUN_SEARCHES([("x", ("Kabbalah/Zohar",))])[0]["_paths"] == ("Kabbalah/Zohar",)
+
+
+RAINBOW_QUESTION = "what blessing do i say when i see a rainbow"
+RAINBOW_PLAN = {"refs": [], "hebrew": ["הרואה הקשת"], "english": []}
+ZOHAR_HIT = {"ref": "Zohar, Noach 34:266", "exact": "הרואה הקשת בענן"}
+MORE_ZOHAR_HIT = {"ref": "Zohar, Bereshit 83:228", "exact": "הרואה הקשת בענן"}
+BERURAH_HIT = {"ref": "Mishnah Berurah 229:1", "exact": "הרואה הקשת בענן"}
+
+
+def _rainbow_searches(monkeypatch, codes_hits):
+    monkeypatch.setattr(source_search.question_plan, "plan", lambda question: RAINBOW_PLAN)
+
+    def run(queries):
+        found = []
+        for query in queries:
+            paths = query[1] if isinstance(query, tuple) else source_search.SEARCH_PATHS
+            if paths == source_search.WIDER_PATHS[0]:
+                found += [{**ZOHAR_HIT, "_paths": paths}, {**MORE_ZOHAR_HIT, "_paths": paths}]
+            elif paths == source_search.WIDER_PATHS[1]:
+                found.append({**BERURAH_HIT, "_paths": paths})
+            elif paths == source_search.BROAD_PATHS:
+                found.extend({**hit, "_paths": paths} for hit in codes_hits)
+        return found
+
+    monkeypatch.setattr(source_search, "_run_searches", run)
+
+
+def test_the_zohar_is_searched_for_the_plan_phrases(monkeypatch):
+    _rainbow_searches(monkeypatch, [])
+    assert "Zohar, Noach 34:266" in source_search.find_sources(RAINBOW_QUESTION)["wider"]
+
+
+def test_the_zohar_does_not_take_the_mishnah_berurahs_place(monkeypatch):
+    _rainbow_searches(monkeypatch, [])
+    assert source_search.find_sources(RAINBOW_QUESTION)["wider"] == ["Zohar, Noach 34:266", "Mishnah Berurah 229:1"]
+
+
+def test_a_zohar_match_is_kept_beside_strong_code_matches(monkeypatch):
+    codes = [_hit(f"Shulchan Arukh, Orach Chayim {n}:1", "הרואה הקשת בענן מברך") for n in range(220, 226)]
+    _rainbow_searches(monkeypatch, codes)
+    assert "Zohar, Noach 34:266" in source_search.find_sources(RAINBOW_QUESTION)["refs"]
+
+
+def test_the_plan_named_refs_start_loading_early(monkeypatch):
+    loading = []
+    monkeypatch.setattr(source_search.question_plan, "plan", lambda question: LAND_PLAN)
+    monkeypatch.setattr(source_search, "_prefetch", loading.extend)
+    source_search.find_sources(LAND_QUESTION)
+    assert loading == ["Numbers 13:32"]
+
+
+def test_a_wider_source_below_the_cut_takes_the_last_place():
+    ranked = [_source(f"Shulchan Arukh, Orach Chayim {n}:1", "x") for n in range(1, 4)] + [
+        _source("Zohar, Noach 34:266", "x")]
+    kept = source_search.cap_sources(ranked, ["Zohar, Noach 34:266"], 3)
+    assert [s["ref"] for s in kept] == [
+        "Shulchan Arukh, Orach Chayim 1:1", "Shulchan Arukh, Orach Chayim 2:1", "Zohar, Noach 34:266"]
+
+
+def test_with_no_wider_sources_the_cut_stands():
+    ranked = [_source(f"Shulchan Arukh, Orach Chayim {n}:1", "x") for n in range(1, 5)]
+    assert len(source_search.cap_sources(ranked, [], 3)) == 3

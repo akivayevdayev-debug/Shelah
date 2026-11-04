@@ -59,6 +59,12 @@ class TestRulingDraft:
         draft.feed('{"ruling": "Say \\"Shabbat Shalom\\"\\nthen eat."')
         assert _drafts(events) == ['Say "Shabbat Shalom"\nthen eat.']
 
+    def test_a_hebrew_abbreviation_does_not_end_the_ruling(self, events):
+        draft = claude._RulingDraft()
+        for chunk in ('{"ruling": "Say בא"', 'י שנתן מכבודו."', ', "sources": []}'):
+            draft.feed(chunk)
+        assert _drafts(events)[-1] == "Say בא״י שנתן מכבודו."
+
     def test_source_markers_are_left_out_until_they_are_final(self, events):
         draft = claude._RulingDraft()
         draft.feed('{"ruling": "Light two candles.[1][2] Then bless.[3]"')

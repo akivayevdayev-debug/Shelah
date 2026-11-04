@@ -175,11 +175,13 @@ async def _collect_primary_sources(
             refs=extra_refs, count=len(extra_refs))
         results += await asyncio.gather(*[_load_one(ref) for ref in extra_refs])
     loaded = [s for s in results if s is not None]
-    primary_sources = _source_search.rank_sources(
+    ranked = _source_search.rank_sources(
         question, loaded, optional_refs=extra_refs,
         extra_terms=found.get("terms") or (), phrases=found.get("phrases") or (),
         vouched_refs=found.get("vouched") or (), matched_refs=found.get("matched") or (),
-    )[:_backend_sefaria.MAX_REFS]
+    )
+    # A Zohar, Midrash or Mishnah Berurah match keeps a place (source_search.WIDER_SLOTS).
+    primary_sources = _source_search.cap_sources(ranked, found.get("wider") or (), _backend_sefaria.MAX_REFS)
     return refs + extra_refs, primary_sources
 
 

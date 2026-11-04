@@ -30,6 +30,8 @@ import contextvars
 import json
 import logging
 import re
+import threading
+import time
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from typing import Any, Optional
@@ -68,6 +70,15 @@ _SYSTEM = (
 )
 
 _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="question-plan")
+# The cost row is written after the plan is handed back: writing it took 0.5-1.8 s,
+# all of it time the search sat waiting.
+_cost_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="question-plan-cost")
+
+# A question asked again (often: the common ones) gets its plan without a model call.
+_PLAN_CACHE_TTL_SECONDS = 6 * 3600
+_PLAN_CACHE_MAX = 512
+_plans: dict[str, tuple[float, dict[str, list[str]]]] = {}
+_plans_lock = threading.Lock()
 
 
 _TALMUD_PREFIX_RE = re.compile(r"^(?:talmud bavli|bavli|babylonian talmud|talmud)\s*,?\s+", re.IGNORECASE)
@@ -123,7 +134,7 @@ def _ask_model(question: str) -> Optional[dict[str, list[str]]]:
         timeout=PLAN_WAIT_SECONDS,
         **claude._anthropic_request_options(model, "low", thinking=False),
     )
-    _record_cost(model, response)
+    _cost_executor.submit(contextvars.copy_context().run, _record_cost, model, response)
     text = "".join(getattr(block, "text", "") for block in getattr(response, "content", None) or [])
     return parse(text)
 
@@ -152,9 +163,21 @@ def plan(question: str) -> Optional[dict[str, list[str]]]:
     question = str(question or "").strip()
     if not question or not health.is_up("claude"):
         return None
+    key = " ".join(question.lower().split())
+    now = time.monotonic()
+    with _plans_lock:
+        cached = _plans.get(key)
+        if cached and now - cached[0] < _PLAN_CACHE_TTL_SECONDS:
+            return {name: list(value) for name, value in cached[1].items()}
     future = _executor.submit(contextvars.copy_context().run, _ask_model, question)
     try:
-        return future.result(timeout=PLAN_WAIT_SECONDS)
+        found = future.result(timeout=PLAN_WAIT_SECONDS)
+        if isinstance(found, dict):
+            with _plans_lock:
+                if len(_plans) >= _PLAN_CACHE_MAX:
+                    _plans.pop(next(iter(_plans)))
+                _plans[key] = (now, found)
+        return found
     except FutureTimeout:
         logger.info("question_plan: no plan within %.1fs", PLAN_WAIT_SECONDS)
     except Exception as exc:  # noqa: BLE001 - fail open: the search runs on the question's words

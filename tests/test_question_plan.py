@@ -2,6 +2,8 @@
 before anything is searched for, and any failure means no plan."""
 
 import json
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 from backend import question_plan
 
@@ -94,8 +96,47 @@ def test_the_call_cost_is_recorded(monkeypatch):
     monkeypatch.undo()  # the conftest stub of _ask_model: this test runs the real one, on a fake client
     monkeypatch.setattr(claude, "_get_client", lambda: client)
     monkeypatch.setattr(cost_meter, "record_llm_call", record)
+    writer = ThreadPoolExecutor(max_workers=1)
+    monkeypatch.setattr(question_plan, "_cost_executor", writer)
     question_plan._ask_model("where does it say the land ate the people")
+    writer.shutdown(wait=True)
     assert rows[0]["output_tokens"] == 12
+
+
+def test_the_plan_does_not_wait_for_the_cost_row(monkeypatch):
+    from types import SimpleNamespace
+
+    from backend import claude
+
+    reply = SimpleNamespace(content=[SimpleNamespace(text=_reply(refs=["Numbers 13:32"]))],
+                            usage=SimpleNamespace(input_tokens=40, output_tokens=12))
+    client = SimpleNamespace(messages=SimpleNamespace(create=lambda **kwargs: reply))
+    released = threading.Event()
+    monkeypatch.undo()
+    monkeypatch.setattr(claude, "_get_client", lambda: client)
+    monkeypatch.setattr(question_plan, "_record_cost", lambda model, response: released.wait(5))
+    try:
+        assert question_plan._ask_model("where does it say the land ate the people")["refs"] == ["Numbers 13:32"]
+    finally:
+        released.set()
+
+
+def test_a_question_asked_again_reuses_its_plan(monkeypatch):
+    calls = []
+    monkeypatch.setattr(question_plan.health, "is_up", lambda service: True)
+    monkeypatch.setattr(question_plan, "_ask_model", lambda q: calls.append(q) or {"refs": [], "hebrew": [], "english": []})
+    question_plan.plan("What blessing for a rainbow?")
+    question_plan.plan("what blessing  for a RAINBOW?")
+    assert len(calls) == 1
+
+
+def test_no_plan_is_not_remembered(monkeypatch):
+    calls = []
+    monkeypatch.setattr(question_plan.health, "is_up", lambda service: True)
+    monkeypatch.setattr(question_plan, "_ask_model", lambda q: calls.append(q))
+    question_plan.plan("What blessing for a rainbow?")
+    question_plan.plan("What blessing for a rainbow?")
+    assert len(calls) == 2
 
 
 def test_a_ref_led_by_a_book_number_is_kept():

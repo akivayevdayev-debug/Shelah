@@ -239,9 +239,12 @@ def _no_live_source_search(monkeypatch):
 
     monkeypatch.setattr(source_search, "_run_searches", lambda queries: [])
     monkeypatch.setattr(question_plan, "_ask_model", lambda question: None)
+    monkeypatch.setattr(source_search, "_prefetch", lambda refs: None)
     source_search._cache.clear()
+    question_plan._plans.clear()
     yield
     source_search._cache.clear()
+    question_plan._plans.clear()
 
 
 # ─── Outbound HTTP mocking (autouse) ──────────────────────────────────────────
