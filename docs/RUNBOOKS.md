@@ -231,8 +231,9 @@ schedule today.
 
 - Supabase dashboard → Database → Backups → trigger or download a
   snapshot (exact options depend on plan tier, per above).
-- Or from a machine with database credentials: `supabase db dump -f
-  backup.sql` (Supabase CLI), or a direct `pg_dump
+- Or from a machine with database credentials: `supabase db dump --remote
+  -f backup.sql` (Supabase CLI 3+, where commands without `--remote` hit
+  the local stack instead of the linked project), or a direct `pg_dump
   "$DATABASE_CONNECTION_STRING" -f backup.sql`.
 
 **Restore:**
