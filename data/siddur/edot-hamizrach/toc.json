@@ -124,7 +124,7 @@
         "he": "תפילת שחרית"
        },
        "ref": "Siddur Edot HaMizrach, Weekday Shacharit, Morning Prayer",
-       "lines": 19,
+       "lines": 20,
        "english": 0
       },
       {
@@ -1660,5 +1660,5 @@
    ]
   }
  ],
- "version": "79f598a0845c"
+ "version": "31b78b26dc47"
 }

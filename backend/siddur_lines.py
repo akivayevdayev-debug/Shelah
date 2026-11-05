@@ -99,6 +99,16 @@ def when_tags(text: str) -> list[str]:
 # vowels, so vowels alone decide it.
 _NIQQUD_RE = re.compile("[ְ-ׇּׁׂ]")
 _WS_RE = re.compile(r"\s+")
+# Every Hebrew mark (cantillation and vowels), for matching words as spelled.
+_HEBREW_MARKS_RE = re.compile("[֑-ׇ]")
+
+# Passages the source prints as a small-type paragraph at the end of another
+# segment, which a reader must still be able to find. The Arizal's acceptance
+# of "love your fellow as yourself", said every morning before praying,
+# closes the לשם יחוד paragraph of Shacharit in small type; it becomes a
+# prayer line of its own. Matched on the unpointed words.
+STANDALONE_PASSAGES = ("מקבל עלי מצות עשה של",)
+_PARAGRAPH_BREAK = "<br><br><small>"
 
 _TAG_MAP = {"b": "b", "strong": "b", "big": "b", "i": "i", "em": "i", "small": "small"}
 _VOID_TAGS = {"br"}
@@ -299,19 +309,41 @@ def _typed_line(he_raw: str, en_raw: str) -> dict | None:
     return line
 
 
+def _unpointed(html: str) -> str:
+    return _HEBREW_MARKS_RE.sub("", plain_text(html))
+
+
+def split_standalone(line: dict) -> list[dict]:
+    """``line``, or ``line`` and the standalone passage that ends it (see
+    STANDALONE_PASSAGES) as a ``prayer`` line of its own. The passage must be
+    the segment's last paragraph, wholly in one ``<small>``."""
+    head, sep, tail = line.get("he", "").rpartition(_PARAGRAPH_BREAK)
+    body = tail.removesuffix("</small>")
+    if not sep or not head or body == tail or "<small>" in body:
+        return [line]
+    if not any(words in _unpointed(body) for words in STANDALONE_PASSAGES):
+        return [line]
+    return [{**line, "he": head}, {"t": "prayer", "he": body}]
+
+
 def build_lines(he_segments: list, en_segments: list | None = None) -> list[dict]:
     """Typed lines for one section.
 
     ``n`` is the 1-based Sefaria segment number, so a line maps back to its
     ref (``<section ref> <n>``). English is paired by index; an English
-    segment beside an empty Hebrew one keeps the ``prayer`` type."""
+    segment beside an empty Hebrew one keeps the ``prayer`` type. A passage
+    split out of a segment keeps its ``n`` and gets ``part`` (2)."""
     en_segments = en_segments or []
     lines = []
     for index in range(max(len(he_segments), len(en_segments))):
         line = _typed_line(_segment_text(he_segments, index), _segment_text(en_segments, index))
-        if line is not None:
-            line["n"] = index + 1
-            lines.append(line)
+        if line is None:
+            continue
+        for part, piece in enumerate(split_standalone(line), start=1):
+            piece["n"] = index + 1
+            if part > 1:
+                piece["part"] = part
+            lines.append(piece)
     return lines
 
 

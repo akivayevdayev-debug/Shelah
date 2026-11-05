@@ -147,3 +147,25 @@ def test_self_closing_tags_are_read_like_their_open_form():
     is dropped like any tag outside the allowed set."""
     lines = sl.build_lines(["א<br/>ב", "<img src=x/>ג"], ["a<br />b", "c"])
     assert [(line["he"], line["en"]) for line in lines] == [("א<br>ב", "a<br>b"), ("ג", "c")]
+
+
+ACCEPTANCE = "וַהֲרֵינִי מְקַבֵּל עָלַי מִצְוַת עֲשֵׂה שֶׁל \"וְאָהַבְתָּ לְרֵעֲךָ כָּמוֹךָ\""
+LESHEM_YICHUD = "<small><b>לְשֵׁם</b> יִחוּד<br><br><small>" + ACCEPTANCE + "</small></small>"
+
+
+class TestStandalonePassages:
+    def test_the_arizals_acceptance_becomes_its_own_prayer_line(self):
+        lines = sl.build_lines([LESHEM_YICHUD])
+        assert lines[1] == {"t": "prayer", "he": ACCEPTANCE, "n": 1, "part": 2}
+
+    def test_the_paragraph_it_closed_keeps_its_type_and_number(self):
+        lines = sl.build_lines([LESHEM_YICHUD])
+        assert lines[0] == {"t": "conditional", "he": "<b>לְשֵׁם</b> יִחוּד", "n": 1}
+
+    def test_another_small_closing_paragraph_stays_where_it_is(self):
+        line = {"t": "conditional", "he": "<b>לְשֵׁם</b> יִחוּד<br><br><small>וִיהִי נֹעַם</small>"}
+        assert sl.split_standalone(line) == [line]
+
+    def test_a_passage_mid_segment_is_not_split(self):
+        line = {"t": "prayer", "he": "<br><br><small>" + ACCEPTANCE + "</small> עוֹד"}
+        assert sl.split_standalone(line) == [line]

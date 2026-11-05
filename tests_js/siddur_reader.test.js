@@ -464,3 +464,14 @@ test('findPage resolves a search to a service or an exact section, never from mi
     assert.equal(r.findPage(TOC, ''), null);
     assert.equal(r.findPage(null, 'shacharit'), null);
 });
+
+test('serviceMarkup: a passage split out of a segment gets an id of its own', async () => {
+    const r = await reader();
+    const where = r.locate(TOC, { service: 'shacharit' });
+    const payload = { sections: [{ slug: 'keriat-shema', lines: [
+        { t: 'conditional', he: 'לְשֵׁם יִחוּד', n: 3 },
+        { t: 'prayer', he: 'וַהֲרֵינִי מְקַבֵּל', n: 3, part: 2 },
+    ] }] };
+    const html = r.serviceMarkup(TOC, where, payload, { t, escapeHtml });
+    assert.match(html, /<p class="siddur-line siddur-prayer" id="siddur-keriat-shema-3-2" data-n="3">/);
+});

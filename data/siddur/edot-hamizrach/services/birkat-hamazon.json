@@ -1,4 +1,4 @@
-{"rite": "edot-hamizrach", "service": "birkat-hamazon", "version": "79f598a0845c", "sections": [
+{"rite": "edot-hamizrach", "service": "birkat-hamazon", "version": "31b78b26dc47", "sections": [
 {"slug": "birkat-hamazon", "ref": "Siddur Edot HaMizrach, Post Meal Blessing", "lines": [
 {"t": "heading", "he": "ברכת המזון", "en": "Blessing of the Meal", "n": 1},
 {"t": "instruction", "he": "יטול מים אחרונים, ויאמר", "n": 2},

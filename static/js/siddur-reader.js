@@ -204,7 +204,9 @@ function lineMarkup(line, sectionSlug, { layout, applyHebrew, today, t, escapeHt
     const when = Array.isArray(line.when) ? line.when : [];
     const isToday = when.some((tag) => today.has(tag));
     const whenAttr = when.length ? ` data-when="${when.join(" ")}"` : "";
-    const attrs = `id="siddur-${sectionSlug}-${line.n}" data-n="${line.n}"${whenAttr}${isToday ? " data-today" : ""}`;
+    // A passage split out of a segment shares its `n`; `part` keeps the id unique.
+    const lineId = line.part ? `${line.n}-${line.part}` : `${line.n}`;
+    const attrs = `id="siddur-${sectionSlug}-${lineId}" data-n="${line.n}"${whenAttr}${isToday ? " data-today" : ""}`;
     const badge = isToday ? `<span class="siddur-today-badge">${escapeHtml(t("Today", "היום"))}</span>` : "";
     const label = line.label ? `<span class="siddur-label" lang="he" dir="rtl">${escapeHtml(line.label)}</span>` : "";
     switch (line.t) {

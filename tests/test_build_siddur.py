@@ -173,7 +173,7 @@ class TestCheckedInSnapshot:
     def test_every_line_is_typed_and_its_html_is_sanitized(self):
         for path in (DATA / "services").glob("*.json"):
             for section in json.loads(path.read_text(encoding="utf-8"))["sections"]:
-                numbers = [line["n"] for line in section["lines"]]
+                numbers = [(line["n"], line.get("part", 1)) for line in section["lines"]]
                 assert numbers == sorted(set(numbers)), path.name
                 for line in section["lines"]:
                     assert line["t"] in LINE_TYPES
@@ -187,3 +187,10 @@ class TestCheckedInSnapshot:
         [shacharit] = [s for o in _toc()["occasions"] for s in o["services"] if s["slug"] == "shacharit"]
         assert len(shacharit["sections"]) == 18
         assert shacharit["sections"][9]["slug"] == "amida"
+
+    def test_shacharit_shows_the_arizals_acceptance_as_a_prayer_line(self):
+        payload = json.loads((DATA / "services" / "shacharit.json").read_text(encoding="utf-8"))
+        [section] = [s for s in payload["sections"] if s["slug"] == "morning-prayer"]
+        found = [line["t"] for line in section["lines"]
+                 if "מקבל עלי מצות" in re.sub("[\u0591-\u05c7]", "", line["he"])]
+        assert found == ["prayer"]
