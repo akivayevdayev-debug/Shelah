@@ -286,6 +286,63 @@ export function webSourceHeadHtml(citation, lang = "en") {
     return `<span class="ai-src-badge ai-src-badge--web">${label}</span>${title}`;
 }
 
+// Sites an answer may name by address alone ("search HebrewBooks.org for the
+// title", "hebrewbooks.org/1234"), which the markdown renderer leaves as plain
+// text: linkSiteNames makes each a link. HebrewBooks and Halachipedia are where
+// the AI's responsa search looks (backend/ai_tools.py); the rest are the
+// web-source sites above.
+export const NAMED_SITES = Object.freeze(["hebrewbooks.org", "halachipedia.com", ...WEB_SOURCE_DOMAINS]);
+const SITE_NAME = new RegExp(
+    `(^|[^\\w.@/-])((?:www\\.)?(?:${NAMED_SITES.map((d) => d.replaceAll(".", "\\.")).join("|")}))(?![\\w-]|\\.\\w)(/[^\\s<>"'()\\[\\]]*)?`,
+    "gi",
+);
+const TRAILING_PUNCTUATION = /[.,;:!?]+$/;
+// Text already inside one of these is left alone.
+const NO_LINK_TAGS = new Set(["a", "code", "pre"]);
+
+function linkNamesInText(text) {
+    return text.replace(SITE_NAME, (match, before, host, path = "") => {
+        const tail = TRAILING_PUNCTUATION.exec(path)?.[0] || "";
+        const shown = path.slice(0, path.length - tail.length);
+        const href = `https://${host.toLowerCase()}${shown.replaceAll("&amp;", "&")}`;
+        return `${before}<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${host}${shown}</a>${tail}`;
+    });
+}
+
+function tagName(tag) {
+    const match = /^<\/?([a-z][a-z0-9]*)/i.exec(tag);
+    return match ? match[1].toLowerCase() : "";
+}
+
+// A link to another site opens in a new tab, so the answer stays open.
+function newTabAnchor(tag) {
+    if (!/\shref="https?:/i.test(tag) || /\starget=/i.test(tag)) return tag;
+    return `${tag.slice(0, -1)} target="_blank" rel="noopener noreferrer">`;
+}
+
+// An answer's rendered (already sanitized) HTML with every site it names linked
+// and every link to another site opening in a new tab. A scan of the tags, not
+// a regex over the markup.
+export function linkSiteNames(html) {
+    const text = String(html || "");
+    let out = "";
+    let inside = 0;
+    let from = 0;
+    while (from < text.length) {
+        const start = text.indexOf("<", from);
+        const chunk = text.slice(from, start === -1 ? text.length : start);
+        out += inside ? chunk : linkNamesInText(chunk);
+        const end = start === -1 ? -1 : text.indexOf(">", start);
+        if (end === -1) return out + (start === -1 ? "" : text.slice(start));
+        const tag = text.slice(start, end + 1);
+        const closing = tag.startsWith("</");
+        if (NO_LINK_TAGS.has(tagName(tag))) inside = Math.max(0, inside + (closing ? -1 : 1));
+        out += tagName(tag) === "a" && !closing ? newTabAnchor(tag) : tag;
+        from = end + 1;
+    }
+    return out;
+}
+
 // The Hebrew spelling of a cited ref ("ברכות ב׳ א"), as Sefaria writes it in
 // a /api/text payload; "" when the payload has none, so callers keep the
 // English ref rather than show a bare book title for a specific passage.

@@ -52,7 +52,7 @@ import { isSignedIn } from "./conversation-entry.js";
 import { closeOverlay, pushRoute, readRoute, routeUrl } from "./router.js";
 import { icon as phosphorIcon } from "./icons.js";
 import { activeLabel, createProgress, doneLabel, progressView, trailView, viewKey } from "./ask-progress.js";
-import { sourceBadgeHtml, externalLinksHtml, previewHtml, hebrewRefName, readerRef, isWebRef, webSourceHeadHtml } from "./source-cards.js";
+import { sourceBadgeHtml, externalLinksHtml, previewHtml, hebrewRefName, readerRef, isWebRef, webSourceHeadHtml, linkSiteNames } from "./source-cards.js";
 import { citeIdPrefix, injectMarkers, placeMarkers, stripSourcesBlock } from "./citation-markers.js";
 import { createCitationPopover } from "./citation-popover.js";
 import { createConversationShare } from "./conversation-share.js";
@@ -783,7 +783,7 @@ function answerBox(message, body) {
 function answerHtml(content) {
     if (typeof window.renderAnswerMarkdown === "function") {
         try {
-            return window.renderAnswerMarkdown(content);
+            return linkSiteNames(window.renderAnswerMarkdown(content));
         } catch { /* fall back to plain text */ }
     }
     return escapeText(content).replaceAll("\n", "<br>");

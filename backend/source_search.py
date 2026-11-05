@@ -70,11 +70,14 @@ TANAKH_PATHS = ("Tanakh",)
 BROAD_PATHS = ("Tanakh", "Mishnah", "Talmud/Bavli", "Halakhah")
 # And, each in its own search so the codes above do not crowd them out, in the
 # Zohar and the Midrash (the meaning behind a law) and in the Mishnah Berurah
-# (how a ruling is practised). The best match of each group gets its own place
-# among the sources (WIDER_SLOTS), however the codes score.
+# (how a ruling is practised), and in the siddurim and Kabbalah books (what is said
+# each day, and the Arizal's practices: his acceptance of "ואהבת לרעך כמוך" before
+# prayer is printed in the siddur, not in the codes). The best match of each group
+# gets its own place among the sources (WIDER_SLOTS), however the codes score.
 WIDER_PATHS = (
     ("Kabbalah/Zohar", "Midrash"),
     ("Halakhah/Shulchan Arukh/Commentary/Mishnah Berurah",),
+    ("Liturgy", "Kabbalah"),
 )
 WIDER_SLOTS = len(WIDER_PATHS)
 # Commentaries filed beside the codes (the Tur's path also holds the Beit Yosef),
@@ -473,7 +476,7 @@ def _wider_queries(plan: dict[str, list[str]]) -> list[tuple[str, tuple[str, ...
 
 def cap_sources(ranked: list[dict[str, Any]], wider_refs: Iterable[str], limit: int) -> list[dict[str, Any]]:
     """The first `limit` of `ranked`, with up to WIDER_SLOTS of the sources found in
-    the Zohar, Midrash or Mishnah Berurah (find_sources' "wider") kept in place of the
+    the Zohar, Midrash, Mishnah Berurah, siddur or Kabbalah books (find_sources' "wider") kept in place of the
     last ones when they ranked below the cut."""
     wider = {_chapter(ref) for ref in wider_refs}
     kept = list(ranked[:limit])
@@ -505,8 +508,8 @@ def find_sources(question: str, known_refs: Iterable[str] = ()) -> dict[str, lis
     halachic codes (in the Bible, for a question about the Bible). Meanwhile a small
     model (backend/question_plan.py) names the refs it expects and the phrases the
     texts would use; those phrases are then searched across the library's primary
-    texts, and (each in its own search) in the Zohar and Midrash and in the Mishnah
-    Berurah, whose best match of each is returned as "wider" too (see cap_sources).
+    texts, and (each in its own search) in the Zohar and Midrash, in the Mishnah
+    Berurah and in the siddurim and Kabbalah books, whose best match of each is returned as "wider" too (see cap_sources).
     The named refs come first, then the paragraphs that say a phrase word for
     word, then the best-matching others. None of it is trusted: the caller loads each ref and keeps only the ones whose own text
     matches (rank_sources with these "terms"). Empty lists when Sefaria is down or

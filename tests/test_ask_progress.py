@@ -645,14 +645,14 @@ class TestConversationAskStream:
     def test_a_keepalive_is_sent_while_the_worker_is_quiet(self, monkeypatch):
         import queue
 
-        from backend import routes_conversations as rc
+        from backend import flask_progress_stream as fps
 
-        monkeypatch.setattr(rc, "_STREAM_KEEPALIVE_SECONDS", 0.01)
+        monkeypatch.setattr(fps, "KEEPALIVE_SECONDS", 0.01)
         events = queue.Queue()
         threading.Timer(0.06, lambda: events.put({
-            "type": rc._WORKER_DONE, "terminal": {"type": "result", "status": 201, "body": {}},
+            "type": fps.WORKER_DONE, "terminal": {"type": "result", "status": 201, "body": {}},
         })).start()
-        lines = [json.loads(chunk) for chunk in rc._conversation_stream_body(
+        lines = [json.loads(chunk) for chunk in fps.stream_body(
             {"type": "stage", "stage": "sources", "state": "start"}, events)]
         assert lines[0]["type"] == "stage"
         assert lines[-1]["type"] == "result"

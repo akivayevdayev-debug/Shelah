@@ -230,3 +230,65 @@ test('web sources: a "Web:" ref is recognised and named, in either language', as
     assert.ok(!linked.includes('<b>'), 'the name is escaped');
     assert.match(c.webSourceHeadHtml({ ref: 'Web: OU', url: 'http://oukosher.org/x' }, 'he'), /מהרשת<\/span><span class="conv-cite__ref conv-cite__ref--plain"/);
 });
+
+test('a bare HebrewBooks.org in an answer becomes a link that opens a new tab', async () => {
+    const { linkSiteNames } = await load();
+    assert.equal(
+        linkSiteNames('<p>Search HebrewBooks.org for the title.</p>'),
+        '<p>Search <a href="https://hebrewbooks.org" target="_blank" rel="noopener noreferrer">HebrewBooks.org</a> for the title.</p>',
+    );
+});
+
+test('a HebrewBooks address with a path keeps its path and drops the full stop', async () => {
+    const { linkSiteNames } = await load();
+    assert.match(linkSiteNames('<p>See www.hebrewbooks.org/1234.</p>'), /href="https:\/\/www\.hebrewbooks\.org\/1234"[^>]*>www\.hebrewbooks\.org\/1234<\/a>\.<\/p>/);
+});
+
+test('a site already inside a link is not linked again', async () => {
+    const { linkSiteNames } = await load();
+    const html = '<p><a href="https://hebrewbooks.org/1" target="_blank">hebrewbooks.org/1</a></p>';
+    assert.equal(linkSiteNames(html), html);
+});
+
+test('a site named inside code is left as text', async () => {
+    const { linkSiteNames } = await load();
+    assert.equal(linkSiteNames('<code>hebrewbooks.org</code>'), '<code>hebrewbooks.org</code>');
+});
+
+test('an address the markdown already linked opens in a new tab', async () => {
+    const { linkSiteNames } = await load();
+    assert.equal(
+        linkSiteNames('<a href="https://hebrewbooks.org/9">x</a>'),
+        '<a href="https://hebrewbooks.org/9" target="_blank" rel="noopener noreferrer">x</a>',
+    );
+});
+
+test('a link inside the app keeps opening in place', async () => {
+    const { linkSiteNames } = await load();
+    assert.equal(linkSiteNames('<a href="/text/Genesis.1">x</a>'), '<a href="/text/Genesis.1">x</a>');
+});
+
+test('a longer domain that only starts like a listed one is not linked', async () => {
+    const { linkSiteNames } = await load();
+    assert.equal(linkSiteNames('<p>yeshiva.co.il</p>'), '<p>yeshiva.co.il</p>');
+});
+
+test('an e-mail address on a listed site is not linked', async () => {
+    const { linkSiteNames } = await load();
+    assert.equal(linkSiteNames('<p>me@hebrewbooks.org</p>'), '<p>me@hebrewbooks.org</p>');
+});
+
+test('an escaped ampersand in a named address is unescaped in the href', async () => {
+    const { linkSiteNames } = await load();
+    assert.match(linkSiteNames('<p>hebrewbooks.org/a?x=1&amp;y=2 now</p>'), /href="https:\/\/hebrewbooks\.org\/a\?x=1&amp;y=2"/);
+});
+
+test('an unclosed tag at the end is kept as it is', async () => {
+    const { linkSiteNames } = await load();
+    assert.equal(linkSiteNames('<p>hi</p><b'), '<p>hi</p><b');
+});
+
+test('HebrewBooks is one of the sites an answer may name', async () => {
+    const { NAMED_SITES } = await load();
+    assert.ok(NAMED_SITES.includes('hebrewbooks.org'));
+});

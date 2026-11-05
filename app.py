@@ -32,7 +32,7 @@ from backend.data_service import ShelahEngine
 from backend import sefaria
 from backend import claude
 from backend import ask_pipeline
-from backend import ask_progress, source_search, web_lookup
+from backend import ask_progress, flask_progress_stream, source_search, web_lookup
 from backend import search as _backend_search
 from backend.ai_notes import record_ai_note
 from backend import cost_gates
@@ -2322,6 +2322,21 @@ def _build_ask_critical_error_context(local_vars):
 @maybe_require_clerk_auth
 @issues_device_cookie
 def ask_question():
+    # Production serves this Flask app, so this is where a signed-out visitor's
+    # live steps come from (backend/flask_progress_stream.py).
+    if ask_progress.wants_stream(request.headers.get("Accept")):
+        return flask_progress_stream.stream_ask(
+            _answer_ask_question, flask_progress_stream.ask_terminal_event, _ask_stream_failure)
+    return _answer_ask_question()
+
+
+def _ask_stream_failure(exc):
+    _capture_backend_error("ask_stream_failed", exc, {})
+    return jsonify({"error": "An internal error occurred while processing your request."}), 500
+
+
+def _answer_ask_question():
+    """The /ask answer as a Flask view return value (see ask_question)."""
     data = _json_object_body()
     parsed_request = _parse_and_validate_ask_question_request(data)
     if parsed_request is None:

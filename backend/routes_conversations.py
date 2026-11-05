@@ -32,18 +32,15 @@ of stored answers is in backend/routes_answer_share.py.
 from __future__ import annotations
 
 import math
-import queue
 import re
-import threading
 import uuid
-from contextvars import copy_context
 from datetime import datetime, timedelta, timezone
 
-from flask import Blueprint, Response, copy_current_request_context, current_app, jsonify, request, g
+from flask import Blueprint, jsonify, request, g
 
 from backend.auth import require_clerk_auth
 from backend.device_identity import filter_owner, history_owners
-from backend import ask_progress, claude, common_answers, text_trust, web_lookup
+from backend import ask_progress, claude, common_answers, flask_progress_stream, text_trust, web_lookup
 from backend.ai_notes import record_ai_note
 from backend.cost_gates import (
     bind_cost_attribution,
@@ -1076,14 +1073,9 @@ def _run_conversation_ask(supabase, conversation_id, user_id, question, retry_of
     return jsonify(body), 201
 
 
-# Seconds of silence on a progress stream before a keep-alive line is sent.
-_STREAM_KEEPALIVE_SECONDS = 10.0
-_WORKER_DONE = "_worker_done"
-
-
 def _terminal_stream_event(response):
-    """The last NDJSON line for a finished ask, built from the Flask
-    response the plain path would have returned (same status, same body)."""
+    """The last NDJSON line for a finished conversation ask, built from the
+    Flask response the plain path would have returned (same status, same body)."""
     body = response.get_json(silent=True)
     if 200 <= response.status_code < 300:
         return {"type": "result", "status": response.status_code, "body": body}
@@ -1095,75 +1087,17 @@ def _terminal_stream_event(response):
     }
 
 
-def _conversation_stream_body(first_event, events):
-    """NDJSON body: every progress line, then the worker's terminal line. A
-    quiet queue yields keep-alive lines so an idle-timeout proxy does not cut
-    a long model call."""
-    event = first_event
-    while True:
-        if event["type"] == _WORKER_DONE:
-            yield ask_progress.encode_event(event["terminal"])
-            return
-        yield ask_progress.encode_event(event)
-        while True:
-            try:
-                event = events.get(timeout=_STREAM_KEEPALIVE_SECONDS)
-                break
-            except queue.Empty:
-                yield ask_progress.encode_event({"type": "ping"})
+def _stream_failure(exc):
+    _capture_backend_error("conversation_ask_stream_failed", exc, {})
+    return jsonify({"error": "Failed to start message"}), 500
 
 
 def _stream_conversation_ask(run):
-    """Run `run()` (the ask body, returning a Flask response) on a worker
-    thread and stream its progress as NDJSON.
-
-    Committing to a stream waits for the first progress line, and steps only
-    report once the ask is validated, owned, cost-gated and its user turn is
-    saved, so every refusal, and any failure before synthesis, still comes
-    back as its ordinary JSON response with its real status and headers. A
-    stream that started always ends with one `result` or `error` line.
-    """
-    events: queue.Queue = queue.Queue()
-    # Flask's `g` belongs to the request's own app context, which a copied
-    # request context replaces with a fresh one.
-    g_state = dict(vars(g._get_current_object()))
-
-    def work():
-        vars(g._get_current_object()).update(g_state)
-        token = ask_progress.bind(events.put)
-        try:
-            try:
-                response = current_app.make_response(run())
-            except Exception as exc:  # noqa: BLE001 -- the reader must always get a last line
-                _capture_backend_error("conversation_ask_stream_failed", exc, {})
-                response = current_app.make_response(
-                    (jsonify({"error": "Failed to start message"}), 500))
-            events.put({
-                "type": _WORKER_DONE,
-                "response": response,
-                "terminal": _terminal_stream_event(response),
-            })
-        finally:
-            ask_progress.unbind(token)
-            clear_cost_attribution()
-
-    # contextvars (request id, log bindings) do not cross into a new thread by
-    # themselves; the request context is copied so `request` keeps working
-    # after this view has returned.
-    threading.Thread(
-        target=copy_context().run,
-        args=(copy_current_request_context(work),),
-        daemon=True,
-    ).start()
-
-    first = events.get()
-    if first["type"] == _WORKER_DONE:
-        return first["response"]
-    return Response(
-        _conversation_stream_body(first, events),
-        mimetype=ask_progress.NDJSON_MIMETYPE,
-        headers={"Cache-Control": "no-store, no-transform", "X-Accel-Buffering": "no"},
-    )
+    """Stream `run()`'s progress as NDJSON (backend/flask_progress_stream.py).
+    Steps only report once the ask is validated, owned, cost-gated and its
+    user turn is saved, so every refusal, and any failure before synthesis,
+    still comes back as its ordinary JSON response."""
+    return flask_progress_stream.stream_ask(run, _terminal_stream_event, _stream_failure)
 
 
 @routes_conversations.route("/api/conversations/<conversation_id>/ask", methods=["POST"])
