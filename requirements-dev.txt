@@ -1,12 +1,12 @@
 # Development and testing dependencies — not installed in production/Vercel
-pytest==9.1.1
+pytest==9.2.0
 pytest-cov==7.1.0
-pytest-asyncio==1.4.0
+pytest-asyncio==1.4.1.post1
 httpx==0.28.1
 respx==0.23.1
 responses==0.26.3
 freezegun==1.5.5
-ruff==0.17.2
+ruff==0.17.3
 # CI tooling (ci.yml "Security scan" / "Dependency vulnerability scan" steps).
 # Listed here, and so hash-locked in requirements-dev.lock.txt, instead of
 # being `pip install`ed unpinned inside the workflow (SonarCloud

@@ -168,10 +168,10 @@ class TestLazyThirdPartyLibraries:
     page's CSP by tests/test_csp.py."""
 
     LIBRARIES = {
-        "temporal": "temporal-polyfill@1.0.6/global.js",
-        "fullcalendarcore": "fullcalendar@7.1.3/all/global.js",
-        "fullcalendar": "fullcalendar@7.1.3/themes/classic/global.js",
-        "motion": "motion@14.6.0/dist/motion.js",
+        "temporal": "temporal-polyfill@1.0.8/global.js",
+        "fullcalendarcore": "fullcalendar@7.1.4/all/global.js",
+        "fullcalendar": "fullcalendar@7.1.4/themes/classic/global.js",
+        "motion": "motion@14.9.1/dist/motion.js",
     }
     # An entry may name the entries it waits for, and stylesheets of its own.
     ENTRY_HEAD = r"(?:deps:\[[^\]]*\],)?(?:css:\[\[.*?\]\],)?"
@@ -199,7 +199,7 @@ class TestLazyThirdPartyLibraries:
         css = re.search(r"\bfullcalendar:\{deps:\[\"fullcalendarcore\"\],css:\[(\[.*?\])\],src:", loader)
         assert css, "the calendar theme stylesheets are not described by the loader"
         sheets = re.findall(r"\[\"(https://[^\"]+)\",\"sha384-[A-Za-z0-9+/=]+\"\]", css.group(1))
-        assert [s.rsplit("@7.1.3/", 1)[-1] for s in sheets] == [
+        assert [s.rsplit("@7.1.4/", 1)[-1] for s in sheets] == [
             "skeleton.css",
             "themes/classic/theme.css",
             "themes/classic/palette.css",

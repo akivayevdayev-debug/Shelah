@@ -7,11 +7,11 @@
 {% if clerk_publishable_key %}
 {# Clerk 6 ships its sign-in UI separately; Clerk.load gets it as ui.ClerkUI. #}
 <script crossorigin="anonymous"
-    src="https://cdn.jsdelivr.net/npm/@clerk/ui@1.41.2/dist/ui.browser.js"
-    integrity="sha384-FYXAFwPN7TccH+1GBGhfSmj4kqvVseEdP5OAvO5JnZp3fArgoYkLmW0MLwnxJFUB"></script>
+    src="https://cdn.jsdelivr.net/npm/@clerk/ui@1.42.3/dist/ui.browser.js"
+    integrity="sha384-g7iSr1s8bdZMKxEOnY2+JGYN5iWsIEYzpfhMaIezxogPrLQCH6/PaDb+TjWYYLFT"></script>
 <script crossorigin="anonymous" data-clerk-publishable-key="{{ clerk_publishable_key }}"
-    src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@6.40.1/dist/clerk.browser.js"
-    integrity="sha384-JcUoKGgU3fVbZOepxOhFBTSImBs/0xQTLYLqy0CLEkd2sMiA4wn5VDTC6IJYRSaj"></script>
+    src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@6.42.2/dist/clerk.browser.js"
+    integrity="sha384-n4BW8kKPhitA8MIyE1eZDotCDDlEBCVrTbjYNPw4QlcvzQ1CSF3UPtzUbTYdI+7K"></script>
 {% endif %}
 <script src="{{ asset_url('js/clerk-appearance.js') }}"></script>
 <script src="{{ asset_url('js/topbar_shared.js') }}"></script>
