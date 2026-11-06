@@ -303,3 +303,43 @@ test('one status line per region, however often it loads', (t) => {
     api.setRegionBusy(region, true);
     assert.equal(parent.children.filter((n) => n.getAttribute('role') === 'status').length, 1);
 });
+
+// A fetch that never answers unless its signal aborts, as a stalled request.
+function hangingFetch(win) {
+    win.fetch = (url, init) => new Promise((resolve, reject) => {
+        init.signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+    });
+}
+
+test('fetchWithin gives up on a stalled request with a TimeoutError', async (t) => {
+    const { api, win } = setup(t);
+    hangingFetch(win);
+    const pending = api.fetchWithin('/api/zmanim', {}, 1000);
+    t.mock.timers.tick(1000);
+    await assert.rejects(pending, { name: 'TimeoutError' });
+});
+
+test('fetchWithin leaves a request alone until its time is up', async (t) => {
+    const { api, win } = setup(t);
+    hangingFetch(win);
+    let settled = false;
+    api.fetchWithin('/api/zmanim', {}, 1000).catch(() => {}).finally(() => { settled = true; });
+    t.mock.timers.tick(999);
+    await flush();
+    assert.equal(settled, false);
+});
+
+test('fetchWithin returns the response when it comes in time', async (t) => {
+    const { api, win } = setup(t);
+    win.fetch = () => Promise.resolve({ ok: true });
+    assert.deepEqual(await api.fetchWithin('/api/zmanim', {}, 1000), { ok: true });
+});
+
+test('fetchWithin still ends early when the caller aborts', async (t) => {
+    const { api, win } = setup(t);
+    hangingFetch(win);
+    const controller = new AbortController();
+    const pending = api.fetchWithin('/api/zmanim', { signal: controller.signal }, 1000);
+    controller.abort(new Error('newer load'));
+    await assert.rejects(pending, { message: 'newer load' });
+});

@@ -279,6 +279,14 @@ function hasParenthetical(text) {
             };
         }
 
+        // Data loads give up after 20 s (load-region.js fetchWithin), so a
+        // stalled request turns into the region's usual error + retry
+        // instead of loading until the page is reloaded.
+        function regionFetch(url, init) {
+            const within = window.ShelahLoadRegion?.fetchWithin;
+            return within ? within(url, init) : fetch(url, init);
+        }
+
         // L-8: a list whose fetch failed. Each of its regions shows the
         // shared alert with Retry; it retries by itself after 2 s and 6 s and
         // when the connection comes back. `reload(attempt)` runs the loader
@@ -1130,7 +1138,7 @@ function hasParenthetical(text) {
             try {
                 let data = _customsCache[communityName];
                 if (!data) {
-                    const resp = await fetch(`/api/community/${encodeURIComponent(communityName)}`);
+                    const resp = await regionFetch(`/api/community/${encodeURIComponent(communityName)}`);
                     if (!resp.ok) throw new Error('Not found');
                     data = await resp.json();
                     _customsCache[communityName] = data;
@@ -5704,7 +5712,7 @@ function hasParenthetical(text) {
         // unavailable, but not when it rate-limits us.
         async function fetchCommentaryLinksPayload(normalized) {
             try {
-                const resp = await fetch(`/api/sidebar/${encodeURIComponent(normalized)}?stage=links`);
+                const resp = await regionFetch(`/api/sidebar/${encodeURIComponent(normalized)}?stage=links`);
                 if (resp.ok) return (await resp.json())?.links || {};
                 if (resp.status === 429) throw httpStatusError(429);
             } catch (err) {
@@ -5794,7 +5802,7 @@ function hasParenthetical(text) {
             if (sidebarTextsDone.has(ref)) return Promise.resolve();
             if (sidebarTextsInflight.has(ref)) return sidebarTextsInflight.get(ref);
             const request = (async () => {
-                const resp = await fetch(`/api/sidebar/${encodeURIComponent(ref)}?stage=texts`);
+                const resp = await regionFetch(`/api/sidebar/${encodeURIComponent(ref)}?stage=texts`);
                 if (!resp.ok) throw httpStatusError(resp.status);
                 const payload = await resp.json();
                 const texts = payload?.texts && typeof payload.texts === 'object' ? payload.texts : {};
@@ -6712,7 +6720,7 @@ function hasParenthetical(text) {
             if (textsCache.parashaRequest?.minhag === minhag) return textsCache.parashaRequest.promise;
 
             const promise = (async () => {
-                const resp = await fetch(`/api/parasha?minhag=${encodeURIComponent(minhag)}`);
+                const resp = await regionFetch(`/api/parasha?minhag=${encodeURIComponent(minhag)}`);
                 if (!resp.ok) throw new Error(`parasha ${resp.status}`);
 
                 const data = await resp.json();
@@ -8576,7 +8584,7 @@ function hasParenthetical(text) {
         async function loadLibraryIndexViews(attempt = 0, { modal = false } = {}) {
             if (!libraryIndexData) {
                 try {
-                    const response = await fetch('/api/library/index');
+                    const response = await regionFetch('/api/library/index');
                     if (!response.ok) throw new Error('Failed to fetch library index');
                     const data = await response.json();
                     libraryIndexData = [];
@@ -9117,7 +9125,7 @@ function hasParenthetical(text) {
             }
 
             try {
-                const response = await fetch('/api/prayers/list');
+                const response = await regionFetch('/api/prayers/list');
                 if (!response.ok) {
                     throw new Error('prayer list unavailable');
                 }
@@ -9205,7 +9213,7 @@ function hasParenthetical(text) {
             }
 
             try {
-                const response = await fetch('/api/communities/list');
+                const response = await regionFetch('/api/communities/list');
                 if (!response.ok) throw new Error('communities list unavailable');
                 const communities = await response.json();
                 textsCache.communitiesList = communities;
@@ -9291,8 +9299,8 @@ function hasParenthetical(text) {
         // Fetch prayer preview and Sefaria full text in parallel.
         async function fetchPrayerData(prayerName) {
             const [staticResp, sefariaResp] = await Promise.all([
-                fetch(`/api/prayer/${encodeURIComponent(prayerName)}`),
-                fetch(`/api/siddur/full/${encodeURIComponent(prayerName)}`)
+                regionFetch(`/api/prayer/${encodeURIComponent(prayerName)}`),
+                regionFetch(`/api/siddur/full/${encodeURIComponent(prayerName)}`)
             ]);
             let prayerData;
             if (staticResp.ok) {
@@ -9650,7 +9658,7 @@ function hasParenthetical(text) {
         }
 
         async function fetchCommunityData(communityName) {
-            const response = await fetch(`/api/community/${encodeURIComponent(communityName)}`);
+            const response = await regionFetch(`/api/community/${encodeURIComponent(communityName)}`);
             // The customs are the app's own data: a 404 is a name it
             // doesn't have, and a retry won't change that.
             if (!response.ok) {
@@ -10694,7 +10702,7 @@ function hasParenthetical(text) {
                 try {
                     const versionQuery = currentTextQuery(candidate);
                     const versionSuffix = versionQuery ? `&${versionQuery}` : '';
-                    const resp = await fetch(`/api/text/${encodeURIComponent(candidate)}?autotranslate=0${versionSuffix}`);
+                    const resp = await regionFetch(`/api/text/${encodeURIComponent(candidate)}?autotranslate=0${versionSuffix}`);
                     const payload = await resp.json();
                     reachedServer = true;
                     if (!payload?.error) {
@@ -11147,7 +11155,7 @@ function hasParenthetical(text) {
             ];
 
             try {
-                const r = await fetch('/api/daily-study', { credentials: 'same-origin' });
+                const r = await regionFetch('/api/daily-study', { credentials: 'same-origin' });
                 if (!r.ok) throw new Error('daily-study unavailable');
                 const daily = await r.json().catch(() => ({}));
                 await afterStyles(() => {});
@@ -11206,7 +11214,7 @@ function hasParenthetical(text) {
 
                 let data = textsCache.popularTexts;
                 if (!hasFreshCache) {
-                    const r = await fetch('/api/library/popular');
+                    const r = await regionFetch('/api/library/popular');
                     if (!r.ok) {
                         throw new Error('popular texts unavailable');
                     }
@@ -11654,7 +11662,7 @@ function hasParenthetical(text) {
 
         function fetchCalendarHolidays(year) {
             if (!calendarHolidayCache.has(year)) {
-                const request = fetch(`/api/holidays?year=${year}`)
+                const request = regionFetch(`/api/holidays?year=${year}`)
                     .then((r) => {
                         if (!r.ok) throw new Error(`HTTP ${r.status}`);
                         return r.json();

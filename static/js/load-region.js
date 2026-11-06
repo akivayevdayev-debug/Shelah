@@ -168,6 +168,28 @@
         }
     }
 
+    // A data fetch that gives up after `timeoutMs`. A request that stalls (a
+    // server starting cold, a dropped connection) would otherwise leave its
+    // region loading until the page is reloaded; this way it rejects with a
+    // TimeoutError and the region's usual retry takes over. An abort through
+    // `init.signal` still ends it early.
+    const FETCH_TIMEOUT_MS = 20000;
+
+    // The timer also covers reading the body, which happens after fetch()
+    // returns; once everything has arrived, a late abort does nothing.
+    function fetchWithin(url, init = {}, timeoutMs = FETCH_TIMEOUT_MS) {
+        const controller = new AbortController();
+        const timeout = new Error('The request took too long.');
+        timeout.name = 'TimeoutError';
+        setTimeout(() => controller.abort(timeout), timeoutMs);
+        const outer = init.signal;
+        if (outer?.aborted) controller.abort(outer.reason);
+        else outer?.addEventListener?.('abort', () => controller.abort(outer.reason), { once: true });
+        return root.fetch(url, { ...init, signal: controller.signal }).catch((error) => {
+            throw controller.signal.aborted && controller.signal.reason ? controller.signal.reason : error;
+        });
+    }
+
     function defaultMessage(el, error) {
         return error?.message || tr(el, "Couldn't load this. Check your connection.", 'לא ניתן היה לטעון. בדקו את החיבור.');
     }
@@ -250,6 +272,8 @@
         setRegionBusy,
         renderRegionError,
         retryLater,
+        fetchWithin,
+        FETCH_TIMEOUT_MS,
         beginRegionLoad,
         abortRegion,
     };

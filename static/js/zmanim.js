@@ -726,7 +726,10 @@ export function fetchZmanimAPI(location = null, deps = {}) {
     }
 
     setZmanimBusy(true);
-    return fetch(url)
+    // Gives up after 20 s (load-region.js fetchWithin): a stalled request
+    // goes to the retry below instead of leaving the times loading.
+    const within = window.ShelahLoadRegion?.fetchWithin;
+    return (within ? within(url) : fetch(url))
         .then((r) => r.json())
         .then((data) => {
             setZmanimBusy(false);

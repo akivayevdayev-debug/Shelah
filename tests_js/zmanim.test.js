@@ -272,6 +272,16 @@ test('fetchZmanimAPI does not render when the API reports an error', async () =>
     assert.equal(timer.setTimeout.calls[0].delay, 3000, 'the first retry uses the shortest configured backoff');
 });
 
+test('fetchZmanimAPI retries when the request takes too long instead of loading forever', async () => {
+    const timeout = Object.assign(new Error('The request took too long.'), { name: 'TimeoutError' });
+    const window = { ShelahLoadRegion: { fetchWithin: () => Promise.reject(timeout) } };
+    const { mod, timer } = await loadZmanim({ window, fetch: () => new Promise(() => {}) });
+
+    await mod.namespace.fetchZmanimAPI(null, makeDeps());
+
+    assert.equal(timer.setTimeout.calls[0]?.delay, 3000);
+});
+
 test('fetchZmanimAPI marks the times list busy while /api/zmanim is out, and not after', async () => {
     let release;
     const busyDuring = [];

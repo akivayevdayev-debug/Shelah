@@ -69,7 +69,7 @@
         "source": "sha256:16c827eb03412cf6796baaa5cd9aabc512effe3e97e46b40120c4e6b036236c2"
       },
       "load-region.js": {
-        "source": "sha256:c33a070853e017a1c3cf01b9972f3dec8eb5e666cec8a9b5c024ee69aa29f3e0"
+        "source": "sha256:44ea4200b030cad3dd42bc4d20750b5de313fbb6827c4c2594f31be980923bc4"
       },
       "reveal.js": {
         "source": "sha256:e43004fcc811de5e3640009f6269ec9bd32b4921e68399ff02064cebace086ba"
@@ -78,7 +78,7 @@
         "source": "sha256:968aced3c444af8bc1de8da0954ad3704ee3acf4a2df7812da324e62c3890547"
       },
       "shell.js": {
-        "source": "sha256:c418c04d2fccd8c91b33da85ce94aadca85230c58eb8d2330763b70bc8e40bcc"
+        "source": "sha256:c0d5391c4eec71347f4253d3593dbb5a1106e679966e47c7dc3749c0fafe5779"
       },
       "topbar_shared.js": {
         "source": "sha256:27a797b3deffea688349051bba6539490d19d018205f4c9721cd4d69e0bb17c3"
@@ -122,7 +122,7 @@
         "source-cards.js": "sha256:06e3b75b7a4849d7e9154cce0bf17317d1c547f0f0eb09114ac21d8ab955d02f",
         "state.js": "sha256:2db1919d2ba9f9ba4f0b7ede3bf9b6634e8a73dd568a02fd27013cab4eb4fd5d",
         "text-versions.js": "sha256:2f9fcbae1efee3b9d4a6cb583e9593c100b4b6baebe8d1753b902c71df3d31f2",
-        "zmanim.js": "sha256:1179f537a443f7903e9b85c3853d873ba0fe50d27f3e42699300e796c74f84f4"
+        "zmanim.js": "sha256:a61d9a1cacef9117aaeb40799d5507c4f5b4c0294a36bccc8ea97a462954d2f8"
       },
       "outputs": {
         "js/actions.js": "12695443e6e5",
@@ -133,12 +133,12 @@
         "js/clerk-appearance.js": "2b87f5183189",
         "js/community-labels.js": "87dfbcba156b",
         "js/hebrew-ref.js": "d05bbd5fe59f",
-        "js/load-region.js": "2833ed602bea",
-        "js/main.js": "1a824cda26f6",
+        "js/load-region.js": "cd7ccc80f956",
+        "js/main.js": "9feb550f25c4",
         "js/motion.js": "78836d5f6141",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
-        "js/shell.js": "ebaffb05378b",
+        "js/shell.js": "0d6fe83de61c",
         "js/topbar_shared.js": "55aa1d245dcc"
       },
       "unreached": []

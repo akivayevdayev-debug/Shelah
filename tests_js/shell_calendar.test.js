@@ -290,7 +290,12 @@ test('a month that fails to load retries by itself once, then offers a Retry but
         const instance = built(page);
         const timers = [];
         const realSetTimeout = page.window.setTimeout;
-        page.window.setTimeout = (fn, ms) => { timers.push([fn, ms]); return 1; };
+        // Only the retry timers: each request also arms the 20 s fetch
+        // limit (load-region.js fetchWithin), which never fires here.
+        page.window.setTimeout = (fn, ms) => {
+            if (ms !== page.window.ShelahLoadRegion?.FETCH_TIMEOUT_MS) timers.push([fn, ms]);
+            return 1;
+        };
         const failures = [];
         const request = () => new Promise((resolve) => instance.options.events(
             { start: new Date('2026-09-27T00:00:00'), end: new Date('2026-11-08T00:00:00') },
