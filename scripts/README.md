@@ -16,6 +16,9 @@ Operational one-offs and setup utilities. None embed credentials. All auth and D
 
 ## CI and tooling helpers
 
+- `finish.sh` (`npm run finish`, `npm run finish:quick`): the steps after a change, in order. It rebuilds assets, critical CSS and the page fixture only when the change needs them, updates graphify, then runs ruff, pytest and `npm test`, and ends by printing what is staged. The fixture is rebuilt from a clean `git archive HEAD` plus your changed files, never from the shared dirty checkout.
+- `probe.mjs` (`npm run probe`): headless-Chrome checks against its own uvicorn on a free port. `smoke [path] [--mobile]` fails on console errors, server errors, missing files, or a region still loading after 30 s. `stall /api/<x>` never answers the first matching request, and the page must recover without a reload. `--url <base>` uses a server that is already running.
+
 - `a11y_dark_scan.js`: the dark-theme half of the WCAG 2.1 AA gate (`npm run test:a11y:dark`; `pa11y-ci` covers light).
 - `merge_lcov.py`: merges duplicate per-file records in the JS lcov output so SonarCloud reads coverage correctly (part of `npm run test:coverage`).
 - `check_prompt_doc_sync.py`: advisory pre-commit report comparing status claims in `claude_code_prompts.md` with `plan.md`. It never blocks a commit.

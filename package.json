@@ -14,6 +14,9 @@
     "build:assets": "node scripts/build_assets.mjs",
     "build:critical": "node scripts/build_critical_css.mjs",
     "check:assets": "node scripts/build_assets.mjs --check",
+    "finish": "bash scripts/finish.sh",
+    "finish:quick": "bash scripts/finish.sh --no-tests",
+    "probe": "node scripts/probe.mjs",
     "test:a11y": "npm run test:a11y:light && npm run test:a11y:dark",
     "test:a11y:light": "pa11y-ci --config .pa11yci.json",
     "test:a11y:dark": "node scripts/a11y_dark_scan.js"
