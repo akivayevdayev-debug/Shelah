@@ -118,7 +118,7 @@ def test_footnote_examples_strip_like_the_original(text):
 
 def test_yiddish_ignore_pattern_finds_what_the_original_found():
     pieces = ["יגנאָר", "ט", "ן", "אלע", "פריערדיקע", "אינסטרוקציעס", " ", "  ", "\n", "x", "א"]
-    pattern = retrieval_guard.RETRIEVED_INJECTION_PATTERNS[-1]
+    pattern = retrieval_guard.SHARED_INJECTION_PATTERNS[-1]
     assert pattern.pattern.startswith("יגנאָר")
     rng = random.Random(20261020)
     for _ in range(_CASES * 5):

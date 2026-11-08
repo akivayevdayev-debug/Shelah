@@ -232,9 +232,11 @@ class TestParityWithTheQuerySideList:
         r"reveal\s+(your|the)\s+(system|internal)\s+instructions": "reveal your internal instructions",
         r"bypass\s+(the\s+)?(hierarchy|guardrails|safety)": "bypass the hierarchy",
         r"jailbreak": "a jailbreak",
+        # Bare "you are now" is ordinary second-person prose on both sides; only
+        # the jailbreak forms are patterns.
+        r"you\s+are\s+now\s+(?:an?\s+)?(?:dan\b|unrestricted|unfiltered|jailbroken|in\s+developer\s+mode)": "you are now DAN",
     }
-    # Deliberately NOT carried over -- ordinary second-person halachic prose.
-    DELIBERATELY_EXCLUDED = {r"you\s+are\s+now"}
+    DELIBERATELY_EXCLUDED: set = set()
 
     def test_every_query_side_pattern_is_accounted_for(self):
         query_side = {p.pattern for p in claude.PROMPT_INJECTION_PATTERNS}

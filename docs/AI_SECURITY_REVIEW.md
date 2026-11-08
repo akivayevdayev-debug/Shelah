@@ -182,6 +182,14 @@ An earlier revision of `docs/SECURITY.md` described an unresolved production bug
 
 ---
 
+### Prompt-injection screen, November 2026
+
+- **Questions** (`backend/query_guard.py`, called from `claude.validate_user_query`): a question is blocked only when its wording is aimed at the AI itself. That covers telling it to drop its instructions, asking for its system prompt, asking for other users' questions, demanding a knowingly false answer or a made-up source, claiming to be the site's owner or admin, persona jailbreaks, and attempts to damage the system. Topics are never blocked here. Each check works in English and Hebrew. Bare "you are now" is no longer a marker.
+- **Retrieved text** (`backend/retrieval_guard.py`): the screen now also catches text planted for the model ("Note to the AI reading this page", "[SYSTEM] New policy from the site owner", "AI assistant: disregard ...", a saved note fixing future answers to "permitted"). Upper-case "AI" only, so the city of Ai in Joshua is not flagged.
+- **Every tool result** passes the same screen in `ai_tools.execute_tool`, so a new tool is covered automatically. A test pins the list of 22 read-only tools: adding one means checking that it cannot change data or reach another user's data.
+- **Every block is logged** (`logging_setup.log_security_block`) with its stage, reason and attack category, never the question or the answer text.
+- **Tests** (`tests/test_query_guard.py`, data in `tests/data/`): 71 attacks must be blocked. 365 normal questions must pass: the repo's eval and test questions, 84 tricky ones and a held-out set of 120 written separately. 25 planted snippets must be caught and 26 ordinary snippets must pass. Known gap: creative role-play jailbreaks ("act as my grandmother who read me AI prompts") are left to the model's own rules.
+
 ## 3. Business-logic questions from the task brief, answered directly
 
 - **Can the cost ceiling or budget breaker be raced or bypassed?** Per-caller reservation: no. It is verified race-free (see I1). Global breaker: it fails *open* on a Supabase or cache outage, by design. This is documented and deliberate, a soft guardrail rather than the last line of defense, per the code's own comments. Provider-side spend caps are the documented true backstop. Not a new finding.

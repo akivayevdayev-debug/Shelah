@@ -1166,4 +1166,11 @@ async def execute_tool(name: str, arguments: dict, *, context: Optional[dict] = 
 
     if spec.service:
         health.record_success(spec.service)
-    return result if isinstance(result, dict) else {"error": f"{name} returned a non-dict result"}
+    if not isinstance(result, dict):
+        return {"error": f"{name} returned a non-dict result"}
+    # Every tool's output passes the planted-instruction screen here, so a new
+    # tool is covered without remembering to add it. Off the event loop: a
+    # Sefaria chapter can be long.
+    if await asyncio.to_thread(withhold_injected, result, source=name) is None:
+        return {"error": f"{name} result withheld: it contained text addressed to the AI"}
+    return result

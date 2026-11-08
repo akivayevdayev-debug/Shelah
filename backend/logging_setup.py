@@ -721,3 +721,29 @@ def log_retrieval_guard_drop(source: str, marker_count: int) -> None:
             )
         except Exception:
             pass
+
+
+_security_block_logger = logging.getLogger("shelah.security_block")
+
+
+def log_security_block(stage: str, reason: str, categories=()) -> None:
+    """One structured log line + Sentry breadcrumb per question or answer the
+    AI safety checks block, so the owner can see what is being blocked and how
+    often. `stage` is "input" or "output", `reason` and `categories` are fixed
+    labels (e.g. "prompt_injection_pattern", ["prompt_extraction"]). The
+    question and answer text are never passed here or logged."""
+    labels = sorted({str(c) for c in categories or ()})
+    _security_block_logger.warning(
+        "security_block",
+        extra={"stage": stage, "reason": reason, "categories": labels},
+    )
+    if _sentry_enabled:
+        try:
+            sentry_sdk.add_breadcrumb(
+                category="security_block",
+                message=f"{stage}:{reason}",
+                level="warning",
+                data={"categories": labels},
+            )
+        except Exception:
+            pass

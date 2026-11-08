@@ -147,8 +147,10 @@ _JAILBREAK_PERSONA = r"(?:an?\s+)?(?:dan\b|unrestricted|unfiltered|jailbroken|in
 
 # One small compiled pattern per phrase (the PROMPT_INJECTION_PATTERNS idiom;
 # keeps each regex structurally trivial and linear-time -- SonarCloud
-# python:S5843 / S8786). Matched against the normalized text (see _match_subjects).
-RETRIEVED_INJECTION_PATTERNS = [
+# python:S5843 / S8786). Matched against the normalized text (see match_subjects).
+# Shared with the question-side screen (backend/query_guard.py): nothing here is
+# a phrase a person would type in an ordinary question.
+SHARED_INJECTION_PATTERNS = [
     # "ignore [all|any|your] previous instructions" -- always flagged.
     re.compile(rf"{_IGNORE_VERB}\s+(?:(?:all|any|your)\s+)?{_STRONG_QUALIFIER}\s+{_DIRECTIVE_NOUN}", re.IGNORECASE),
     # "ignore all|any|your [other|these] instructions" -- flagged unless it names whose.
@@ -166,11 +168,11 @@ RETRIEVED_INJECTION_PATTERNS = [
     re.compile(r"(?:ignore|disregard|forget)\s+(?:everything|all)\s+(?:above|before|previously)", re.IGNORECASE),
     re.compile(r"new\s+instructions?\s*:", re.IGNORECASE),
     re.compile(r"do\s+not\s+(?:tell|inform)\s+the\s+(?:user|reader)", re.IGNORECASE),
-    re.compile(r"from\s+now\s+on,?\s+(?:only\s+)?(?:respond|answer|reply)", re.IGNORECASE),
     re.compile(r"system\s+prompt", re.IGNORECASE),
     re.compile(r"developer\s+message", re.IGNORECASE),
     re.compile(r"reveal\s+(?:your|the)\s+(?:system|internal)\s+instructions", re.IGNORECASE),
     re.compile(r"bypass\s+(?:the\s+)?(?:hierarchy|guardrails|safety)", re.IGNORECASE),
+    re.compile(r"(?:ignore|disregard|bypass|disable|turn\s+off)\s+(?:all\s+)?(?:the\s+|your\s+|its\s+)?(?:content\s+|safety\s+)?(?:filters|guardrails|safety\s+(?:rules|checks|filters))\b", re.IGNORECASE),
     re.compile(r"jailbreak", re.IGNORECASE),
     # The unmistakable forms of "you are now ..." only -- see the module docstring.
     re.compile(rf"you\s+are\s+now\s+{_JAILBREAK_PERSONA}", re.IGNORECASE),
@@ -221,6 +223,47 @@ RETRIEVED_INJECTION_PATTERNS = [
     re.compile(r"יגנאָר\w{0,30}\s+אלע\s+(?:\w{1,20}\s*)?אינסטרוקציעס"),
 ]
 
+# Who planted text addresses when it speaks to the model directly.
+# Bare "AI" must be upper case: "Ai" is also the city in Joshua 7-8 ("after Ai,
+# never again ..."). Names that are also ordinary words (Gemini the mazal) are left out.
+_AI_ADDRESSEE = r"(?:(?-i:AI|A\.I\.)|ai\s+(?:assistant|model|system)|chat\s*bot|llm|language\s+model|gpt)"
+# What planted text tries to make the model say: a permissive ruling.
+_PERMISSIVE_RULING = r"(?:permitted|allowed|fine|okay|ok|kosher|mutar|muttar|no\s+(?:problem|prohibition|issue)|not\s+(?:forbidden|prohibited|a\s+problem))"
+
+# Retrieved text only. A person may well type "from now on, answer in Hebrew"
+# in a question, so these stay out of the question-side screen.
+_RETRIEVED_ONLY_PATTERNS = [
+    re.compile(r"from\s+now\s+on,?\s+(?:only\s+)?(?:respond|answer|reply)", re.IGNORECASE),
+    # Text addressed to the model reading the page: "Note to the AI reading
+    # this", "Attention AI:", "Dear chatbot,", "AI assistant: disregard ...".
+    re.compile(rf"\b(?:note|message|instructions?|reminder)\s+(?:to|for)\s+(?:the\s+|any\s+)?{_AI_ADDRESSEE}\b", re.IGNORECASE),
+    re.compile(rf"\b(?:attention|dear|hey|hello|hi)\s*,?\s+(?:the\s+)?{_AI_ADDRESSEE}\b", re.IGNORECASE),
+    re.compile(rf"\b{_AI_ADDRESSEE}s?\s+(?:that\s+(?:is|are)\s+)?(?:reading|processing|summari[sz]ing|parsing|indexing)\s+(?:this|these)\b", re.IGNORECASE),
+    re.compile(rf"\b{_AI_ADDRESSEE}\s*[:,]\s*(?:please\s+)?(?:disregard|ignore|forget|always|never|you\s+must|tell|say|respond|answer|send|direct)\b", re.IGNORECASE),
+    re.compile(r"\bwhen\s+(?:summari[sz]ing|reading|processing|answering\s+(?:from|about))\s+this\s+(?:page|text|article|site|document)\s*,?\s+(?:always\s+)?(?:say|tell|answer|respond|state)\b", re.IGNORECASE),
+    # Fake system / policy tags: "[SYSTEM]", "[ADMIN NOTE]", "New policy from the site owner".
+    re.compile(r"\[\s*(?:system|admin|administrator|developer|operator)(?:\s+(?:message|note|prompt|notice|override))?\s*\]", re.IGNORECASE),
+    re.compile(rf"\bnew\s+(?:policy|rule|directive|instruction)s?\s+from\s+(?:the\s+)?(?:{_PAGE_LEVEL_AUTHORITY}|owner|admin(?:istrator)?|developers?|operators?|system)\b", re.IGNORECASE),
+    # A saved note that tries to fix future answers to a permissive ruling.
+    re.compile(rf"\bin\s+(?:all\s+)?(?:future|later|subsequent|every|all)\s+(?:answers|responses|replies|conversations|chats)\s*,?\s*(?:always|you\s+(?:must|should))\s+(?:tell|say|answer|state|confirm)\b.{{0,80}}?\b{_PERMISSIVE_RULING}", re.IGNORECASE),
+    # The same aimed at the model in Hebrew: "הערה לבינה המלאכותית", "למודל השפה", "לצ'אטבוט".
+    re.compile(r"(?:הערה|הודעה|הוראה|הוראות|תזכורת)\s+(?:ל|אל\s+ה?)(?:בינה\s+(?:ה)?מלאכותית|מודל(?:\s+ה?שפה)?|עוזר\s+ה?(?:דיגיטלי|וירטואלי|AI)|צ'?אט\s*בוט|בוט|AI)"),
+    re.compile(r"(?:שים\s+לב|לתשומת\s+לב)\s+(?:ה)?(?:בינה\s+(?:ה)?מלאכותית|מודל|בוט|צ'?אט\s*בוט|AI)"),
+    # Messages to models in general: "For AI agents:", "AI systems must now ...",
+    # "SYSTEM OVERRIDE:", "Model instruction:", "Prompt for the bot:".
+    re.compile(r"\b(?:for|to)\s+(?:all\s+|any\s+)?(?:(?-i:AI)\s+(?:agents|systems|models|assistants|readers)|language\s+models|llms|chat\s*bots|bots)\s*[:,]", re.IGNORECASE),
+    re.compile(r"\b(?:(?-i:AI)\s+(?:systems|models|assistants|agents)|language\s+models|llms|chat\s*bots)\s+(?:must|should|are\s+(?:to|required\s+to))\b", re.IGNORECASE),
+    re.compile(r"\bsystem\s+(?:override|instruction|directive)s?\s*:", re.IGNORECASE),
+    re.compile(r"\b(?:model|bot|llm|(?-i:AI))\s+(?:instruction|prompt|directive)s?\s*:", re.IGNORECASE),
+    re.compile(r"\bprompt\s+for\s+(?:the\s+)?(?:bot|model|(?-i:AI)|assistant|llm)\b", re.IGNORECASE),
+    re.compile(r"(?:^|[.!?]\s+)assistant\s*,\s*(?:please\s+)?(?:add|say|tell|ignore|disregard|always|never|include|answer)\b", re.IGNORECASE),
+    re.compile(r"(?:הנחיה|הנחיות)\s+ל(?:מודל|בוט|בינה\s+(?:ה)?מלאכותית|מערכת)"),
+    re.compile(r"ל(?:בוט|מודל|בינה\s+(?:ה)?מלאכותית)\s+ש(?:קורא|מעבד|מסכם|סורק)"),
+    re.compile(r"(?:^|[.:!?]\s*)ל(?:מערכת|בוט|מודל)\s*:"),
+]
+
+RETRIEVED_INJECTION_PATTERNS = SHARED_INJECTION_PATTERNS + _RETRIEVED_ONLY_PATTERNS
+
 # Cyrillic / Greek letters that render like a Latin one. Used ONLY to build a
 # second matching copy of the text (never returned): NFKC does not fold these.
 _CONFUSABLES = str.maketrans({
@@ -270,7 +313,7 @@ def _normalize(text: str) -> str:
     )
 
 
-def _match_subjects(text: str) -> tuple:
+def match_subjects(text: str) -> tuple:
     """The normalized text, plus a copy with Cyrillic/Greek look-alikes folded to
     Latin when that changes anything. Both are searched: folding would break the
     Russian pattern, and not folding would miss "ignоre" spelled with a Cyrillic о."""
@@ -284,7 +327,7 @@ def find_injection_markers(text: str) -> List[str]:
     `text`. Mirrors claude._extract_prompt_injection_markers()."""
     return sorted({
         m.group(0).lower()
-        for subject in _match_subjects(str(text or ""))
+        for subject in match_subjects(str(text or ""))
         for pattern in RETRIEVED_INJECTION_PATTERNS
         for m in pattern.finditer(subject)
     })

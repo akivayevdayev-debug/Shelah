@@ -31,7 +31,8 @@ from backend.citation_markers import finalize_sources, note_head, place_markers,
 from backend.cost_meter import record_llm_call
 from backend.customs import runtime_config as _customs_runtime_config
 from backend.health_check import health
-from backend.logging_setup import get_request_id, submit_with_context
+from backend.logging_setup import get_request_id, log_security_block, submit_with_context
+from backend.query_guard import attack_categories
 from backend.retrieval_guard import withhold_injected
 
 # Deferred: importing the anthropic/google-genai SDKs is
@@ -279,7 +280,9 @@ MULTI_WHITESPACE_RE = re.compile(r"\s+")
 PROMPT_INJECTION_PATTERNS = [
     re.compile(r"ignore\s+(all|any|previous|prior)\s+instructions", re.IGNORECASE),
     re.compile(r"disregard\s+(all|any|previous|prior)\s+instructions", re.IGNORECASE),
-    re.compile(r"you\s+are\s+now", re.IGNORECASE),
+    # Only the jailbreak forms: bare "you are now" is ordinary ("if you are now
+    # in the nine days ...").
+    re.compile(r"you\s+are\s+now\s+(?:an?\s+)?(?:dan\b|unrestricted|unfiltered|jailbroken|in\s+developer\s+mode)", re.IGNORECASE),
     re.compile(r"system\s+prompt", re.IGNORECASE),
     re.compile(r"developer\s+message", re.IGNORECASE),
     re.compile(r"reveal\s+(your|the)\s+(system|internal)\s+instructions", re.IGNORECASE),
@@ -1799,12 +1802,14 @@ def validate_user_query(query: str, in_thread: bool = False) -> Dict[str, Any]:
     is True when earlier turns of the conversation come with the question."""
     sanitized = sanitize_user_query(query)
     markers = _extract_prompt_injection_markers(sanitized)
+    # Wording aimed at the AI itself (backend/query_guard.py), never a topic.
+    attacks = attack_categories(sanitized)
     refusal_subject = _detect_out_of_scope_subject(sanitized, in_thread)
 
     reasons = []
     if not sanitized:
         reasons.append("empty_query")
-    if markers:
+    if markers or attacks:
         reasons.append("prompt_injection_pattern")
     if refusal_subject == _SUBJECT_INAPPROPRIATE:
         reasons.append("inappropriate_content")
@@ -1821,6 +1826,7 @@ def validate_user_query(query: str, in_thread: bool = False) -> Dict[str, Any]:
         "blocked": bool(reasons),
         "reasons": reasons,
         "markers": markers,
+        "attack_categories": attacks,
         "refusal_subject": refusal_subject,
     }
 
@@ -3253,6 +3259,8 @@ def _build_input_block_result(
         blocked_answer = _off_topic_refusal_message(refusal_subject, answer_language)
         blocked_error = "security_blocked_domain"
 
+    reasons = input_validation.get("reasons") or ["blocked"]
+    log_security_block("input", ",".join(reasons), input_validation.get("attack_categories") or ())
     return _build_refusal_result(
         blocked_answer, blocked_error, safety_class, input_validation)
 
@@ -3434,6 +3442,7 @@ def apply_output_validation(result, input_validation, answer_language, safety_cl
     }
 
     if output_validation["blocked"]:
+        log_security_block("output", output_validation["reason"])
         result["error"] = result.get("error") or "security_blocked_output"
         result["is_fallback"] = True
 
