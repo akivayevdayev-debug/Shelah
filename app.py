@@ -1092,6 +1092,14 @@ def _coerce_coordinate(value, min_value, max_value):
 # change would, so there's no "tune without redeploying" benefit to keeping
 # this configurable -- it's a literal.
 RESOURCE_RELOAD_SECONDS = 60 * 5
+# How long Vercel's CDN keeps an HTML page, then serves it stale while it
+# fetches a fresh copy in the background. Each page is the same for every
+# visitor (only the URL and site settings shape it; sign-in and personal data
+# load afterwards in the browser), and a deploy clears the CDN cache
+# (confirmed 2026-11-12: an API answer cached for a day came back as a MISS
+# carrying the new X-Deploy-Hash right after a deploy). So a visitor almost
+# never waits for a cold start to see a page.
+HTML_EDGE_CACHE_CONTROL = "public, max-age=3600, stale-while-revalidate=86400"
 # Flask session cookie lifetime. NOT an auth control -- Clerk auth is
 # stateless JWT-per-request (backend/auth.py) and never touches Flask's
 # session. The only thing stored here is a last-known lat/lon for zmanim/
@@ -1272,9 +1280,14 @@ def apply_response_cache_policy(response):
     if response.mimetype in {"text/html", "application/xhtml+xml"}:
         # A handler that knows its page is a stopgap (g.html_cache_control,
         # e.g. a /text/ page whose server render failed) asks for less.
-        response.headers["Cache-Control"] = getattr(g, "html_cache_control", None) or (
+        stopgap = getattr(g, "html_cache_control", None)
+        response.headers["Cache-Control"] = stopgap or (
             f"public, max-age={RESOURCE_RELOAD_SECONDS}, must-revalidate"
         )
+        if not stopgap and response.status_code == 200:
+            # Vercel's CDN alone reads this header (and drops it before the
+            # browser), so the edge keeps a page far longer than browsers do.
+            response.headers["Vercel-CDN-Cache-Control"] = HTML_EDGE_CACHE_CONTROL
 
     return response
 

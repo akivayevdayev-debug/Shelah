@@ -330,6 +330,13 @@ class TestFallbacks:
         assert 'id="ssrTextPayload"' not in response.get_data(as_text=True)
         assert response.headers["Cache-Control"] == text_ssr.FALLBACK_CACHE_CONTROL
 
+    def test_the_stopgap_shell_is_not_kept_long_at_the_edge(self, test_client, serve_text):
+        def boom(_ref):
+            raise RuntimeError("upstream is down")
+
+        serve_text(behavior=boom)
+        assert "Vercel-CDN-Cache-Control" not in test_client.get("/text/Genesis.1").headers
+
     @pytest.mark.parametrize("payload", [
         {"error": "Sefaria is blocking the request", "error_type": "sefaria_blocked"},
         _payload(lines=[]),

@@ -281,3 +281,25 @@ def test_a_missing_font_is_not_cached_for_a_month(test_client):
     resp = test_client.get("/static/fonts/nope.woff2")
     assert resp.status_code == 404
     assert "2592000" not in (resp.headers.get("Cache-Control") or "")
+
+
+# ── HTML pages at Vercel's edge ──────────────────────────────────────────────
+
+@pytest.mark.parametrize("path", ["/", "/tanakh", "/about"])
+def test_a_page_is_kept_long_at_the_edge(test_client, path):
+    from app import HTML_EDGE_CACHE_CONTROL
+
+    assert test_client.get(path).headers.get("Vercel-CDN-Cache-Control") == HTML_EDGE_CACHE_CONTROL
+
+
+def test_browsers_keep_the_five_minute_page_cache(test_client):
+    assert test_client.get("/").headers["Cache-Control"] == "public, max-age=300, must-revalidate"
+
+
+def test_a_missing_page_is_not_kept_at_the_edge(test_client):
+    response = test_client.get("/no-such-page-anywhere")
+    assert (response.status_code, "Vercel-CDN-Cache-Control" in response.headers) == (404, False)
+
+
+def test_an_api_answer_gets_no_page_edge_header(test_client):
+    assert "Vercel-CDN-Cache-Control" not in test_client.get("/api/texts-index").headers
