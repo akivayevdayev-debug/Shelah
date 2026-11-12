@@ -187,7 +187,7 @@ class APIHealth:
     # around each real network call (used by backend/utils/search_provider.py
     # for translation providers and general web/global-source search).
     # community_knowledge covers backend/rag.py::_retrieve_community_knowledge.
-    _PASSIVE_SERVICES = ("translate_google", "translate_mymemory", "web", "nominatim", "photon", "community_knowledge")
+    _PASSIVE_SERVICES = ("translate_google", "translate_mymemory", "web", "nominatim", "photon", "open_meteo_geocode", "community_knowledge")
 
     _COOLDOWN_POLICIES: Dict[str, _CooldownPolicy] = {
         "gemini": _CooldownPolicy(GEMINI_FAIL_THRESHOLD, gemini_cooldown_seconds),

@@ -30,6 +30,8 @@ class _Reply:
 
 def _photon(monkeypatch, features, ok=True, calls=None):
     def fake_get(url, params=None, **kwargs):
+        if url != place_suggest.PHOTON_URL:
+            return _Reply([], ok=False)  # the backup geocoder fails too
         if calls is not None:
             calls.append(params)
         return _Reply(features, ok)
@@ -155,3 +157,80 @@ def test_a_city_outranks_a_village_of_the_same_name(monkeypatch):
         _feature("Jerusalem", 35.21, 31.77, type="city", osm_value="city", countrycode="IL", country="Israel"),
     ])
     assert place_suggest.suggest("jeru")[0]["name"] == "Jerusalem"
+
+
+# ── Backup geocoder (Open-Meteo) when Photon fails ──────────────────────────
+
+JERUSALEM_ROW = {"name": "Jerusalem", "latitude": 31.769, "longitude": 35.216, "feature_code": "PPLA",
+                 "country_code": "IL", "country": "Israel", "admin1": "Jerusalem",
+                 "timezone": "Asia/Jerusalem"}
+
+
+class _MeteoReply:
+    def __init__(self, body, ok=True):
+        self.ok = ok
+        self._body = body
+
+    def json(self):
+        return self._body
+
+
+def _photon_down(monkeypatch, meteo_body, meteo_ok=True, calls=None):
+    """Photon answers 503; Open-Meteo answers ``meteo_body``."""
+    def fake_get(url, params=None, **kwargs):
+        if calls is not None:
+            calls.append(url)
+        if url == place_suggest.PHOTON_URL:
+            return _Reply([], ok=False)
+        return _MeteoReply(meteo_body, meteo_ok)
+
+    _photon(monkeypatch, [])
+    monkeypatch.setattr(place_suggest.requests, "get", fake_get)
+
+
+def test_the_backup_answers_when_photon_fails(monkeypatch):
+    _photon_down(monkeypatch, {"results": [JERUSALEM_ROW]})
+    assert [p["name"] for p in place_suggest.suggest("jerus")] == ["Jerusalem"]
+
+
+def test_a_backup_place_keeps_its_region_and_country(monkeypatch):
+    _photon_down(monkeypatch, {"results": [dict(JERUSALEM_ROW, name="Beit Shemesh")]})
+    assert place_suggest.suggest("beit")[0]["detail"] == "Jerusalem, Israel"
+
+
+def test_a_backup_place_keeps_its_time_zone(monkeypatch):
+    _photon_down(monkeypatch, {"results": [JERUSALEM_ROW]})
+    assert place_suggest.suggest("jerus")[0]["timezone"] == "Asia/Jerusalem"
+
+
+def test_a_backup_country_with_several_zones_lists_a_city_per_zone(monkeypatch):
+    usa = {"name": "United States", "latitude": 39.76, "longitude": -98.5,
+           "feature_code": "PCLI", "country_code": "US", "country": "United States"}
+    _photon_down(monkeypatch, {"results": [usa]})
+    assert len(place_suggest.suggest("united states")) == len(place_suggest._ZONES["US"])
+
+
+def test_no_backup_match_gives_no_places(monkeypatch):
+    _photon_down(monkeypatch, {"generationtime_ms": 0.1})  # Open-Meteo leaves "results" out
+    assert place_suggest.suggest("zzqqx") == []
+
+
+def test_a_backup_answer_is_remembered(monkeypatch):
+    calls = []
+    _photon_down(monkeypatch, {"results": [JERUSALEM_ROW]}, calls=calls)
+    place_suggest.suggest("jerus")
+    place_suggest.suggest("jerus")
+    assert len(calls) == 2  # one Photon try and one backup, then the cache
+
+
+def test_the_backup_is_not_asked_when_photon_answers(monkeypatch):
+    urls = []
+
+    def fake_get(url, params=None, **kwargs):
+        urls.append(url)
+        return _Reply([LONDON])
+
+    _photon(monkeypatch, [])
+    monkeypatch.setattr(place_suggest.requests, "get", fake_get)
+    place_suggest.suggest("lond")
+    assert urls == [place_suggest.PHOTON_URL]

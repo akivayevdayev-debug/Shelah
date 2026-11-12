@@ -10,6 +10,9 @@ coordinates and time zone. Two kinds:
 * anything else is a place from Photon (photon.komoot.io), an OpenStreetMap
   geocoder built for search-as-you-type. Nominatim, which /api/geocode uses for
   one lookup on Enter, forbids autocomplete in its usage policy.
+* when Photon fails (it is a free public server with no uptime promise, and has
+  gone silent for hours), the same places come from Open-Meteo's geocoder
+  (GeoNames data), which also knows Hebrew names and each place's time zone.
 
 Blocking (requests): call it from a Flask route or a worker thread. Any failure
 returns the zone choices alone, or [].
@@ -30,6 +33,7 @@ from backend.health_check import health
 logger = logging.getLogger(__name__)
 
 PHOTON_URL = "https://photon.komoot.io/api/"
+OPEN_METEO_URL = "https://geocoding-api.open-meteo.com/v1/search"
 MAX_SUGGESTIONS = 6
 MIN_QUERY_CHARS = 2
 _MAX_QUERY_CHARS = 80
@@ -185,6 +189,62 @@ def _photon(query: str, lang: str) -> list[dict[str, Any]] | None:
     return features if isinstance(features, list) else []
 
 
+def _open_meteo_place(row: dict[str, Any]) -> list[dict[str, Any]]:
+    """An Open-Meteo result as suggestions, shaped like _place's."""
+    try:
+        lat, lon = float(row["latitude"]), float(row["longitude"])
+    except (KeyError, TypeError, ValueError):
+        return []
+    name = str(row.get("name") or "").strip()
+    if not name:
+        return []
+    code = str(row.get("country_code") or "").upper()
+    if str(row.get("feature_code") or "").startswith("PCL"):  # a country
+        return _place({"geometry": {"coordinates": [lon, lat]}, "properties": {
+            "name": name, "countrycode": code, "country": name, "type": "country"}})
+    country = str(row.get("country") or "").strip()
+    detail = ", ".join(part for part in (str(row.get("admin1") or "").strip(), country)
+                       if part and part != name)
+    return [{"name": name, "detail": detail, "lat": lat, "lon": lon,
+             "timezone": str(row.get("timezone") or "") or _timezone(lat, lon),
+             "kind": "place", "country_code": code}]
+
+
+def _open_meteo(query: str, lang: str) -> list[dict[str, Any]] | None:
+    """Places from Open-Meteo for `query`, biggest first; None on failure."""
+    if not health.is_healthy("open_meteo_geocode"):
+        return None
+    params = {"name": query, "count": str(_FETCH), "language": lang, "format": "json"}
+    try:
+        resp = requests.get(OPEN_METEO_URL, params=params, headers={"User-Agent": _USER_AGENT},
+                            timeout=_TIMEOUT_SECONDS)
+        if not resp.ok:
+            health.record_failure("open_meteo_geocode")
+            return None
+        rows = resp.json().get("results") or []  # no "results" key when nothing matches
+    except (requests.RequestException, ValueError, AttributeError) as exc:
+        health.record_failure("open_meteo_geocode")
+        logger.info("place_suggest: Open-Meteo failed: %s", type(exc).__name__)
+        return None
+    health.record_success("open_meteo_geocode")
+    places: list[dict[str, Any]] = []
+    for row in rows if isinstance(rows, list) else []:
+        if isinstance(row, dict):
+            places += _open_meteo_place(row)
+    return places
+
+
+def _photon_places(features: list[Any]) -> list[dict[str, Any]]:
+    """Photon's features as suggestions, a city before a village of the same name."""
+    ranked = sorted(
+        (feature for feature in features if isinstance(feature, dict)),
+        key=lambda feature: -_SIZE.get(str((feature.get("properties") or {}).get("osm_value") or ""), 0))
+    places: list[dict[str, Any]] = []
+    for feature in ranked:
+        places += _place(feature)
+    return places
+
+
 def _dedupe(places: list[dict[str, Any]]) -> list[dict[str, Any]]:
     seen: set[tuple[str, str]] = set()
     out = []
@@ -211,16 +271,12 @@ def suggest(query: str, lang: str = "en") -> list[dict[str, Any]]:
             return [dict(place) for place in cached[1]]
 
     features = _photon(query, lang)
-    places: list[dict[str, Any]] = []
-    ranked = sorted(
-        (feature for feature in features or [] if isinstance(feature, dict)),
-        key=lambda feature: -_SIZE.get(str((feature.get("properties") or {}).get("osm_value") or ""), 0))
-    for feature in ranked:
-        places += _place(feature)
+    found = _photon_places(features) if features is not None else _open_meteo(query, lang)
+    places = found or []
     # A country with several zones lists them all, even past the usual cap.
     zones = sum(1 for place in places if place["kind"] == "zone")
     places = _dedupe(places)[:max(MAX_SUGGESTIONS, zones)]
-    if features is not None:
+    if found is not None:  # a failure is asked again next time
         with _cache_lock:
             if len(_cache) >= _CACHE_MAX:
                 _cache.pop(next(iter(_cache)))
