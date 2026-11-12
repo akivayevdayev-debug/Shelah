@@ -1275,3 +1275,48 @@ class TestResolveIndexSchemaWithFallbacks:
         schema, title = sl._resolve_index_schema_with_fallbacks("Nonexistent")
         assert schema == {}
         assert title == "Nonexistent"
+
+
+class TestPrefetchIndexEntries:
+    """Search hits' index records are fetched together, not one per hit."""
+
+    def test_looks_up_the_titles_at_the_same_time(self, monkeypatch):
+        import threading
+
+        # Two lookups can only both pass this barrier if they run at once.
+        barrier = threading.Barrier(2, timeout=5)
+        passed = []
+
+        def fake_index_entry(title):
+            barrier.wait()
+            passed.append(title)
+            return {"title": title}
+
+        monkeypatch.setattr(sl, "get_index_entry", fake_index_entry)
+        sl._prefetch_index_entries(["Numbers", "Bamidbar Rabbah"])
+        assert sorted(passed) == ["Bamidbar Rabbah", "Numbers"]
+
+    def test_asks_once_per_title(self, monkeypatch):
+        asked = []
+        monkeypatch.setattr(sl, "get_index_entry", lambda title: asked.append(title) or {})
+        sl._prefetch_index_entries(["Psalms", "Psalms", "", None, "Midrash Tehillim"])
+        assert sorted(asked) == ["Midrash Tehillim", "Psalms"]
+
+    def test_a_failed_lookup_does_not_raise(self, monkeypatch):
+        def failing(title):
+            raise RuntimeError("Sefaria down")
+
+        monkeypatch.setattr(sl, "get_index_entry", failing)
+        assert sl._prefetch_index_entries(["Psalms", "Job"]) is None
+
+    def test_name_match_titles_follow_the_name_api_order(self):
+        name_data = {
+            "is_ref": True,
+            "book": "Numbers",
+            "completion_objects": [
+                {"type": "ref", "title": "Bamidbar Rabbah"},
+                {"type": "Topic", "title": "Numbers (topic)"},
+                {"type": "ref", "key": "Sifrei Bamidbar"},
+            ],
+        }
+        assert sl._name_match_titles(name_data, 8) == ["Numbers", "Bamidbar Rabbah", "Sifrei Bamidbar"]

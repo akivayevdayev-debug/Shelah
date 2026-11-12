@@ -21,6 +21,7 @@ import re
 import json
 import hashlib
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from pathlib import Path
 from urllib.parse import quote, urlencode, unquote
@@ -1929,10 +1930,47 @@ def _add_name_search_matches(name_data, add_result, results, size):
     return False
 
 
+_INDEX_PREFETCH_WORKERS = 8
+
+
+def _prefetch_index_entries(titles):
+    """Fetch the index records of ``titles`` at the same time, so the result
+    loop that follows finds each one in the cache.
+
+    Each search hit needs its book's index record (categories, authors,
+    era). Fetched one after another that was a Sefaria round trip per hit:
+    4-5 s for an eight-hit suggestion list, 14 s when Sefaria was slow.
+    """
+    unique = list(dict.fromkeys(t for t in (str(t or "").strip() for t in titles) if t))
+    if len(unique) < 2:
+        return
+    with ThreadPoolExecutor(max_workers=min(len(unique), _INDEX_PREFETCH_WORKERS),
+                            thread_name_prefix="sefaria-index") as pool:
+        for future in [pool.submit(get_index_entry, title) for title in unique]:
+            try:
+                future.result()
+            except Exception:  # noqa: BLE001 -- the result loop retries this title on its own
+                logger.debug("[Sefaria Library] index prefetch failed", exc_info=True)
+
+
+def _name_match_titles(name_data, size):
+    """The titles _add_name_search_matches will look up, in its order."""
+    if not isinstance(name_data, dict):
+        return []
+    titles = [name_data.get("book")] if name_data.get("is_ref") else []
+    ref_objects = [obj for obj in name_data.get("completion_objects", []) or []
+                   if isinstance(obj, dict) and obj.get("type") == "ref"]
+    titles.extend(obj.get("title") or obj.get("key") for obj in ref_objects[:size])
+    return titles
+
+
 def _add_catalog_search_matches(query, add_result, results, size, metadata_filters):
     """Catalog fallback for modern works that do not resolve well from
     /name search. Split out of search_library (SonarCloud python:S3776)."""
-    for row in _search_index_catalog(query, size=max(size * 2, 16), metadata_filters=metadata_filters):
+    rows = _search_index_catalog(query, size=max(size * 2, 16), metadata_filters=metadata_filters)
+    _prefetch_index_entries(
+        str(row.get("ref", "")).split(",", 1)[0] for row in rows[:size])
+    for row in rows:
         add_result(
             row.get("ref", ""),
             row.get("text", ""),
@@ -1973,6 +2011,7 @@ def search_library(query, size=10, filters=None, metadata_filters=None):
     # Fast direct completion from /name for exact refs/books.
     name_data = _cached_get(
         f"{SEFARIA_API}/name/{_encode_ref_path(query)}", ttl=300)
+    _prefetch_index_entries(_name_match_titles(name_data, size))
     if _add_name_search_matches(name_data, add_result, results, size):
         return results[:size]
 
