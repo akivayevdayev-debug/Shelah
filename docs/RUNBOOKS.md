@@ -50,11 +50,11 @@ in-repo layers that *are* verified live are the global daily budget cap
 ($0.128/CPU-hr, $0.0106/GB-hr) alongside `pdx1`/`cle1`. Revisit if the user
 base skews non-US-East and observed latency justifies a different region.
 
-`"fluid": true` is deliberately **not** set in `vercel.json`. That flag
-changes the execution model and should only be flipped after
-confirming the project's current Fluid state in the dashboard (Fluid is
-default for projects created after 2025-04-23; this project's actual state
-has not been confirmed here).
+Fluid compute is **on** for the project (confirmed 2026-11-12: the project's
+`resourceConfig.fluid` is `true`, read with
+`vercel api /v9/projects/shelah --scope akivayevdayev-debugs-projects`). It is a
+project setting, so `vercel.json` does not need a `"fluid"` key. A cold start
+after idle time (about 9 s) still happens; Fluid only makes it rarer.
 
 ## Startup-cost gating
 

@@ -10,6 +10,7 @@ Gemini is the exception (see _COOLDOWN_POLICIES): it is the primary model and
 Claude is its fallback, so two consecutive real errors switch the app to
 Claude only for 30-60 minutes, and the first request after that window is the
 probe -- a failed probe starts another full window, a good one closes it.
+Photon (the zmanim city search) uses the same policy with a 10-minute window.
 
 Usage (in data_service.py / app.py):
     from backend.health_check import health
@@ -47,6 +48,8 @@ _HEALTH_CHECK_USER_AGENT = "Shelah-HealthCheck/1.0"
 # serves Claude only for GEMINI_COOLDOWN_SECONDS (default 45 minutes, clamped
 # to 30-60), then lets one request try Gemini again.
 GEMINI_FAIL_THRESHOLD = 2
+PHOTON_FAIL_THRESHOLD = 2
+PHOTON_COOLDOWN_SECONDS = 10 * 60
 GEMINI_COOLDOWN_DEFAULT_SECONDS = 45 * 60
 GEMINI_COOLDOWN_MIN_SECONDS = 30 * 60
 GEMINI_COOLDOWN_MAX_SECONDS = 60 * 60
@@ -191,6 +194,11 @@ class APIHealth:
 
     _COOLDOWN_POLICIES: Dict[str, _CooldownPolicy] = {
         "gemini": _CooldownPolicy(GEMINI_FAIL_THRESHOLD, gemini_cooldown_seconds),
+        # The zmanim city box waits up to 3 s on Photon before its backup
+        # (backend/place_suggest.py). Photon's outages last hours, and a
+        # per-instance count let every fresh instance pay that wait three
+        # times; the shared cooldown tells them all after two failures.
+        "photon": _CooldownPolicy(PHOTON_FAIL_THRESHOLD, lambda: PHOTON_COOLDOWN_SECONDS),
     }
 
     def __init__(self) -> None:

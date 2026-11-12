@@ -276,3 +276,42 @@ class TestIsUp:
         for _ in range(FAIL_THRESHOLD):
             health._circuits["claude"].record_failure()
         assert health.is_up("claude") is False
+
+
+class TestPhotonCooldown:
+    """Photon (the zmanim city search) is skipped by every instance once two
+    calls fail, for PHOTON_COOLDOWN_SECONDS."""
+
+    def test_two_failures_stop_photon_calls(self, health):
+        health.record_failure("photon")
+        health.record_failure("photon")
+        assert health.is_healthy("photon") is False
+
+    def test_one_failure_keeps_photon_in_use(self, health):
+        health.record_failure("photon")
+        assert health.is_healthy("photon") is True
+
+    def test_photon_is_tried_again_after_the_cooldown(self, health):
+        from backend.health_check import PHOTON_COOLDOWN_SECONDS
+
+        with freeze_time() as frozen:
+            health.record_failure("photon")
+            health.record_failure("photon")
+            frozen.tick(PHOTON_COOLDOWN_SECONDS + 1)
+            assert health.is_healthy("photon") is True
+
+    def test_the_cooldown_is_shared_with_other_instances(self, health, monkeypatch):
+        import backend.cache as cache
+
+        shared = {}
+        monkeypatch.setattr(cache, "redis_cache_set",
+                            lambda key, value, ttl: shared.__setitem__(key, value))
+        health.record_failure("photon")
+        health.record_failure("photon")
+        assert "health:cooldown:photon" in shared
+
+    def test_an_instance_adopts_a_shared_photon_cooldown(self, monkeypatch):
+        import backend.cache as cache
+
+        monkeypatch.setattr(cache, "redis_cache_get", lambda key: time.time() + 300)
+        assert APIHealth().is_healthy("photon") is False
