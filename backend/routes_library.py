@@ -945,10 +945,12 @@ def get_sidebar_bundle(ref):
         return jsonify({"error": "Missing or invalid text reference."}), 400
 
     stage = str(request.args.get("stage", "links")).strip().lower()
-    if stage == "texts":
-        return jsonify(build_sidebar_texts(decoded_ref))
-    if stage == "links":
-        return jsonify(build_sidebar_links(decoded_ref))
+    if stage in ("texts", "links"):
+        result = build_sidebar_texts(decoded_ref) if stage == "texts" else build_sidebar_links(decoded_ref)
+        if not result.get(stage):
+            # Nothing found may be Sefaria failing: the edge must not keep it for a day.
+            g.cache_tier_force_private = True
+        return jsonify(result)
     return jsonify({"error": "Unknown stage; use 'links' or 'texts'."}), 400
 
 

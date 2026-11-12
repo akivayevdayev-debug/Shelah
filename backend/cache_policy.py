@@ -48,6 +48,9 @@ _IMMUTABLE_EXACT = {
 }
 _IMMUTABLE_PREFIXES = (
     "/api/text/",        # by-ref text + /links + /graph (commentary/source graph)
+    # Commentary sidebar bundle (links / preloaded texts) for one verse. An empty
+    # answer may be Sefaria failing, so the route opts that out itself.
+    "/api/sidebar/",
     "/api/prayer/",       # singular: preview text -- distinct from /api/prayers/list below
     "/api/siddur/full/",
     "/api/siddur/section-refs/",

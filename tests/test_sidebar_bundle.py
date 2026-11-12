@@ -460,6 +460,20 @@ class TestSidebarRoute:
         assert body["ref"] == "Genesis 1:1"
         assert "Rashi on Genesis 1:1" in body["texts"]
 
+    def test_found_links_are_cached_at_the_edge(self, test_client, monkeypatch):
+        monkeypatch.setattr(
+            "backend.sefaria_library.get_linked_texts",
+            lambda ref: {"Commentary": [link("Rashi on Exodus 3:1:1")]},
+        )
+        response = test_client.get("/api/sidebar/Exodus%203:1")
+        assert response.headers["Cache-Control"].startswith("public")
+
+    def test_empty_links_are_not_cached_at_the_edge(self, test_client, monkeypatch):
+        # No links may mean Sefaria failed: the edge must not keep that for a day.
+        monkeypatch.setattr("backend.sefaria_library.get_linked_texts", lambda ref: {})
+        response = test_client.get("/api/sidebar/Exodus%203:2")
+        assert response.headers["Cache-Control"] == "private, no-store"
+
     def test_unknown_stage_is_a_400(self, test_client):
         response = test_client.get("/api/sidebar/Genesis%201:1?stage=everything")
         assert response.status_code == 400

@@ -2093,11 +2093,18 @@ def get_linked_texts(ref):
     if text_trust.is_work_denied(ref):
         return {}
     safe_ref = _encode_ref_path(ref)
-    data = _cached_get(f"{SEFARIA_API}/related/{safe_ref}", ttl=3600)
+    # /links, not /related: the same link list (same items, same fields) without
+    # the source sheets, topics, manuscripts and media /related bundles in. That
+    # made it 2-3x the size and 2-10x slower (1.7-8.5 s against ~0.8 s measured
+    # November 2026), and the commentary sidebar waited on it.
+    data = _cached_get(
+        f"{SEFARIA_API}/links/{safe_ref}?with_text=0&with_sheet_links=0", ttl=3600)
     if not data:
         return {}
+    # /links answers with a bare list; an error comes back as a dict.
+    links = data if isinstance(data, list) else data.get("links", [])
 
-    grouped = _group_links_by_category(data.get("links", []))
+    grouped = _group_links_by_category(links)
 
     # Ensure classic Torah commentary availability: add a canonical Rashi layer when
     # related-link metadata omits it for Tanakh chapter/verse references.

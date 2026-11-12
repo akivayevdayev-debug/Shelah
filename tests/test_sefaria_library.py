@@ -974,7 +974,7 @@ class TestGetLinkedTexts:
     def test_groups_links_by_category(self):
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
             rsps.add(
-                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/related/.*"),
+                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/links/.*"),
                 json={"links": [
                     {"type": "commentary", "category": "Commentary", "ref": "Rashi on Genesis 1:1", "heRef": "", "anchorRef": "Genesis 1:1"},
                 ]},
@@ -984,11 +984,32 @@ class TestGetLinkedTexts:
             assert "Commentary" in result
             assert result["Commentary"][0]["ref"] == "Rashi on Genesis 1:1"
 
-    def test_carries_hebrew_ref_and_collective_title(self):
-        # /related puts the Hebrew ref in sourceHeRef, not heRef.
+    def test_asks_the_links_api_without_sheets(self):
+        # /links, not the much slower /related, and without sheet links.
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
             rsps.add(
-                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/related/.*"),
+                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/links/.*"),
+                json=[{"type": "commentary", "category": "Commentary", "ref": "Rashi on Exodus 4:1:1", "anchorRef": "Exodus 4:1"}],
+                status=200,
+            )
+            sl.get_linked_texts("Exodus 4:1")
+            assert "with_sheet_links=0" in rsps.calls[0].request.url
+
+    def test_reads_the_bare_list_the_links_api_returns(self):
+        with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+            rsps.add(
+                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/links/.*"),
+                json=[{"type": "commentary", "category": "Commentary", "ref": "Rashi on Exodus 4:2:1", "anchorRef": "Exodus 4:2"}],
+                status=200,
+            )
+            result = sl.get_linked_texts("Exodus 4:2")
+            assert result["Commentary"][0]["ref"] == "Rashi on Exodus 4:2:1"
+
+    def test_carries_hebrew_ref_and_collective_title(self):
+        # Sefaria puts the Hebrew ref in sourceHeRef, not heRef.
+        with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+            rsps.add(
+                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/links/.*"),
                 json={"links": [
                     {"type": "commentary", "category": "Commentary", "ref": "Rashbam on Genesis 1:1:1",
                      "sourceHeRef": "רשב\"ם על בראשית א׳:א׳:א׳", "anchorRef": "Genesis 1:1",
@@ -1011,7 +1032,7 @@ class TestGetLinkedTexts:
     def test_injects_rashi_for_tanakh_ref_when_missing(self):
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
             rsps.add(
-                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/related/.*"),
+                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/links/.*"),
                 json={"links": []}, status=200,
             )
             result = sl.get_linked_texts("Genesis 1:1")
@@ -1021,7 +1042,7 @@ class TestGetLinkedTexts:
     def test_no_data_returns_empty_dict(self):
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
             rsps.add(
-                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/related/.*"),
+                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/links/.*"),
                 status=500,
             )
             assert sl.get_linked_texts("Genesis 1:1") == {}
@@ -1029,7 +1050,7 @@ class TestGetLinkedTexts:
     def test_non_tanakh_ref_does_not_inject_rashi(self):
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
             rsps.add(
-                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/related/.*"),
+                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/links/.*"),
                 json={"links": []}, status=200,
             )
             result = sl.get_linked_texts("Mishnah Berakhot 1:1")
@@ -1038,7 +1059,7 @@ class TestGetLinkedTexts:
     def test_does_not_duplicate_rashi_when_already_present(self):
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
             rsps.add(
-                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/related/.*"),
+                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/links/.*"),
                 json={"links": [
                     {"type": "commentary", "category": "Commentary", "ref": "Rashi on Genesis 1:1", "heRef": "", "anchorRef": "Genesis 1:1"},
                 ]},
@@ -1054,7 +1075,7 @@ class TestGetLinkedTexts:
     def test_ref_with_no_whitespace_does_not_inject_rashi(self):
         with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:
             rsps.add(
-                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/related/.*"),
+                responses_lib.GET, re.compile(re.escape(sl.SEFARIA_API) + r"/links/.*"),
                 json={"links": []}, status=200,
             )
             result = sl.get_linked_texts("Genesis")

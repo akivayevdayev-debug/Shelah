@@ -87,7 +87,7 @@ def poisoned_sefaria():
                  json={"ref": "Genesis 1:1", "he": ["בְּרֵאשִׁ֖ית"], "text": [DENIED_TEXT],
                        "versionTitle": DENIED_VERSION, "indexTitle": "Genesis",
                        "heVersionTitle": "Miqra according to the Masorah"})
-        rsps.add(responses_lib.GET, re.compile(api + r"/related/.*"), json=RELATED)
+        rsps.add(responses_lib.GET, re.compile(api + r"/links/.*"), json=RELATED)
         rsps.add(responses_lib.GET, re.compile(api + r"/name/.*"), json=NAME)
         rsps.add(responses_lib.GET, re.compile(api + r"/index/?$"), json=LIBRARY_INDEX)
         rsps.add(responses_lib.GET, re.compile(api + r"/index/Rereading.*"),
