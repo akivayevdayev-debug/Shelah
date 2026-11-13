@@ -108,7 +108,7 @@ After the view comes an optional **tail** of overlay and AI keys, all path segme
 
 ### `POST /ask`
 
-Submit a halachic or Torah-study question and get back an answer drafted by the AI, with source citations. Production serves the Flask route in `app.py`. Locally the async FastAPI route in `asgi.py` shadows it. Both answer the same way and both stream progress (below).
+Submit a halachic or Torah-study question and get back an answer drafted by the AI, with source citations. The async FastAPI route in `asgi.py` serves it, in production and locally; the Flask route in `app.py` answers only under bare `python3 app.py`. Both answer the same way and both stream progress (below). (Until 2026-11-13 production served the Flask route by mistake: Vercel auto-detected `app.py`. `pyproject.toml`'s `[tool.vercel] entrypoint` now names `api/index.py`.)
 
 - **Auth:** Optional. Required whenever `CLERK_ENFORCE_AUTH` is on (the code's default on Vercel, but deliberately set to `false` on the production project, so anonymous asking works there). Auth enriches the answer with the caller's memory summaries and records it in the caller's history. A signed-out caller's answer is recorded too, under their **device**: the first signed-out `/ask` that succeeds sets a `shelah_device` cookie (see [Device identity](#device-identity)), and the returned `history_id` opens at `/answer/<id>` in that browser only.
 - **Rate-limit class:** `llm` (fails closed).

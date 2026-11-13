@@ -150,10 +150,10 @@ Fluid instance. The decided resolution is a two-tier check:
 1. **Primary check: a static, edge-served asset.** Point it at any file
    under `/static/`, e.g. `https://<domain>/static/favicon.svg`.
    `vercel.json`'s `headers` rule (`"source": "/static/(.*)"`) sets
-   `Cache-Control: public, max-age=3600`, and files under `static/` are
-   served directly rather than through `api/index.py`, so this check costs
-   zero function invocations and zero Active CPU/Provisioned Memory no
-   matter how often it runs. **Interval: 5 minutes**, not 30 seconds. The
+   `Cache-Control: public, max-age=3600`. Caveat (checked 2026-11-13):
+   files under `static/` are served by the function (Flask's static
+   route), not straight from the CDN, so a check that misses Vercel's
+   cache still costs one invocation; the edge cache absorbs most of them. **Interval: 5 minutes**, not 30 seconds. The
    number settled on for a solo-operated project; only shorten it if a real incident shows 5 minutes is too slow
    for an acceptable downtime window.
 2. **Secondary check: the function-backed deep check, at low frequency.**

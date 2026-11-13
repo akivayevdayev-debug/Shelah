@@ -199,7 +199,9 @@ async def _build_tool_context() -> dict[str, Any]:
         return {"route": "/ask", "async": True}
 
 
-fastapi_app = FastAPI(title="Shelah ASGI", version="1.0.0")
+# No /docs, /redoc or /openapi.json: they would publish every route and
+# request shape to anyone, and nothing here uses them.
+fastapi_app = FastAPI(title="Shelah ASGI", version="1.0.0", docs_url=None, redoc_url=None, openapi_url=None)
 
 # The single rate-limit enforcement point for
 # both native FastAPI routes and every Flask route reached through the
