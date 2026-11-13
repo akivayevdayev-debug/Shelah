@@ -11,4 +11,9 @@ import sys
 # Ensure repo root is importable so `asgi`, `app`, and `backend/*` resolve.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from backend import startup_timing  # noqa: E402  (standard library only)
+
+startup_timing.mark_import_start()
 from asgi import app  # noqa: E402,F401  (Vercel's Python runtime serves this ASGI `app`)
+
+startup_timing.mark_import_done()

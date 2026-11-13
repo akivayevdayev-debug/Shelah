@@ -44,6 +44,7 @@ from backend.cache_policy import classify_cache_tier
 from backend.cost_meter import check_user_budget_and_enforce, is_global_cost_breaker_tripped
 from backend.rate_limit import RateLimitMiddleware
 from backend import turnstile as _turnstile
+from backend import startup_timing
 # INIT-ORDERING (load-bearing, do not regress): this import
 # is what triggers backend/logging_setup.py's module-level sentry_sdk.init()
 # call (or confirms it already ran via an earlier import in this file, e.g.
@@ -256,6 +257,7 @@ async def request_id_middleware(request: Request, call_next):
         raw_headers.append((b"x-request-id", request_id.encode("latin-1")))
         request.scope["headers"] = raw_headers
 
+    startup_timing.report_once(_request_logger)
     start = time.monotonic()
     status_code = 500
     try:
