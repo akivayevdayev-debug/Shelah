@@ -106,14 +106,25 @@ test('renderAnswerMarkdown: spacing is normalised before parsing, and an empty a
     }
 });
 
-test('renderAnswerMarkdown: without DOMPurify the parsed HTML is returned as parsed', async () => {
+test('renderAnswerMarkdown: without DOMPurify the answer is escaped, never raw HTML', async () => {
+    // Fail closed: if the sanitizer did not load (CDN blocked or down), the
+    // model's markdown is shown as escaped text instead of unsanitized HTML.
     const page = await openShellPage();
     try {
         page.window.DOMPurify = undefined;
         page.window.marked = { parse: (text) => `<p>${text}</p>` };
-        assert.equal(page.call('renderAnswerMarkdown', 'hi'), '<p>hi</p>');
+        assert.equal(page.call('renderAnswerMarkdown', '<img src=x onerror=alert(1)>'), '&lt;img src=x onerror=alert(1)&gt;');
+    } finally {
+        page.close();
+    }
+});
+
+test('renderAnswerMarkdown: a DOMPurify without sanitize() does not count as loaded', async () => {
+    const page = await openShellPage();
+    try {
         page.window.DOMPurify = {};
-        assert.equal(page.call('renderAnswerMarkdown', 'hi'), '<p>hi</p>', 'a DOMPurify without sanitize() does not count');
+        page.window.marked = { parse: (text) => `<p>${text}</p>` };
+        assert.equal(page.call('renderAnswerMarkdown', '<b>x</b>'), '&lt;b&gt;x&lt;/b&gt;');
     } finally {
         page.close();
     }

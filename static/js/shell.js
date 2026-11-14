@@ -520,11 +520,13 @@ function hasParenthetical(text) {
 
         function renderAnswerMarkdown(answerText) {
             const raw = normalizeMarkdownSpacing(String(answerText || 'No synthesis available.'));
-            if (window.marked && typeof window.marked.parse === 'function') {
-                const html = marked.parse(raw);
-                return (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function')
-                    ? DOMPurify.sanitize(html, { USE_PROFILES: { html: true }, FORBID_ATTR: ACTION_ATTRIBUTES, FORBID_TAGS: ANSWER_FORBIDDEN_TAGS })
-                    : html;
+            // Markdown is rendered only when the sanitizer loaded too; without
+            // DOMPurify (CDN blocked or down) the answer falls through to the
+            // escaped plain-text branch, never to unsanitized HTML.
+            const canRender = window.marked && typeof window.marked.parse === 'function'
+                && window.DOMPurify && typeof window.DOMPurify.sanitize === 'function';
+            if (canRender) {
+                return DOMPurify.sanitize(marked.parse(raw), { USE_PROFILES: { html: true }, FORBID_ATTR: ACTION_ATTRIBUTES, FORBID_TAGS: ANSWER_FORBIDDEN_TAGS });
             }
 
             return raw
