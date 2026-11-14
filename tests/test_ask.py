@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 import responses as responses_lib
 
 from backend.health_check import FAIL_THRESHOLD
@@ -1322,3 +1323,56 @@ class TestAskGlobalCostBreaker:
 
         assert response.status_code == 200
         assert flask_app_module._get_cached_ask_payload(cache_key) is not None
+
+
+class TestFastApiFallbackIsTimeBounded:
+    """The source-discovery fallback runs after a failed model call has
+    already used most of the request's time. Unbounded, a slow Sefaria search
+    there pushed /ask past Vercel's 90 s maxDuration (a 504 with no answer).
+    It must give up and answer from the sources the context stage already
+    collected."""
+
+    async def test_slow_fallback_search_is_abandoned(self, fastapi_client, monkeypatch):
+        import asgi as asgi_module
+        import backend.claude as claude_module
+
+        async def _raise(*args, **kwargs):
+            raise RuntimeError("Simulated async AI failure [bounded-fallback-test]")
+
+        def _slow_sources(*args, **kwargs):
+            time.sleep(2.0)
+            return {"sources": [], "status": "ok"}
+
+        monkeypatch.setattr(claude_module, "ask_ai_async", _raise)
+        monkeypatch.setattr(asgi_module, "get_halakhic_sources", _slow_sources)
+        monkeypatch.setattr(asgi_module, "_FALLBACK_SOURCES_TIMEOUT_SECONDS", 0.05)
+
+        started = time.monotonic()
+        await fastapi_client.post(
+            "/ask",
+            json={"question": "What is Shabbat? [bounded-fallback-test]"},
+            headers={"X-Forwarded-For": "203.0.113.202"},
+        )
+        assert time.monotonic() - started < 1.5
+
+    async def test_abandoned_search_still_returns_a_fallback_answer(self, fastapi_client, monkeypatch):
+        import asgi as asgi_module
+        import backend.claude as claude_module
+
+        async def _raise(*args, **kwargs):
+            raise RuntimeError("Simulated async AI failure [bounded-fallback-test-2]")
+
+        def _slow_sources(*args, **kwargs):
+            time.sleep(0.5)
+            return {"sources": [], "status": "ok"}
+
+        monkeypatch.setattr(claude_module, "ask_ai_async", _raise)
+        monkeypatch.setattr(asgi_module, "get_halakhic_sources", _slow_sources)
+        monkeypatch.setattr(asgi_module, "_FALLBACK_SOURCES_TIMEOUT_SECONDS", 0.05)
+
+        response = await fastapi_client.post(
+            "/ask",
+            json={"question": "What is Shabbat? [bounded-fallback-test-2]"},
+            headers={"X-Forwarded-For": "203.0.113.203"},
+        )
+        assert response.json()["meta"]["fallback"] is True

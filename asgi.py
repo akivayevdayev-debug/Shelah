@@ -846,6 +846,34 @@ async def _run_ask_async_ai_synthesis(
     )
 
 
+# The fallback runs after a failed model call that may already have used
+# claude.AI_TOTAL_BUDGET_SECONDS (45 s) on top of the context stage, so its own
+# source search gets a fixed ceiling that keeps the whole request inside
+# vercel.json's 90 s maxDuration. asgi.py sets no model-deadline contextvar to
+# take a remaining budget from (backend/claude.py _remaining_model_budget).
+_FALLBACK_SOURCES_TIMEOUT_SECONDS = 15.0
+
+
+async def _bounded_fallback_sources(question, ctx):
+    """get_halakhic_sources() within _FALLBACK_SOURCES_TIMEOUT_SECONDS; past
+    that, the sources the context stage already collected. The worker thread
+    is not cancelled (it cannot be), only no longer waited on."""
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(get_halakhic_sources, question),
+            timeout=_FALLBACK_SOURCES_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("ask fallback source search timed out; using context sources")
+        sources = list(ctx.get("primary_sources") or [])
+        return {
+            "sources": sources,
+            "source_count": len(sources),
+            "status": "fallback",
+            "fallback_level": "context_sources",
+        }
+
+
 async def _run_ask_async_fallback(
     question, mode, canonical_lens, answer_language, user_id, ai_error, ctx,
 ):
@@ -865,10 +893,7 @@ async def _run_ask_async_fallback(
         },
     )
 
-    fallback_payload = await asyncio.to_thread(
-        get_halakhic_sources,
-        question,
-    )
+    fallback_payload = await _bounded_fallback_sources(question, ctx)
     fallback_warning = str(
         fallback_payload.get("warning") or "").strip()
 
