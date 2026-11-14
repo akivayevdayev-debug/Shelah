@@ -35,7 +35,8 @@ import time
 
 from flask import Blueprint, jsonify, request
 
-from app import _get_supabase_client, _capture_backend_error
+from app import _get_supabase_client
+from backend.logging_setup import _capture_backend_error
 from backend.routes_privacy import _USER_DATA_TABLES, _delete_table_rows
 
 routes_webhooks = Blueprint("webhooks", __name__)

@@ -40,8 +40,8 @@ from app import (
     _extract_supabase_access_token,
     _get_request_user_id,
     _extract_client_ip,
-    _capture_backend_error,
 )
+from backend.logging_setup import _capture_backend_error
 
 routes_devtools = Blueprint("devtools", __name__)
 

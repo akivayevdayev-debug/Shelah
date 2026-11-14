@@ -315,21 +315,6 @@ class TestAskTransportsRefuseBeforeRetrieval:
         assert body["meta"]["safety_class"] == "ok"
         assert body["meta"]["source_count"] == 0
 
-    def test_flask_ask_refuses_without_collecting_context(self, test_client, monkeypatch):
-        import app as flask_app_module
-
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-        monkeypatch.setattr(flask_app_module, "_collect_ask_question_context", _fail_if_called)
-        monkeypatch.setattr(claude, "ask_claude", _fail_if_called)
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "Who wrote Hamlet? [off-topic-flask]"},
-            content_type="application/json",
-        )
-
-        assert response.status_code == 200
-        self._assert_refusal_payload(response.get_json())
 
     async def test_fastapi_ask_refuses_without_collecting_context(self, fastapi_client, monkeypatch):
         import asgi
@@ -346,24 +331,3 @@ class TestAskTransportsRefuseBeforeRetrieval:
         assert response.status_code == 200
         self._assert_refusal_payload(response.json())
 
-    def test_flask_ask_still_collects_context_for_a_torah_question(self, test_client, monkeypatch):
-        import app as flask_app_module
-
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-        collected = []
-        real_collect = flask_app_module._collect_ask_question_context
-
-        def spy(*args, **kwargs):
-            collected.append(args[0])
-            return real_collect(*args, **kwargs)
-
-        monkeypatch.setattr(flask_app_module, "_collect_ask_question_context", spy)
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "Can I cook on Shabbat? [on-topic-flask]"},
-            content_type="application/json",
-        )
-
-        assert response.status_code == 200
-        assert collected == ["Can I cook on Shabbat? [on-topic-flask]"]

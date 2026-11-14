@@ -38,9 +38,8 @@ from backend.routes_conversations import (
 from app import (
     SUPABASE_CONVERSATIONS_TABLE,
     SUPABASE_MESSAGES_TABLE,
-    _capture_backend_error,
-    hash_user_id,
 )
+from backend.logging_setup import _capture_backend_error, hash_user_id
 
 routes_conversation_share = Blueprint("conversation_share", __name__)
 

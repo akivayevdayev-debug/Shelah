@@ -18,7 +18,7 @@ import json
 import re
 from concurrent.futures import ThreadPoolExecutor
 import requests
-from flask import Flask, render_template, request, jsonify, session, g, send_from_directory, Response
+from flask import Flask, render_template, request, session, g, send_from_directory, Response
 from dotenv import load_dotenv
 import time
 import os
@@ -32,29 +32,20 @@ from backend.data_service import ShelahEngine
 from backend import sefaria
 from backend import claude
 from backend import ask_pipeline
-from backend import ask_progress, flask_progress_stream, source_search, web_lookup
+from backend import ask_progress, source_search
 from backend import search as _backend_search
-from backend.ai_notes import record_ai_note
-from backend import cost_gates
 from backend import page_meta
 from backend import module_versions
 from backend.logging_setup import (
     setup_logging,
-    _capture_backend_error,
-    hash_user_id,
-    question_length_bucket,
     bind_request_id,
     get_logger,
     submit_with_context,
 )
 from backend.ask_payloads import (
-    build_ai_answer_payload,
-    build_source_fallback_payload,
     is_usable_primary_source,
-    source_fallback_answer,
 )
 from backend.customs import validate_all_customs_at_startup
-from backend.device_identity import issues_device_cookie
 from backend.customs import (  # noqa: F401  (re-import shims; see below)
     _collect_trusted_authority_candidates,
     _dedupe_source_labels,
@@ -63,17 +54,12 @@ from backend.customs import (  # noqa: F401  (re-import shims; see below)
 # Re-export shim, consumed by routes_devtools.py's `from app import api_health`.
 from backend.health_check import health as api_health  # noqa: F401
 from backend.csp import content_security_policy_for
-from backend.helpers import extract_ai_cited
 from backend.helpers import (
-    _json_object_body,
-    _sanitize_answer_mode,
     _resolve_client_ip,
-    _compact_ai_sources,
     SECURITY_RESPONSE_HEADERS,
 )
 from backend.helpers import (
     _bounded_cache_set,
-    _canonicalize_community_name,
     COMMUNITIES,
     COMMUNITY_ALIASES,
 )
@@ -912,7 +898,6 @@ from backend.auth import (  # noqa: E402
     _verify_clerk_token,
     _extract_bearer_token,
     CLERK_ENFORCE_AUTH,
-    maybe_require_clerk_auth,
 )
 # Cloudflare Turnstile (backend/turnstile.py):
 # reuse that module's env parsing as the single source of truth for the site
@@ -1030,10 +1015,8 @@ from backend.rag import (  # noqa: E402
     _build_ask_tool_context,
     _retrieve_community_knowledge,
     _compose_answer_with_prefixes,
-    _store_ask_history,
     _knowledge_rows_to_customs,
     _fetch_user_memory_summaries,
-    _store_user_memory_summary,
 )
 # _knowledge_rows_to_customs, _fetch_user_memory_summaries,
 # _store_user_memory_summary: reconciled to backend/rag.py as part of the
@@ -1519,49 +1502,6 @@ def not_found(_error):
     ), 404
 
 
-def _ask_question_prayer_payload(question, mode, answer_language, canonical_lens):
-    """Stage 0 of ask_question(): prayer-keyword early return, or None if
-    `question` isn't a prayer question. Split out to keep this pipeline
-    stage's branching out of that route's own complexity count
-    (SonarCloud python:S3776).
-    """
-    if not any(prayer in question for prayer in ["Shacharit", "Mincha", "Maariv", "Kiddush", "Havdalah"]):
-        return None
-
-    DEVTOOLS_STATS["answers_total"] += 1
-    prayer_answer = (
-        f"Prayer Service Guide\n\n{question}\n\n"
-        "You can browse full liturgy books and services from the prayer sections. "
-        "For practical application, compare local community custom with your rabbi's guidance."
-    )
-    if answer_language == "he":
-        prayer_answer = (
-            f"מדריך תפילה\n\n{question}\n\n"
-            "ניתן לעיין בספרי התפילה והשירותים הליטורגיים המלאים באזור התפילה. "
-            "להכרעה מעשית יש להשוות למנהג הקהילה המקומית ולהתייעץ עם הרב שלך."
-        )
-    return {
-        "answer": prayer_answer,
-        "confidence": 0.85,
-        "sources": [{
-            "ref": "Sefaria Liturgy",
-            "title": "Sefaria Prayer Books",
-            "lines": [{"en": f"Prayer Service: {question}", "he": f"תפילה: {question}"}]
-        }],
-        "customs": [],
-        "meta": {
-            "mode": mode,
-            "language": answer_language,
-            "community_lens": canonical_lens,
-            "source_count": 1,
-            "custom_count": 0,
-            "generated_at": int(time.time()),
-            "fallback": False,
-            "cached": False,
-        }
-    }
-
-
 def _primary_source_limit():
     """ASK_PRIMARY_SOURCE_LIMIT: 4 by default, for speed; never below 1 or above 8."""
     return max(1, min(_env_int("ASK_PRIMARY_SOURCE_LIMIT", 4), 8))
@@ -1725,12 +1665,6 @@ def _collect_ask_question_context_futures(futures):
     return halachipedia_info, knowledge_rows, user_memory_summaries, wiki_info
 
 
-def _gather_ask_question_context_futures(question, canonical_lens, user_id, engine):
-    """Submit and collect the secondary-context lookups in one step."""
-    return _collect_ask_question_context_futures(
-        _submit_ask_question_context_futures(question, canonical_lens, user_id, engine))
-
-
 def _derive_ask_question_context_flags(flat_sources_for_claude, knowledge_rows, halachipedia_list, wiki_list):
     """Derive the has-primary/has-customs/has-whitelisted flags and decide
     whether the tertiary web-search context should be included. Split out
@@ -1803,124 +1737,6 @@ def _collect_ask_question_context(question, canonical_lens, user_id, answer_lang
         "has_whitelisted_external": has_whitelisted_external,
         "use_tertiary_web_context": use_tertiary_web_context,
         "wiki_context_for_claude": wiki_context_for_claude,
-    }
-
-
-def _ask_question_strict_payload(mode, canonical_lens, ctx):
-    """Stage 2 of ask_question(): strict-mode guard, or None if the
-    request isn't blocked. Split out of ask_question() (SonarCloud
-    python:S3776) -- see _ask_question_prayer_payload.
-    """
-    if mode != "strict" or ctx["flat_sources_for_claude"]:
-        return None
-
-    DEVTOOLS_STATS["answers_total"] += 1
-    DEVTOOLS_STATS["strict_blocks"] += 1
-    DEVTOOLS_STATS["fallback_answers"] += 1
-    display_sources = _compact_ai_sources(ctx["primary_sources"])
-    return {
-        "answer": (
-            "Strict Sources Mode could not complete this request because no primary Sefaria sources "
-            "were matched with sufficient confidence. Please refine the question with a text reference."
-        ),
-        "confidence": 0.2,
-        "wiki": ctx["wiki_list"] + ctx["halachipedia_list"],
-        "customs": ctx["customs_info"],
-        "sources": display_sources,
-        "ai_cited_sources": [],
-        "history_id": None,
-        "meta": {
-            "mode": mode,
-            "community_lens": canonical_lens,
-            "source_count": 0,
-            "custom_count": len(ctx["customs_info"]),
-            "generated_at": int(time.time()),
-            "fallback": True,
-            "strict_blocked": True,
-            "safety_class": "ok",
-            "cached": False,
-        }
-    }
-
-
-def _security_blocked_ask_payload(
-    result, mode, canonical_lens, knowledge_rows, user_memory_summaries, user_id, question_was_sanitized,
-    question="", answer_language="en",
-):
-    """The "security_blocked" branch of ask_question()'s AI-synthesis
-    stage. Split out of ask_question() (SonarCloud python:S3776) -- see
-    _ask_question_prayer_payload.
-    """
-    blocked_answer = str(result.get("answer") or "").strip()
-    if not blocked_answer:
-        blocked_answer = "Request blocked by security policy. Please submit a direct halakhic question."
-
-    # This branch covers every security_blocked_* case, including the
-    # age-safety referral classes (medical/self-harm/abuse) built by
-    # claude._build_safety_referral_result -- those carry a real
-    # safety_class/rabbinic_disclaimer on result["structured"] that must
-    # reach the UI so the referral banner renders instead
-    # of the ordinary answer chrome. Domain refusals set safety_class too
-    # (claude.py's blocked_structured), defaulting to "ok" only for the
-    # plain security_blocked_input/output cases that never classified.
-    structured_payload = result.get("structured")
-    if not isinstance(structured_payload, dict):
-        structured_payload = None
-    safety_class = (structured_payload or {}).get("safety_class", "ok")
-
-    DEVTOOLS_STATS["answers_total"] += 1
-    DEVTOOLS_STATS["fallback_answers"] += 1
-
-    # Defensibility logging applies here too -- this branch
-    # is exactly where the highest-risk safety-referral answers (medical /
-    # self-harm / abuse) live, and skipping the log for them (as this
-    # function previously did) would mean the interactions with the most
-    # liability exposure were the ones never retained for dispute
-    # reconstruction. Mirrored by asgi.py's own dedicated
-    # _security_blocked_ask_async_payload (covered by the transport-parity tests).
-    # Deliberately does NOT also call _store_user_memory_summary here --
-    # that's a separate mechanism (fed back into future prompts as context)
-    # outside the scope of this defensibility logging.
-    history_id = _store_ask_history(
-        user_id,
-        question,
-        blocked_answer,
-        sources=[],
-        ai_cited_sources=[],
-        community=canonical_lens,
-        mode=mode,
-        language=answer_language,
-        safety_class=safety_class,
-        prompt_version=claude.PROMPT_VERSION,
-    )
-
-    return {
-        "answer": blocked_answer,
-        "confidence": result.get("confidence", 0),
-        "wiki": [],
-        "customs": [],
-        "sources": [],
-        "ai_cited_sources": [],
-        "history_id": history_id,
-        "meta": {
-            "mode": mode,
-            "community_lens": canonical_lens,
-            "source_count": 0,
-            "custom_count": 0,
-            "knowledge_count": len(knowledge_rows),
-            "memory_count": len(user_memory_summaries),
-            "identity_aware": bool(user_id),
-            "generated_at": int(time.time()),
-            "fallback": True,
-            "structured": False,
-            "is_prohibited": bool((structured_payload or {}).get("is_prohibited", False)),
-            "input_sanitized": question_was_sanitized,
-            "security": result.get("security") or {},
-            "safety_class": (structured_payload or {}).get("safety_class", "ok"),
-            "rabbinic_disclaimer": (structured_payload or {}).get(
-                "rabbinic_disclaimer") or claude.RABBI_FINAL_RULING_FOOTER,
-            "cached": False,
-        }
     }
 
 
@@ -2053,383 +1869,6 @@ def _compose_validated_ask_answer(raw_ai_answer, needs_web_warning):
     if not str(normalized_answer or "").strip():
         raise RuntimeError("AI response normalized to empty content")
     return normalized_answer
-
-
-def _run_ask_question_ai_synthesis(
-    question, mode, canonical_lens, answer_language, user_id, question_was_sanitized, ctx, engine,
-):
-    """Stage 3 of ask_question(): AI synthesis. Returns the response
-    payload for the security-blocked or success cases; raises on any
-    other failure so the caller's except-block can run the fallback.
-    Split out of ask_question() (SonarCloud python:S3776) -- see
-    _ask_question_prayer_payload.
-    """
-    result = _dispatch_ask_ai_synthesis_call(
-        question, mode, canonical_lens, answer_language, ctx, engine)
-
-    result, result_error = _coerce_and_validate_ai_result(
-        result, question, mode, answer_language)
-
-    if result_error.startswith("security_blocked"):
-        return _security_blocked_ask_payload(
-            result, mode, canonical_lens, ctx["knowledge_rows"],
-            ctx["user_memory_summaries"], user_id, question_was_sanitized,
-            question=question, answer_language=answer_language,
-        )
-
-    structured_payload, raw_ai_answer = _extract_raw_ai_answer(
-        result, answer_language)
-
-    needs_web_warning = _resolve_ask_web_warning_flag(result, ctx)
-
-    normalized_answer = _compose_validated_ask_answer(
-        raw_ai_answer, needs_web_warning)
-
-    result["answer"] = normalized_answer
-    _store_user_memory_summary(user_id, question, normalized_answer)
-
-    DEVTOOLS_STATS["answers_total"] += 1
-    display_sources = _compact_ai_sources(ctx["primary_sources"])
-    ai_cited = extract_ai_cited(structured_payload)
-
-    history_id = _store_ask_history(
-        user_id,
-        question,
-        normalized_answer,
-        sources=display_sources,
-        ai_cited_sources=ai_cited,
-        web_sources=web_lookup.cited_pages(ai_cited, (result.get("web_lookup") or {}).get("sources")),
-        community=canonical_lens,
-        mode=mode,
-        language=answer_language,
-        safety_class=(structured_payload or {}).get("safety_class", "ok"),
-        prompt_version=claude.PROMPT_VERSION,
-    )
-
-    record_ai_note(
-        question,
-        history_id=history_id,
-        result=result,
-        structured=structured_payload,
-        mode=mode,
-        language=answer_language,
-        community=canonical_lens,
-        source_count=len(ctx["primary_sources"]),
-    )
-
-    # Successful AI answer path returns immediately; fallback is only for empty/error responses.
-    return build_ai_answer_payload(
-        result=result,
-        answer=normalized_answer,
-        sources=display_sources,
-        ai_cited=ai_cited,
-        structured_payload=structured_payload,
-        ctx=ctx,
-        mode=mode,
-        answer_language=answer_language,
-        canonical_lens=canonical_lens,
-        user_id=user_id,
-        question_was_sanitized=question_was_sanitized,
-        extra_meta={"cached": False},
-        history_id=history_id,
-    )
-
-
-def _run_ask_question_fallback(question, mode, canonical_lens, answer_language, user_id, ai_error, ctx):
-    """Stage 4 of ask_question(): halakhic-source-discovery fallback, run
-    when _run_ask_question_ai_synthesis() raises. Split out of
-    ask_question() (SonarCloud python:S3776) -- see
-    _ask_question_prayer_payload.
-    """
-    _capture_backend_error(
-        "ask_ai_synthesis_failed",
-        ai_error,
-        {
-            "question": question,
-            "mode": mode,
-            "community_lens": canonical_lens,
-            "user_id_hash": hash_user_id(user_id),
-            "input_length_bucket": question_length_bucket(question),
-            "language": answer_language,
-        },
-    )
-    fallback_payload = get_halakhic_sources(question)
-    fallback_warning = str(
-        fallback_payload.get("warning") or "").strip()
-
-    fallback_answer = _compose_answer_with_prefixes(
-        source_fallback_answer(answer_language),
-        include_web_warning=bool(fallback_warning),
-    )
-
-    _store_user_memory_summary(user_id, question, fallback_answer)
-
-    DEVTOOLS_STATS["answers_total"] += 1
-    DEVTOOLS_STATS["fallback_answers"] += 1
-    fallback_sources = _compact_ai_sources(
-        fallback_payload.get("sources", []))
-    record_ai_note(
-        question,
-        mode=mode,
-        language=answer_language,
-        community=canonical_lens,
-        source_count=len(fallback_sources),
-        fallback=True,
-    )
-    return build_source_fallback_payload(
-        answer=fallback_answer,
-        sources=fallback_sources,
-        discovery=fallback_payload,
-        warning=fallback_warning,
-        ai_error=ai_error,
-        ctx=ctx,
-        mode=mode,
-        answer_language=answer_language,
-        canonical_lens=canonical_lens,
-        user_id=user_id,
-        extra_meta={"cached": False},
-    )
-
-
-def _ask_question_breaker_paused_payload(mode, canonical_lens, answer_language, ctx):
-    """Stage 2.5 of ask_question(): the no-LLM-call response served while
-    the global cost breaker is tripped. Sync mirror of asgi.py's
-    _ask_async_breaker_paused_payload (same shape, same DEVTOOLS_STATS
-    bump); the stale-cache fallback that route tries first already ran at
-    the top of ask_question(), so a cache hit never reaches here.
-    """
-    DEVTOOLS_STATS["answers_total"] += 1
-    DEVTOOLS_STATS["fallback_answers"] += 1
-    display_sources = _compact_ai_sources(ctx["primary_sources"])
-    return {
-        "answer": (
-            "AI answers are paused for today -- the full Torah library below is unaffected. "
-            "Please try again after midnight UTC, or browse the sources directly."
-        ),
-        "confidence": 0.0,
-        "wiki": ctx["wiki_list"] + ctx["halachipedia_list"],
-        "customs": ctx["customs_info"],
-        "sources": display_sources,
-        "ai_cited_sources": [],
-        "history_id": None,
-        "meta": {
-            "mode": mode,
-            "language": answer_language,
-            "community_lens": canonical_lens,
-            "source_count": len(ctx["primary_sources"]),
-            "custom_count": len(ctx["customs_info"]),
-            "generated_at": int(time.time()),
-            "fallback": True,
-            "breaker_tripped": True,
-            "safety_class": "ok",
-            "cached": False,
-        },
-    }
-
-
-def _apply_ask_question_cost_gates(user_id, mode, canonical_lens, answer_language, ctx):
-    """Stage 2.5 of ask_question(): the same global-breaker and per-caller
-    daily-budget gates asgi.py's /ask applies, then bind the caller's
-    identity + budget reservation so record_llm_call() attributes this
-    request's model spend (see backend/cost_gates.py). Returns a response
-    to send as-is, or None to proceed to AI synthesis.
-
-    Runs after the prayer/strict short-circuits, which make no model call,
-    so neither of them strands a budget reservation. Signed-out callers are
-    budgeted and attributed by client IP ("ip:<addr>"), as on asgi.py's
-    /ask. Fails open if the gate hop itself errors or times out -- the same
-    posture each cost_meter gate already takes on a Supabase/cache failure
-    -- but still binds identity, so the spend is attributed regardless.
-    """
-    client_ip = _extract_client_ip() or ""
-    try:
-        gates = cost_gates.evaluate_cost_gates_sync(user_id, client_ip)
-    except Exception as gate_error:
-        _capture_backend_error("ask_cost_gates_unavailable", gate_error, {
-            "user_id_hash": hash_user_id(user_id),
-        })
-        gates = {"tripped": False, "budget": {"allowed": True}, "reservation_id": ""}
-
-    if gates["tripped"]:
-        return jsonify(_ask_question_breaker_paused_payload(
-            mode, canonical_lens, answer_language, ctx))
-
-    budget = gates["budget"]
-    if not budget["allowed"]:
-        return jsonify({
-            "error": cost_gates.budget_exhausted_message(budget),
-            "code": "daily_budget_exhausted",
-        }), 402
-
-    cost_gates.bind_cost_attribution(user_id, client_ip, gates["reservation_id"])
-    return None
-
-
-def _parse_and_validate_ask_question_request(data):
-    """Parse and normalize the /ask request body into the values
-    ask_question() needs downstream, or None if the question is empty
-    after sanitization. Split out of ask_question() (SonarCloud
-    python:S3776).
-    """
-    raw_question = data.get("question", "")
-    question = claude.sanitize_user_query(raw_question)
-    question_was_sanitized = question != str(raw_question or "").strip()
-    if not question:
-        return None
-
-    answer_language = str(data.get("language") or "en").strip().lower()
-    if answer_language not in {"en", "he"}:
-        answer_language = "en"
-    mode = _sanitize_answer_mode(data.get("mode"))
-    community_lens = (data.get("community") or "All").strip()
-    canonical_lens = "All" if community_lens.lower() == "all" else (
-        _canonicalize_community_name(community_lens) or community_lens)
-    user_id = _get_request_user_id()
-    web_search = web_lookup.coerce_preference(data.get("web_search"))
-    ask_cache_key = "|".join([
-        question.lower(),
-        answer_language,
-        mode,
-        canonical_lens.lower(),
-        user_id or "anon",
-    ])
-    if web_search is False:
-        # A reader who switched Web search off must not be served an answer
-        # that was written with a web lookup (or the other way round).
-        ask_cache_key += "|noweb"
-
-    return {
-        "question": question,
-        "question_was_sanitized": question_was_sanitized,
-        "answer_language": answer_language,
-        "mode": mode,
-        "canonical_lens": canonical_lens,
-        "user_id": user_id,
-        "web_search": web_search,
-        "ask_cache_key": ask_cache_key,
-    }
-
-
-def _freshen_cached_ask_payload(cached_payload):
-    """Mark a cached /ask payload as cached and refresh its generated_at
-    timestamp in place, if it carries a meta dict. Split out of
-    ask_question() (SonarCloud python:S3776).
-    """
-    cached_meta = cached_payload.get("meta")
-    if isinstance(cached_meta, dict):
-        cached_meta["cached"] = True
-        cached_meta["generated_at"] = int(time.time())
-    return cached_payload
-
-
-def _build_ask_critical_error_context(local_vars):
-    """Best-effort context dict for the ask_route_critical_error report,
-    tolerating the case where the exception happened before a given
-    local was bound. Split out of ask_question() (SonarCloud
-    python:S3776).
-    """
-    question = local_vars.get("question", "")
-    return {
-        "question": question,
-        "mode": local_vars.get("mode", ""),
-        "community_lens": local_vars.get("canonical_lens", ""),
-        "input_length_bucket": question_length_bucket(question),
-        "language": local_vars.get("answer_language", ""),
-    }
-
-
-@app.route("/ask", methods=["POST"])
-@maybe_require_clerk_auth
-@issues_device_cookie
-def ask_question():
-    # Production serves this Flask app, so this is where a signed-out visitor's
-    # live steps come from (backend/flask_progress_stream.py).
-    if ask_progress.wants_stream(request.headers.get("Accept")):
-        return flask_progress_stream.stream_ask(
-            _answer_ask_question, flask_progress_stream.ask_terminal_event, _ask_stream_failure)
-    return _answer_ask_question()
-
-
-def _ask_stream_failure(exc):
-    _capture_backend_error("ask_stream_failed", exc, {})
-    return jsonify({"error": "An internal error occurred while processing your request."}), 500
-
-
-def _answer_ask_question():
-    """The /ask answer as a Flask view return value (see ask_question)."""
-    data = _json_object_body()
-    parsed_request = _parse_and_validate_ask_question_request(data)
-    if parsed_request is None:
-        return jsonify({"error": "No valid question provided"}), 400
-    question = parsed_request["question"]
-    question_was_sanitized = parsed_request["question_was_sanitized"]
-    answer_language = parsed_request["answer_language"]
-    mode = parsed_request["mode"]
-    canonical_lens = parsed_request["canonical_lens"]
-    user_id = parsed_request["user_id"]
-    ask_cache_key = parsed_request["ask_cache_key"]
-
-    cached_payload = _get_cached_ask_payload(ask_cache_key)
-    if cached_payload is not None:
-        return jsonify(_freshen_cached_ask_payload(cached_payload))
-
-    try:
-        engine = get_engine()
-
-        prayer_payload = _ask_question_prayer_payload(
-            question, mode, answer_language, canonical_lens)
-        if prayer_payload is not None:
-            _set_cached_ask_payload(ask_cache_key, prayer_payload)
-            return jsonify(prayer_payload)
-
-        off_topic_result = claude.off_topic_block_result(question, answer_language)
-        if off_topic_result is not None:
-            payload = _security_blocked_ask_payload(
-                off_topic_result, mode, canonical_lens, [], [], user_id,
-                question_was_sanitized, question=question, answer_language=answer_language,
-            )
-            _set_cached_ask_payload(ask_cache_key, payload)
-            return jsonify(payload)
-
-        ctx = _collect_ask_question_context(
-            question, canonical_lens, user_id, answer_language, engine)
-        ctx["web_search"] = parsed_request["web_search"]
-
-        strict_payload = _ask_question_strict_payload(mode, canonical_lens, ctx)
-        if strict_payload is not None:
-            _set_cached_ask_payload(ask_cache_key, strict_payload)
-            return jsonify(strict_payload)
-
-        gate_response = _apply_ask_question_cost_gates(
-            user_id, mode, canonical_lens, answer_language, ctx)
-        if gate_response is not None:
-            return gate_response
-
-        try:
-            payload = _run_ask_question_ai_synthesis(
-                question, mode, canonical_lens, answer_language, user_id,
-                question_was_sanitized, ctx, engine,
-            )
-            _set_cached_ask_payload(ask_cache_key, payload)
-            return jsonify(payload)
-
-        except Exception as ai_error:
-            fallback_payload_response = _run_ask_question_fallback(
-                question, mode, canonical_lens, answer_language, user_id,
-                ai_error, ctx,
-            )
-            # Do NOT cache AI failure/fallback responses — allow next request to retry.
-            return jsonify(fallback_payload_response)
-
-    except Exception as e:
-        _capture_backend_error(
-            "ask_route_critical_error",
-            e,
-            _build_ask_critical_error_context(locals()),
-        )
-        return jsonify({"error": "An internal error occurred while processing your request."}), 500
-    finally:
-        cost_gates.clear_cost_attribution()
 
 
 # ─── Blueprint registration (Stage 2 route decomposition) ────────────────

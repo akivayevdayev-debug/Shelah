@@ -3,15 +3,11 @@ Behavioural coverage for the remaining uncovered lines of app.py:
 
   * _coerce_ai_answer_shape's "nothing usable" early return,
   * the pyluach holiday fallback's per-date failure isolation,
-  * the Hebrew prayer-shortcut branch,
   * _collect_primary_sources_sync's blank-ref skipping and per-source failure
     isolation,
-  * _security_blocked_ask_payload's default answer and non-dict "structured"
-    handling,
   * _dispatch_ask_ai_synthesis_call's agentic (AI_AGENTIC_TOOLS) branch,
   * _extract_raw_ai_answer / _resolve_ask_web_warning_flag /
-    _compose_validated_ask_answer edge cases,
-  * ask_question's outermost "critical error" handler, and
+    _compose_validated_ask_answer edge cases, and
   * app.py's module-level startup code (customs-validation toggle, ephemeral
     secret-key fallback, blueprint-registration failure, __main__ block),
     exercised by executing an isolated copy of the source file under a
@@ -108,43 +104,6 @@ class TestPyluachHolidayFallbackFailureIsolation:
         assert app._build_pyluach_holiday_events(2026) == []
 
 
-# ─── _ask_question_prayer_payload: Hebrew answer text ───────────────────────
-
-class TestPrayerPayloadHebrew:
-    @pytest.fixture
-    def stats(self, monkeypatch):
-        fresh = {"answers_total": 0, "fallback_answers": 0, "strict_blocks": 0, "segment_reports": 0}
-        monkeypatch.setattr(app, "DEVTOOLS_STATS", fresh)
-        return fresh
-
-    def test_hebrew_language_gets_the_hebrew_guide_text(self, stats):
-        question = "מתי Shacharit?"
-
-        payload = app._ask_question_prayer_payload(question, "balanced", "he", "All")
-
-        assert payload["answer"].startswith(f"מדריך תפילה\n\n{question}\n\n")
-        assert "הרב שלך" in payload["answer"]
-        assert "Prayer Service Guide" not in payload["answer"]
-        assert payload["meta"]["language"] == "he"
-        assert payload["meta"]["mode"] == "balanced"
-        assert payload["meta"]["community_lens"] == "All"
-        assert payload["meta"]["source_count"] == 1
-        assert payload["confidence"] == 0.85
-        assert payload["sources"][0]["ref"] == "Sefaria Liturgy"
-        assert stats["answers_total"] == 1
-
-    def test_english_language_keeps_the_english_guide_text(self, stats):
-        payload = app._ask_question_prayer_payload("When is Mincha?", "balanced", "en", "All")
-
-        assert payload["answer"].startswith("Prayer Service Guide\n\nWhen is Mincha?\n\n")
-        assert "מדריך תפילה" not in payload["answer"]
-        assert stats["answers_total"] == 1
-
-    def test_non_prayer_question_returns_none_and_counts_nothing(self, stats):
-        assert app._ask_question_prayer_payload("Is it kosher?", "balanced", "he", "All") is None
-        assert stats["answers_total"] == 0
-
-
 # ─── _collect_primary_sources_sync ──────────────────────────────────────────
 
 def _source(ref):
@@ -227,75 +186,6 @@ class TestCollectPrimarySourcesSync:
 
         assert app._collect_primary_sources_sync("q", engine) == []
         assert engine.requested == []
-
-
-# ─── _security_blocked_ask_payload ──────────────────────────────────────────
-
-class TestSecurityBlockedAskPayload:
-    @pytest.fixture
-    def history(self, monkeypatch):
-        calls = []
-        monkeypatch.setattr(app, "_store_ask_history", lambda *a, **k: calls.append((a, k)))
-        monkeypatch.setattr(
-            app, "DEVTOOLS_STATS",
-            {"answers_total": 0, "fallback_answers": 0, "strict_blocks": 0, "segment_reports": 0},
-        )
-        return calls
-
-    def _payload(self, result, **overrides):
-        kwargs = {
-            "mode": "balanced", "canonical_lens": "All", "knowledge_rows": [], "user_memory_summaries": [],
-            "user_id": "user-1", "question_was_sanitized": False,
-            "question": "some blocked question", "answer_language": "en",
-        }
-        kwargs.update(overrides)
-        return app._security_blocked_ask_payload(result, **kwargs)
-
-    @pytest.mark.parametrize("result", [{"answer": ""}, {"answer": "   "}, {}])
-    def test_blank_answer_is_replaced_by_the_default_block_message(self, history, result):
-        payload = self._payload(result)
-
-        expected = "Request blocked by security policy. Please submit a direct halakhic question."
-        assert payload["answer"] == expected
-        # The same default text is what gets retained for dispute reconstruction.
-        (args, kwargs), = history
-        assert args == ("user-1", "some blocked question", expected)
-        assert kwargs["sources"] == []
-        assert kwargs["ai_cited_sources"] == []
-        assert kwargs["safety_class"] == "ok"
-
-    def test_provided_answer_is_kept_and_stripped(self, history):
-        payload = self._payload({"answer": "  Blocked: off-topic.  "})
-
-        assert payload["answer"] == "Blocked: off-topic."
-        assert history[0][0][2] == "Blocked: off-topic."
-
-    def test_non_dict_structured_payload_is_ignored_and_defaults_apply(self, history):
-        payload = self._payload({"answer": "no", "structured": "junk", "security": {"reason": "domain"}})
-
-        meta = payload["meta"]
-        assert meta["safety_class"] == "ok"
-        assert meta["is_prohibited"] is False
-        assert meta["rabbinic_disclaimer"] == app.claude.RABBI_FINAL_RULING_FOOTER
-        assert meta["security"] == {"reason": "domain"}
-        assert history[0][1]["safety_class"] == "ok"
-
-    def test_dict_structured_payload_by_contrast_drives_the_safety_meta(self, history):
-        structured = {"safety_class": "medical", "is_prohibited": True, "rabbinic_disclaimer": "See a doctor."}
-
-        payload = self._payload({"answer": "no", "structured": structured})
-
-        meta = payload["meta"]
-        assert meta["safety_class"] == "medical"
-        assert meta["is_prohibited"] is True
-        assert meta["rabbinic_disclaimer"] == "See a doctor."
-        assert history[0][1]["safety_class"] == "medical"
-
-    def test_block_is_counted_as_an_answered_fallback(self, history):
-        self._payload({"answer": "no"})
-
-        assert app.DEVTOOLS_STATS["answers_total"] == 1
-        assert app.DEVTOOLS_STATS["fallback_answers"] == 1
 
 
 # ─── _dispatch_ask_ai_synthesis_call ────────────────────────────────────────
@@ -399,15 +289,6 @@ class TestAskRequestWebSearch:
         monkeypatch.setattr(app, "_get_request_user_id", lambda: "user-1")
         return app._parse_and_validate_ask_question_request({"question": "May I?", **body})
 
-    def test_a_reader_who_switched_it_off_gets_their_own_cache_entry(self, monkeypatch):
-        default = self._parse(monkeypatch)
-        off = self._parse(monkeypatch, web_search=False)
-        on = self._parse(monkeypatch, web_search=True)
-
-        assert (default["web_search"], on["web_search"], off["web_search"]) == (None, True, False)
-        assert off["ask_cache_key"] == default["ask_cache_key"] + "|noweb"
-        assert on["ask_cache_key"] == default["ask_cache_key"]
-
 
 # ─── _extract_raw_ai_answer ─────────────────────────────────────────────────
 
@@ -492,93 +373,6 @@ class TestComposeValidatedAskAnswer:
 
 
 # ─── ask_question: outermost critical-error handler ─────────────────────────
-
-class TestAskRouteCriticalError:
-    QUESTION = "Is it permitted to test the critical error path?"
-
-    @pytest.fixture
-    def captured(self, monkeypatch):
-        seen = []
-        monkeypatch.setattr(
-            app, "_capture_backend_error",
-            lambda event_name, error, context=None: seen.append((event_name, error, context)),
-        )
-        monkeypatch.setattr(app, "ASK_RESPONSE_CACHE", {})
-        return seen
-
-    def _post(self, test_client, **extra):
-        body = {"question": self.QUESTION, "language": "he", "mode": "sources", "community": "All"}
-        body.update(extra)
-        return test_client.post("/ask", json=body)
-
-    def test_engine_failure_returns_a_generic_500_and_reports_the_error(self, test_client, monkeypatch, captured):
-        boom = RuntimeError("engine exploded: secret detail")
-
-        def failing_get_engine():
-            raise boom
-
-        monkeypatch.setattr(app, "get_engine", failing_get_engine)
-
-        response = self._post(test_client)
-
-        assert response.status_code == 500
-        assert response.get_json() == ASK_ERROR_BODY
-        assert "secret detail" not in response.get_data(as_text=True)
-        assert len(captured) == 1
-        event_name, error, context = captured[0]
-        assert event_name == "ask_route_critical_error"
-        assert error is boom
-        assert context == {
-            "question": self.QUESTION,
-            "mode": "sources",
-            "community_lens": "All",
-            "input_length_bucket": logging_setup.question_length_bucket(self.QUESTION),
-            "language": "he",
-        }
-
-    def test_context_gathering_failure_is_not_absorbed_by_the_ai_fallback(self, test_client, monkeypatch, captured):
-        boom = ValueError("context collection failed")
-
-        def failing_collect(*args, **kwargs):
-            raise boom
-
-        fallback_calls = []
-        monkeypatch.setattr(app, "get_engine", lambda: object())
-        monkeypatch.setattr(app, "_collect_ask_question_context", failing_collect)
-        monkeypatch.setattr(app, "_run_ask_question_fallback", lambda *a, **k: fallback_calls.append(a))
-
-        response = self._post(test_client)
-
-        assert response.status_code == 500
-        assert response.get_json() == ASK_ERROR_BODY
-        assert [(name, err) for name, err, _ in captured] == [("ask_route_critical_error", boom)]
-        assert fallback_calls == []
-        assert app.ASK_RESPONSE_CACHE == {}
-
-    def test_a_failing_fallback_after_an_ai_failure_still_ends_in_the_500_handler(
-        self, test_client, monkeypatch, captured,
-    ):
-        ai_failure = RuntimeError("model down")
-        fallback_failure = OSError("fallback down too")
-
-        def failing_synthesis(*args, **kwargs):
-            raise ai_failure
-
-        def failing_fallback(*args, **kwargs):
-            raise fallback_failure
-
-        monkeypatch.setattr(app, "get_engine", lambda: object())
-        monkeypatch.setattr(app, "_collect_ask_question_context", lambda *a, **k: {})
-        monkeypatch.setattr(app, "_ask_question_strict_payload", lambda *a, **k: None)
-        monkeypatch.setattr(app, "_run_ask_question_ai_synthesis", failing_synthesis)
-        monkeypatch.setattr(app, "_run_ask_question_fallback", failing_fallback)
-
-        response = self._post(test_client)
-
-        assert response.status_code == 500
-        assert response.get_json() == ASK_ERROR_BODY
-        assert [(name, err) for name, err, _ in captured] == [("ask_route_critical_error", fallback_failure)]
-        assert app.ASK_RESPONSE_CACHE == {}
 
 
 # ─── module-level startup code, via isolated executions of app.py ───────────

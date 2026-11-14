@@ -36,9 +36,8 @@ from backend.routes_conversation_share import public_conversation_payload
 from app import (
     SUPABASE_ASK_HISTORY_TABLE,
     _get_supabase_client,
-    _capture_backend_error,
-    hash_user_id,
 )
+from backend.logging_setup import _capture_backend_error, hash_user_id
 
 routes_answer_share = Blueprint("answer_share", __name__)
 

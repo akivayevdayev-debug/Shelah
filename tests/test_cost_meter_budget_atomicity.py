@@ -543,7 +543,6 @@ def test_flask_ask_route_is_unreachable_behind_the_asgi_mount():
 
     assert ask_route_index < flask_mount_index, (
         "FastAPI's native POST /ask route must be registered before the "
-        "WSGIMiddleware Flask mount, or POST /ask requests will silently "
-        "reach app.py::ask_question() — which has no "
-        "check_user_budget_and_enforce() call."
+        "WSGIMiddleware Flask mount, or POST /ask requests reach the Flask "
+        "app, which has no /ask route."
     )

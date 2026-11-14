@@ -145,9 +145,8 @@ defaults them to `True`/`"ok"` when absent, so older cached payloads and
 any caller not yet aware of these fields keep working unchanged).
 
 `safety_class` (plus `rabbinic_disclaimer`) is also surfaced on `meta` in
-every `/ask` response shape (both `app.py` and `asgi.py`; see
-`_run_ask_question_ai_synthesis`/`_security_blocked_ask_payload`/
-`_run_ask_async_ai_synthesis`), which `templates/index.html`'s
+every `/ask` response shape (`asgi.py`; see `_run_ask_async_ai_synthesis`
+and `_security_blocked_ask_async_payload`), which `templates/index.html`'s
 `renderDisclaimerBanner()` reads to render the persistent, non-dismissible
 "educational information, not a halachic ruling" banner
 above every answer in both the AI modal and reader view, switching to a

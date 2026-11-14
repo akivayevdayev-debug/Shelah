@@ -86,7 +86,7 @@ Limits: the query is refused if it contains a link, an email address or a number
 
 Loop: send the question + the currently-allowed tool schemas → the model returns text and/or `tool_use` blocks → the orchestrator executes every requested tool concurrently via `asyncio.gather` (each `execute_tool()` call is itself async, timeout-boxed, and internally uses `asyncio.to_thread` for any blocking engine call) → results are re-injected as `tool_result` blocks → repeat. Hard cap: **4 rounds** (`AI_AGENTIC_MAX_ROUNDS`); the final round omits `tools` entirely (not an empty list) to force a text answer. Location for `get_zmanim`/calendar tools comes from the caller's resolved `tool_context` (lat/lon/timezone); there is no guessing.
 
-The `AI_AGENTIC_TOOLS` gate at both call sites (`app.py`'s `_run_ask_question_ai_synthesis`, `asgi.py`'s `_run_ask_async_ai_synthesis`) is the only new branch point in either route handler. Everything downstream (fallback ladder, response-shape building, safety-output validation) is shared with the non-agentic path.
+The `AI_AGENTIC_TOOLS` gate in `asgi.py`'s `_run_ask_async_ai_synthesis` is the only new branch point in the route handler. Everything downstream (fallback ladder, response-shape building, safety-output validation) is shared with the non-agentic path.
 
 ## Safety, cost, reliability
 

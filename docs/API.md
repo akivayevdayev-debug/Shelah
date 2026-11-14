@@ -100,7 +100,7 @@ After the view comes an optional **tail** of overlay and AI keys, all path segme
 - A trailing slash (`/text/Genesis.1/`, `/history/`) answers `308` to the bare path, query string kept.
 - Legacy query links (`/?text=…`, `/?prayer=…`, `/?community=…`) answer `308` to their path form, other query keys kept, so a shared or bookmarked old link reaches its canonical, indexable URL.
 - One person's answers, history, conversations and the sign-in overlay (`/answer/…`, `/a/…`, `/chat/…`, `/history…`, `/signin`) are served with `X-Robots-Tag: noindex, nofollow`, as is `/` when a private query key is present.
-- No `vercel.json` rewrite is involved, and a catch-all rewrite there once 404'd production. Vercel's zero-config detection serves the Flask `app.py`: production answers `404` for the ASGI-only routes (`/api/async/health`, `/openapi.json`, checked 2026-11-05). `asgi.py` runs locally.
+- No `vercel.json` rewrite is involved, and a catch-all rewrite there once 404'd production. `pyproject.toml`'s `[tool.vercel] entrypoint` names `api/index.py`, which serves `asgi.py` (FastAPI, with Flask mounted inside) in production as well as locally.
 
 ---
 
@@ -108,7 +108,7 @@ After the view comes an optional **tail** of overlay and AI keys, all path segme
 
 ### `POST /ask`
 
-Submit a halachic or Torah-study question and get back an answer drafted by the AI, with source citations. The async FastAPI route in `asgi.py` serves it, in production and locally; the Flask route in `app.py` answers only under bare `python3 app.py`. Both answer the same way and both stream progress (below). (Until 2026-11-13 production served the Flask route by mistake: Vercel auto-detected `app.py`. `pyproject.toml`'s `[tool.vercel] entrypoint` now names `api/index.py`.)
+Submit a halachic or Torah-study question and get back an answer drafted by the AI, with source citations. The async FastAPI route in `asgi.py` serves it, in production and locally, and streams progress (below). (Until 2026-11-13 production served an older Flask copy of this route by mistake, because Vercel auto-detected `app.py`. That copy was deleted on 2026-11-14; under bare `python3 app.py` there is no `/ask`.)
 
 - **Auth:** Optional. Required whenever `CLERK_ENFORCE_AUTH` is on (the code's default on Vercel, but deliberately set to `false` on the production project, so anonymous asking works there). Auth enriches the answer with the caller's memory summaries and records it in the caller's history. A signed-out caller's answer is recorded too, under their **device**: the first signed-out `/ask` that succeeds sets a `shelah_device` cookie (see [Device identity](#device-identity)), and the returned `history_id` opens at `/answer/<id>` in that browser only.
 - **Rate-limit class:** `llm` (fails closed).
@@ -194,7 +194,7 @@ The question is sanitised before use (hidden and control characters removed, whi
 
 A simple question (short and single-part, by `question_profile`) is answered by Gemini Flash Lite (`gemini-3.5-flash-lite`); anything harder (multi-part, a request for a long or detailed answer, a study request, "which rabbi says") by Claude Haiku (`claude-haiku-5-5`). Each model backs up the other: when the first one fails the other takes over and `meta.fallback` is `true`. When Gemini has not started its answer within 4 seconds (`AI_GEMINI_HEDGE_SECONDS`; twice that for a non-streamed ask), Haiku is asked as well and the first good answer is used; a Gemini that had not started by then counts toward its 45-minute cooldown. The Flask (sync) pipeline races the two the same way. Each question gets its own 45 s budget; a long answer that Haiku writes first may take up to 35 s (`MODEL_LONG_REQUEST_TIMEOUT_SECONDS`), which still leaves Gemini its 10 s minimum. When nothing at all was retrieved, the prompt tells the model to say plainly what it is not sure of. Hebrew terms in an English answer are put into the `HEB (transliteration, meaning)` form after the model answers (`backend/hebrew_terms.py`). Both stream the answer's opening as `draft` events. `AI_ANSWER_PROVIDER=claude` or `=gemini` puts that model first for every question instead (`backend/claude.py: answer_provider_from_env`). When both providers fail the answer is built from the retrieved sources alone, without a model summary.
 
-**Live progress stream (opt-in).** A client that sends `Accept: application/x-ndjson` gets the same answer preceded by one line per pipeline step, so the UI can say what is happening while it waits. `POST /api/conversations/<id>/ask` behaves identically. Any other `Accept` header gets the single JSON response above, unchanged. Implementation: `backend/ask_progress.py` (server), `backend/flask_progress_stream.py` (the Flask routes' worker thread and NDJSON body), `static/js/ask-progress.js` (client). Both ask routes (`asgi.py` and the Flask `app.py`) emit the same events and the same terminal line (`tests/test_ask_progress.py`, `tests/test_flask_ask_stream.py`).
+**Live progress stream (opt-in).** A client that sends `Accept: application/x-ndjson` gets the same answer preceded by one line per pipeline step, so the UI can say what is happening while it waits. `POST /api/conversations/<id>/ask` behaves identically. Any other `Accept` header gets the single JSON response above, unchanged. Implementation: `backend/ask_progress.py` (server), `backend/flask_progress_stream.py` (the Flask conversation route's worker thread and NDJSON body), `static/js/ask-progress.js` (client). Both ask routes emit the same events and the same terminal line (`tests/test_ask_progress.py`).
 
 The body is newline-delimited JSON, one object per line:
 
@@ -415,7 +415,6 @@ A signed-out visitor can follow up on an answer, up to a point, after which the 
 - **Fails open.** A database error while measuring is reported (`guest_cap_lookup_failed`) and the question is allowed: the same outage means nothing is being stored either.
 - **Signed-in callers** ignore `history_ids` and are never counted here; they have conversations (`/api/conversations/<id>/ask`) and the daily quota above.
 - **What it does not stop.** Clearing cookies mints a new device and starts the count over; the per-IP rate limit, the global budget and the WAF are the backstops there. A client that omits `history_ids` is not bound by the per-conversation numbers, only by the day's 24. If Turnstile is ever switched on, set `TURNSTILE_ANON_HOURLY_THRESHOLD` to 8 or more, or a guest meets the challenge before the cap.
-- The Flask `/ask` in `app.py` is shadowed in production by the FastAPI route and is not changed.
 
 ### Env var matrix
 

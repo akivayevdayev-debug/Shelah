@@ -9,9 +9,8 @@ an empty user_id and never counted toward the per-user daily cap.
 
 This module is the sync-side counterpart: one loop-bridge hop that runs
 both gates, plus the bind/clear pair that attributes the request's model
-spend. Shared by app.py's sync /ask (_apply_ask_question_cost_gates) and
-backend/routes_conversations.py's conversation ask
-(_enforce_conversation_cost_gates); each route maps the verdicts to its own
+spend. Used by backend/routes_conversations.py's conversation ask
+(_enforce_conversation_cost_gates), which maps the verdicts to its own
 responses and decides whether a failed gate hop fails open.
 """
 from __future__ import annotations

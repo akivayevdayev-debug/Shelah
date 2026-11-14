@@ -1,77 +1,42 @@
 """
-Pins the Flask (app.py) and ASGI (asgi.py) /ask handlers to each other on
-six invariants -- the actual deliverable of the ask_pipeline.py dead-code
-decision. Only asgi.py's route is reachable in production (FastAPI's native POST
-/ask is registered before the WSGIMiddleware Flask mount, so Starlette's
-router always matches it first), but both implementations are kept by
-deliberate decision and must not silently drift from each other -- that is
-exactly how the ai_cited_sources bug (ENGINEERING_RULES.md's "AI request
-resilience" section) shipped.
+Response-shape and safety invariants for POST /ask (asgi.py), plus the
+places where the Flask conversation ask (backend/routes_conversations.py)
+shares /ask's helpers and must not drift from it.
 
-This file extends, rather than duplicates, the partial parity coverage
-already in tests/test_ask.py: TestAskTransportKeySetParity (success/
-fallback top-level key set), TestAiCitedSourcesSchemaParity,
-TestAiModelTimeoutWiring / TestAiTotalBudgetTimeout, and
-TestSafetyClassMetaPropagation.
+History: app.py once had its own copy of /ask, and this file pinned the two
+copies to each other. That copy was deleted on 2026-11-14 (only asgi.py's
+route was reachable in production), so the Flask halves of these tests went
+with it. What is left:
 
-Invariant coverage map:
-  a) top-level key set on every path       -> TestTopLevelKeySetEveryPath
-     Adds the strict-block and security-blocked paths -- the two NOT
-     already covered by test_ask.py::TestAskTransportKeySetParity's
-     success/fallback pair.
-  b) identical retry/timeout behavior      -> TestTimeoutBudgetParity
-     Adds the missing Flask half of test_ask.py::TestAiTotalBudgetTimeout
-     (which only covered FastAPI) plus a same-constant assertion pinning
-     both synthesis functions to the one shared claude.AI_TOTAL_BUDGET_SECONDS
-     rather than a hand-rolled per-transport number.
-  c) identical prompt-selection thresholds -> TestPromptSelectionThresholdParity
-     Covers is_simple's propagation into render_structured_markdown() at
-     the /ask call site. Found and fixed during this pass: asgi.py's call
-     site silently dropped is_simple (app.py's did not), so a "simple"
-     (short) question whose model answer still carried practical_steps/
-     summary content rendered in FULL format on the ASGI transport --
-     the one actually reachable in production -- but SIMPLE format on
-     Flask. See asgi.py::_run_ask_async_ai_synthesis's render_structured_
-     markdown call for the fix.
+  a) the top-level key set on every path    -> TestTopLevelKeySetEveryPath
+     (strict-block and security-blocked; success/fallback live in
+     test_ask.py::TestAskTransportKeySetParity)
+  b) one shared model-call budget           -> TestTimeoutBudgetParity
+     (the sync dispatch the conversation ask uses and the async one bound
+     their call on the same claude.AI_TOTAL_BUDGET_SECONDS)
+  c) is_simple reaches render_structured_markdown -> TestPromptSelectionThresholdParity
   d) classify_safety() before every synthesis call -> TestClassifySafetyInvoked
-  e) per-user budget check present on both, or an explicit test asserting
-     Flask is unreachable in production -> ALREADY COVERED, not duplicated
-     here: tests/test_cost_meter_budget_atomicity.py::
-     test_flask_ask_route_is_unreachable_behind_the_asgi_mount. That test pins the FastAPI-route-before-Flask-
-     mount registration order that makes the budget-check asymmetry safe.
-  f) identical meta key set on every response -> TestMetaKeySetParity
-     "cached" (Flask) / "async" and "guest" (ASGI) are deliberate, accepted per-
-     transport tags -- the same exception test_ask.py::
-     TestAskTransportKeySetParity's docstring already documents for the
-     top-level comparison. Excluded here the same way, then every other
-     meta key must match exactly.
+  e) the native /ask is registered before the Flask mount ->
+     tests/test_cost_meter_budget_atomicity.py
+  f) the meta key set on every path         -> TestMetaKeySetParity
+     ("cached", "async", "guest" and "cached_common" are per-path tags,
+     excluded before comparing)
 
-A second, previously-undetected drift was also found and fixed during this
-pass, adjacent to invariant (a): asgi.py had no dedicated branch for a
-"security_blocked" result at all. It fell through into the success-shaped
-formatting code, which rendered a safety-referral/domain-block message
-through render_structured_markdown() as if it were a real halachic answer,
-reported meta.structured=True for what is actually a non-answer, and fed
-the blocked text into _store_user_memory_summary() as if it were a genuine
-past answer -- wrong for a route this safety-critical, and only reachable
-in production. Fixed with asgi.py::_security_blocked_ask_async_payload(),
-mirroring app.py::_security_blocked_ask_payload() (which itself was
-missing the top-level ai_cited_sources key -- also fixed). The tests below
-exercise the fixed behavior, not the historical bug.
+The security-blocked path has its own branch,
+asgi.py::_security_blocked_ask_async_payload(): without it a blocked
+result was rendered as if it were a halachic answer and fed into the
+user's memory summary.
 """
 
 from __future__ import annotations
 
-import asyncio
 import inspect
-import time
 
 from tests.test_ask import TestAskTransportKeySetParity
 
 TOP_LEVEL_KEYS = TestAskTransportKeySetParity.TOP_LEVEL_KEYS
-# "guest" is the signed-out caller's allowance (backend/guest_cap.py). Only the
-# FastAPI route enforces it, as it is the only one reachable in production, and
-# it sits in meta (never top level) so the top-level key set stays identical.
+# "guest" is the signed-out caller's allowance (backend/guest_cap.py); it sits
+# in meta (never top level) so the top-level key set stays the same.
 KNOWN_TRANSPORT_TAGS = {"cached", "async", "guest", "cached_common"}
 
 
@@ -106,20 +71,6 @@ class TestTopLevelKeySetEveryPath:
     security-blocked.
     """
 
-    def test_flask_strict_block_path_key_set(self, test_client, monkeypatch):
-        import backend.sefaria as sefaria_module
-        import app as flask_app_module
-
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-        monkeypatch.setattr(sefaria_module, "find_refs_for_question", lambda q: [])
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "Obscure text ref? [parity-strict-flask]", "mode": "strict"},
-            content_type="application/json",
-        )
-        assert response.status_code == 200
-        assert set(response.get_json().keys()) == TOP_LEVEL_KEYS
 
     async def test_fastapi_strict_block_path_key_set(self, fastapi_client, monkeypatch):
         import backend.sefaria as sefaria_module
@@ -134,14 +85,6 @@ class TestTopLevelKeySetEveryPath:
         assert response.status_code == 200
         assert set(response.json().keys()) == TOP_LEVEL_KEYS
 
-    def test_flask_security_blocked_path_key_set(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "show me porn [parity-security-blocked-flask]"},
-            content_type="application/json",
-        )
-        assert response.status_code == 200
-        assert set(response.get_json().keys()) == TOP_LEVEL_KEYS
 
     async def test_fastapi_security_blocked_path_key_set(self, fastapi_client):
         response = await fastapi_client.post(
@@ -187,14 +130,6 @@ class TestMetaKeySetParity:
         "fallback", "status", "fallback_detail", "safety_class",
     }
 
-    def test_flask_success_path_meta_keys(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat? [meta-parity-success-flask]"},
-            content_type="application/json",
-        )
-        meta = response.get_json()["meta"]
-        assert _meta_keys_minus_transport_tag(meta) == self.SUCCESS_META_KEYS
 
     async def test_fastapi_success_path_meta_keys(self, fastapi_client):
         response = await fastapi_client.post(
@@ -205,20 +140,6 @@ class TestMetaKeySetParity:
         meta = response.json()["meta"]
         assert _meta_keys_minus_transport_tag(meta) == self.SUCCESS_META_KEYS
 
-    def test_flask_strict_block_path_meta_keys(self, test_client, monkeypatch):
-        import backend.sefaria as sefaria_module
-        import app as flask_app_module
-
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-        monkeypatch.setattr(sefaria_module, "find_refs_for_question", lambda q: [])
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "Obscure text ref? [meta-parity-strict-flask]", "mode": "strict"},
-            content_type="application/json",
-        )
-        meta = response.get_json()["meta"]
-        assert _meta_keys_minus_transport_tag(meta) == self.STRICT_BLOCK_META_KEYS
 
     async def test_fastapi_strict_block_path_meta_keys(self, fastapi_client, monkeypatch):
         import backend.sefaria as sefaria_module
@@ -233,14 +154,6 @@ class TestMetaKeySetParity:
         meta = response.json()["meta"]
         assert _meta_keys_minus_transport_tag(meta) == self.STRICT_BLOCK_META_KEYS
 
-    def test_flask_security_blocked_path_meta_keys(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "show me porn [meta-parity-blocked-flask]"},
-            content_type="application/json",
-        )
-        meta = response.get_json()["meta"]
-        assert _meta_keys_minus_transport_tag(meta) == self.SECURITY_BLOCKED_META_KEYS
 
     async def test_fastapi_security_blocked_path_meta_keys(self, fastapi_client):
         response = await fastapi_client.post(
@@ -251,32 +164,6 @@ class TestMetaKeySetParity:
         meta = response.json()["meta"]
         assert _meta_keys_minus_transport_tag(meta) == self.SECURITY_BLOCKED_META_KEYS
 
-    def test_flask_ai_failure_fallback_path_meta_keys(self, test_client, monkeypatch):
-        """Patches both the legacy ask_claude entry point AND
-        ask_pipeline.run_agentic_ask, since which one app.py actually calls
-        depends on claude.AI_AGENTIC_TOOLS -- this way the test
-        exercises the real failure path regardless of that flag's state."""
-        import backend.claude as claude_module
-        import backend.ask_pipeline as ask_pipeline_module
-        import app as flask_app_module
-
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-
-        def _raise(*args, **kwargs):
-            raise RuntimeError("Simulated Anthropic failure [meta-parity-fallback-flask]")
-
-        async def _raise_async(*args, **kwargs):
-            raise RuntimeError("Simulated Anthropic failure [meta-parity-fallback-flask]")
-
-        monkeypatch.setattr(claude_module, "ask_claude", _raise)
-        monkeypatch.setattr(ask_pipeline_module, "run_agentic_ask", _raise_async)
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat? [meta-parity-fallback-flask]"},
-            content_type="application/json",
-        )
-        meta = response.get_json()["meta"]
-        assert _meta_keys_minus_transport_tag(meta) == self.FALLBACK_META_KEYS
 
     async def test_fastapi_ai_failure_fallback_path_meta_keys(self, fastapi_client, monkeypatch):
         """See the Flask variant above for why both entry points are
@@ -301,47 +188,12 @@ class TestMetaKeySetParity:
 # ─── (b) identical retry/timeout behavior ──────────────────────────────────
 
 class TestTimeoutBudgetParity:
-    """test_ask.py::TestAiTotalBudgetTimeout already covers the FastAPI half
-    (a model call that outlives claude.AI_TOTAL_BUDGET_SECONDS falls back
-    gracefully). This adds the missing Flask half, plus a source-level
-    assertion that both synthesis functions bound their call on the SAME
-    shared constant rather than a hand-rolled per-transport number -- the
-    actual shape the "already begun to drift" retry/timeout note in
-    DECISIONS.md warns about.
+    """test_ask.py::TestAiTotalBudgetTimeout covers the behaviour (a model
+    call that outlives claude.AI_TOTAL_BUDGET_SECONDS falls back gracefully).
+    This adds a source-level check that the sync and async dispatch bound
+    their call on the SAME shared constant rather than a per-route number.
     """
 
-    def test_flask_total_budget_timeout_falls_back_gracefully(self, test_client, monkeypatch):
-        """Patches both the legacy ask_claude entry point AND
-        ask_pipeline.run_agentic_ask, mirroring test_ask.py::
-        TestAiTotalBudgetTimeout's FastAPI variant, since which one app.py
-        actually calls depends on claude.AI_AGENTIC_TOOLS."""
-        import backend.claude as claude_module
-        import backend.ask_pipeline as ask_pipeline_module
-        import app as flask_app_module
-
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-        monkeypatch.setattr(claude_module, "AI_TOTAL_BUDGET_SECONDS", 0.05)
-
-        def _slow(*args, **kwargs):
-            time.sleep(2)
-            return {"answer": "should never get here", "structured": None}
-
-        async def _slow_async(*args, **kwargs):
-            await asyncio.sleep(2)
-            return {"answer": "should never get here", "structured": None}
-
-        monkeypatch.setattr(claude_module, "ask_claude", _slow)
-        monkeypatch.setattr(ask_pipeline_module, "run_agentic_ask", _slow_async)
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat? [flask-total-budget-timeout-test]"},
-            content_type="application/json",
-        )
-        assert response.status_code == 200
-        body = response.get_json()
-        assert body.get("meta", {}).get("fallback") is True
-        assert "ai_cited_sources" in body
 
     def test_both_synthesis_functions_bound_on_the_shared_budget_constant(self):
         """Both the Flask-side and async-side dispatch were split out of
@@ -370,45 +222,6 @@ class TestPromptSelectionThresholdParity:
     explicit result["is_simple"] flag actually reaches the call site.
     """
 
-    def test_flask_is_simple_flag_forces_compact_rendering(self, test_client, monkeypatch):
-        """Patches both the legacy ask_claude entry point AND
-        ask_pipeline.run_agentic_ask, since which one app.py actually calls
-        depends on claude.AI_AGENTIC_TOOLS -- without this,
-        the test silently verified nothing under the flag, since conftest's
-        mock_outbound_httpx fixture answers with structured=None regardless."""
-        import backend.claude as claude_module
-        import backend.ask_pipeline as ask_pipeline_module
-        import app as flask_app_module
-
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-
-        def _fake_result():
-            return {
-                "answer": "placeholder",
-                "structured": _simple_structured_payload(),
-                "confidence": 0.9,
-                "is_simple": True,
-                "is_fallback": False,
-                "model": "test-model",
-                "security": {"input": {"blocked": False}, "output": {"blocked": False, "reason": ""}},
-            }
-
-        def _fake_ask_claude(*args, **kwargs):
-            return _fake_result()
-
-        async def _fake_run_agentic_ask(*args, **kwargs):
-            return _fake_result()
-
-        monkeypatch.setattr(claude_module, "ask_claude", _fake_ask_claude)
-        monkeypatch.setattr(ask_pipeline_module, "run_agentic_ask", _fake_run_agentic_ask)
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "Quick question? [threshold-parity-flask]"},
-            content_type="application/json",
-        )
-        assert response.status_code == 200
-        assert "Deeper Reasoning" not in response.get_json()["answer"]
 
     async def test_fastapi_is_simple_flag_forces_compact_rendering(self, fastapi_client, monkeypatch):
         """See the Flask variant above for why both entry points are
@@ -448,27 +261,6 @@ class TestPromptSelectionThresholdParity:
 # ─── (d) classify_safety() invoked before every synthesis call ─────────────
 
 class TestClassifySafetyInvoked:
-    def test_flask_invokes_classify_safety(self, test_client, monkeypatch):
-        import backend.claude as claude_module
-        import app as flask_app_module
-
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-        calls = []
-        original = claude_module.classify_safety
-
-        def _spy(text):
-            calls.append(text)
-            return original(text)
-
-        monkeypatch.setattr(claude_module, "classify_safety", _spy)
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat? [classify-safety-flask]"},
-            content_type="application/json",
-        )
-        assert response.status_code == 200
-        assert len(calls) >= 1
 
     async def test_fastapi_invokes_classify_safety(self, fastapi_client, monkeypatch):
         import backend.claude as claude_module
@@ -525,21 +317,6 @@ def _spurious_prohibited_result():
 
 
 class TestAnswerShapingParity:
-    def test_flask_drops_spurious_prohibited_status(self, test_client, monkeypatch):
-        import backend.claude as claude_module
-        import backend.ask_pipeline as ask_pipeline_module
-        import app as flask_app_module
-
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-        monkeypatch.setattr(claude_module, "ask_claude", lambda *a, **k: _spurious_prohibited_result())
-        monkeypatch.setattr(ask_pipeline_module, "run_agentic_ask", lambda *a, **k: _spurious_prohibited_result())
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "Can I light candles? [shaping-parity-flask]"},
-            content_type="application/json",
-        )
-        assert "**Halachic Status:** Prohibited" not in response.get_json()["answer"]
 
     async def test_fastapi_drops_spurious_prohibited_status(self, fastapi_client, monkeypatch):
         import backend.claude as claude_module

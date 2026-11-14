@@ -38,9 +38,8 @@ from app import (
     _get_request_user_id,
     _get_supabase_client,
     _get_user_scoped_supabase_client,
-    _capture_backend_error,
-    hash_user_id,
 )
+from backend.logging_setup import _capture_backend_error, hash_user_id
 
 routes_user = Blueprint("user", __name__)
 

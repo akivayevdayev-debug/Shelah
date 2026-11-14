@@ -137,9 +137,9 @@ def _report_note_failure(error: Exception) -> None:
     if str(getattr(error, "code", "") or "") in _MIGRATION_PENDING:
         return
     try:
-        import app as _app
+        from backend import logging_setup
 
-        _app._capture_backend_error("ai_note_persist_failed", error, {})
+        logging_setup._capture_backend_error("ai_note_persist_failed", error, {})
     except Exception:  # noqa: BLE001
         pass
 

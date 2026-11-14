@@ -48,8 +48,8 @@ from app import (
     SUPABASE_ASK_HISTORY_TABLE,
     _get_request_user_id,
     _get_supabase_client,
-    _capture_backend_error,
 )
+from backend.logging_setup import _capture_backend_error
 
 routes_feedback = Blueprint("feedback", __name__)
 

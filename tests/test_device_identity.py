@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-from flask import Flask, jsonify
+from flask import Flask
 
 import asgi
 import backend.device_identity as device
@@ -94,57 +94,6 @@ class TestCookieSettings:
         assert device.request_is_secure("http", None) is True
 
 
-@pytest.fixture
-def mini_app():
-    """A bare Flask app with one view wrapped like /ask, recording the owner
-    its code saw."""
-    app = Flask(__name__)
-    seen = []
-
-    @app.post("/ask")
-    @device.issues_device_cookie
-    def ask():
-        seen.append(device.current_history_owner())
-        return jsonify(ok=True)
-
-    @app.post("/refused")
-    @device.issues_device_cookie
-    def refused():
-        return jsonify(error="no"), 400
-
-    app.seen = seen
-    return app
-
-
-class TestFlaskDecorator:
-    def test_first_signed_out_answer_sets_the_cookie_and_binds_the_owner(self, mini_app):
-        response = mini_app.test_client().post("/ask")
-        assert response.status_code == 200
-        cookie = response.headers["Set-Cookie"]
-        assert cookie.startswith(f"{device.DEVICE_COOKIE}=")
-        assert "HttpOnly" in cookie
-        assert "SameSite=Lax" in cookie
-        token = cookie.split("=", 1)[1].split(";", 1)[0]
-        assert mini_app.seen == [device.owner_for_token(token)]
-        assert device.current_history_owner() is None  # released after the request
-
-    def test_a_returning_device_is_not_given_a_new_cookie(self, mini_app):
-        client = mini_app.test_client()
-        client.set_cookie(device.DEVICE_COOKIE, TOKEN, domain="localhost")
-        response = client.post("/ask")
-        assert "Set-Cookie" not in response.headers
-        assert mini_app.seen == [device.owner_for_token(TOKEN)]
-
-    def test_a_refusal_earns_no_cookie(self, mini_app):
-        response = mini_app.test_client().post("/refused")
-        assert response.status_code == 400
-        assert "Set-Cookie" not in response.headers
-
-    def test_a_signed_in_caller_is_never_bound_to_a_device(self, mini_app):
-        response = mini_app.test_client().post("/ask", headers={"Authorization": "Bearer x.y.z"})
-        assert "Set-Cookie" not in response.headers
-        assert mini_app.seen == [None]
-
 
 class TestStoredUnderTheDevice:
     @pytest.fixture
@@ -191,6 +140,11 @@ class TestStoredUnderTheDevice:
 
 
 class TestHistoryOwners:
+    @pytest.fixture
+    def mini_app(self):
+        """A bare Flask app, only for its request context."""
+        return Flask(__name__)
+
     def test_account_then_device(self, mini_app):
         with mini_app.test_request_context("/", headers={"Cookie": f"{device.DEVICE_COOKIE}={TOKEN}"}):
             assert device.history_owners("user_abc") == ("user_abc", device.owner_for_token(TOKEN))

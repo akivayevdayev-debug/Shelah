@@ -65,8 +65,6 @@ from app import (
     SUPABASE_CITATIONS_TABLE,
     _get_supabase_client,
     _get_user_scoped_supabase_client,
-    _capture_backend_error,
-    hash_user_id,
     get_engine,
     _collect_ask_question_context,
     _dispatch_ask_ai_synthesis_call,
@@ -74,9 +72,10 @@ from app import (
     _extract_raw_ai_answer,
     _resolve_ask_web_warning_flag,
     _compose_validated_ask_answer,
-    _store_user_memory_summary,
     _extract_client_ip,
 )
+from backend.logging_setup import _capture_backend_error, hash_user_id
+from backend.rag import _store_user_memory_summary
 
 routes_conversations = Blueprint("conversations", __name__)
 _CREATE_FAILED = "Failed to create conversation"
@@ -1050,7 +1049,7 @@ def ask_in_conversation(conversation_id):
     real multi-turn context (this thread's prior complete turns are passed
     into the AI prompt via conversation_history).
 
-    Reuses app.py's own /ask helpers (get_engine, _collect_ask_question_
+    Reuses app.py's shared ask helpers (get_engine, _collect_ask_question_
     context, _dispatch_ask_ai_synthesis_call, ...) for retrieval and
     synthesis rather than re-implementing that orchestration a third time
     -- backend/ask_pipeline.py's module docstring documents why a prior

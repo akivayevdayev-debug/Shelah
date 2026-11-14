@@ -559,10 +559,9 @@ def _ask_async_breaker_paused_payload(mode, canonical_lens, answer_language, ctx
 async def _security_blocked_ask_async_payload(
     result, mode, canonical_lens, answer_language, user_id, question_was_sanitized, question, ctx,
 ):
-    """The "security_blocked" branch of ask_async()'s AI-synthesis stage --
-    mirrors app.py's _security_blocked_ask_payload (the transport-parity
-    suite's invariant: identical top-level/meta key set on the security-
-    blocked path too, not just success/strict-block/fallback).
+    """The "security_blocked" branch of ask_async()'s AI-synthesis stage.
+    The transport-parity suite checks it returns the same top-level and meta
+    keys as the success, strict-block and fallback paths.
 
     Before this branch existed, ask_async() had no security_blocked handling
     at all: a "security_blocked" result_error was allowed to fall through
@@ -571,10 +570,7 @@ async def _security_blocked_ask_async_payload(
     it were a real halachic answer, (b) reported meta.structured=True for
     what is actually a non-answer, and (c) called _store_user_memory_summary
     on the blocked text, feeding it back into future prompts as if it were a
-    genuine past answer. Wrong on a route this safety-critical, and this
-    file is the only one of the two live /ask transports actually reachable
-    in production -- app.py's ask_question() never hits
-    this bug only because it already special-cased security_blocked.
+    genuine past answer. Wrong on a route this safety-critical.
     """
     structured_payload = result.get("structured")
     if not isinstance(structured_payload, dict):
@@ -588,9 +584,8 @@ async def _security_blocked_ask_async_payload(
     flask_app_module.DEVTOOLS_STATS["answers_total"] += 1
     flask_app_module.DEVTOOLS_STATS["fallback_answers"] += 1
 
-    # Defensibility logging -- mirrors app.py's
-    # _security_blocked_ask_payload exactly. Deliberately does NOT call
-    # _store_user_memory_summary, same reasoning as that function.
+    # Defensibility logging. Deliberately does NOT call
+    # _store_user_memory_summary (see the docstring).
     history_id = await asyncio.to_thread(
         _store_ask_history,
         user_id,
@@ -769,7 +764,7 @@ async def _run_ask_async_ai_synthesis(
     result = await _dispatch_ask_async_ai_synthesis_call(
         question, mode, canonical_lens, answer_language, ctx)
 
-    # Same shaping step app.py's /ask and conversation follow-ups run: it
+    # Same shaping step conversation follow-ups run: it
     # re-checks a model-set is_prohibited flag against the ruling text, so a
     # permitted ruling never renders as "Halachic Status: Prohibited".
     # Security-blocked results pass through it untouched.
@@ -1227,10 +1222,8 @@ async def ask_async(
 
 
 def _ask_async_cache_key(question, answer_language, mode, canonical_lens, user_id, guest, web_search) -> str:
-    """Identical key formula to app.py's (dead, unreachable-in-production)
-    ask_question() route -- not read/written by that route today, but keeping
-    one formula rather than two avoids a divergent-duplication trap if that
-    route is ever revived."""
+    """The /ask answer-cache key: question, language, mode, lens and caller,
+    plus the guest thread for a follow-up and the web-search choice."""
     key = "|".join([
         question.lower(), answer_language, mode, canonical_lens.lower(), user_id or "anon",
     ])

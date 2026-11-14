@@ -1021,7 +1021,7 @@ def _extract_search_metadata_filters():
 
 
 # ── AI-error reason classifier ────────────────────────────────────────────────
-# Security audit P1: asgi.py/app.py's /ask fallback path used to put
+# Security audit P1: the /ask fallback path used to put
 # str(ai_error) — the raw provider SDK exception text — into
 # meta.fallback_detail.reason on a normal 200 response. Unlike a generic
 # 500-handler leak, this fires on routine failure modes (timeouts, rate

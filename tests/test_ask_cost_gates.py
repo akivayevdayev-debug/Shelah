@@ -1,5 +1,5 @@
-"""Cost gates + spend attribution on the sync Flask /ask route
-(backend/cost_gates.py, app.py's _apply_ask_question_cost_gates).
+"""Cost gates + spend attribution (backend/cost_gates.py), the sync-side
+helpers the Flask conversation ask uses.
 
 cost_meter's two async gates are replaced by spies on backend.cost_gates,
 so no test reaches the real Supabase budget RPC / usage read -- but every
@@ -11,7 +11,6 @@ them.
 """
 from __future__ import annotations
 
-import concurrent.futures
 
 import pytest
 
@@ -96,30 +95,6 @@ def _ask(test_client, question="What is the law of muktzeh? [cost-gates test]"):
 
 # ─── Flask /ask route ────────────────────────────────────────────────────────
 
-def test_signed_in_spend_is_attributed_to_the_user_with_its_reservation(
-    test_client, gates, model_calls, caller,
-):
-    caller["user_id"] = USER_ID
-
-    response = _ask(test_client)
-
-    assert response.status_code == 200
-    assert gates.breaker_calls == 1
-    assert gates.budget_calls == [(USER_ID, CLIENT_IP)]
-    assert model_calls == [{"user_id": USER_ID, "client_key": "", "reservation_id": "res-flask-ask"}]
-
-
-def test_signed_out_spend_is_budgeted_and_attributed_by_client_ip(
-    test_client, gates, model_calls, caller,
-):
-    response = _ask(test_client)
-
-    assert response.status_code == 200
-    assert gates.budget_calls == [(None, CLIENT_IP)]
-    assert model_calls == [{
-        "user_id": "", "client_key": f"ip:{keyed_hash(CLIENT_IP)}", "reservation_id": "res-flask-ask",
-    }]
-
 
 def test_attribution_is_cleared_once_the_request_ends(test_client, gates, model_calls, caller):
     caller["user_id"] = USER_ID
@@ -133,85 +108,6 @@ def test_attribution_is_cleared_once_the_request_ends(test_client, gates, model_
     assert logging_setup.get_client_key() == ""
     assert logging_setup.get_budget_reservation() == ""
 
-
-def test_tripped_breaker_serves_the_paused_payload_without_a_model_call_or_reservation(
-    test_client, gates, model_calls, caller,
-):
-    gates.tripped = True
-
-    response = _ask(test_client)
-
-    assert response.status_code == 200
-    body = response.get_json()
-    assert body["answer"].startswith("AI answers are paused for today")
-    assert body["meta"]["breaker_tripped"] is True
-    assert body["meta"]["fallback"] is True
-    assert body["meta"]["cached"] is False
-    assert isinstance(body["sources"], list)
-    assert gates.budget_calls == []
-    assert model_calls == []
-
-
-def test_tripped_breaker_payload_is_not_cached(test_client, gates, model_calls, caller):
-    gates.tripped = True
-    _ask(test_client)
-    gates.tripped = False
-
-    response = _ask(test_client)
-
-    assert "breaker_tripped" not in response.get_json()["meta"]
-    assert len(model_calls) == 1
-
-
-def test_exhausted_daily_budget_returns_402_without_a_model_call(
-    test_client, gates, model_calls, caller,
-):
-    caller["user_id"] = USER_ID
-    gates.allowed = False
-
-    response = _ask(test_client)
-
-    assert response.status_code == 402
-    assert response.get_json() == {
-        "error": (
-            "Daily AI usage limit reached for this account ($1.99 of $2.00). "
-            "Please try again after midnight UTC."
-        ),
-        "code": "daily_budget_exhausted",
-    }
-    assert model_calls == []
-
-
-def test_gate_hop_failure_fails_open_but_still_attributes_the_caller(
-    test_client, model_calls, caller, monkeypatch,
-):
-    caller["user_id"] = USER_ID
-    captured = []
-
-    def _timeout(user_id, client_ip):
-        raise concurrent.futures.TimeoutError()
-
-    monkeypatch.setattr(cost_gates, "evaluate_cost_gates_sync", _timeout)
-    monkeypatch.setattr(
-        flask_app_module, "_capture_backend_error",
-        lambda event, exc, ctx: captured.append((event, ctx)),
-    )
-
-    response = _ask(test_client)
-
-    assert response.status_code == 200
-    assert captured[0] == ("ask_cost_gates_unavailable", {
-        "user_id_hash": flask_app_module.hash_user_id(USER_ID),
-    })
-    assert model_calls == [{"user_id": USER_ID, "client_key": "", "reservation_id": ""}]
-
-
-def test_prayer_shortcut_runs_no_cost_gate(test_client, gates, model_calls, caller):
-    response = _ask(test_client, question="Shacharit order [cost-gates test]")
-
-    assert response.status_code == 200
-    assert gates.breaker_calls == 0
-    assert gates.budget_calls == []
 
 
 # ─── backend/cost_gates.py ───────────────────────────────────────────────────

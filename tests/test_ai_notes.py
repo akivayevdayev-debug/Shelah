@@ -10,7 +10,7 @@ import hashlib
 
 import pytest
 
-from backend import ai_notes
+from backend import ai_notes, logging_setup
 
 
 class _Recorder:
@@ -138,7 +138,7 @@ class TestRecordAiNote:
         client = _Recorder(fail_with=_PostgrestError(code), fail_times=5)
         captured = []
         monkeypatch.setattr(app_module, "_get_supabase_client", lambda: client)
-        monkeypatch.setattr(app_module, "_capture_backend_error", lambda *a: captured.append(a))
+        monkeypatch.setattr(logging_setup, "_capture_backend_error", lambda *a: captured.append(a))
 
         assert ai_notes.record_ai_note("Q?") is False
         assert captured == []
@@ -147,7 +147,7 @@ class TestRecordAiNote:
         client = _Recorder(fail_with=RuntimeError("db down"), fail_times=5)
         captured = []
         monkeypatch.setattr(app_module, "_get_supabase_client", lambda: client)
-        monkeypatch.setattr(app_module, "_capture_backend_error", lambda *a: captured.append(a))
+        monkeypatch.setattr(logging_setup, "_capture_backend_error", lambda *a: captured.append(a))
 
         assert ai_notes.record_ai_note("Q?") is False
         assert captured[0][0] == "ai_note_persist_failed"

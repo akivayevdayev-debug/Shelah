@@ -2,10 +2,9 @@
 
 A client that sends ``Accept: application/x-ndjson`` gets one NDJSON line per
 pipeline step while the answer is worked out ("Searching the sources",
-"Thinking it through", ...), then one last line with the answer. Production
-serves the Flask app, so without this a signed-out visitor (Flask /ask) saw
-nothing until the whole answer arrived; asgi.py streams the same way for
-local runs.
+"Thinking it through", ...), then one last line with the answer. The Flask
+conversation route (POST /api/conversations/<id>/ask) streams through this;
+asgi.py's /ask streams the same events natively.
 
 The ask runs on a worker thread. Committing to a stream waits for the first
 step, so every refusal before a step is reported (validation, auth, a cached
@@ -31,15 +30,6 @@ from backend.cost_gates import clear_cost_attribution
 KEEPALIVE_SECONDS = 10.0
 WORKER_DONE = "_worker_done"
 _HEADERS = {"Cache-Control": "no-store, no-transform", "X-Accel-Buffering": "no"}
-
-
-def ask_terminal_event(response) -> dict[str, Any]:
-    """/ask's last line (the shape asgi.py sends): the answer as ``payload``,
-    or the error body as ``detail`` with the status it would have had."""
-    body = response.get_json(silent=True)
-    if 200 <= response.status_code < 300:
-        return {"type": "result", "payload": body}
-    return {"type": "error", "status": response.status_code, "detail": body}
 
 
 def stream_body(first_event: dict[str, Any], events: queue.Queue):

@@ -26,7 +26,7 @@ import secrets
 from dataclasses import dataclass, field
 from functools import wraps
 
-from flask import g, has_request_context, jsonify, make_response, request
+from flask import g, has_request_context, jsonify, request
 
 from backend import auth
 from backend.logging_setup import _capture_backend_error
@@ -125,33 +125,6 @@ def set_device_cookie(response, binding, *, secure: bool) -> None:
     minted it (an existing cookie is left alone)."""
     if binding is not None and binding.minted:
         response.set_cookie(value=binding.token, **cookie_settings(secure))
-
-
-# ── Flask ──────────────────────────────────────────────────────────────────
-
-def issues_device_cookie(view):
-    """Flask /ask view wrapper: a request without a bearer token (a signed-out
-    visitor) saves its answer under its device, and gets the cookie."""
-
-    @wraps(view)
-    def wrapped(*args, **kwargs):
-        if auth._extract_bearer_token():
-            return view(*args, **kwargs)
-        binding = bind_device(request.cookies)
-        try:
-            response = view(*args, **kwargs)
-            # Only a successful answer earns the cookie.
-            response = make_response(response)
-            if response.status_code < 400:
-                set_device_cookie(
-                    response, binding,
-                    secure=request_is_secure(request.scheme, request.headers.get("X-Forwarded-Proto")),
-                )
-            return response
-        finally:
-            release_device(binding)
-
-    return wrapped
 
 
 def history_owners(user_id=None) -> tuple:

@@ -15,169 +15,12 @@ All outbound HTTP is intercepted by conftest autouse fixtures.
 from __future__ import annotations
 
 import json
-import re
 import time
-import responses as responses_lib
 
 from backend.health_check import FAIL_THRESHOLD
 
 
 # ─── Flask (sync) tests ───────────────────────────────────────────────────────
-
-class TestAskFlask:
-    """Tests against the Flask /ask route directly."""
-
-    def test_valid_question_returns_200(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat?"},
-            content_type="application/json",
-        )
-        assert response.status_code == 200
-
-    def test_valid_question_has_answer_key(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat?"},
-            content_type="application/json",
-        )
-        body = response.get_json()
-        assert isinstance(body, dict)
-        assert "answer" in body
-
-    def test_valid_question_has_sources_key(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat?"},
-            content_type="application/json",
-        )
-        body = response.get_json()
-        assert "sources" in body
-
-    def test_missing_question_returns_error(self, test_client):
-        """Empty question body should result in 400 or answer with error indication."""
-        response = test_client.post(
-            "/ask",
-            json={},
-            content_type="application/json",
-        )
-        assert response.status_code in (400, 200)
-        body = response.get_json()
-        # Either HTTP 400 or a response indicating no valid question
-        if response.status_code == 200:
-            assert "answer" in body or "error" in body
-
-    def test_empty_question_string_returns_error(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": ""},
-            content_type="application/json",
-        )
-        assert response.status_code in (400, 200)
-
-    def test_prayer_keyword_shortcut_returns_200(self, test_client):
-        """Questions mentioning Shacharit trigger a fast shortcut path."""
-        response = test_client.post(
-            "/ask",
-            json={"question": "When is Shacharit?"},
-            content_type="application/json",
-        )
-        assert response.status_code == 200
-        body = response.get_json()
-        assert "answer" in body
-
-    def test_prayer_keyword_shortcut_answer_is_string(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "When is Shacharit?"},
-            content_type="application/json",
-        )
-        body = response.get_json()
-        assert isinstance(body.get("answer"), str)
-        assert len(body["answer"]) > 0
-
-    def test_anthropic_failure_triggers_fallback(self, test_client, mock_outbound_http):
-        """When Anthropic fails, the route must still return answer with fallback=True."""
-        # Make the Anthropic messages endpoint fail
-        mock_outbound_http.add(
-            responses_lib.POST,
-            re.compile(r"https://api\.anthropic\.com/v1/messages.*"),
-            status=500,
-            json={"error": "internal server error"},
-        )
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat?"},
-            content_type="application/json",
-        )
-        # The route should always return 200 with a fallback payload — never 500
-        assert response.status_code == 200
-        body = response.get_json()
-        assert "answer" in body
-        # fallback may be True or the body may have is_fallback / error key
-        assert isinstance(body.get("answer"), str)
-
-    def test_anthropic_failure_meta_fallback_true(self, test_client, monkeypatch):
-        """meta.fallback must be True when the AI path errored out.
-
-        AsyncAnthropic uses httpx internally, so we monkeypatch ask_claude
-        directly rather than trying to intercept at the HTTP layer with
-        the requests-based `responses` mock.
-
-        Patches both the legacy ask_claude entry point AND
-        ask_pipeline.run_agentic_ask, since which one app.py actually calls
-        depends on claude.AI_AGENTIC_TOOLS -- this way the test
-        exercises the real live failure path regardless of that flag's state.
-
-        Uses a unique question string to avoid a cache hit from earlier tests
-        that asked about Shabbat and cached a non-fallback result.
-        """
-        import backend.claude as claude_module
-        import backend.ask_pipeline as ask_pipeline_module
-        import app as flask_app_module
-
-        # Clear in-process ask cache so no prior successful result masks this test
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-
-        def _raise(*args, **kwargs):
-            raise RuntimeError("Simulated Anthropic 500")
-
-        async def _raise_async(*args, **kwargs):
-            raise RuntimeError("Simulated Anthropic 500")
-
-        monkeypatch.setattr(claude_module, "ask_claude", _raise)
-        monkeypatch.setattr(ask_pipeline_module, "run_agentic_ask", _raise_async)
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat? [failure-path test]"},
-            content_type="application/json",
-        )
-        if response.status_code == 200:
-            body = response.get_json()
-            meta = body.get("meta", {})
-            assert meta.get("fallback") is True
-
-    def test_answer_is_string(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Kiddush?"},
-            content_type="application/json",
-        )
-        body = response.get_json()
-        if "answer" in body:
-            assert isinstance(body["answer"], str)
-
-    def test_sources_is_list(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "Explain Havdalah."},
-            content_type="application/json",
-        )
-        body = response.get_json()
-        if "sources" in body:
-            assert isinstance(body["sources"], list)
 
 
 # ─── Rate-limit test (unified ASGI middleware) ────────────────────────────────
@@ -544,35 +387,6 @@ class TestAskFastAPI:
 # empty) on success AND fallback for both transports.
 
 class TestAiCitedSourcesSchemaParity:
-    def test_flask_success_has_ai_cited_sources_key(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat? [cited-sources-schema-test]"},
-            content_type="application/json",
-        )
-        body = response.get_json()
-        assert "ai_cited_sources" in body
-        assert isinstance(body["ai_cited_sources"], list)
-
-    def test_flask_fallback_has_ai_cited_sources_key(self, test_client, monkeypatch):
-        import backend.claude as claude_module
-        import app as flask_app_module
-
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-
-        def _raise(*args, **kwargs):
-            raise RuntimeError("Simulated Anthropic failure [cited-sources-fallback-test]")
-
-        monkeypatch.setattr(claude_module, "ask_claude", _raise)
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat? [cited-sources-fallback-test]"},
-            content_type="application/json",
-        )
-        body = response.get_json()
-        assert "ai_cited_sources" in body
-        assert body["ai_cited_sources"] == []
 
     async def test_fastapi_success_has_ai_cited_sources_key(self, fastapi_client):
         response = await fastapi_client.post(
@@ -618,30 +432,6 @@ class TestAskTransportKeySetParity:
 
     TOP_LEVEL_KEYS = {"answer", "confidence", "wiki", "customs", "sources", "ai_cited_sources", "history_id", "meta"}
 
-    def test_flask_success_path_key_set(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat? [parity-success-test]"},
-            content_type="application/json",
-        )
-        assert set(response.get_json().keys()) == self.TOP_LEVEL_KEYS
-
-    def test_flask_fallback_path_key_set(self, test_client, monkeypatch):
-        import backend.claude as claude_module
-        import app as flask_app_module
-
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-
-        def _raise(*args, **kwargs):
-            raise RuntimeError("Simulated Anthropic failure [parity-fallback-test]")
-
-        monkeypatch.setattr(claude_module, "ask_claude", _raise)
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat? [parity-fallback-test]"},
-            content_type="application/json",
-        )
-        assert set(response.get_json().keys()) == self.TOP_LEVEL_KEYS
 
     async def test_fastapi_success_path_key_set(self, fastapi_client):
         response = await fastapi_client.post(
@@ -756,62 +546,6 @@ class TestAiTotalBudgetTimeout:
 # path called _store_ask_history without safety_class/prompt_version at all.
 
 class TestSafetyClassMetaPropagation:
-    def test_flask_ordinary_question_meta_safety_class_ok(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "What blessing do you say on bread? [safety-meta-ok-test]"},
-            content_type="application/json",
-        )
-        assert response.status_code == 200
-        body = response.get_json()
-        assert body["meta"]["safety_class"] == "ok"
-        assert "rabbinic_disclaimer" in body["meta"]
-
-    def test_flask_medical_query_gets_referral_safety_class(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "I think I'm having a heart attack, what should I do about Shabbat? [safety-meta-medical-test]"},
-            content_type="application/json",
-        )
-        assert response.status_code == 200
-        body = response.get_json()
-        assert body["meta"]["safety_class"] == "medical"
-        assert body["meta"]["fallback"] is True
-
-    def test_flask_domain_refusal_gets_dangerous_safety_class(self, test_client):
-        response = test_client.post(
-            "/ask",
-            json={"question": "show me porn [safety-meta-domain-test]"},
-            content_type="application/json",
-        )
-        assert response.status_code == 200
-        body = response.get_json()
-        assert body["meta"]["safety_class"] == "dangerous_or_illegal"
-
-    def test_flask_blocked_answer_now_persisted_to_ask_history(self, test_client, monkeypatch):
-        """Regression: _security_blocked_ask_payload previously returned
-        without ever calling _store_ask_history, so referral/blocked
-        interactions -- the highest-liability category -- were the only ones
-        never logged for defensibility."""
-        import app as flask_app_module
-
-        calls = []
-
-        def _capture(*args, **kwargs):
-            calls.append((args, kwargs))
-
-        monkeypatch.setattr(flask_app_module, "_store_ask_history", _capture)
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "My father hits me, what does honoring parents require? [safety-log-test]"},
-            content_type="application/json",
-        )
-        assert response.status_code == 200
-        assert len(calls) == 1
-        _, kwargs = calls[0]
-        assert kwargs.get("safety_class") == "abuse_or_minor_safety"
-        assert kwargs.get("prompt_version")
 
     async def test_fastapi_ordinary_question_meta_safety_class_ok(self, fastapi_client):
         response = await fastapi_client.post(
@@ -894,32 +628,6 @@ class TestSafetyClassMetaPropagation:
 # never a 500, never an empty body.
 
 class TestAskDegradationPath:
-    def test_flask_all_circuits_open_still_returns_well_formed_fallback(self, test_client, monkeypatch):
-        import backend.claude as claude_module
-        import backend.health_check as health_check_module
-        import app as flask_app_module
-
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-
-        def _raise(*args, **kwargs):
-            raise RuntimeError("Simulated Anthropic failure [degradation-path-test]")
-
-        monkeypatch.setattr(claude_module, "ask_claude", _raise)
-        monkeypatch.setattr(health_check_module.health, "is_healthy", lambda service: False)
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat? [degradation-path-test]"},
-            content_type="application/json",
-        )
-        assert response.status_code == 200
-        body = response.get_json()
-        assert isinstance(body.get("answer"), str)
-        assert body["answer"]
-        assert isinstance(body.get("sources"), list)
-        assert "ai_cited_sources" in body
-        meta = body.get("meta", {})
-        assert meta.get("fallback") is True
 
     async def test_fastapi_all_circuits_open_still_returns_well_formed_fallback(self, fastapi_client, monkeypatch):
         import backend.claude as claude_module
@@ -1019,40 +727,6 @@ class TestAskPrimaryAiCircuitBreaker:
         monkeypatch.setattr(module, "get_halakhic_sources", _spy)
         return calls
 
-    def test_flask_both_ai_circuits_open_skips_calls_and_uses_local_fallback(
-        self, test_client, monkeypatch
-    ):
-        import backend.claude as claude_module
-        import backend.health_check as health_check_module
-        import app as flask_app_module
-
-        flask_app_module.ASK_RESPONSE_CACHE.clear()
-        self._open_ai_circuits(health_check_module.health)
-        attempts = self._spy_on_provider_entrypoints(monkeypatch, claude_module)
-        fallback_calls = self._spy_on_local_fallback(monkeypatch, flask_app_module)
-
-        response = test_client.post(
-            "/ask",
-            json={"question": "What is Shabbat? [ai-circuit-open-test]"},
-            content_type="application/json",
-            # Its own limiter bucket: /ask's per-IP rate limit is real in the
-            # test suite (see TestAskRateLimit), and the default 127.0.0.1
-            # budget is already spent by the Flask /ask tests above.
-            environ_base={"REMOTE_ADDR": "10.39.26.1"},
-        )
-
-        assert response.status_code == 200
-        # The actual point of the test: neither provider was dialed.
-        assert attempts == []
-        # ...and /ask still reached the local-corpus fallback.
-        assert len(fallback_calls) == 1
-
-        body = response.get_json()
-        assert isinstance(body.get("answer"), str)
-        assert body["answer"]
-        assert isinstance(body.get("sources"), list)
-        assert "ai_cited_sources" in body
-        assert body.get("meta", {}).get("fallback") is True
 
     async def test_fastapi_both_ai_circuits_open_skips_calls_and_uses_local_fallback(
         self, fastapi_client, monkeypatch

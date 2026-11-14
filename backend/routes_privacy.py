@@ -41,9 +41,8 @@ from app import (
     SUPABASE_ANSWER_FEEDBACK_TABLE,
     SUPABASE_CONVERSATIONS_TABLE,
     _get_supabase_client,
-    _capture_backend_error,
-    hash_user_id,
 )
+from backend.logging_setup import _capture_backend_error, hash_user_id
 
 routes_privacy = Blueprint("privacy", __name__)
 
