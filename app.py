@@ -1321,32 +1321,39 @@ def _parse_ip_geolocation_response(data):
     return None, None
 
 
+def _vercel_geo_lat_lon():
+    """(lat, lon) from the geo headers Vercel adds to every request, or
+    (None, None) when absent (local dev) or out of range."""
+    lat = _coerce_coordinate(request.headers.get("x-vercel-ip-latitude"), -90, 90)
+    lon = _coerce_coordinate(request.headers.get("x-vercel-ip-longitude"), -180, 180)
+    if lat is None or lon is None:
+        return None, None
+    return lat, lon
+
+
 def _lookup_lat_lon_from_ip():
-    """Best-effort IP-geolocation lookup for get_engine()'s location
-    fallback. Returns (lat, lon), or (None, None) on failure. Split out to
-    keep this loop out of that function's own complexity count
-    (SonarCloud python:S3776).
+    """Best-effort location for get_engine()'s fallback. Returns (lat, lon),
+    or (None, None) on failure.
+
+    Vercel's own geo headers come first, so production makes no third-party
+    call at all. Without them (local dev, or a request Vercel could not
+    place) the visitor's IP goes to ipwho.is over HTTPS. There used to be a
+    plain-HTTP ip-api.com provider first; it is gone so the IP never crosses
+    the network unencrypted.
     """
+    lat, lon = _vercel_geo_lat_lon()
+    if lat is not None:
+        return lat, lon
+
     client_ip = _extract_client_ip()
     ip_target = ""
     if client_ip and client_ip not in {"127.0.0.1", "::1"}:
         ip_target = client_ip
 
     try:
-        # ip-api.com is free, no key required, ~45 req/min limit.
-        # Use request IP from Vercel headers instead of server runtime IP.
-        # ip-api free tier only supports HTTP; ipwho.is is HTTPS fallback.
-        lookup_urls = [
-            f"http://ip-api.com/json/{ip_target}?fields=status,lat,lon,timezone,query",
-            f"https://ipwho.is/{ip_target}" if ip_target else "https://ipwho.is/",
-        ]
-
-        for lookup_url in lookup_urls:
-            r = requests.get(lookup_url, timeout=3)
-            data = r.json() if r.ok else {}
-            ip_lat, ip_lon = _parse_ip_geolocation_response(data)
-            if ip_lat is not None and ip_lon is not None:
-                return ip_lat, ip_lon
+        r = requests.get(f"https://ipwho.is/{ip_target}", timeout=3)
+        data = r.json() if r.ok else {}
+        return _parse_ip_geolocation_response(data)
     except Exception as e:
         app.logger.warning(f"Location IP lookup failed: {str(e)}")
 

@@ -380,73 +380,70 @@ class TestGetRequestUserId:
 # ─── IP-geolocation fallback behind get_engine() ────────────────────────────
 
 class TestLookupLatLonFromIp:
-    IP_API = "http://ip-api.com/json/"
+    """Vercel's own geo headers first (no third-party call at all), then the
+    HTTPS ipwho.is lookup. The old plain-HTTP ip-api.com provider is gone:
+    it sent the visitor's IP unencrypted to a processor the privacy page
+    does not list."""
+
     IPWHO = "https://ipwho.is/"
+    VERCEL_GEO = {"x-vercel-ip-latitude": "31.77", "x-vercel-ip-longitude": "35.21"}
 
     @responses_lib.activate
-    def test_falls_through_to_the_second_provider(self):
-        responses_lib.add(responses_lib.GET, self.IP_API, json={"status": "fail"}, status=200)
-        responses_lib.add(
-            responses_lib.GET, self.IPWHO, json={"success": True, "latitude": 51.5, "longitude": -0.12},
-        )
+    def test_vercel_geo_headers_answer_without_a_lookup(self):
+        with flask_app_module.app.test_request_context(headers=self.VERCEL_GEO):
+            assert flask_app_module._lookup_lat_lon_from_ip() == (31.77, 35.21)
 
+    @responses_lib.activate
+    def test_vercel_geo_headers_make_no_network_call(self):
+        with flask_app_module.app.test_request_context(headers=self.VERCEL_GEO):
+            flask_app_module._lookup_lat_lon_from_ip()
+        assert len(responses_lib.calls) == 0
+
+    @responses_lib.activate
+    def test_out_of_range_geo_headers_fall_back_to_the_lookup(self):
+        responses_lib.add(responses_lib.GET, self.IPWHO, json={"success": True, "latitude": 51.5, "longitude": -0.12})
+        headers = {"x-vercel-ip-latitude": "999", "x-vercel-ip-longitude": "35.21"}
+        with flask_app_module.app.test_request_context(headers=headers):
+            assert flask_app_module._lookup_lat_lon_from_ip() == (51.5, -0.12)
+
+    @responses_lib.activate
+    def test_without_geo_headers_ipwho_is_used(self):
+        responses_lib.add(responses_lib.GET, self.IPWHO, json={"success": True, "latitude": 51.5, "longitude": -0.12})
         with flask_app_module.app.test_request_context():
             assert flask_app_module._lookup_lat_lon_from_ip() == (51.5, -0.12)
 
-        assert len(responses_lib.calls) == 2
-
     @responses_lib.activate
-    def test_first_provider_success_stops_the_search(self):
-        responses_lib.add(
-            responses_lib.GET, self.IP_API, json={"status": "success", "lat": 31.77, "lon": 35.21},
-        )
-
+    def test_no_plain_http_provider_is_contacted(self):
+        responses_lib.add(responses_lib.GET, self.IPWHO, json={"success": False})
         with flask_app_module.app.test_request_context():
-            assert flask_app_module._lookup_lat_lon_from_ip() == (31.77, 35.21)
-
-        assert len(responses_lib.calls) == 1
+            flask_app_module._lookup_lat_lon_from_ip()
+        assert [c.request.url.split(":", 1)[0] for c in responses_lib.calls] == ["https"]
 
     @responses_lib.activate
     def test_a_non_ok_response_is_treated_as_no_data(self):
-        responses_lib.add(responses_lib.GET, self.IP_API, json={"status": "success", "lat": 1, "lon": 2}, status=503)
         responses_lib.add(responses_lib.GET, self.IPWHO, json={}, status=500)
-
         with flask_app_module.app.test_request_context():
             assert flask_app_module._lookup_lat_lon_from_ip() == (None, None)
 
-        assert len(responses_lib.calls) == 2
-
     @responses_lib.activate
     def test_a_network_error_gives_no_location_instead_of_raising(self):
-        responses_lib.add(responses_lib.GET, self.IP_API, body=requests.ConnectionError("offline"))
-
+        responses_lib.add(responses_lib.GET, self.IPWHO, body=requests.ConnectionError("offline"))
         with flask_app_module.app.test_request_context():
             assert flask_app_module._lookup_lat_lon_from_ip() == (None, None)
 
     @responses_lib.activate
     def test_a_real_client_ip_is_used_as_the_lookup_target(self):
-        responses_lib.add(responses_lib.GET, f"{self.IP_API}203.0.113.9", json={"status": "success", "lat": 1, "lon": 2})
-
+        responses_lib.add(responses_lib.GET, f"{self.IPWHO}203.0.113.9", json={"success": True, "latitude": 1, "longitude": 2})
         with flask_app_module.app.test_request_context(environ_base={"REMOTE_ADDR": "203.0.113.9"}):
             assert flask_app_module._lookup_lat_lon_from_ip() == (1.0, 2.0)
 
-        assert "/203.0.113.9" in responses_lib.calls[0].request.url
-
-
     @responses_lib.activate
     @pytest.mark.parametrize("loopback", ["127.0.0.1", "::1"])
-    def test_a_loopback_client_ip_is_never_sent_to_the_providers(self, loopback):
-        responses_lib.add(responses_lib.GET, self.IP_API, json={"status": "fail"})
+    def test_a_loopback_client_ip_is_never_sent_to_the_provider(self, loopback):
         responses_lib.add(responses_lib.GET, self.IPWHO, json={"success": False})
-
         with flask_app_module.app.test_request_context(environ_base={"REMOTE_ADDR": loopback}):
-            assert flask_app_module._lookup_lat_lon_from_ip() == (None, None)
-
-        urls = [call.request.url for call in responses_lib.calls]
-        assert urls == [
-            "http://ip-api.com/json/?fields=status,lat,lon,timezone,query",
-            "https://ipwho.is/",
-        ]
+            flask_app_module._lookup_lat_lon_from_ip()
+        assert [call.request.url for call in responses_lib.calls] == ["https://ipwho.is/"]
 
 
 class TestGetEngineLocationFallback:
