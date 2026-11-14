@@ -82,30 +82,39 @@ export function freePort() {
     });
 }
 
-export async function startServer(env, { attempts = 120, waitMs = 500 } = {}) {
-    const port = await freePort();
+/**
+ * Start uvicorn on a free port and resolve once it answers. Between picking
+ * the port and binding it, another process can take it (other local servers
+ * pick random ports too): uvicorn then exits, and a poll without a time limit
+ * could wait forever on the other listener. So each poll is time-boxed, and a
+ * server that exits before answering is started again on a fresh port.
+ */
+export async function startServer(env, { attempts = 120, waitMs = 500, fetchTimeoutMs = 5000, spawns = 3 } = {}) {
     const python = fs.existsSync(path.join(ROOT, ".venv/bin/python")) ? path.join(ROOT, ".venv/bin/python") : "python3";
-    const child = spawn(python, ["-m", "uvicorn", "asgi:app", "--port", String(port), "--log-level", "warning"], {
-        cwd: ROOT,
-        env: { ...process.env, RATELIMIT_ENABLED: "false", ...env },
-        stdio: "ignore",
-    });
-    const base = `http://127.0.0.1:${port}`;
-    const probe = async (attempt) => {
-        if (attempt >= attempts) {
-            child.kill("SIGTERM");
-            throw new Error("the server did not start");
+    for (let spawned = 1; ; spawned += 1) {
+        const port = await freePort();
+        const child = spawn(python, ["-m", "uvicorn", "asgi:app", "--port", String(port), "--log-level", "warning"], {
+            cwd: ROOT,
+            env: { ...process.env, RATELIMIT_ENABLED: "false", ...env },
+            stdio: "ignore",
+        });
+        let exited = false;
+        child.on("exit", () => {
+            exited = true;
+        });
+        const base = `http://127.0.0.1:${port}`;
+        for (let attempt = 0; attempt < attempts && !exited; attempt += 1) {
+            try {
+                const res = await fetch(`${base}/`, { signal: AbortSignal.timeout(fetchTimeoutMs) });
+                if (res.ok && !exited) return { base, stop: () => child.kill("SIGTERM") };
+            } catch {
+                /* not up yet, or the poll timed out */
+            }
+            await new Promise((r) => setTimeout(r, waitMs));
         }
-        try {
-            const res = await fetch(`${base}/`);
-            if (res.ok) return { base, stop: () => child.kill("SIGTERM") };
-        } catch {
-            /* not up yet */
-        }
-        await new Promise((r) => setTimeout(r, waitMs));
-        return probe(attempt + 1);
-    };
-    return probe(0);
+        child.kill("SIGTERM");
+        if (!exited || spawned >= spawns) throw new Error("the server did not start");
+    }
 }
 
 export function chromePath() {

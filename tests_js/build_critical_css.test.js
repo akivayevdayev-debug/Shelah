@@ -34,6 +34,14 @@ const body = JSON.stringify({
     source: process.env.SHELAH_SOURCE_ASSETS ?? null,
     ratelimit: process.env.RATELIMIT_ENABLED ?? null,
 });
+// FAKE_EXIT_ONCE=<file>: the first run exits at once (as uvicorn does when
+// its port was taken), later runs serve. FAKE_ALWAYS_EXIT=1: every run exits.
+const fs = require('node:fs');
+const once = process.env.FAKE_EXIT_ONCE;
+if (process.env.FAKE_ALWAYS_EXIT || (once && !fs.existsSync(once))) {
+    if (once) fs.writeFileSync(once, 'exited');
+    process.exit(1);
+}
 setTimeout(() => http.createServer((req, res) => res.end(body)).listen(port, '127.0.0.1'), 700);
 `;
 
@@ -394,6 +402,17 @@ test('startServer waits for the server to answer, passes it the flags, and stop 
     }
     await new Promise((resolve) => setTimeout(resolve, 300));
     await assert.rejects(fetch(`${base}/`));
+});
+
+test('startServer starts the server again on a new port when the first one exits', async () => {
+    const marker = path.join(ROOT, 'exited-once');
+    const { stop } = await mod.startServer({ FAKE_EXIT_ONCE: marker });
+    stop();
+    assert.ok(fs.existsSync(marker));
+});
+
+test('startServer gives up when every start exits', async () => {
+    await assert.rejects(mod.startServer({ FAKE_ALWAYS_EXIT: '1' }, { waitMs: 50 }), /the server did not start/);
 });
 
 test('startServer gives up when nothing answers', async () => {

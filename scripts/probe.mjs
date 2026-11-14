@@ -56,7 +56,9 @@ async function startServer() {
     const base = `http://localhost:${port}`;
     for (let i = 0; i < 60; i += 1) {
         try {
-            if ((await fetch(base + '/')).ok) return { base, stop: () => child.kill() };
+            // Time-boxed: if another process took the port, uvicorn exits and an
+            // unbounded fetch could hang on that listener.
+            if ((await fetch(base + '/', { signal: AbortSignal.timeout(5000) })).ok) return { base, stop: () => child.kill() };
         } catch { /* not up yet */ }
         await sleep(500);
     }
