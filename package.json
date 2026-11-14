@@ -14,6 +14,7 @@
     "build:assets": "node scripts/build_assets.mjs",
     "build:critical": "node scripts/build_critical_css.mjs",
     "check:assets": "node scripts/build_assets.mjs --check",
+    "deps:lock": "bash scripts/lock_deps.sh",
     "finish": "bash scripts/finish.sh",
     "finish:quick": "bash scripts/finish.sh --no-tests",
     "probe": "node scripts/probe.mjs",
