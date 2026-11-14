@@ -1083,86 +1083,6 @@ function hasParenthetical(text) {
             dismissEl(modal, { ...modalMotion(modal), onHidden: () => modal.classList.remove('flex') });
         }
 
-        // ─── COMMUNITY CUSTOMS MODAL ─────────────────────────────────────────
-        // Prefer raw_data.halacha_index (original list), fall back to Object.values(customs)
-        function customsHalachaIndex(data) {
-            if (data.raw_data && Array.isArray(data.raw_data.halacha_index)) return data.raw_data.halacha_index;
-            if (data.customs && typeof data.customs === 'object' && !Array.isArray(data.customs)) return Object.values(data.customs);
-            if (Array.isArray(data.halacha_index)) return data.halacha_index;
-            return [];
-        }
-
-        function customsItemHtml(item) {
-            const practices = Array.isArray(item.common_practices)
-                ? item.common_practices.map(p => `<li class="ml-4 list-disc text-slate-600">${escapeHtml(p)}</li>`).join('')
-                : '';
-            return `<div class="border border-slate-200 rounded-lg p-3 bg-white hover:bg-slate-50 transition">
-                            <p class="font-semibold text-navy text-sm" dir="auto">${escapeHtml(isHebrewMode() && item.topic_he ? String(item.topic_he).trim() : communityLabelText(item.topic))}${communityConfidenceChip(item.confidence)}</p>
-                            ${communityText(item, 'summary') ? `<p class="text-slate-600 text-sm mt-1" dir="auto">${escapeHtml(communityText(item, 'summary'))}</p>` : ''}
-                            ${communityRabbiNote(item.confidence)}
-                            ${practices ? `<ul class="text-sm mt-2 space-y-1" dir="auto">${practices}</ul>` : ''}
-                            ${communityVariantsHtml(item.variants)}
-                        </div>`;
-        }
-
-        // The customs grouped by category, each group a heading and its items.
-        function customsGroupsHtml(halachaIndex) {
-            const grouped = {};
-            halachaIndex.forEach(item => {
-                const cat = item.category || 'General';
-                if (!grouped[cat]) grouped[cat] = [];
-                grouped[cat].push(item);
-            });
-            return Object.entries(grouped).map(([cat, items]) => `<div class="mb-5">
-                        <p class="chapter-grid-group-label mb-2" dir="auto">${escapeHtml(communityLabelText(cat))}</p>
-                        <div class="space-y-3">${items.map(customsItemHtml).join('')}</div></div>`).join('');
-        }
-
-        const _customsCache = {};
-        async function openCustomsModal(communityName, displayLabel) {
-            // Reuse the libraryCategoryModal to display customs data
-            const modal = document.getElementById('libraryCategoryModal');
-            const titleEl = document.getElementById('libraryCategoryTitle');
-            const subtitleEl = document.getElementById('libraryCategorySubtitle');
-            const bodyEl = document.getElementById('libraryCategoryBody');
-            if (!modal || !titleEl || !bodyEl) return;
-
-            titleEl.textContent = displayLabel || communityName;
-            if (subtitleEl) subtitleEl.textContent = isHebrewMode() ? 'מנהגים ופסיקות' : 'Community customs and rulings';
-            bodyEl.setAttribute('aria-busy', 'true');
-            bodyEl.innerHTML = `
-                <div class="sk-prayer-row" aria-hidden="true"></div>
-                <div class="sk-prayer-row" aria-hidden="true" style="width:85%"></div>
-                <div class="sk-prayer-row" aria-hidden="true" style="width:70%"></div>`;
-            modal.classList.add('flex');
-            presentEl(modal, modalMotion(modal));
-
-            try {
-                let data = _customsCache[communityName];
-                if (!data) {
-                    const resp = await regionFetch(`/api/community/${encodeURIComponent(communityName)}`);
-                    if (!resp.ok) throw new Error('Not found');
-                    data = await resp.json();
-                    _customsCache[communityName] = data;
-                }
-
-                const halachaIndex = customsHalachaIndex(data);
-                if (!halachaIndex.length) {
-                    bodyEl.innerHTML = `<p class="text-slate-400 text-sm italic">${isHebrewMode() ? 'אין נתונים זמינים' : 'No customs data available'}</p>`;
-                    bodyEl.setAttribute('aria-busy', 'false');
-                    return;
-                }
-
-                const html = customsGroupsHtml(halachaIndex);
-
-                bodyEl.innerHTML = html;
-                bodyEl.setAttribute('aria-busy', 'false');
-            } catch {
-                bodyEl.innerHTML = `<p class="text-red-400 text-sm">${isHebrewMode() ? 'שגיאה בטעינת המנהגים' : 'Error loading customs data'}</p>`;
-                bodyEl.setAttribute('aria-busy', 'false');
-            }
-        }
-
         function normalizeChapterGridBookName(bookName) {
             const raw = String(bookName || '').replace(/\s+/g, ' ').trim();
             if (!raw) return '';
@@ -2245,6 +2165,7 @@ function hasParenthetical(text) {
                 formatWeeklyShabbatLabel,
                 translateShabbatWarning,
                 escapeHtml,
+                setHebrewDate: setLocationHebrewDate,
             };
         }
 

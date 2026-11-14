@@ -1,6 +1,6 @@
 /**
  * The library: the home categories, the chapter / section pickers, the Texts
- * menu tree, and the customs modal. Boots the real home page in jsdom
+ * menu tree. Boots the real home page in jsdom
  * (tests_js/helpers/shell_page.js).
  */
 'use strict';
@@ -29,18 +29,6 @@ function libraryRoutes(overrides = {}) {
         '/api/library/index': LIBRARY_INDEX,
         '/api/text/Genesis%201': GENESIS_1,
         '/api/communities/list': [{ name: 'Moroccan' }],
-        '/api/community/Moroccan': { name: 'Moroccan', customs: {} },
-        '/api/community/Sefardic': {
-            name: 'Sefardic',
-            raw_data: { halacha_index: [
-                { category: 'Shabbat', topic: 'Candles', topic_he: 'נרות', summary: 'Light early', summary_he: 'מדליקים מוקדם', common_practices: ['18 minutes', 'Varies'], confidence: 'disputed', variants: [{ subgroup: 'Turkish', practice: 'Later' }] },
-                { topic: 'Misc' },
-            ] },
-        },
-        '/api/community/Yemenite': { customs: { x: { category: 'Food', topic: 'Bread' } } },
-        '/api/community/Georgian': { halacha_index: [{ topic: 'Songs' }] },
-        '/api/community/Iraqi': { customs: [] },
-        '/api/community/Syrian': { status: 500, body: {} },
         ...overrides,
     };
 }
@@ -93,55 +81,6 @@ test("the Halakhah later authorities lead with the reader's community's poskim",
         assert.deepEqual(ashkenazi.slice(0, 2), ['Mishnah Berurah', 'Aruch HaShulchan']);
         assert.ok(ashkenazi.indexOf('Kaf HaChayim') > 2);
         assert.deepEqual(page.errors, []);
-    } finally {
-        page.close();
-    }
-});
-
-test('the customs modal groups a community\'s rulings by category', async () => {
-    const page = await open();
-    try {
-        await page.eval(`openCustomsModal('Sefardic', 'Sephardic')`);
-        await page.settle();
-        const text = page.$('#libraryCategoryBody').textContent;
-        assert.match(page.$('#libraryCategoryTitle').textContent, /Sephardic/);
-        assert.match(text, /Shabbat/);
-        assert.match(text, /Candles/);
-        assert.match(text, /Light early/);
-        assert.match(text, /18 minutes/);
-        assert.match(text, /Turkish:\s*Later/);
-        assert.match(text, /General/);
-        assert.equal(page.$('#libraryCategoryBody').getAttribute('aria-busy'), 'false');
-
-        page.eval(`displayedLanguage = 'he'`);
-        await page.eval(`openCustomsModal('Sefardic')`);
-        await page.settle();
-        assert.match(page.$('#libraryCategoryBody').textContent, /נרות/);
-    } finally {
-        page.close();
-    }
-});
-
-test('the customs modal reads whichever shape the community data has, and says when there is none', async () => {
-    const page = await open();
-    try {
-        for (const [name, expected] of [
-            ['Yemenite', /Bread/],
-            ['Georgian', /Songs/],
-            ['Iraqi', /No customs data available/],
-            ['Syrian', /Error loading customs data/],
-        ]) {
-            await page.eval(`openCustomsModal(${JSON.stringify(name)})`);
-            await page.settle();
-            assert.match(page.$('#libraryCategoryBody').textContent, expected, name);
-        }
-        page.eval(`displayedLanguage = 'he'`);
-        await page.eval(`openCustomsModal('Iraqi')`);
-        await page.settle();
-        assert.match(page.$('#libraryCategoryBody').textContent, /אין נתונים זמינים/);
-        await page.eval(`openCustomsModal('Syrian')`);
-        await page.settle();
-        assert.match(page.$('#libraryCategoryBody').textContent, /שגיאה בטעינת המנהגים/);
     } finally {
         page.close();
     }

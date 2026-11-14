@@ -1129,6 +1129,30 @@ test('a city search with nothing typed does nothing', async () => {
     }
 });
 
+test('a new city updates the header Hebrew date to that place', async () => {
+    let zmanimDeps = null;
+    const page = await openPage({
+        fetch: {
+            '/api/geocode': { results: [{ lat: '31.7683', lon: '35.2137', display_name: 'Jerusalem, Jerusalem District, Israel' }] },
+            '/set_location': { ok: true },
+        },
+        before: (window) => {
+            window.ShelahModules = {
+                fetchZmanimAPI: (_location, deps) => { zmanimDeps = deps; },
+                cacheZmanimLocation: () => {},
+                setCurrentZmanimLocationLabel: () => {},
+            };
+        },
+    });
+    try {
+        await citySearch(page, 'Jerusalem');
+        zmanimDeps?.setHebrewDate?.('5 Kislev 5787');
+        assert.equal(page.$('#hebrewDateDisplay').dataset.en, '5 Kislev 5787');
+    } finally {
+        page.close();
+    }
+});
+
 test('a city found sets the zmanim location for this visit and the session', async () => {
     const log = [];
     const page = await openPage({
