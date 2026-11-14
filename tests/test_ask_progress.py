@@ -529,6 +529,18 @@ class TestAskStreamRoute:
         assert any(line["type"] == "ping" for line in lines)
 
 
+    async def test_the_end_of_a_stream_is_logged_with_its_outcome(self, caplog):
+        # request_complete fires when the headers go out (~1 ms, 200), so the
+        # body's end needs its own line to show real latency and failures.
+        queue = asyncio.Queue()
+        queue.put_nowait({"type": "error", "status": 504, "detail": "late"})
+        with caplog.at_level("INFO", logger="shelah.request.asgi"):
+            async for _chunk in asgi._ask_stream_events({"type": "stage"}, queue, started=0.0):
+                pass
+        ends = [r for r in caplog.records if r.getMessage() == "ask_stream_complete"]
+        assert [(r.terminal, r.stream_status) for r in ends] == [("error", 504)]
+
+
 @pytest.mark.usefixtures("authed")  # fakes the Clerk token; its value is never read
 class TestConversationAskStream:
     """Drives POST /api/conversations/<id>/ask through the real view with the

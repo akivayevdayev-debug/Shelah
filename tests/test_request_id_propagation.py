@@ -138,6 +138,21 @@ class TestFastAPIRequestIdHeaderContract:
             "/api/async/health", headers={"X-Request-Id": "client-supplied-asgi-id"})
         assert response.headers.get("X-Request-Id") == "client-supplied-asgi-id"
 
+    @pytest.mark.parametrize("bad", ["x" * 65, "has space", "line\\nbreak", "<script>"])
+    async def test_a_malformed_client_id_is_replaced(self, fastapi_client, bad):
+        # The id lands in log lines, ai_usage_log rows and alerts; a client
+        # must not be able to write arbitrary text there.
+        response = await fastapi_client.get("/api/async/health", headers={"X-Request-Id": bad})
+        assert response.headers.get("X-Request-Id") != bad
+
+    async def test_a_replaced_id_also_reaches_the_mounted_flask_route(self, fastapi_client, json_capture):
+        response = await fastapi_client.get("/api/stack/health", headers={"X-Request-Id": "x" * 65})
+        flask_ids = [
+            rec.get("request_id") for rec in _formatted(json_capture)
+            if rec.get("logger") == "shelah.request.flask" and rec.get("http_path") == "/api/stack/health"
+        ]
+        assert flask_ids == [response.headers.get("X-Request-Id")]
+
     async def test_wsgi_mounted_flask_route_also_gets_an_id(self, fastapi_client):
         """Routes served by the WSGI-mounted Flask app (everything except
         the native FastAPI routes) go through both the ASGI middleware and

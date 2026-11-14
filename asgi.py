@@ -251,7 +251,9 @@ async def request_id_middleware(request: Request, call_next):
     incoming = request.headers.get("x-request-id")
     request_id = bind_request_id(incoming)
 
-    if not incoming:
+    # Missing or rejected (malformed): hand the generated id to the mounted
+    # Flask app too, so both layers log the same one.
+    if request_id != incoming:
         raw_headers = [
             (k, v) for k, v in (request.scope.get("headers") or [])
             if k.lower() != b"x-request-id"
@@ -1101,21 +1103,33 @@ _ASK_STREAM_KEEPALIVE_SECONDS = 10.0
 _ASK_STREAM_TASKS: set[asyncio.Task] = set()
 
 
-async def _ask_stream_events(first_event, queue):
+async def _ask_stream_events(first_event, queue, started=None):
     """NDJSON body for a streamed answer: `first_event`, then whatever the
     run publishes, ending at its terminal result/error event. A quiet queue
-    yields keep-alive lines instead of going silent."""
+    yields keep-alive lines instead of going silent.
+
+    The request_complete line for a stream is written when the headers go
+    out (status 200, a few ms), so this logs its own ask_stream_complete
+    line when the body ends: the real duration and how the stream ended
+    ("result", "error" with its status, or "disconnected")."""
     event = first_event
-    while True:
-        yield ask_progress.encode_event(event)
-        if event["type"] in ("result", "error"):
-            return
+    outcome = {"terminal": "disconnected"}
+    try:
         while True:
-            try:
-                event = await asyncio.wait_for(queue.get(), _ASK_STREAM_KEEPALIVE_SECONDS)
-                break
-            except asyncio.TimeoutError:
-                yield ask_progress.encode_event({"type": "ping"})
+            yield ask_progress.encode_event(event)
+            if event["type"] in ("result", "error"):
+                outcome = {"terminal": event["type"], "stream_status": event.get("status", 200)}
+                return
+            while True:
+                try:
+                    event = await asyncio.wait_for(queue.get(), _ASK_STREAM_KEEPALIVE_SECONDS)
+                    break
+                except asyncio.TimeoutError:
+                    yield ask_progress.encode_event({"type": "ping"})
+    finally:
+        if started is not None:
+            outcome["duration_ms"] = round((time.monotonic() - started) * 1000, 2)
+        _request_logger.info("ask_stream_complete", extra=outcome)
 
 
 async def _ask_async_progress_response(request, payload, authorization):
@@ -1130,6 +1144,7 @@ async def _ask_async_progress_response(request, payload, authorization):
     answer that never streamed anything (the prayer shortcut) comes back as
     plain JSON. After that point a failure is an in-stream `error` event.
     """
+    started = time.monotonic()
     queue: asyncio.Queue = asyncio.Queue()
     loop = asyncio.get_running_loop()
 
@@ -1165,7 +1180,7 @@ async def _ask_async_progress_response(request, payload, authorization):
     if first["type"] == "result":
         return first["payload"]
     return StreamingResponse(
-        _ask_stream_events(first, queue),
+        _ask_stream_events(first, queue, started),
         media_type=ask_progress.NDJSON_MIMETYPE,
         headers={"Cache-Control": "no-store, no-transform", "X-Accel-Buffering": "no"},
     )

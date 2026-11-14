@@ -16,6 +16,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import socket
 import time
 import uuid
@@ -275,12 +276,20 @@ def setup_logging(level: str | None = None) -> logging.Logger:
     return root
 
 
+_VALID_REQUEST_ID = re.compile(r"[A-Za-z0-9._:-]{1,64}")
+
+
 def bind_request_id(request_id: str | None = None) -> str:
     """Set request_id in the current context and return it.
 
-    If *request_id* is None or empty, a 12-hex-char UUID fragment is generated.
+    If *request_id* is None, empty or not a plain token (see
+    _VALID_REQUEST_ID), a 12-hex-char UUID fragment is generated. The id comes
+    from a client header and lands in log lines, ai_usage_log rows and alerts,
+    so arbitrary text is never accepted.
     """
-    rid = (request_id or "").strip() or uuid.uuid4().hex[:12]
+    rid = (request_id or "").strip()
+    if not _VALID_REQUEST_ID.fullmatch(rid):
+        rid = uuid.uuid4().hex[:12]
     _request_id_var.set(rid)
     return rid
 
