@@ -44,6 +44,7 @@ from backend.cache_policy import classify_cache_tier
 from backend.cost_meter import check_user_budget_and_enforce, is_global_cost_breaker_tripped
 from backend.rate_limit import RateLimitMiddleware
 from backend import turnstile as _turnstile
+from backend.cost_gates import client_key_for
 from backend import startup_timing
 # INIT-ORDERING (load-bearing, do not regress): this import
 # is what triggers backend/logging_setup.py's module-level sentry_sdk.init()
@@ -1303,7 +1304,7 @@ async def _ask_async_impl(
     _enforce_ask_async_auth_required(user_id)
 
     bind_user_id(user_id or "")
-    bind_client_key("" if user_id else f"ip:{client_ip}")
+    bind_client_key(client_key_for(user_id, client_ip))
 
     await _enforce_ask_async_turnstile_gate(user_id, client_ip, payload.turnstile_token)
     guest = await _enforce_ask_async_guest_cap(user_id, question, payload.history_ids)

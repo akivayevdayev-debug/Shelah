@@ -21,6 +21,7 @@ _StoreUnavailable contract itself.
 from __future__ import annotations
 
 from backend import rate_limit
+from backend.ip_hash import keyed_hash
 
 
 class _AlwaysUnavailableStore(rate_limit._RateLimitStore):
@@ -137,7 +138,7 @@ class TestPrivacySensitiveRoutesGetAStricterPolicyThanCheap:
         for path in ("/api/user/delete-account", "/api/user/data-export"):
             route_class = rate_limit.classify_route(path)
             keyed = rate_limit._build_key(route_class, "203.0.113.90", "user-account-key-test")
-            assert keyed == f"rl:{route_class}:user:user-account-key-test"
+            assert keyed == f"rl:{route_class}:user:{keyed_hash('user-account-key-test')}"
 
     def test_clerk_webhook_stays_ip_keyed_even_if_a_user_id_were_present(self):
         """/api/webhooks/clerk has no end-user identity to key on -- it's
@@ -145,7 +146,7 @@ class TestPrivacySensitiveRoutesGetAStricterPolicyThanCheap:
         _build_key is passed for user_id."""
         route_class = rate_limit.classify_route("/api/webhooks/clerk")
         keyed = rate_limit._build_key(route_class, "203.0.113.91", "should-be-ignored")
-        assert keyed == f"rl:{route_class}:ip:203.0.113.91"
+        assert keyed == f"rl:{route_class}:ip:{keyed_hash('203.0.113.91')}"
 
     async def test_delete_account_returns_429_once_its_stricter_ceiling_is_exceeded(self, fastapi_client):
         """End-to-end through RateLimitMiddleware: unauthenticated requests
@@ -215,7 +216,7 @@ class TestConversationAskClassifiesAsLlm:
     def test_conversation_ask_is_keyed_by_clerk_user_id(self):
         route_class = rate_limit.classify_route("/api/conversations/abc/ask")
         keyed = rate_limit._build_key(route_class, "203.0.113.94", "user-conv-key-test")
-        assert keyed == "rl:llm:user:user-conv-key-test"
+        assert keyed == f"rl:llm:user:{keyed_hash('user-conv-key-test')}"
 
     async def test_conversation_ask_fails_closed_when_store_is_unavailable(self, fastapi_client, monkeypatch):
         """End-to-end through RateLimitMiddleware: a store outage rejects the

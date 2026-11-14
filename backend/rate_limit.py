@@ -37,6 +37,7 @@ from starlette.responses import JSONResponse
 
 from backend.auth import extract_user_id_from_bearer_value
 from backend.helpers import _resolve_client_ip
+from backend.ip_hash import keyed_hash
 from backend.logging_setup import _capture_backend_error, log_mitigation
 
 logger = logging.getLogger(__name__)
@@ -484,8 +485,8 @@ def _build_key(route_class: str, client_ip: str, user_id: str | None) -> str:
         # audit. "webhook" (/api/webhooks/clerk) deliberately stays IP-keyed
         # -- see _ROUTE_CLASSES -- there is no caller identity to key on,
         # it's Clerk calling us, not an end user.
-        return f"rl:{route_class}:user:{user_id}"
-    return f"rl:{route_class}:ip:{client_ip}"
+        return f"rl:{route_class}:user:{keyed_hash(user_id)}"
+    return f"rl:{route_class}:ip:{keyed_hash(client_ip)}"
 
 
 def _hash_key(key: str) -> str:

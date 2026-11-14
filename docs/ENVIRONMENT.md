@@ -9,6 +9,7 @@ No working default in code; the app misbehaves (or a whole feature silently no-o
 | Variable | Description |
 |---|---|
 | `FLASK_SECRET_KEY` | Random secret for session signing. Generate one with `python3 -c "import secrets; print(secrets.token_hex(32))"` |
+| `IP_HASH_SECRET` | Optional. Key for hashing caller IPs and account ids in rate-limit, Turnstile and budget keys (`backend/ip_hash.py`). Falls back to `FLASK_SECRET_KEY`. Changing either resets current rate-limit and anonymous-budget counters. |
 | `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` | At least one AI provider. Gemini is checked first, and Anthropic is the fallback |
 | `CLERK_PUBLISHABLE_KEY` | Clerk Dashboard → API Keys (accepts `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` as a fallback name) |
 | `CLERK_JWT_ISSUER` | Clerk Dashboard → API Keys → "Frontend API URL", e.g. `https://xxx.clerk.accounts.dev` |

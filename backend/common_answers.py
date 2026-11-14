@@ -48,6 +48,7 @@ import unicodedata
 from typing import Any
 
 from backend.cache import TTLCache
+from backend.ip_hash import keyed_hash
 
 TTL_SECONDS = 3 * 24 * 3600
 LIST_AFTER = 3          # distinct readers before a question is listed for the panel
@@ -314,7 +315,7 @@ def thread_worth_keeping(result: Any, structured: Any, cited: Any, ctx: Any) -> 
 def asker_id(user_id: str | None, client_ip: str | None) -> str:
     """Who asked, without keeping who: a hash of the account or the address."""
     raw = f"user:{user_id}" if user_id else f"ip:{client_ip or ''}"
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+    return keyed_hash(raw, 16)
 
 
 def client_config() -> dict[str, Any]:

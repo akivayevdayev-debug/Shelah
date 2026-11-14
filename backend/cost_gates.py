@@ -21,6 +21,7 @@ from typing import Any
 
 from backend import claude
 from backend.cost_meter import check_user_budget_and_enforce, is_global_cost_breaker_tripped
+from backend.ip_hash import keyed_hash
 from backend.logging_setup import (
     bind_budget_reservation,
     bind_client_key,
@@ -42,7 +43,7 @@ def client_key_for(user_id: str | None, client_ip: str) -> str:
     or when no client IP could be resolved (nothing to key by)."""
     if user_id or not client_ip:
         return ""
-    return f"ip:{client_ip}"
+    return f"ip:{keyed_hash(client_ip)}"
 
 
 async def _evaluate_cost_gates(user_id: str | None, client_ip: str) -> dict[str, Any]:

@@ -14,6 +14,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+from backend.ip_hash import keyed_hash
 from backend.logging_setup import (
     _capture_backend_error,
     bind_budget_reservation,
@@ -650,7 +651,7 @@ async def check_user_budget_and_enforce(user_id: str | None, client_ip: str = ""
     if user_id:
         key_column, key_value = "user_id", user_id
     elif client_ip:
-        key_column, key_value = "client_key", f"ip:{client_ip}"
+        key_column, key_value = "client_key", f"ip:{keyed_hash(client_ip)}"
     else:
         return {"allowed": True, "total_usd": 0.0, "threshold_usd": threshold}
 

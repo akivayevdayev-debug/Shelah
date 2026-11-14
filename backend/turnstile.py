@@ -27,9 +27,10 @@ codebase.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import os
+
+from backend.ip_hash import keyed_hash
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ def hash_ip(client_ip: str) -> str:
     this instead of re-implementing the same truncated-sha256 scheme
     backend/rate_limit.py's _hash_key() already uses for the same purpose --
     never log a raw IP or Clerk sub."""
-    return hashlib.sha256((client_ip or "").encode()).hexdigest()[:16]
+    return keyed_hash(client_ip, 16)
 
 
 async def is_challenge_required(client_ip: str) -> bool:

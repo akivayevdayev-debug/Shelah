@@ -17,6 +17,7 @@ from __future__ import annotations
 import pytest
 
 from backend import cost_meter
+from backend.ip_hash import keyed_hash
 
 
 # ─── estimate_cost_usd ─────────────────────────────────────────────────────
@@ -560,7 +561,7 @@ async def test_check_user_budget_falls_back_to_ip_key_when_anonymous(monkeypatch
 
     result = await cost_meter.check_user_budget_and_enforce(None, "1.2.3.4")
 
-    assert calls == [("client_key", "ip:1.2.3.4")]
+    assert calls == [("client_key", f"ip:{keyed_hash('1.2.3.4')}")]
     assert result["allowed"] is True
 
 

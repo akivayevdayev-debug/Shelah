@@ -20,6 +20,7 @@ import backend.ask_pipeline as ask_pipeline_module
 import backend.claude as claude_module
 from backend import cost_gates
 from backend import logging_setup
+from backend.ip_hash import keyed_hash
 
 CLIENT_IP = "203.0.113.7"
 USER_ID = "user_cost_gates_test"
@@ -116,7 +117,7 @@ def test_signed_out_spend_is_budgeted_and_attributed_by_client_ip(
     assert response.status_code == 200
     assert gates.budget_calls == [(None, CLIENT_IP)]
     assert model_calls == [{
-        "user_id": "", "client_key": f"ip:{CLIENT_IP}", "reservation_id": "res-flask-ask",
+        "user_id": "", "client_key": f"ip:{keyed_hash(CLIENT_IP)}", "reservation_id": "res-flask-ask",
     }]
 
 
@@ -219,7 +220,7 @@ def test_prayer_shortcut_runs_no_cost_gate(test_client, gates, model_calls, call
     ("user_id", "client_ip", "expected"),
     [
         (USER_ID, CLIENT_IP, ""),
-        (None, CLIENT_IP, f"ip:{CLIENT_IP}"),
+        (None, CLIENT_IP, f"ip:{keyed_hash(CLIENT_IP)}"),
         ("", "", ""),
     ],
     ids=["signed-in", "signed-out", "signed-out-no-ip"],
@@ -246,7 +247,7 @@ def test_bind_then_clear_cost_attribution():
     cost_gates.bind_cost_attribution(None, CLIENT_IP, "res-1")
     assert (
         logging_setup.get_user_id(), logging_setup.get_client_key(), logging_setup.get_budget_reservation()
-    ) == ("", f"ip:{CLIENT_IP}", "res-1")
+    ) == ("", f"ip:{keyed_hash(CLIENT_IP)}", "res-1")
 
     cost_gates.clear_cost_attribution()
     assert (
