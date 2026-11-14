@@ -255,9 +255,25 @@ class TestFastApiAsk:
         assert "set-cookie" not in response.headers
         assert pipeline == [device.owner_for_token(TOKEN)]
 
-    async def test_an_authorization_header_means_no_device(self, fastapi_client, pipeline):
-        response = await fastapi_client.post(
+    async def test_a_verified_account_means_no_device(self, fastapi_client, pipeline, monkeypatch):
+        monkeypatch.setattr(asgi, "extract_user_id_from_bearer_value", lambda _value: "user_1")
+        await fastapi_client.post(
             "/ask", json={"question": "q"},
             headers={"X-Forwarded-For": "203.0.113.73", "Authorization": "Bearer a.b.c"})
-        assert "set-cookie" not in response.headers
         assert pipeline == [None]
+
+    async def test_a_verified_account_gets_no_device_cookie(self, fastapi_client, pipeline, monkeypatch):
+        monkeypatch.setattr(asgi, "extract_user_id_from_bearer_value", lambda _value: "user_1")
+        response = await fastapi_client.post(
+            "/ask", json={"question": "q"},
+            headers={"X-Forwarded-For": "203.0.113.74", "Authorization": "Bearer a.b.c"})
+        assert "set-cookie" not in response.headers
+
+    async def test_an_unverifiable_token_is_a_guest_on_this_device(self, fastapi_client, pipeline):
+        # A junk or expired bearer must not skip the device binding: without
+        # an owner the guest conversation cap has nothing to count against.
+        response = await fastapi_client.post(
+            "/ask", json={"question": "q"},
+            headers={"X-Forwarded-For": "203.0.113.75", "Authorization": "Bearer junk",
+                     "Cookie": f"{device.DEVICE_COOKIE}={TOKEN}"})
+        assert pipeline == [device.owner_for_token(TOKEN)], response.status_code

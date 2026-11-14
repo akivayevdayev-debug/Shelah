@@ -1164,10 +1164,14 @@ async def ask_async(
     response: Response,
     authorization: Annotated[str | None, Header()] = None,
 ) -> dict[str, Any] | StreamingResponse:
-    # A signed-out visitor (no Authorization header) has the answer saved under
-    # their device, so its /answer/<id> link opens in this browser
-    # (backend/device_identity.py). The first such answer sets the cookie.
-    binding = None if (authorization or "").strip() else bind_device(request.cookies)
+    # A signed-out visitor has the answer saved under their device, so its
+    # /answer/<id> link opens in this browser (backend/device_identity.py).
+    # The first such answer sets the cookie. "Signed out" means no VERIFIED
+    # account: a junk or expired bearer is a guest too, otherwise it would
+    # skip the guest conversation cap, which counts per device.
+    signed_in = bool((authorization or "").strip()) and bool(
+        await asyncio.to_thread(extract_user_id_from_bearer_value, authorization))
+    binding = None if signed_in else bind_device(request.cookies)
     try:
         if ask_progress.wants_stream(request.headers.get("accept")):
             result = await _ask_async_progress_response(request, payload, authorization)
