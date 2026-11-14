@@ -601,7 +601,7 @@ Export a chapter's lines as a file. **Optional** auth. Class `heavy`.
 
 ### `GET /api/diagnostics/sefaria`
 
-A live availability probe of the upstream Sefaria API (the v3 and v2 endpoints, plus any cached block information). `200` when Sefaria is available overall, `503` otherwise.
+A live availability probe of the upstream Sefaria API (the v3 and v2 endpoints, plus any cached block information). Each hit makes two live Sefaria calls. **Clerk, operator only**: the caller's `sub` must be in `ADMIN_USER_IDS`, the same gate as `/api/devtools/reliability`. `401` without a bearer token, `403` for a signed-in non-admin. `200` when Sefaria is available overall, `503` otherwise.
 
 ---
 

@@ -32,9 +32,21 @@ import re
 import pytest
 import responses as responses_lib
 
+import backend.auth as auth_module
+
 
 DICTIONARYAPI_URL_RE = re.compile(r"https://api\.dictionaryapi\.dev/.*")
 SEFARIA_LEXICON_URL_RE = re.compile(r"https://www\.sefaria\.org/api/words/.*")
+
+SEFARIA_ADMIN_ID = "user_test_admin_sefaria"
+SEFARIA_AUTH_HEADERS = {"Authorization": "Bearer faketoken.faketoken.faketoken"}
+
+
+def _sign_in_as(monkeypatch, user_id):
+    monkeypatch.setattr(
+        auth_module, "_verify_clerk_token",
+        lambda token: {"sub": user_id, "sid": "sess_fake"},
+    )
 
 
 class TestLibraryIndex:
@@ -193,9 +205,29 @@ class TestLibraryPopular:
         assert all("ref" in item for item in body["Tanakh"])
 
 
+class TestSefariaDiagnosticsAuth:
+    """GET /api/diagnostics/sefaria makes two live Sefaria calls per hit, so it
+    is operator-only like the other admin diagnostics (require_admin)."""
+
+    def test_anonymous_request_returns_401(self, test_client):
+        response = test_client.get("/api/diagnostics/sefaria", headers=SEFARIA_AUTH_HEADERS)
+        assert response.status_code == 401
+
+    def test_signed_in_non_admin_returns_403(self, test_client, monkeypatch):
+        monkeypatch.setenv("ADMIN_USER_IDS", "user_someone_else")
+        _sign_in_as(monkeypatch, SEFARIA_ADMIN_ID)
+        response = test_client.get("/api/diagnostics/sefaria", headers=SEFARIA_AUTH_HEADERS)
+        assert response.status_code == 403
+
+
 class TestSefariaDiagnostics:
+    @pytest.fixture(autouse=True)
+    def _signed_in_admin(self, monkeypatch):
+        monkeypatch.setenv("ADMIN_USER_IDS", SEFARIA_ADMIN_ID)
+        _sign_in_as(monkeypatch, SEFARIA_ADMIN_ID)
+
     def test_available_returns_200(self, test_client):
-        response = test_client.get("/api/diagnostics/sefaria")
+        response = test_client.get("/api/diagnostics/sefaria", headers=SEFARIA_AUTH_HEADERS)
         assert response.status_code == 200
         body = response.get_json()
         assert isinstance(body, dict)
@@ -212,7 +244,7 @@ class TestSefariaDiagnostics:
             status=500,
             json={"error": "internal error"},
         )
-        response = test_client.get("/api/diagnostics/sefaria")
+        response = test_client.get("/api/diagnostics/sefaria", headers=SEFARIA_AUTH_HEADERS)
         assert response.status_code == 503
         body = response.get_json()
         assert body["overall_available"] is False
@@ -223,7 +255,7 @@ class TestSefariaDiagnostics:
             re.compile(r"https://mock\.sefaria\.org/api/.*"),
             body=Exception("connection refused"),
         )
-        response = test_client.get("/api/diagnostics/sefaria")
+        response = test_client.get("/api/diagnostics/sefaria", headers=SEFARIA_AUTH_HEADERS)
         # Must not propagate a raw 500 — either 503 (declared unavailable) or 200.
         assert response.status_code in (200, 503)
         body = response.get_json()

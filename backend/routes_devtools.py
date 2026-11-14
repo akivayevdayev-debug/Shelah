@@ -12,13 +12,12 @@ import hmac
 import json
 import os
 import time
-from functools import wraps
 from typing import Any
 
 from flask import Blueprint, jsonify, make_response, render_template, request, g
 
 from backend import cost_meter, rate_limit
-from backend.auth import CLERK_ENFORCE_AUTH, maybe_require_clerk_auth, require_clerk_auth
+from backend.auth import CLERK_ENFORCE_AUTH, maybe_require_clerk_auth, require_admin, require_clerk_auth
 from backend.helpers import _is_same_origin_request, _json_object_body
 
 from app import (
@@ -45,29 +44,6 @@ from app import (
 )
 
 routes_devtools = Blueprint("devtools", __name__)
-
-
-def _is_admin_user(user_id):
-    """True only for a Clerk user id listed in ADMIN_USER_IDS (comma-separated).
-    Fails closed: an unset or empty list means nobody is an admin."""
-    allowed = {u.strip() for u in os.environ.get("ADMIN_USER_IDS", "").split(",") if u.strip()}
-    return bool(user_id) and user_id in allowed
-
-
-def require_admin(route_fn):
-    """Operator-only: place directly under ``@require_clerk_auth``. Any signed-in
-    account passes that decorator, so diagnostics that expose configuration or
-    other users' data also need the caller's ``sub`` in ADMIN_USER_IDS (audit
-    F1/F7)."""
-
-    @wraps(route_fn)
-    def wrapped(*args, **kwargs):
-        claims = getattr(g, "clerk_claims", None) or {}
-        if not _is_admin_user(claims.get("sub")):
-            return jsonify({"error": "Forbidden"}), 403
-        return route_fn(*args, **kwargs)
-
-    return wrapped
 
 
 @routes_devtools.route("/api/stack/health")

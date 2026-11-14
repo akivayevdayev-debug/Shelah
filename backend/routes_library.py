@@ -29,7 +29,7 @@ from backend.helpers import (
     _collect_word_meaning_alternatives,
     _is_machine_translated_source,
 )
-from backend.auth import maybe_require_clerk_auth
+from backend.auth import maybe_require_clerk_auth, require_admin, require_clerk_auth
 
 routes_library = Blueprint("library", __name__)
 
@@ -478,6 +478,8 @@ def _requested_versions():
 
 
 @routes_library.route("/api/diagnostics/sefaria")
+@require_clerk_auth
+@require_admin
 def sefaria_diagnostics():
     """Real-time availability probe for the upstream Sefaria API.
     Returns status for both the v3 and v2 endpoints, plus cached block info.
