@@ -121,10 +121,10 @@ def _folded(text: str) -> str:
 
 
 def _timezone(lat: float, lon: float) -> str:
-    from backend.zmanim_engine import _get_timezone_finder
+    from backend.zmanim_engine import get_timezone_finder
 
     try:
-        return _get_timezone_finder().timezone_at(lng=lon, lat=lat) or ""
+        return get_timezone_finder().timezone_at(lng=lon, lat=lat) or ""
     except Exception:  # noqa: BLE001 - a place without a zone still sets zmanim (the engine resolves it)
         return ""
 

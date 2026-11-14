@@ -66,10 +66,15 @@ bills Active CPU on every cold start. Override explicitly with
 environment. CI does not set `VERCEL`/`FLASK_ENV=production`, so the
 validation still runs there by default.
 
-`backend/zmanim_engine.py`'s `TimezoneFinder()` instance is now a lazy
-singleton (`_get_timezone_finder()`). It loads a spatial boundary index on
-construction, so building it eagerly at import time billed every cold start
-even for requests that never resolve a timezone.
+Start-up skips the heavy libraries that only some requests use:
+timezonefinder with numpy (`backend/zmanim_engine.py`'s
+`get_timezone_finder()`), PyJWT with cryptography (`backend/auth.py`), and the
+AI SDKs (`backend/claude.py`). Each loads the first time something needs it.
+On Vercel, `backend/preload.py` loads all of them in a background thread right
+after a new instance answers its first request, so the visitor's next calls
+find them ready. It makes no requests. `PRELOAD_LIBRARIES=1` turns it on
+elsewhere; `tests/test_preload.py` fails if `import api.index` starts loading
+one of them again.
 
 ## Observability
 

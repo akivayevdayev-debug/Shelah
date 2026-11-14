@@ -12,12 +12,12 @@ This module is the core time/calendar backend used by /api/zmanim and
 """
 
 import logging
+import threading
 from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 from pyluach import dates as heb_dates
 from zmanim.zmanim_calendar import ZmanimCalendar
 from zmanim.util.geo_location import GeoLocation
-from timezonefinder import TimezoneFinder
 import requests
 from backend.calendar_service import calendar_engine
 from backend.cache import TTLCache
@@ -27,6 +27,7 @@ from backend.health_check import health
 logger = logging.getLogger(__name__)
 
 _tf = None
+_tf_lock = threading.Lock()
 _HTTP = requests.Session()
 # GeoLocation requires a name; it is only a label inside the zmanim library.
 _LOCATION_NAME = "User Location"
@@ -54,13 +55,19 @@ _MINOR_FAST_HOLIDAYS = frozenset({'Tzom Gedalia', '10 of Teves', 'Taanis Esther'
 _MAJOR_FAST_HOLIDAYS = frozenset({'Yom Kippur', '9 of Av'})
 
 
-def _get_timezone_finder():
-    """Lazy singleton: TimezoneFinder() loads a spatial boundary index on
-    construction, so building it eagerly at import time bills every cold
-    start even for requests that never resolve a timezone."""
+def get_timezone_finder():
+    """The shared TimezoneFinder, built on first use.
+
+    timezonefinder pulls in numpy and cffi and loads a boundary index (about
+    0.4 s of a cold start), so neither the import nor the build happens until
+    a request resolves a timezone or backend.preload warms it. The lock keeps
+    the preload thread and a request from building it twice."""
     global _tf
     if _tf is None:
-        _tf = TimezoneFinder()
+        with _tf_lock:
+            if _tf is None:
+                from timezonefinder import TimezoneFinder
+                _tf = TimezoneFinder()
     return _tf
 
 
@@ -81,7 +88,7 @@ def _resolve_timezone(lat, lon, given_tz=None):
     tz_str = given_tz
     if not tz_str:
         try:
-            tz_str = _get_timezone_finder().timezone_at(lng=float(lon), lat=float(lat))
+            tz_str = get_timezone_finder().timezone_at(lng=float(lon), lat=float(lat))
         except Exception:
             pass
     if not tz_str:

@@ -45,7 +45,7 @@ from backend.cost_meter import check_user_budget_and_enforce, is_global_cost_bre
 from backend.rate_limit import RateLimitMiddleware
 from backend import turnstile as _turnstile
 from backend.cost_gates import client_key_for
-from backend import startup_timing
+from backend import preload, startup_timing
 # INIT-ORDERING (load-bearing, do not regress): this import
 # is what triggers backend/logging_setup.py's module-level sentry_sdk.init()
 # call (or confirms it already ran via an earlier import in this file, e.g.
@@ -268,6 +268,7 @@ async def request_id_middleware(request: Request, call_next):
     try:
         response = await call_next(request)
         status_code = response.status_code
+        preload.start_once()
         # Security headers (audit P2): this middleware wraps every request
         # through fastapi_app, including native routes like /ask that never
         # reach the WSGIMiddleware-mounted Flask app below and therefore

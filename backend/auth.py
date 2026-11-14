@@ -18,7 +18,6 @@ directly — identical logic, zero coupling to ``app.py``.
 import os
 from functools import wraps
 
-import jwt
 from flask import g, has_request_context, jsonify, request
 
 from backend.logging_setup import _capture_backend_error
@@ -39,6 +38,8 @@ def _get_clerk_jwks_client():
     if not issuer:
         return None
     if _clerk_jwks_client is None:
+        import jwt  # PyJWT pulls in cryptography (~0.2 s); only signed-in calls need it
+
         jwks_url = f"{issuer}/.well-known/jwks.json"
         _clerk_jwks_client = jwt.PyJWKClient(jwks_url)
     return _clerk_jwks_client
@@ -65,6 +66,8 @@ def _verify_clerk_token(token):
         decode_kwargs["audience"] = audience
     else:
         decode_kwargs["options"] = {"verify_aud": False}
+
+    import jwt
 
     return jwt.decode(token, signing_key, **decode_kwargs)
 

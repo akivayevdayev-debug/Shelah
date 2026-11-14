@@ -18,6 +18,7 @@ import logging
 import os
 import re
 import socket
+import sys
 import time
 import uuid
 from collections import OrderedDict
@@ -31,22 +32,18 @@ try:
 except Exception:  # pragma: no cover
     sentry_sdk = None
 
-try:
-    import httpx
-except Exception:  # pragma: no cover
-    httpx = None
 
-# The Anthropic SDK (1.x and later) runs on httpx2, a fork of httpx, so its
-# connection errors are httpx2 classes rather than httpx ones.
-try:
-    import httpx2
-except Exception:  # pragma: no cover
-    httpx2 = None
+def _loaded_module(name: str):
+    """A library only if something already imported it, else None.
 
-try:
-    import jwt as _jwt
-except Exception:  # pragma: no cover
-    _jwt = None
+    The error classifiers below test exceptions against PyJWT, httpx and
+    httpx2 classes. An exception from one of those libraries means it is
+    already loaded, so looking it up here instead of importing it keeps
+    PyJWT (and cryptography, about 0.2 s) out of every cold start. The
+    Anthropic SDK (1.x and later) runs on httpx2, a fork of httpx, so its
+    connection errors are httpx2 classes rather than httpx ones."""
+    return sys.modules.get(name)
+
 
 _request_id_var: ContextVar[str] = ContextVar('request_id', default='')
 _user_id_var: ContextVar[str] = ContextVar('user_id', default='')
@@ -578,10 +575,11 @@ def _is_unusable_bearer_token(error) -> bool:
     still alerts: a wrong audience or issuer, a missing claim, a signature that
     does not match (InvalidSignatureError is a DecodeError, so it is excluded
     by name), an unreachable JWKS."""
-    if _jwt is None or isinstance(error, _jwt.InvalidSignatureError):
+    jwt = _loaded_module("jwt")
+    if jwt is None or isinstance(error, jwt.InvalidSignatureError):
         return False
     return isinstance(error, (
-        _jwt.DecodeError, _jwt.ExpiredSignatureError, _jwt.ImmatureSignatureError))
+        jwt.DecodeError, jwt.ExpiredSignatureError, jwt.ImmatureSignatureError))
 
 
 def _in_production_runtime() -> bool:
@@ -601,7 +599,7 @@ def _is_local_network_outage(error) -> bool:
     if _in_production_runtime():
         return False
     unreachable = (socket.gaierror,)
-    for lib in (httpx, httpx2):
+    for lib in map(_loaded_module, ("httpx", "httpx2")):
         if lib is not None:
             unreachable += (lib.ConnectError, lib.ConnectTimeout)
     seen = set()

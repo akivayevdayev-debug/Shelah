@@ -15,6 +15,7 @@ enforcement), not the `jwt` library's own crypto correctness.
 
 from __future__ import annotations
 
+import jwt
 import pytest
 from flask import Flask, g
 
@@ -85,7 +86,7 @@ class TestGetClerkJwksClient:
             def __init__(self, url):
                 created.append(url)
 
-        monkeypatch.setattr(auth.jwt, "PyJWKClient", FakeJWKClient)
+        monkeypatch.setattr(jwt, "PyJWKClient", FakeJWKClient)
         client1 = auth._get_clerk_jwks_client()
         client2 = auth._get_clerk_jwks_client()
         assert client1 is client2
@@ -100,7 +101,7 @@ class TestGetClerkJwksClient:
             def __init__(self, url):
                 created.append(url)
 
-        monkeypatch.setattr(auth.jwt, "PyJWKClient", FakeJWKClient)
+        monkeypatch.setattr(jwt, "PyJWKClient", FakeJWKClient)
         auth._get_clerk_jwks_client()
         assert created[0] == "https://clerk.example.com/.well-known/jwks.json"
 
@@ -146,7 +147,7 @@ class TestVerifyClerkToken:
             decode_calls.update(kwargs)
             return {"sub": "user-123"}
 
-        monkeypatch.setattr(auth.jwt, "decode", fake_decode)
+        monkeypatch.setattr(jwt, "decode", fake_decode)
         result = auth._verify_clerk_token("valid-token")
         assert result == {"sub": "user-123"}
         assert decode_calls["issuer"] == "https://clerk.example.com"
@@ -172,7 +173,7 @@ class TestVerifyClerkToken:
             decode_calls.update(kwargs)
             return {"sub": "user-123"}
 
-        monkeypatch.setattr(auth.jwt, "decode", fake_decode)
+        monkeypatch.setattr(jwt, "decode", fake_decode)
         auth._verify_clerk_token("valid-token")
         assert decode_calls["options"] == {"verify_aud": False}
         assert "audience" not in decode_calls
@@ -190,10 +191,10 @@ class TestVerifyClerkToken:
         monkeypatch.setattr(auth, "_get_clerk_jwks_client", lambda: FakeJwksClient())
 
         def fake_decode(token, key, **kwargs):
-            raise auth.jwt.ExpiredSignatureError("token expired")
+            raise jwt.ExpiredSignatureError("token expired")
 
-        monkeypatch.setattr(auth.jwt, "decode", fake_decode)
-        with pytest.raises(auth.jwt.ExpiredSignatureError):
+        monkeypatch.setattr(jwt, "decode", fake_decode)
+        with pytest.raises(jwt.ExpiredSignatureError):
             auth._verify_clerk_token("expired-token")
 
 
