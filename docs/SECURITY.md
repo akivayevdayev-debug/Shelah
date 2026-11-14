@@ -772,6 +772,8 @@ the statements. **The migration was applied and verified live on 2026-09-03**
   is `SECURITY DEFINER`, so this was the ordinary object-hijacking risk. Fixed
   with `ALTER FUNCTION ... SET search_path = public, pg_temp`.
 - **`pg_graphql_anon_table_exposed` / `pg_graphql_authenticated_table_exposed`:**
+  (Moot since 2026-11-14: the pg_graphql extension is disabled, see
+  `scripts/sql/migrate_security_perf_2026_11_14.sql` step 7.)
   `REVOKE SELECT` from `anon` and `authenticated` on `ai_usage_log` and
   `ask_history` (zero-policy, service-role-only tables), and from `anon` only on
   `study_bookmarks`, `user_memories` and `user_preferences`. `authenticated` was

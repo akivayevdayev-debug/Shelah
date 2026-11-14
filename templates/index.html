@@ -170,8 +170,8 @@
          before then are queued by the listener below and handed to the SDK by
          sentry-init.js once it is up. -->
     <script>(function(w){var q=w.__shelahEarlyErrors=[];function pu(x){if(q.length<10)q.push(x);}function oe(ev){pu(ev.error||ev.message);}function or(ev){pu(ev.reason);}w.addEventListener('error',oe);w.addEventListener('unhandledrejection',or);w.__shelahEarlyErrorsStop=function(){w.removeEventListener('error',oe);w.removeEventListener('unhandledrejection',or);};})(window)</script>
-    <script defer src="https://browser.sentry-cdn.com/11.9.0/bundle.min.js"
-            integrity="sha384-xE/bmsH+mppbFLN9Cj+Lyc7rR9sTBh9p6GEswhQcoZPRAZbv5k6MRfdRIGnB+azV"
+    <script defer src="https://browser.sentry-cdn.com/11.12.0/bundle.min.js"
+            integrity="sha384-fpjRzLWxkdRneAxDGo5pt5gKsjCWYV5ksPD+S1lx80QHBhs6Oe58hf8sKUKubCES"
             crossorigin="anonymous"></script>
     <script defer src="{{ asset_url('js/sentry-init.js') }}"></script>
     {% endif %}

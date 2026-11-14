@@ -75,7 +75,14 @@ create index if not exists messages_superseded_by_idx
 -- 6. GraphQL is never called.
 --    Applied 2026-11-14 but had no effect: supabase_admin granted this usage,
 --    and only the grantor can revoke it (this runs as postgres). Disabling
---    the pg_graphql extension (Dashboard > Database > Extensions) removes it.
+--    the pg_graphql extension removes it, which step 7 does.
 revoke usage on schema graphql from anon, authenticated;
 
 commit;
+
+-- 7. Applied afterwards on 2026-11-14 as its own migration
+--    (disable_pg_graphql_2026_11_14): turn GraphQL off. Nothing in the app
+--    calls it (supabase-js and the backend use PostgREST), and it cleared the
+--    pg_graphql_*_table_exposed advisor warnings. Re-enable from
+--    Dashboard > Database > Extensions if GraphQL is ever needed.
+drop extension if exists pg_graphql;

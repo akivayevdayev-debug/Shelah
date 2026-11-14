@@ -214,7 +214,7 @@ Write-only thumbs up/down (plus an optional short comment) a reader leaves on an
 
 **Primary key**: `id` · **Index**: `(created_at DESC)`, partial `(device_owner) WHERE device_owner IS NOT NULL`
 
-**RLS**: enabled. Policy `anyone_can_submit_feedback` (`FOR INSERT`, `WITH CHECK (true)`) lets both `anon` and `authenticated` insert rows. It is a deliberate public write-only form, not a per-user-owned resource. There is no `SELECT` policy for either role; only the backend's service-role client (which bypasses RLS) reads this table. The default `SELECT` grant `anon`/`authenticated` get on a new Supabase table was separately revoked (`migrate_security_hardening.sql`) to close a Supabase-linter-flagged schema-exposure gap, since a missing policy alone still let the table (and its column names) be discovered via GraphQL/PostgREST even with every row read blocked.
+**RLS**: enabled, with no policies. Every read and write goes through `/api/feedback` and the backend's service-role client (which bypasses RLS); `anon` and `authenticated` have neither a policy nor an `INSERT`/`SELECT` grant (the old `anyone_can_submit_feedback` insert policy and grant were dropped in `scripts/sql/migrate_security_perf_2026_11_14.sql`). The default `SELECT` grant `anon`/`authenticated` get on a new Supabase table was separately revoked (`migrate_security_hardening.sql`) to close a Supabase-linter-flagged schema-exposure gap, since a missing policy alone still let the table (and its column names) be discovered via GraphQL/PostgREST even with every row read blocked.
 
 **Retention**: no dedicated rolling-window cron (not part of `retention_enforce`'s scope); retained until account deletion. Included in both `/api/user/data-export` and `/api/user/delete-account` (`backend/routes_privacy.py`'s `_USER_DATA_TABLES`, added 2026-08-27; see `docs/SECURITY.md` §9).
 
@@ -363,6 +363,9 @@ gone.
      onto the service-role client with an app-level ownership check
      instead (the pattern `ask_history` already uses): a larger,
      separately-scoped change, not done here.
+   - **2026-11-14: the pg_graphql extension is now disabled**
+     (`scripts/sql/migrate_security_perf_2026_11_14.sql` step 7), so no
+     table is exposed through GraphQL any more and these warnings are gone.
 
 ### Reviewed, no fix needed / already correct by design
 
