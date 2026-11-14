@@ -192,6 +192,7 @@ legal-page URLs move.
 | Anthropic (Claude API) | Question text + retrieved source excerpts (no account identifiers) | Anthropic commercial DPA (anthropic.com/legal, commercial terms) | ✅ Executed (operator-confirmed 2026-09-16) |
 | Sentry | Scrubbed error/crash reports (`docs/OBSERVABILITY.md`) | Click-through DPA (sentry.io/legal/dpa) | ✅ Executed (operator-confirmed 2026-09-16) |
 | Sefaria, Hebcal, MyMemory/Google Translate | Search/lookup queries derived from the question, or text snippets, not account identity | No formal DPA sought: public APIs, no account-identifying data shared, source-text/calendar/translation lookups only | Documented, not a gap |
+| Photon, Open-Meteo geocoding, Nominatim, ipwho.is | A typed city name; ipwho.is only gets the caller IP when no city is set and Vercel's geo headers are missing | No formal DPA sought: public APIs, no account identity | Documented, not a gap |
 
 All click-through DPAs above have been executed by the account holder.
 Retain a copy of each vendor's DPA acceptance confirmation alongside this
