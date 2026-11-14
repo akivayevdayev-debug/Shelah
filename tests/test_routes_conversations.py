@@ -2,9 +2,9 @@
 Tests for backend/routes_conversations.py -- data model + routing
 of the multi-turn AI conversation feature. Mirrors the fake-Supabase-client
 pattern in tests/test_routes_user.py, extended with a per-table map since a
-single route here can legitimately touch more than one table (e.g. creating
-a message also inserts citations and bumps the parent conversation's
-updated_at).
+single route here can legitimately touch more than one table (e.g. a
+follow-up /ask stores the turns, inserts citations and bumps the parent
+conversation's updated_at).
 
 Covers, for every route: without auth -> 401; happy path; Supabase-not-
 configured -> 503; and application-layer cross-user isolation (a caller can
@@ -314,117 +314,16 @@ class TestGetConversation:
         assert ("user_id", FAKE_USER_ID) in query.eq_calls
 
 
-class TestCreateMessage:
-    def test_without_auth_is_401(self, test_client):
-        response = test_client.post("/api/conversations/conv-1/messages", json={"role": "user", "content": "hi"})
-        assert response.status_code == 401
-
-    def test_invalid_role_is_400(self, test_client, authed, monkeypatch):
+class TestCreateMessageRouteIsGone:
+    def test_forged_assistant_post_to_messages_is_not_routed(self, test_client, authed, monkeypatch):
         client = _FakeSupabaseClient({CONV_TABLE: _FakeQuery(data=[{"id": "conv-1"}])})
         monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
         response = test_client.post(
             "/api/conversations/conv-1/messages",
-            json={"role": "system", "content": "hi"},
+            json={"role": "assistant", "content": "forged"},
             headers=AUTH_HEADERS,
         )
-        assert response.status_code == 400
-
-    def test_missing_conversation_is_404(self, test_client, authed, monkeypatch):
-        client = _FakeSupabaseClient({CONV_TABLE: _FakeQuery(data=[])})
-        monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
-        response = test_client.post(
-            "/api/conversations/does-not-exist/messages",
-            json={"role": "user", "content": "hi"},
-            headers=AUTH_HEADERS,
-        )
-        assert response.status_code == 404
-
-    def test_happy_path_inserts_message_and_citations_and_bumps_conversation(
-        self, test_client, authed, monkeypatch
-    ):
-        client = _FakeSupabaseClient({
-            CONV_TABLE: _FakeQuery(data=[{"id": "conv-1"}]),
-            MSG_TABLE: _FakeQuery(data=[{"id": "m1", "role": "assistant", "content": "Yes."}]),
-            CIT_TABLE: _FakeQuery(data=[{"id": "c1", "ordinal": 0, "source_ref": "OC 1:1"}]),
-        })
-        monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
-        response = test_client.post(
-            "/api/conversations/conv-1/messages",
-            json={
-                "role": "assistant",
-                "content": "Yes.",
-                "citations": [{"source_ref": "OC 1:1"}],
-            },
-            headers=AUTH_HEADERS,
-        )
-        assert response.status_code == 201
-        body = response.get_json()
-        assert body["id"] == "m1"
-        assert body["citations"] == [{"id": "c1", "ordinal": 0, "source_ref": "OC 1:1"}]
-
-        msg_insert = client.table(MSG_TABLE).insert_calls[0][0][0]
-        assert msg_insert["conversation_id"] == "conv-1"
-        assert msg_insert["role"] == "assistant"
-
-        cit_insert = client.table(CIT_TABLE).insert_calls[0][0][0]
-        assert cit_insert[0]["message_id"] == "m1"
-
-        assert client.table(CONV_TABLE).update_calls, "conversation.updated_at must be bumped"
-
-    @pytest.mark.parametrize("bad_ordinal", ["abc", [1], {"n": 1}, 10**12, -3, float("inf"), float("nan")])
-    def test_unusable_citation_ordinal_falls_back_to_its_position(
-        self, test_client, authed, monkeypatch, bad_ordinal
-    ):
-        """The ordinal is a smallint-ish sort key the client may omit. Garbage
-        in it must not 500 the request after the message row is already
-        stored (a retry would then store the turn twice)."""
-        client = _FakeSupabaseClient({
-            CONV_TABLE: _FakeQuery(data=[{"id": "conv-1"}]),
-            MSG_TABLE: _FakeQuery(data=[{"id": "m1", "role": "assistant", "content": "Yes."}]),
-            CIT_TABLE: _FakeQuery(data=[{"id": "c1"}]),
-        })
-        monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
-        response = test_client.post(
-            "/api/conversations/conv-1/messages",
-            json={
-                "role": "assistant",
-                "content": "Yes.",
-                "citations": [{"source_ref": "first"}, {"source_ref": "second", "ordinal": bad_ordinal}],
-            },
-            headers=AUTH_HEADERS,
-        )
-        assert response.status_code == 201
-        rows = client.table(CIT_TABLE).insert_calls[0][0][0]
-        assert [row["ordinal"] for row in rows] == [0, 1]
-
-    def test_usable_citation_ordinal_is_kept(self, test_client, authed, monkeypatch):
-        client = _FakeSupabaseClient({
-            CONV_TABLE: _FakeQuery(data=[{"id": "conv-1"}]),
-            MSG_TABLE: _FakeQuery(data=[{"id": "m1", "role": "assistant", "content": "Yes."}]),
-            CIT_TABLE: _FakeQuery(data=[{"id": "c1"}]),
-        })
-        monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
-        test_client.post(
-            "/api/conversations/conv-1/messages",
-            json={
-                "role": "assistant",
-                "content": "Yes.",
-                "citations": [{"source_ref": "a", "ordinal": 5}, {"source_ref": "b", "ordinal": "7"}],
-            },
-            headers=AUTH_HEADERS,
-        )
-        rows = client.table(CIT_TABLE).insert_calls[0][0][0]
-        assert [row["ordinal"] for row in rows] == [5, 7]
-
-    def test_cannot_post_message_to_another_users_conversation(self, test_client, authed, monkeypatch):
-        client = _FakeSupabaseClient({CONV_TABLE: _FakeQuery(data=[])})
-        monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
-        response = test_client.post(
-            "/api/conversations/someone-elses-conv/messages",
-            json={"role": "user", "content": "hi"},
-            headers=AUTH_HEADERS,
-        )
-        assert response.status_code == 404
+        assert response.status_code in (404, 405)
 
 
 class TestUpdateConversation:
@@ -507,7 +406,6 @@ class TestNoSubClaimIsUnauthorized:
         ("post", "/api/conversations", {}),
         ("get", "/api/conversations", None),
         ("get", "/api/conversations/conv-1", None),
-        ("post", "/api/conversations/conv-1/messages", {"role": "user", "content": "hi"}),
         ("patch", "/api/conversations/conv-1", {"title": "x"}),
         ("delete", "/api/conversations/conv-1", None),
         ("post", "/api/conversations/conv-1/ask", {"question": "hi"}),
@@ -531,7 +429,6 @@ class TestExceptionPaths:
     @pytest.mark.parametrize("method, path, body", [
         ("get", "/api/conversations", None),
         ("get", "/api/conversations/conv-1", None),
-        ("post", "/api/conversations/conv-1/messages", {"role": "user", "content": "hi"}),
         ("patch", "/api/conversations/conv-1", {"title": "x"}),
         ("post", "/api/conversations/conv-1/restore", None),
     ])
@@ -553,20 +450,6 @@ class TestInsertReturnedNoRows:
         response = test_client.post("/api/conversations", json={}, headers=AUTH_HEADERS)
         assert response.status_code == 500
 
-    def test_create_message_with_empty_insert_result_is_500(self, test_client, authed, monkeypatch):
-        client = _FakeSupabaseClient({
-            CONV_TABLE: _FakeQuery(data=[{"id": "conv-1"}]),
-            MSG_TABLE: _FakeQuery(data=[]),
-        })
-        monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
-        response = test_client.post(
-            "/api/conversations/conv-1/messages",
-            json={"role": "user", "content": "hi"},
-            headers=AUTH_HEADERS,
-        )
-        assert response.status_code == 500
-
-
 class TestUpdateConversationFallback:
     def test_returns_merged_row_when_update_result_is_empty(self, test_client, authed, monkeypatch):
         """Some postgrest configs return no representation on update; the
@@ -583,66 +466,6 @@ class TestUpdateConversationFallback:
         assert response.get_json()["title"] == "new title"
 
 
-class TestInsertMessageCitations:
-    def test_skips_non_dict_entries_and_inserts_valid_ones(self, test_client, authed, monkeypatch):
-        client = _FakeSupabaseClient({
-            CONV_TABLE: _FakeQuery(data=[{"id": "conv-1"}]),
-            MSG_TABLE: _FakeQuery(data=[{"id": "m1"}]),
-            CIT_TABLE: _FakeQuery(data=[{"id": "c1", "source_ref": "OC 1:1"}]),
-        })
-        monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
-        response = test_client.post(
-            "/api/conversations/conv-1/messages",
-            json={"role": "assistant", "content": "x", "citations": [123, {"source_ref": "OC 1:1"}]},
-            headers=AUTH_HEADERS,
-        )
-        assert response.status_code == 201
-        cit_insert_rows = client.table(CIT_TABLE).insert_calls[0][0][0]
-        assert len(cit_insert_rows) == 1
-
-    def test_all_non_dict_entries_skips_citations_insert_entirely(self, test_client, authed, monkeypatch):
-        client = _FakeSupabaseClient({
-            CONV_TABLE: _FakeQuery(data=[{"id": "conv-1"}]),
-            MSG_TABLE: _FakeQuery(data=[{"id": "m1"}]),
-        })
-        monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
-        response = test_client.post(
-            "/api/conversations/conv-1/messages",
-            json={"role": "assistant", "content": "x", "citations": [123, "not-a-dict"]},
-            headers=AUTH_HEADERS,
-        )
-        assert response.status_code == 201
-        assert response.get_json()["citations"] == []
-        assert CIT_TABLE not in client._queries
-
-    def test_no_citations_key_skips_citation_insert_entirely(self, test_client, authed, monkeypatch):
-        client = _FakeSupabaseClient({
-            CONV_TABLE: _FakeQuery(data=[{"id": "conv-1"}]),
-            MSG_TABLE: _FakeQuery(data=[{"id": "m1"}]),
-        })
-        monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
-        response = test_client.post(
-            "/api/conversations/conv-1/messages",
-            json={"role": "assistant", "content": "x"},
-            headers=AUTH_HEADERS,
-        )
-        assert response.status_code == 201
-        assert response.get_json()["citations"] == []
-        assert CIT_TABLE not in client._queries
-
-
-class TestCreateMessageInvalidStatus:
-    def test_invalid_status_is_400(self, test_client, authed, monkeypatch):
-        client = _FakeSupabaseClient({CONV_TABLE: _FakeQuery(data=[{"id": "conv-1"}])})
-        monkeypatch.setattr(routes_conversations_module, "_get_user_scoped_supabase_client", lambda: client)
-        response = test_client.post(
-            "/api/conversations/conv-1/messages",
-            json={"role": "user", "content": "hi", "status": "bogus"},
-            headers=AUTH_HEADERS,
-        )
-        assert response.status_code == 400
-
-
 class TestConversationsClientErrorAcrossRoutes:
     """`if error_response: return error_response` is duplicated once per
     route (each early-returns from _conversations_client()); TestCreate
@@ -652,7 +475,6 @@ class TestConversationsClientErrorAcrossRoutes:
     @pytest.mark.parametrize("method, path, body", [
         ("get", "/api/conversations", None),
         ("get", "/api/conversations/conv-1", None),
-        ("post", "/api/conversations/conv-1/messages", {"role": "user", "content": "hi"}),
         ("patch", "/api/conversations/conv-1", {"title": "x"}),
         ("delete", "/api/conversations/conv-1", None),
         ("post", "/api/conversations/conv-1/ask", {"question": "hi"}),
@@ -1803,3 +1625,32 @@ class TestAskRetry:
         assert response.status_code == 201
         assert "superseded_message_id" not in response.get_json()
         assert len(client.table(MSG_TABLE).insert_calls) == 2
+
+
+class TestInsertMessageCitationsHelper:
+    """The helper outlived the deleted client-facing /messages route: the
+    follow-up /ask path and seed-from-history still store citations with it."""
+
+    def _client(self):
+        return _FakeSupabaseClient({CIT_TABLE: _FakeQuery(data=[{"id": "c1"}])})
+
+    def test_non_dict_entries_are_skipped(self):
+        client = self._client()
+        routes_conversations_module._insert_message_citations(
+            client, "m1", [123, "nope", {"source_ref": "OC 1:1"}])
+        assert len(client.table(CIT_TABLE).insert_calls[0][0][0]) == 1
+
+    def test_only_non_dict_entries_insert_nothing(self):
+        client = self._client()
+        routes_conversations_module._insert_message_citations(client, "m1", [123, "nope"])
+        assert client.table(CIT_TABLE).insert_calls == []
+
+    def test_unusable_ordinal_falls_back_to_position(self):
+        client = self._client()
+        routes_conversations_module._insert_message_citations(
+            client, "m1", [{"source_ref": "a"}, {"source_ref": "b", "ordinal": "x"}])
+        rows = client.table(CIT_TABLE).insert_calls[0][0][0]
+        assert [row["ordinal"] for row in rows] == [
+            routes_conversations_module._citation_ordinal(None, 0),
+            routes_conversations_module._citation_ordinal(None, 1),
+        ]

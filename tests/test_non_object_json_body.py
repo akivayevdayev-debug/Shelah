@@ -26,7 +26,6 @@ _ROUTES = [
     ("post", "/ask"),
     ("post", "/set_location"),
     ("post", "/api/conversations"),
-    ("post", "/api/conversations/c1/messages"),
     ("patch", "/api/conversations/c1"),
     ("post", "/api/conversations/c1/ask"),
     ("post", "/api/client-errors"),

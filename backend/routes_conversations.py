@@ -85,7 +85,6 @@ _ERR_MISSING_USER_IDENTITY = "Missing user identity"
 _ERR_SUPABASE_NOT_CONFIGURED = "Supabase not configured"
 _ERR_NOT_FOUND = "Not found"
 _VALID_ROLES = ("user", "assistant")
-_VALID_STATUSES = ("streaming", "complete", "stopped", "error")
 _MAX_HISTORY_MESSAGES = 20
 _MAX_CITATION_ORDINAL = 10_000
 _AUTO_TITLE_MAX_LEN = 80
@@ -418,62 +417,6 @@ def _insert_message_citations(supabase, message_id, citations):
     return result.data or []
 
 
-@routes_conversations.route("/api/conversations/<conversation_id>/messages", methods=["POST"])
-@require_clerk_auth
-def create_message(conversation_id):
-    """Append one turn to an existing conversation and bump its
-    `updated_at` so the sidebar list re-sorts it to the top."""
-    user_id = _require_user_id()
-    if not user_id:
-        return jsonify({"error": _ERR_MISSING_USER_IDENTITY}), 401
-
-    supabase, error_response = _conversations_client()
-    if error_response:
-        return error_response
-
-    payload = _json_object_body()
-    role = str(payload.get("role") or "").strip()
-    if role not in _VALID_ROLES:
-        return jsonify({"error": f"role must be one of {_VALID_ROLES}"}), 400
-    status = str(payload.get("status") or "complete").strip()
-    if status not in _VALID_STATUSES:
-        return jsonify({"error": f"status must be one of {_VALID_STATUSES}"}), 400
-    content = str(payload.get("content") or "")
-    citations = payload.get("citations") or []
-
-    try:
-        conversation = _fetch_own_conversation(supabase, conversation_id, user_id)
-        if not conversation:
-            return jsonify({"error": _ERR_NOT_FOUND}), 404
-
-        message_record = {
-            "conversation_id": str(conversation_id),
-            "role": role,
-            "content": content,
-            "status": status,
-        }
-        result = supabase.table(SUPABASE_MESSAGES_TABLE).insert(message_record).execute()
-        rows = result.data or []
-        if not rows:
-            return jsonify({"error": "Failed to create message"}), 500
-        message = rows[0]
-
-        message["citations"] = _insert_message_citations(
-            supabase, message["id"], citations if isinstance(citations, list) else []
-        )
-
-        supabase.table(SUPABASE_CONVERSATIONS_TABLE).update(
-            {"updated_at": _now_iso()}
-        ).eq("id", str(conversation_id)).eq("user_id", user_id).execute()
-
-        return jsonify(message), 201
-    except Exception as e:
-        _capture_backend_error("conversation_message_create_failed", e, {
-            "user_id_hash": hash_user_id(user_id), "conversation_id": conversation_id,
-        })
-        return jsonify({"error": "Failed to create message"}), 500
-
-
 @routes_conversations.route("/api/conversations/<conversation_id>", methods=["PATCH"])
 @require_clerk_auth
 def update_conversation(conversation_id):
@@ -639,7 +582,7 @@ def _display_sources_to_citations(display_sources):
     """Map _compact_ai_sources()' UI-excerpt shape ({ref, title, lines:
     [{en, he}], url?}) onto the citations row shape (source_ref,
     excerpt_en, excerpt_he, url) _insert_message_citations() expects --
-    the same shape create_message() already accepts from a client-supplied
+    the same shape the seed-from-history path already stores from a
     citations list."""
     citations = []
     for src in display_sources or []:

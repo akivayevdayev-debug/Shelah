@@ -205,7 +205,7 @@ class TestConversationAskClassifiesAsLlm:
         for path in (
             "/api/conversations",
             "/api/conversations/abc",
-            "/api/conversations/abc/messages",
+            "/api/conversations/abc/restore",
             # Not the ask route: extra segment after /ask, or /ask as the id.
             "/api/conversations/abc/ask/extra",
             "/api/conversations/ask",

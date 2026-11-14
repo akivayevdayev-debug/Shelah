@@ -33,7 +33,7 @@ Every route is served from one Vercel deployment. The base URL in production is 
 | [Pages](#pages) | `/`, `/settings`, `/profile`, `/terms`, `/privacy`, `/accessibility`, `/about`, `/help`, `/glossary`, `/ai-disclosure`, `/acceptable-use`, `/dmca`, `/licenses`, `/robots.txt`, `/sitemap.xml`, `/llms.txt`, `/manifest.webmanifest`, `/favicon.ico`, `/service-worker.js` |
 | [Deep-link paths](#deep-link-paths) | `/text/…`, `/prayer/…`, `/siddur[/…]`, `/community/…`, `/calendar/…`, `/answer/…`, `/a/…`, `/chat/…`, `/history[/…]`, `/signin`, `/signup` |
 | [Ask](#ask-pipeline) | `POST /ask`, `GET /api/ai/common-answers` (+ `/<fingerprint>`) |
-| [Conversations](#conversations) | `/api/conversations` (+ `/<id>`, `/<id>/messages`, `/<id>/restore`, `/<id>/ask`, `/<id>/share`) |
+| [Conversations](#conversations) | `/api/conversations` (+ `/<id>`, `/<id>/restore`, `/<id>/ask`, `/<id>/share`) |
 | [History and sharing](#answer-history-and-sharing) | `/api/user/history` (+ `/<id>`, `/<id>/share`), `/api/public/answer/<token>`; [conversation sharing](#conversation-sharing) and [device identity](#device-identity) |
 | [Library and texts](#library-and-texts) | `/api/library/*`, `/api/texts-index`, `/api/text/<ref>` (+ `/links`, `/graph`), `/api/sidebar/<ref>`, `/api/search/suggest`, `/api/search/verses`, `/api/word/meaning`, `/api/export/chapter`, `/api/diagnostics/sefaria` |
 | [Prayers and siddur](#prayers-and-siddur) | `/api/prayers/list`, `/api/prayer/<name>`, `/api/siddur/v2/*`, `/api/siddur/full/*`, `/api/siddur/section-refs/*` |
@@ -246,7 +246,6 @@ The client (`static/js/citation-markers.js`, `citation-popover.js`) renders each
 | `POST /api/conversations` | Start a thread. Body: `minhag` (optional string, the community lock, cut to 80 characters) and `from_history_id` (optional, one of the caller's own `ask_history` ids). With `from_history_id` the stored question and answer become the first turn, read from the stored row and never from the request, and the thread locks to the community that answer used. Returns `201` with the conversation, plus `messages` when seeded. |
 | `GET /api/conversations` | The sidebar list: pinned first, then most recently updated, soft-deleted threads excluded. Query: `limit` (1–50, default 20). Returns `{"items": [{id, title, title_is_custom, minhag, pinned_at, created_at, updated_at}]}`. |
 | `GET /api/conversations/<id>` | One thread with every live turn, each with its `citations` embedded (`id, ordinal, source_ref, excerpt_he, excerpt_en, url`). Turns superseded by a retry are excluded. |
-| `POST /api/conversations/<id>/messages` | Append one turn. Body: `role` (`user` or `assistant`), `status` (`streaming`, `complete`, `stopped`, `error`; default `complete`), `content`, and an optional `citations` list. Bumps the thread's `updated_at`. Returns `201` with the message. |
 | `PATCH /api/conversations/<id>` | Rename (`title`) and/or pin (`pinned`: boolean). The community lock is deliberately not editable; switching community means a new thread. `400` when neither field is sent. |
 | `DELETE /api/conversations/<id>` | Soft delete (sets `deleted_at`), so the client can offer Undo. Returns `{"ok": true}`. |
 | `POST /api/conversations/<id>/restore` | Undo a soft delete. Owner-only and idempotent: restoring a thread that is not deleted returns it unchanged. |
