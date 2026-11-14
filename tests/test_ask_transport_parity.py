@@ -489,3 +489,71 @@ class TestClassifySafetyInvoked:
         )
         assert response.status_code == 200
         assert len(calls) >= 1
+
+
+# ─── (g) answer shaping runs on both transports ────────────────────────────
+#
+# app.py runs _coerce_ai_answer_shape() on every AI result before rendering
+# (it re-checks a model-set is_prohibited flag against the ruling text). The
+# ASGI handler skipped it, so once production served asgi.py a permitted
+# ruling could render with "Halachic Status: Prohibited".
+
+_SPURIOUS_PROHIBITED = {
+    "ruling": (
+        "Lighting candles before Shabbat is permitted and a mitzvah; "
+        "avoid melacha (forbidden work) after sunset."
+    ),
+    "summary": "",
+    "practical_steps": [],
+    "sources": [],
+    "safety_class": "ok",
+    "is_prohibited": True,
+    "rabbinic_disclaimer": "",
+}
+
+
+def _spurious_prohibited_result():
+    return {
+        "answer": "placeholder",
+        "structured": dict(_SPURIOUS_PROHIBITED),
+        "confidence": 0.9,
+        "is_simple": False,
+        "is_fallback": False,
+        "model": "test-model",
+        "security": {"input": {"blocked": False}, "output": {"blocked": False, "reason": ""}},
+    }
+
+
+class TestAnswerShapingParity:
+    def test_flask_drops_spurious_prohibited_status(self, test_client, monkeypatch):
+        import backend.claude as claude_module
+        import backend.ask_pipeline as ask_pipeline_module
+        import app as flask_app_module
+
+        flask_app_module.ASK_RESPONSE_CACHE.clear()
+        monkeypatch.setattr(claude_module, "ask_claude", lambda *a, **k: _spurious_prohibited_result())
+        monkeypatch.setattr(ask_pipeline_module, "run_agentic_ask", lambda *a, **k: _spurious_prohibited_result())
+
+        response = test_client.post(
+            "/ask",
+            json={"question": "Can I light candles? [shaping-parity-flask]"},
+            content_type="application/json",
+        )
+        assert "**Halachic Status:** Prohibited" not in response.get_json()["answer"]
+
+    async def test_fastapi_drops_spurious_prohibited_status(self, fastapi_client, monkeypatch):
+        import backend.claude as claude_module
+        import backend.ask_pipeline as ask_pipeline_module
+
+        async def _fake(*args, **kwargs):
+            return _spurious_prohibited_result()
+
+        monkeypatch.setattr(claude_module, "ask_ai_async", _fake)
+        monkeypatch.setattr(ask_pipeline_module, "run_agentic_ask", _fake)
+
+        response = await fastapi_client.post(
+            "/ask",
+            json={"question": "Can I light candles? [shaping-parity-fastapi]"},
+            headers={"X-Forwarded-For": "203.0.113.201"},
+        )
+        assert "**Halachic Status:** Prohibited" not in response.json()["answer"]

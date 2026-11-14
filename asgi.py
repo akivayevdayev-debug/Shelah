@@ -765,6 +765,13 @@ async def _run_ask_async_ai_synthesis(
     result = await _dispatch_ask_async_ai_synthesis_call(
         question, mode, canonical_lens, answer_language, ctx)
 
+    # Same shaping step app.py's /ask and conversation follow-ups run: it
+    # re-checks a model-set is_prohibited flag against the ruling text, so a
+    # permitted ruling never renders as "Halachic Status: Prohibited".
+    # Security-blocked results pass through it untouched.
+    result = flask_app_module._coerce_ai_answer_shape(
+        result, question, mode, answer_language=answer_language)
+
     result_error = _validate_ask_async_ai_result(result)
 
     if result_error.startswith("security_blocked"):
