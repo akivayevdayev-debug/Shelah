@@ -564,6 +564,25 @@
     transform: scale(0.94);
 }
 
+/* The flat top-bar buttons draw smaller than the 44px touch minimum (the
+   settings icon is ~32x30). An invisible ::before, centred on the button,
+   makes the tappable area at least --hit-min each way without changing what
+   is drawn (same approach as legal.css's #themeToggleBtn). Physical left
+   keeps the centring right in RTL too. */
+.topbar-flat-btn {
+    position: relative;
+}
+
+.topbar-flat-btn::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    inline-size: max(100%, var(--hit-min));
+    block-size: max(100%, var(--hit-min));
+    transform: translate(-50%, -50%);
+}
+
 /* Touch: the home "this week's parasha" link and the search field are a
    little under 44px tall. The link gets balanced padding and margin so
    nothing moves; the field simply grows to the minimum. */
