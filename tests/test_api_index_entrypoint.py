@@ -81,6 +81,41 @@ def test_pyproject_dependencies_match_requirements_txt():
     assert declared == pinned
 
 
+def _normalized(name):
+    return name.lower().replace("_", "-")
+
+
+def test_uv_lock_resolves_the_versions_ci_audits():
+    # Vercel installs from uv.lock (exact versions, with hashes); CI tests and
+    # pip-audits requirements.lock.txt. Both must resolve the same set, or
+    # production runs packages nobody checked. Regenerate uv.lock with
+    # `uv lock -P name==version` for each package the two disagree on.
+    import re
+    import tomllib
+
+    with open(os.path.join(_REPO_ROOT, "uv.lock"), "rb") as lock_file:
+        packages = tomllib.load(lock_file)["package"]
+    marker_only = {
+        _normalized(dep["name"])
+        for package in packages
+        for dep in package.get("dependencies", [])
+        if "emscripten'" in dep.get("marker", "") and "==" in dep.get("marker", "")
+    }
+    locked = {
+        _normalized(p["name"]): p["version"]
+        for p in packages
+        if "registry" in p.get("source", {}) and _normalized(p["name"]) not in marker_only
+    }
+    audited = {}
+    with open(os.path.join(_REPO_ROOT, "requirements.lock.txt"), encoding="utf-8") as lock_txt:
+        for line in lock_txt:
+            match = re.match(r"^([A-Za-z0-9_.-]+)(?:\[[^\]]*\])?==([^\s;\\]+)", line)
+            if match:
+                audited[_normalized(match.group(1))] = match.group(2)
+
+    assert locked == audited
+
+
 @pytest.mark.parametrize("path", ["/openapi.json", "/docs", "/redoc"])
 def test_fastapi_does_not_publish_its_api_description(path):
     from fastapi.testclient import TestClient
