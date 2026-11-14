@@ -875,3 +875,16 @@ async def test_breaker_fails_open_when_cache_write_errors(monkeypatch):
 
     assert result["configured"] is True
     assert result["total_usd"] == pytest.approx(1.0)
+
+
+async def test_breaker_alerts_once_per_day_not_on_every_recompute(monkeypatch, fake_breaker_store, captured_alerts):
+    # The total is re-read from Supabase every time the 30 s cache expires;
+    # a tripped breaker must not page Discord/Sentry on each of those.
+    monkeypatch.setenv(cost_meter._DAILY_BUDGET_ENV, "5.0")
+    monkeypatch.setattr(cost_meter, "_fetch_today_usage_rows", lambda: [{"cost_usd": 7.0}])
+
+    await cost_meter.is_global_cost_breaker_tripped()
+    fake_breaker_store._values.pop(cost_meter._GLOBAL_BREAKER_CACHE_KEY)  # cache expired
+    await cost_meter.is_global_cost_breaker_tripped()
+
+    assert len(captured_alerts) == 1

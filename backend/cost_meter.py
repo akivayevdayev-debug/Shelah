@@ -341,7 +341,8 @@ async def check_daily_budget_and_alert() -> dict[str, Any]:
     exceeded = total_usd >= threshold
 
     if exceeded:
-        _capture_backend_error(
+        await asyncio.to_thread(
+            _capture_backend_error,
             "daily_ai_budget_exceeded",
             RuntimeError(
                 f"Daily AI spend ${total_usd:.4f} has reached the "
@@ -374,6 +375,28 @@ async def check_daily_budget_and_alert() -> dict[str, Any]:
 # re-deriving a fresh total on every request.
 _GLOBAL_BREAKER_CACHE_KEY = "cost_breaker:global:tripped_total"
 _GLOBAL_BREAKER_CACHE_TTL_SECONDS = 30
+
+
+# The total is recomputed every time the 30 s cache above expires, so the
+# "tripped" alert would otherwise fire twice a minute for the rest of the day.
+# One marker per UTC day in the same shared store keeps it to one alert.
+# get-then-setex, not SET NX: the store has no NX call, and the worst case of
+# the race is a second alert, never a missed one.
+_GLOBAL_BREAKER_ALERTED_KEY_PREFIX = "cost_breaker:global:alerted:"
+_GLOBAL_BREAKER_ALERTED_TTL_SECONDS = 26 * 60 * 60
+
+
+async def _first_breaker_alert_today(store) -> bool:
+    """True the first time today's tripped breaker is seen (and records it).
+    Fails toward alerting: an unreachable store must not silence the page."""
+    key = _GLOBAL_BREAKER_ALERTED_KEY_PREFIX + datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    try:
+        if await store.get(key) is not None:
+            return False
+        await store.setex(key, _GLOBAL_BREAKER_ALERTED_TTL_SECONDS, "1")
+    except Exception as exc:
+        logger.debug("cost breaker alert marker skipped: %s", exc)
+    return True
 
 
 async def is_global_cost_breaker_tripped() -> dict[str, Any]:
@@ -433,8 +456,11 @@ async def is_global_cost_breaker_tripped() -> dict[str, Any]:
         logger.debug("cost breaker cache write skipped: %s", exc)
 
     tripped = total_usd >= threshold
-    if tripped:
-        _capture_backend_error(
+    if tripped and await _first_breaker_alert_today(store):
+        # Off the event loop: the alert posts to Discord and Sentry over
+        # blocking HTTP.
+        await asyncio.to_thread(
+            _capture_backend_error,
             "global_cost_breaker_tripped",
             RuntimeError(
                 f"Global AI spend ${total_usd:.4f} has reached the "
