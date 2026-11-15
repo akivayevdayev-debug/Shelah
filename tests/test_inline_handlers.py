@@ -123,7 +123,9 @@ def test_the_dispatcher_loads_after_the_script_that_records_the_clicked_control(
 def test_every_page_with_a_dispatcher_attribute_loads_the_dispatcher():
     for path in TEMPLATES:
         text = path.read_text(encoding="utf-8")
-        if re.search(r"""\sdata-on(?:click|input)\s*=""", text) and path.name not in ("legal_topbar.html",):
+        if re.search(r"""\sdata-on(?:click|input)\s*=""", text) and path.name not in ("legal_topbar.html", "language_menu.html"):
             assert ACTIONS_TAG in text, f"{path.name} uses data-onclick but never loads actions.js"
-    # legal_topbar.html is included by pages that include legal_scripts.html.
+    # legal_topbar.html is included by pages that include legal_scripts.html;
+    # language_menu.html is a macro used only by legal_topbar.html and
+    # index.html (which loads actions.js itself).
     assert ACTIONS_TAG in (REPO / "templates/components/legal_scripts.html").read_text(encoding="utf-8")

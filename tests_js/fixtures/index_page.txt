@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 
@@ -462,12 +463,16 @@
                          (ShelahHebrewRef.hebrewDate, the same one
                          refreshHebrewDateDisplay makes) so nothing swaps later. -->
                     
-                    <!-- Translator Toggles -->
-                    <button data-onclick="chooseLanguage" data-onclick-arg="en" class="hidden lg:inline-flex topbar-flat-btn font-serif lang-btn"
-                        data-lang="en">English</button>
-                    <button data-onclick="chooseLanguage" data-onclick-arg="he" class="hidden lg:inline-flex topbar-flat-btn font-hebrew lang-btn"
-                        data-lang="he">עברית</button>
-                    <button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn" data-en="עברית" data-he="English">עברית</button>
+                    <!-- Language control (components/language_menu.html) -->
+                    
+
+<button data-onclick="chooseLanguage" data-onclick-arg="en" class="hidden lg:inline-flex topbar-flat-btn font-serif lang-btn"
+    data-lang="en">English</button>
+<button data-onclick="chooseLanguage" data-onclick-arg="he" class="hidden lg:inline-flex topbar-flat-btn font-hebrew lang-btn"
+    data-lang="he">עברית</button>
+<button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn" data-en="עברית" data-he="English">עברית</button>
+
+
                 </div>
             </header>
             

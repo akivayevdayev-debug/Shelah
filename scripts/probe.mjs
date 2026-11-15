@@ -199,13 +199,16 @@ async function shot(page, base) {
     const out = option('--out');
     if (!out) return ['shot needs --out <file.png>'];
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: flag('--dark') ? 'dark' : 'light' }]);
-    await page.evaluateOnNewDocument((he) => {
+    // --dark stores the theme too: the saved preference, not the system
+    // setting, decides the theme once the app has loaded.
+    await page.evaluateOnNewDocument((he, dark) => {
         try {
             localStorage.setItem("Sh'elahAnalyticsConsent", 'denied');
             localStorage.setItem('shelah.ai.tipDismissed', '1');
             if (he) localStorage.setItem('preferredLanguage', 'he');
+            if (dark) localStorage.setItem("Sh'elahPrefs", JSON.stringify({ theme: 'dark' }));
         } catch { /* storage blocked */ }
-    }, flag('--he'));
+    }, flag('--he'), flag('--dark'));
     await page.goto(base + target, { waitUntil: 'load', timeout: 60000 });
     for (let i = 0; i < 30 && (await page.evaluate(busyRegions)).length; i += 1) await sleep(1000);
     const opener = option('--open');

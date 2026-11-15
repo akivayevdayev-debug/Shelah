@@ -1,4 +1,5 @@
 {% from "components/icons.html" import phosphor, phosphor_path %}
+{% from "components/language_menu.html" import language_menu with context %}
 <!DOCTYPE html>
 <html lang="en" data-theme="dark"{% if view_transitions %} data-view-transitions{% endif %}>
 
@@ -664,12 +665,8 @@
                          (ShelahHebrewRef.hebrewDate, the same one
                          refreshHebrewDateDisplay makes) so nothing swaps later. -->
                     <script>(function(){var el=document.getElementById('hebrewDateDisplay');try{var v={};new Intl.DateTimeFormat('en-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'}).formatToParts(new Date()).forEach(function(x){v[x.type]=x.value;});var n={Tishri:'Tishrei',Heshvan:'Cheshvan',Tevet:'Teves',Nisan:'Nissan',Tamuz:'Tammuz','Adar I':'Adar 1','Adar II':'Adar 2'};if(el&&v.day&&v.month&&/^\d+$/.test(v.year||'')){var t=v.day+' '+(n[v.month]||v.month)+' '+v.year,r=window.ShelahHebrewRef,h=document.documentElement.getAttribute('lang')==='he'&&r?r.hebrewDate(v.day,n[v.month]||v.month,v.year):'';el.textContent=h||t;el.setAttribute('data-en',t);el.setAttribute('data-he',h);if(h)el.setAttribute('dir','rtl');}}catch(e){}})()</script>
-                    <!-- Translator Toggles -->
-                    <button data-onclick="chooseLanguage" data-onclick-arg="en" class="hidden lg:inline-flex topbar-flat-btn font-serif lang-btn"
-                        data-lang="en">English</button>
-                    <button data-onclick="chooseLanguage" data-onclick-arg="he" class="hidden lg:inline-flex topbar-flat-btn font-hebrew lang-btn"
-                        data-lang="he">עברית</button>
-                    <button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn" {{ lang_attrs('common.other_language_name') }}>{{ _('common.other_language_name') }}</button>
+                    <!-- Language control (components/language_menu.html) -->
+                    {{ language_menu() }}
                 </div>
             </header>
             <script>swapPendingLanguage(document.querySelector('header[role="banner"]'))</script>

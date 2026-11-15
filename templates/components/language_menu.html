@@ -1,0 +1,45 @@
+{% from "components/icons.html" import phosphor %}
+{#
+  The topbar's language control, shared by templates/index.html and
+  components/legal_topbar.html.
+
+  Two switched-on languages: the English / עברית pair on wide screens and
+  one "the other language" button on phones, as before.
+
+  Three or more: one globe button that opens a menu of every switched-on
+  language, each written in its own language (endonym) and script. The menu
+  opens and closes with the site's popover motion and is driven by
+  static/js/language-menu.js, loaded only when the menu is on the page.
+  Picking a language calls chooseLanguage() (topbar_shared.js), which
+  crossfades the switch like a theme change.
+#}
+{% macro language_menu() %}
+{% if locales|length > 2 %}
+<div class="lang-menu" data-lang-menu>
+    <button type="button" id="langMenuBtn" class="topbar-flat-btn lang-menu-btn"
+        aria-haspopup="menu" aria-expanded="false" aria-controls="langMenu">
+        {{ phosphor('globe-simple', size=16, class='lang-menu-globe h-4 w-4') }}
+        <span class="sr-only" {{ lang_attrs('common.language') }}>{{ _('common.language') }}</span>
+        <span class="lang-menu-current" data-lang-menu-current aria-hidden="true">{{ locales[0].name }}</span>
+        {{ phosphor('caret-down', size=12, class='lang-menu-caret h-3 w-3') }}
+    </button>
+    <div id="langMenu" class="lang-menu-panel hidden" role="menu" aria-labelledby="langMenuBtn">
+        {% for loc in locales %}
+        <button type="button" role="menuitemradio" tabindex="-1"
+            class="lang-menu-item" aria-checked="{{ 'true' if loop.first else 'false' }}"
+            data-lang="{{ loc.code }}" data-onclick="chooseLanguage" data-onclick-arg="{{ loc.code }}">
+            <span class="lang-menu-name{% if loc.script == 'Hebrew' %} font-hebrew{% endif %}" lang="{{ loc.code }}" dir="{{ loc.dir }}">{{ loc.name }}</span>
+            {{ phosphor('check', size=14, class='lang-menu-check h-3.5 w-3.5') }}
+        </button>
+        {% endfor %}
+    </div>
+</div>
+<script defer src="{{ asset_url('js/language-menu.js') }}"></script>
+{% else %}
+<button data-onclick="chooseLanguage" data-onclick-arg="en" class="hidden lg:inline-flex topbar-flat-btn font-serif lang-btn"
+    data-lang="en">English</button>
+<button data-onclick="chooseLanguage" data-onclick-arg="he" class="hidden lg:inline-flex topbar-flat-btn font-hebrew lang-btn"
+    data-lang="he">עברית</button>
+<button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn" {{ lang_attrs('common.other_language_name') }}>{{ _('common.other_language_name') }}</button>
+{% endif %}
+{% endmacro %}

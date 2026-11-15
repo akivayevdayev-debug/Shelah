@@ -1,4 +1,5 @@
 {% from "components/icons.html" import phosphor %}
+{% from "components/language_menu.html" import language_menu with context %}
 <header role="banner"
     class="topbar sticky top-0 z-200 bg-white text-slate-800 py-1.5 px-2 lg:py-1.5 lg:px-3 shadow-xs border-b flex flex-wrap lg:flex-nowrap justify-between items-center shrink-0 gap-1.5 lg:gap-2">
     <button type="button" id="brandHomeBtn" class="topbar-brand flex items-center gap-1.5 shrink-0"
@@ -60,11 +61,7 @@
             <a id="signInBtn" href="/signin" class="topbar-flat-btn" {{ lang_attrs('legal_topbar.sign_in') }}>{{ _('legal_topbar.sign_in') }}</a>
         </div>
 
-        <!-- Translator Toggles -->
-        <button data-onclick="chooseLanguage" data-onclick-arg="en" class="hidden lg:inline-flex topbar-flat-btn font-serif lang-btn"
-            data-lang="en">English</button>
-        <button data-onclick="chooseLanguage" data-onclick-arg="he" class="hidden lg:inline-flex topbar-flat-btn font-hebrew lang-btn"
-            data-lang="he">עברית</button>
-        <button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn" {{ lang_attrs('common.other_language_name') }}>{{ _('common.other_language_name') }}</button>
+        <!-- Language control (components/language_menu.html) -->
+        {{ language_menu() }}
     </div>
 </header>

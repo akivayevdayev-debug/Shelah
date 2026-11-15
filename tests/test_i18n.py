@@ -223,3 +223,39 @@ def test_the_home_page_carries_the_catalog_for_the_scripts():
 
     body = flask_app.app.test_client().get("/").get_data(as_text=True)
     assert '<script type="application/json" id="i18n-catalog">' in body
+
+
+_MENU_SOURCE = (
+    '{% from "components/language_menu.html" import language_menu with context %}'
+    "{{ language_menu() }}"
+)
+
+
+def _render_language_control(codes):
+    import app as flask_app
+
+    locales = [i18n.CATALOGS.locales[code] for code in codes]
+    with flask_app.app.test_request_context("/"):
+        template = flask_app.app.jinja_env.from_string(_MENU_SOURCE)
+        return template.render(locales=locales, asset_url=lambda name: f"/static/{name}")
+
+
+def test_two_languages_keep_the_english_hebrew_buttons():
+    assert 'id="mobileLangToggle"' in _render_language_control(["en", "he"])
+
+
+def test_two_languages_render_no_language_menu():
+    assert 'role="menu"' not in _render_language_control(["en", "he"])
+
+
+def test_three_languages_list_each_one_in_the_menu():
+    html = _render_language_control(["en", "he", "es"])
+    assert html.count('role="menuitemradio"') == 3
+
+
+def test_language_menu_writes_each_language_in_its_own_direction():
+    assert 'lang="he" dir="rtl"' in _render_language_control(["en", "he", "ar"])
+
+
+def test_language_menu_loads_its_script_only_when_shown():
+    assert "language-menu.js" in _render_language_control(["en", "he", "es"])

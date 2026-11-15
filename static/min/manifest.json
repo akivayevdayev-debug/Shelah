@@ -4,7 +4,7 @@
   "css": {
     "sources": {
       "css/tokens.css": "sha256:8317cd89b31991a9573e1e086048d861e66500a091a80f4f22e105f0b723cb4f",
-      "style.css": "sha256:ebe56d092c255ea38af0e445600c4c237bcd97149308d7cc976c6a1dafc0aac2",
+      "style.css": "sha256:3cbcea90d75d666d7f220b7a5c99a08e02c10c55a6c6cc0ac208ed8f6675d5d4",
       "css/typography.css": "sha256:8cc5129450f6f17c2825dc900a5ab184de1b6900bcb9175d4c92ee2eadbdb772",
       "css/reader.css": "sha256:a7680571f7b451f26c9a35c5f76690ce05909c712aa8d1c07acbe01d5f150ac8",
       "css/sidebar.css": "sha256:818cc6cedeb746e467359505bdf979f245d865f3cb92127af64eb80cf8600980",
@@ -19,19 +19,19 @@
       "css/loading.css": "sha256:10eaad855917d62df7a5d396c0bbb8a487d529d846bc3233637e7eb42e5a3211",
       "css/tailwind.css": "sha256:7e003ddf0bb1216222651038416f47937c183c2e5e6d041eb3e2fa43fcaaaa4e"
     },
-    "sourcesHash": "a2b1db455e88de9cddeb7763959cafbbfddd5aa8abdf4b4d776050292d1f3de3",
+    "sourcesHash": "cad87fe4454a74bd39c9cfa8943a27e493871753548f35d342c9adb6a60ed23a",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "a2b1db455e88de9cddeb7763959cafbbfddd5aa8abdf4b4d776050292d1f3de3",
+        "sourcesHash": "cad87fe4454a74bd39c9cfa8943a27e493871753548f35d342c9adb6a60ed23a",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "a2b1db455e88de9cddeb7763959cafbbfddd5aa8abdf4b4d776050292d1f3de3",
+        "sourcesHash": "cad87fe4454a74bd39c9cfa8943a27e493871753548f35d342c9adb6a60ed23a",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "a2b1db455e88de9cddeb7763959cafbbfddd5aa8abdf4b4d776050292d1f3de3",
+        "sourcesHash": "cad87fe4454a74bd39c9cfa8943a27e493871753548f35d342c9adb6a60ed23a",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
@@ -70,6 +70,9 @@
       },
       "i18n.js": {
         "source": "sha256:0c127c619ee5fd3c4fa5f0e5613b13e2c88a373f390f77891a4bb5cbe31779b4"
+      },
+      "language-menu.js": {
+        "source": "sha256:40fdff3fe71d52615a48a13920b982bb8680a625641a8a394361a29dc320d994"
       },
       "load-region.js": {
         "source": "sha256:44ea4200b030cad3dd42bc4d20750b5de313fbb6827c4c2594f31be980923bc4"
@@ -137,6 +140,7 @@
         "js/community-labels.js": "87dfbcba156b",
         "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/i18n.js": "43fcd8a14015",
+        "js/language-menu.js": "f4b495a5de62",
         "js/load-region.js": "cd7ccc80f956",
         "js/main.js": "15be7840c07f",
         "js/motion.js": "78836d5f6141",
