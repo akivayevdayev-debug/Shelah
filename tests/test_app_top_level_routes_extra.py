@@ -11,6 +11,8 @@ top-level HTTP endpoints has a real request/response test: app.py's 10
 
 from __future__ import annotations
 
+import html
+
 
 
 class TestSettingsAndProfileRoutesResolve:
@@ -36,8 +38,9 @@ class TestCustom404Page:
 
     def test_unknown_path_renders_branded_template(self, test_client):
         response = test_client.get("/this-path-does-not-exist")
-        assert b"Page Not Found" in response.data
-        assert b"Back to Sh'elah" in response.data
+        text = html.unescape(response.get_data(as_text=True))
+        assert "Page Not Found" in text
+        assert "Back to Sh'elah" in text
 
 
 class TestAsyncHealthEndpoint:

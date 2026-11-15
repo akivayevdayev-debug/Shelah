@@ -1,0 +1,7 @@
+{
+  "default": "en",
+  "locales": [
+    {"code": "en", "name": "English", "dir": "ltr", "script": "Latin", "fallback": null, "enabled": true},
+    {"code": "he", "name": "עברית", "dir": "rtl", "script": "Hebrew", "fallback": "en", "enabled": true}
+  ]
+}

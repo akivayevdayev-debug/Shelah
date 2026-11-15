@@ -31,23 +31,19 @@
 
     <!-- Hero Banner -->
     <section class="legal-hero" aria-labelledby="heroTitle">
-        <h1 id="heroTitle" data-en="Page Not Found" data-he="העמוד לא נמצא">Page Not Found</h1>
-        <p class="subtitle" data-en="404: this page doesn't exist" data-he="404 — עמוד זה אינו קיים">404: this page doesn't exist</p>
+        <h1 id="heroTitle" {{ lang_attrs('notfound.title') }}>{{ _('notfound.title') }}</h1>
+        <p class="subtitle" {{ lang_attrs('notfound.subtitle') }}>{{ _('notfound.subtitle') }}</p>
     </section>
 
     <!-- MAIN CONTENT -->
     <main id="mainContent" class="flex-1">
         <article class="main-container prose prose-sm max-w-2xl">
             <div class="info-box">
-                <p data-en="The page you're looking for may have been moved, renamed, or never existed. Double-check the address, or head back to Sh'elah and search from there."
-                    data-he="ייתכן שהעמוד שחיפשת הועבר, שונה שמו, או שמעולם לא היה קיים. בדוק את הכתובת שוב, או חזור לשאלה וחפש משם.">
-                    The page you're looking for may have been moved, renamed, or never existed. Double-check the
-                    address, or head back to Sh'elah and search from there.
-                </p>
+                <p {{ lang_attrs('notfound.body') }}>{{ _('notfound.body') }}</p>
             </div>
 
             <p class="text-center" style="margin-top: 2rem;">
-                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span data-en="Back to Sh'elah" data-he="חזרה לשאלה">Back to Sh'elah</span></a>
+                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span {{ lang_attrs('common.back_to_shelah') }}>{{ _('common.back_to_shelah') }}</span></a>
             </p>
         </article>
     </main>
@@ -56,16 +52,16 @@
         style="border-color: var(--surface-border); color: var(--ink-secondary); background: var(--surface-1);">
         <p>
             <a href="/" class="font-semibold hover:underline" style="color: var(--ink-heading);"
-                data-en="Sh'elah Torah Encyclopedia" data-he="שאלה אנציקלופדיית תורה">Sh'elah Torah Encyclopedia</a>
+                {{ lang_attrs('common.footer.site_name') }}>{{ _('common.footer.site_name') }}</a>
             &nbsp;·&nbsp;
             <a href="/terms" class="hover:underline" style="color: var(--ink-secondary);"
-                data-en="Terms of Service" data-he="תנאי שירות">Terms of Service</a>
+                {{ lang_attrs('common.footer.terms') }}>{{ _('common.footer.terms') }}</a>
             &nbsp;·&nbsp;
             <a href="/privacy" class="hover:underline" style="color: var(--ink-secondary);"
-                data-en="Privacy Policy" data-he="מדיניות פרטיות">Privacy Policy</a>
+                {{ lang_attrs('common.footer.privacy') }}>{{ _('common.footer.privacy') }}</a>
             &nbsp;·&nbsp;
             <a href="/accessibility" class="hover:underline" style="color: var(--ink-secondary);"
-                data-en="Accessibility" data-he="נגישות">Accessibility</a>
+                {{ lang_attrs('common.footer.accessibility') }}>{{ _('common.footer.accessibility') }}</a>
         </p>
     </footer>
 

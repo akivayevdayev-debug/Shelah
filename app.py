@@ -36,6 +36,7 @@ from backend import ask_progress, source_search
 from backend import search as _backend_search
 from backend import page_meta
 from backend import module_versions
+from backend import i18n
 from backend.logging_setup import (
     setup_logging,
     bind_request_id,
@@ -738,6 +739,9 @@ def _holiday_color_for_category(category):
 # in the shell (e.g. an old key left in a dotfile) — see backend/claude.py.
 load_dotenv(override=True)
 app = Flask(__name__)
+
+
+i18n.register(app)
 
 
 @app.context_processor
