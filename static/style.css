@@ -8,8 +8,10 @@
 /* TYPOGRAPHY & HEBREW SUPPORT */
 /* ═══════════════════════════════════════════════════════════════════ */
 
+/* No page-wide smooth scrolling: it slowed find-in-page, anchor jumps and
+   every scripted scroll to a crawl. Scrolls that should glide ask for it
+   themselves (behavior: "smooth"), and legal.css keeps it for its contents. */
 html {
-    scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
 }
 
