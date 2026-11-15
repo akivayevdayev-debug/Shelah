@@ -763,7 +763,7 @@ test('what the grid draws for an event: a localized name, a full-name tooltip, a
     try {
         const { options } = built(page);
         const rosh = event('Rosh Chodesh <Av>', '2026-10-11', { category: 'roshchodesh', icon: 'moon' });
-        assert.deepEqual(plain(options.eventContent({ event: rosh })), { html: 'Rosh Chodesh &lt;Av&gt;' });
+        assert.deepEqual(plain(options.eventContent({ event: rosh })), { html: '<span class="cal-event-label">Rosh Chodesh &lt;Av&gt;</span>' });
         assert.equal(options.eventClass({ event: rosh }), 'fc-event fc-daygrid-event cal-cat-roshchodesh');
 
         const chip = page.document.createElement('div');
@@ -779,7 +779,7 @@ test('what the grid draws for an event: a localized name, a full-name tooltip, a
         assert.equal(chip.title, 'No icon');
 
         page.eval(`displayedLanguage = 'he'`);
-        assert.deepEqual(plain(options.eventContent({ event: event('Purim', '2026-03-03') })), { html: 'פורים' });
+        assert.deepEqual(plain(options.eventContent({ event: event('Purim', '2026-03-03') })), { html: '<span class="cal-event-label">פורים</span>' });
     } finally {
         page.close();
     }

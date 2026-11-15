@@ -341,16 +341,10 @@ body.theme-dark {
     font-size: 0.73rem;
     font-weight: 600;
     cursor: pointer;
-    transition: opacity var(--motion-dur-fast) var(--motion-ease-out), transform var(--motion-dur-fast) var(--motion-ease-out);
+    transition: opacity var(--motion-dur-fast) var(--motion-ease-out);
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .fc-event:hover {
-        transform: translateY(-1px);
-    }
 }
 
 /* Classes are assigned per-event from the backend's `category` field via
@@ -443,6 +437,30 @@ body.theme-dark {
     #calendarModal .flex-1.overflow-y-auto {
         padding: 0.5rem;
     }
+
+    /* A phone cell is ~50px wide, so a chip's name was cut to "Chan" or
+       "Paras". Show the category icon on its colour instead; tapping the day
+       lists every name in full in the agenda below the grid. The label stays
+       in the accessibility tree (visually hidden, not display:none). */
+    .fc-daygrid-event:has(.cal-event-icon) .fc-event-main {
+        display: flex;
+        justify-content: center;
+    }
+
+    .fc-daygrid-event:has(.cal-event-icon) .cal-event-icon {
+        width: 1.5em;
+        height: 1.5em;
+        margin: 0;
+    }
+
+    .fc-daygrid-event:has(.cal-event-icon) .cal-event-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
 }
 
 @media (min-width: 768px) {
@@ -492,8 +510,7 @@ body.theme-dark {
     overflow: hidden;
     /* Hover shade (below): isolation keeps its z-index:-1 layer above the chip's own fill. */
     isolation: isolate;
-    transition: transform var(--motion-dur-fast) var(--motion-ease-out),
-        scale var(--motion-dur-fast) var(--motion-ease-out);
+    transition: scale var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 .fc-daygrid-event .fc-event-title {

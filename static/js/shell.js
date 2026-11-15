@@ -12048,8 +12048,10 @@ function hasParenthetical(text) {
                     openCalendarDetail(info.el, key, info.event);
                 },
                 // Localize the holiday name shown in month-grid chips (backend sends English only).
+                // The label has its own span so phones can show the chip as its icon alone
+                // (calendar.css); the full name stays in the agenda, tooltip and accessible name.
                 eventContent: function (arg) {
-                    return { html: escapeHtml(translateHolidayName(arg.event.title)) };
+                    return { html: `<span class="cal-event-label">${escapeHtml(translateHolidayName(arg.event.title))}</span>` };
                 },
                 // Chips are ellipsised on phones; the native tooltip gives the full name on hover.
                 eventDidMount: function (info) {

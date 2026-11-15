@@ -14,24 +14,24 @@
       "css/ai.css": "sha256:12ea433526bbcffed5e0ac64a083d0025045afd37b5564a6b01c029203d3039c",
       "css/conversation.css": "sha256:101e37b2df09030ac83d9c5bcab4245a41d1cf87c9a26361fd2f1e8cb7532758",
       "css/history.css": "sha256:ff1556ed62eceadb953ed9a9b4325d70410a97e1bceff2271a07b5ebe213218c",
-      "css/calendar.css": "sha256:9f2ee231f7836edef765872599703972380cee652549e2d83613c201bf3e239d",
+      "css/calendar.css": "sha256:69f52f8e6804e7d435fed88dde0b1218cb792dc9fd6cc8832b66faaa77c1346a",
       "css/calendar-detail.css": "sha256:d14b9c9ed0a63a3d7f396d41e264781bf319897b773fd2ea2e7d7189cafed9ed",
       "css/loading.css": "sha256:10eaad855917d62df7a5d396c0bbb8a487d529d846bc3233637e7eb42e5a3211",
       "css/tailwind.css": "sha256:7e003ddf0bb1216222651038416f47937c183c2e5e6d041eb3e2fa43fcaaaa4e"
     },
-    "sourcesHash": "709dafb20740e1cc041e01f950376f0b830c41c70e84435ce53b1e0f4734f133",
+    "sourcesHash": "db3f795beea0175c37f69ea83b6bb88b8dc013820985cc76595aa1e2d23a4e28",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "709dafb20740e1cc041e01f950376f0b830c41c70e84435ce53b1e0f4734f133",
+        "sourcesHash": "db3f795beea0175c37f69ea83b6bb88b8dc013820985cc76595aa1e2d23a4e28",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "709dafb20740e1cc041e01f950376f0b830c41c70e84435ce53b1e0f4734f133",
+        "sourcesHash": "db3f795beea0175c37f69ea83b6bb88b8dc013820985cc76595aa1e2d23a4e28",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "709dafb20740e1cc041e01f950376f0b830c41c70e84435ce53b1e0f4734f133",
+        "sourcesHash": "db3f795beea0175c37f69ea83b6bb88b8dc013820985cc76595aa1e2d23a4e28",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
@@ -78,7 +78,7 @@
         "source": "sha256:968aced3c444af8bc1de8da0954ad3704ee3acf4a2df7812da324e62c3890547"
       },
       "shell.js": {
-        "source": "sha256:6f9cc86e1bde1d68b0d87daead601656224325ed5c8a471bfbb05bd10db9619b"
+        "source": "sha256:ab9a49a5abdf7c593233bbf5d057e18ea9918d5b07b8d4343a7bc65f9a7de4f4"
       },
       "topbar_shared.js": {
         "source": "sha256:75c06c59a0d0753cfd1dcfa98768aacc737b2b82b65df585e0df8644a4c5d3f8"
@@ -138,7 +138,7 @@
         "js/motion.js": "78836d5f6141",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
-        "js/shell.js": "a257c782c644",
+        "js/shell.js": "49d94d33b481",
         "js/topbar_shared.js": "787e1a0a3888"
       },
       "unreached": []
