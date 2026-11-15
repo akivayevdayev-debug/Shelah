@@ -581,6 +581,25 @@ html.rtl :is(.home-topic-title, .home-library-title, .ai-tip__title, .conv-empty
     transform: translate(-50%, -50%);
 }
 
+/* Home-card values that are links (Today, This Week's Shabbat) and the daily
+   study links are drawn as text, 21-26px tall. An invisible layer reaches
+   --hit-min without changing the card (npm run probe -- targets / --mobile). */
+.home-stat-link,
+.home-daily-link {
+    position: relative;
+}
+
+.home-stat-link::before,
+.home-daily-link::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    inline-size: max(100%, var(--hit-min));
+    block-size: max(100%, var(--hit-min));
+    transform: translate(-50%, -50%);
+}
+
 html.rtl #hebrewDateDisplay {
     direction: rtl;
     unicode-bidi: plaintext;
@@ -2552,6 +2571,21 @@ html.rtl #readerTopBar .reader-topbar-settings-label {
     letter-spacing: 0.02em;
 }
 
+/* Drawn 30-32px tall in the slim reader bar; the tap area reaches --hit-min
+   through an invisible layer instead of a taller pill. */
+.reader-topbar-settings-btn {
+    position: relative;
+}
+
+.reader-topbar-settings-btn::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 50%;
+    block-size: max(100%, var(--hit-min));
+    transform: translateY(-50%);
+}
+
 .reader-topbar-settings-icon {
     font-size: 0.9rem;
     line-height: 1;
@@ -2992,6 +3026,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 .home-calendar-btn {
     display: inline-flex;
     align-items: center;
+    min-block-size: var(--hit-min);
     gap: 0.45rem;
     margin-top: 1rem;
     padding: 0.5rem 1rem;

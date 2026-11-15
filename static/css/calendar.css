@@ -139,6 +139,15 @@ body.theme-dark {
     border-radius: 0.4rem;
 }
 
+/* Touch screens get the full 44px target on Today / previous / next (32px
+   with a mouse keeps the toolbar compact). */
+@media (pointer: coarse) {
+    #calendarModal .fc .fc-button-primary {
+        min-block-size: var(--hit-min);
+        min-inline-size: var(--hit-min);
+    }
+}
+
 .fc .fc-button-primary:hover,
 .fc .fc-button-primary:focus:not(:focus-visible) {
     box-shadow: 0 2px 5px rgba(78, 64, 30, 0.15);

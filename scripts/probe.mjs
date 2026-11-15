@@ -6,6 +6,11 @@
 //   npm run probe -- smoke /calendar   smoke check of another path
 //   npm run probe -- stall /api/zmanim the first matching request never
 //                                      answers; the page must recover by itself
+//   npm run probe -- targets / --mobile  tap areas under 44x44 px
+//   ... targets / --open .home-calendar-btn  click a control first, then
+//                                      measure only what it opened
+//   npm run probe -- shot / --out /tmp/home.png [--dark] [--he] [--full]
+//                                      a screenshot (returning visitor)
 //   ... --url http://localhost:5002    use a server that is already running
 //   ... --mobile                       375x812 phone viewport
 //
@@ -16,6 +21,10 @@
 // smoke: fails on console errors, failed /api requests, or a region still
 //   aria-busy="true" after 30 s.
 // stall: fails if the stalled region is still busy after 40 s.
+// targets: fails on a visible control whose real tap area (measured with
+//   elementFromPoint, so ::before/::after extensions count) is under 44 px
+//   in either direction. Links inside running text (p, li) are exempt, as in
+//   WCAG 2.5.8.
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { existsSync } from 'node:fs';
@@ -31,7 +40,7 @@ const option = (name) => {
     const at = args.indexOf(name);
     return at >= 0 ? args[at + 1] : null;
 };
-const positional = args.filter((a, i) => !a.startsWith('--') && !(i > 0 && args[i - 1] === '--url'));
+const positional = args.filter((a, i) => !a.startsWith('--') && !(i > 0 && ['--url', '--open', '--out'].includes(args[i - 1])));
 const mode = positional[0] || 'smoke';
 const target = positional[1] || (mode === 'stall' ? '/api/zmanim' : '/');
 
@@ -128,9 +137,88 @@ async function stall(page, base) {
     return [`still loading 40 s after stalling ${target}: ${(await page.evaluate(busyRegions)).join(', ')}`];
 }
 
-const checks = { smoke, stall };
+// Runs in the page: how far a tap still lands on each control, scanning out
+// from its centre along both axes (capped at 22 px each way).
+function measureTargets(min, onlyOpened) {
+    const half = min / 2;
+    let controls = [...document.querySelectorAll('a[href], button, summary, [role="button"], input:not([type="hidden"]), select')];
+    // After --open: only controls inside a dialog, drawer or panel on top.
+    if (onlyOpened) controls = controls.filter((el) => el.closest('dialog[open], [role="dialog"], [aria-modal="true"], aside, .modal'));
+    const hits = (el, x, y) => {
+        const at = document.elementFromPoint(x, y);
+        return Boolean(at) && (at === el || el.contains(at));
+    };
+    const reach = (el, cx, cy, dx, dy) => {
+        let d = 0;
+        while (d < half && hits(el, cx + dx * (d + 1), cy + dy * (d + 1))) d += 1;
+        return d;
+    };
+    const small = [];
+    for (const el of controls) {
+        if (!el.getClientRects().length || getComputedStyle(el).visibility === 'hidden') continue;
+        el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+        const r = el.getBoundingClientRect();
+        if (!r.width || !r.height || r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) continue;
+        if (el.closest('p, li:not([role]), dd') && el.localName === 'a' && el.closest('p, li, dd').textContent.trim().length > el.textContent.trim().length + 20) continue;
+        const cx = Math.round(r.left + r.width / 2);
+        const cy = Math.round(r.top + r.height / 2);
+        if (!hits(el, cx, cy)) continue; // covered by something else right now
+        const w = 1 + reach(el, cx, cy, -1, 0) + reach(el, cx, cy, 1, 0);
+        const h = 1 + reach(el, cx, cy, 0, -1) + reach(el, cx, cy, 0, 1);
+        if (w < min - 1 || h < min - 1) {
+            const name = el.id ? `#${el.id}` : `${el.localName}.${[...el.classList].slice(0, 2).join('.')}`;
+            small.push(`${name} "${(el.getAttribute('aria-label') || el.textContent).trim().replace(/\s+/g, ' ').slice(0, 30)}" ${w}x${h}`);
+        }
+    }
+    return small;
+}
+
+async function targets(page, base) {
+    // A returning visitor: the consent banner and the AI discovery tip would
+    // otherwise sit over the controls being measured.
+    await page.evaluateOnNewDocument(() => {
+        try {
+            localStorage.setItem("Sh'elahAnalyticsConsent", 'denied');
+            localStorage.setItem('shelah.ai.tipDismissed', '1');
+        } catch { /* storage blocked */ }
+    });
+    await page.goto(base + target, { waitUntil: 'load', timeout: 60000 });
+    for (let i = 0; i < 30 && (await page.evaluate(busyRegions)).length; i += 1) await sleep(1000);
+    const opener = option('--open');
+    if (opener) {
+        await page.click(opener);
+    }
+    // Let entrance motion settle before measuring.
+    await sleep(1500);
+    const small = [...new Set(await page.evaluate(measureTargets, 44, opener ? 'opened' : null))];
+    console.log(`${small.length} control(s) under 44 px on ${target}`);
+    return small.map((line) => `small target: ${line}`);
+}
+
+async function shot(page, base) {
+    const out = option('--out');
+    if (!out) return ['shot needs --out <file.png>'];
+    await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: flag('--dark') ? 'dark' : 'light' }]);
+    await page.evaluateOnNewDocument((he) => {
+        try {
+            localStorage.setItem("Sh'elahAnalyticsConsent", 'denied');
+            localStorage.setItem('shelah.ai.tipDismissed', '1');
+            if (he) localStorage.setItem('preferredLanguage', 'he');
+        } catch { /* storage blocked */ }
+    }, flag('--he'));
+    await page.goto(base + target, { waitUntil: 'load', timeout: 60000 });
+    for (let i = 0; i < 30 && (await page.evaluate(busyRegions)).length; i += 1) await sleep(1000);
+    const opener = option('--open');
+    if (opener) await page.click(opener);
+    await sleep(1500);
+    await page.screenshot({ path: out, fullPage: flag('--full') });
+    console.log(`saved ${out}`);
+    return [];
+}
+
+const checks = { smoke, stall, targets, shot };
 if (!checks[mode]) {
-    console.error(`unknown check "${mode}" (smoke | stall)`);
+    console.error(`unknown check "${mode}" (smoke | stall | targets | shot)`);
     process.exit(2);
 }
 
