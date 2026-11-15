@@ -152,11 +152,12 @@ def translate(code: str, key: str, **values: Any) -> str:
     return CATALOGS.translate(code, key, **values)
 
 
-def lang_attrs(key: str) -> Markup:
+def lang_attrs(key: str, **values: Any) -> Markup:
     """``data-en="..." data-he="..."`` for the client-side language switch."""
     pair = Markup('data-{}="{}"')
     return Markup(" ").join(
-        pair.format(code, translate(code, key)) for code in ("en", "he") if code in CATALOGS.enabled
+        pair.format(code, translate(code, key, **values))
+        for code in ("en", "he") if code in CATALOGS.enabled
     )
 
 

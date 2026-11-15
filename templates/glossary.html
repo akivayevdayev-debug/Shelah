@@ -46,22 +46,18 @@
     {% include 'components/legal_topbar.html' %}
 
     <section class="legal-hero" aria-labelledby="heroTitle">
-        <h1 id="heroTitle" data-en="Glossary" data-he="מילון מונחים">Glossary</h1>
-        <p class="subtitle" data-en="Recurring halachic terms, defined the same way Sh'elah's AI defines them."
-            data-he="מונחים הלכתיים חוזרים, מוגדרים באותו אופן שבו הבינה המלאכותית של שאלה מגדירה אותם.">Recurring
-            halachic terms, defined the same way Sh'elah's AI defines them.</p>
+        <h1 id="heroTitle" {{ lang_attrs('glossary.glossary') }}>{{ _('glossary.glossary') }}</h1>
+        <p class="subtitle" {{ lang_attrs('glossary.recurring_halachic_terms_defined_the_same') }}>{{ _('glossary.recurring_halachic_terms_defined_the_same') }}</p>
     </section>
 
     <main id="mainContent" class="flex-1">
         <article id="glossaryBody" class="main-container prose prose-sm max-w-2xl">
             <div class="legal-toolbar">
-                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span data-en="Back to Sh'elah" data-he="חזרה לשאלה">Back to Sh'elah</span></a>
+                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span {{ lang_attrs('glossary.back_to_shelah') }}>{{ _('glossary.back_to_shelah') }}</span></a>
             </div>
 
-            <p data-en="These definitions are seeded from the same lexicon lookup Sh'elah's AI assistant and reader word-lookup feature use, so a term here matches what you'll see inline elsewhere in the app."
-                data-he="הגדרות אלו נשאבות מאותו חיפוש במילון שבו משתמשים עוזר הבינה המלאכותית וחיפוש המילים של הקורא בשאלה, כך שמונח כאן תואם למה שתראה בפנים במקומות אחרים באפליקציה.">
-                These definitions are seeded from the same lexicon lookup Sh'elah's AI assistant and reader
-                word-lookup feature use, so a term here matches what you'll see inline elsewhere in the app.
+            <p {{ lang_attrs('glossary.these_definitions_are_seeded_from_the') }}>
+                {{ _('glossary.these_definitions_are_seeded_from_the') }}
             </p>
 
             <dl id="glossaryList" class="glossary-list">

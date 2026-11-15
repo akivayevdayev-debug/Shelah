@@ -49,302 +49,227 @@
 
     <!-- Hero Banner -->
     <section class="legal-hero" aria-labelledby="heroTitle">
-        <h1 id="heroTitle" data-en="Privacy Policy" data-he="מדיניות הפרטיות">Privacy Policy</h1>
-        <p class="subtitle" data-en="Effective: August 15, 2026 · Last updated: November 14, 2026 · v2.0"
-            data-he="תאריך תחולה: 15 באוגוסט 2026 · עדכון אחרון: 14 בנובמבר 2026 · v2.0">Effective: August 15, 2026 ·
-            Last updated: November 14, 2026 · v2.0</p>
+        <h1 id="heroTitle" {{ lang_attrs('privacy.privacy_policy') }}>{{ _('privacy.privacy_policy') }}</h1>
+        <p class="subtitle" {{ lang_attrs('privacy.effective_august_15_2026_last_updated') }}>{{ _('privacy.effective_august_15_2026_last_updated') }}</p>
     </section>
 
     <!-- MAIN CONTENT -->
     <main id="mainContent" class="flex-1">
         <article id="legalDocumentBody" class="main-container prose prose-sm max-w-2xl">
             <div class="legal-toolbar">
-                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span data-en="Back to Sh'elah" data-he="חזרה לשאלה">Back to Sh'elah</span></a>
+                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span {{ lang_attrs('privacy.back_to_shelah') }}>{{ _('privacy.back_to_shelah') }}</span></a>
                                 <button type="button" id="selectAllPolicyTextBtn" class="select-all-btn">
                     <span class="contents" aria-hidden="true">{{ phosphor('selection-all', size=16) }}</span>
-                    <span data-en="Select all text" data-he="בחר את כל הטקסט">Select all text</span>
+                    <span {{ lang_attrs('privacy.select_all_text') }}>{{ _('privacy.select_all_text') }}</span>
                 </button>
             
             </div>
 
 
             <div class="info-box">
-                <p>{{ phosphor('shield-check', 18, 'legal-inline-icon') }}<span data-en="Your Privacy Matters: Sh'elah does not sell your personal data. We collect only what we need to provide the Service and improve it. You may request access to, correction of, or deletion of your data at any time."
-                    data-he="הפרטיות שלך חשובה: Sh'elah אינה מוכרת את הנתונים האישיים שלך. אנו אוספים רק את מה שנדרש כדי לספק את השירות ולשפר אותו. תוכל לבקש גישה, תיקון או מחיקה של הנתונים שלך בכל עת.">
+                <p>{{ phosphor('shield-check', 18, 'legal-inline-icon') }}<span {{ lang_attrs('privacy.your_privacy_matters_shelah_does_not') }}>
                     <strong>Your Privacy Matters:</strong> Sh'elah does not sell your personal data. We collect only
                     what we need to provide the Service and improve it. You may request access to, correction of, or
                     deletion of your data at any time.
                 </span></p>
             </div>
 
-            <h2 data-en="1. Information We Collect" data-he="1. מידע שאנו אוספים">1. Information We Collect</h2>
+            <h2 {{ lang_attrs('privacy.1_information_we_collect') }}>{{ _('privacy.1_information_we_collect') }}</h2>
 
-            <h3 data-en="Account Information" data-he="מידע חשבון">Account Information</h3>
-            <p data-en="When you create an account, we collect your name and email address via our authentication provider (Clerk). We do not store your password directly. Clerk manages it securely."
-                data-he="כאשר אתה יוצר חשבון, אנו אוספים את שמך וכתובת הדוא״ל שלך באמצעות ספק האימות שלנו (Clerk). אנו לא שומרים את הסיסמה שלך באופן ישיר - היא מנוהלת בצורה מאובטחת על ידי Clerk.">
-                When you create an account, we collect your name and email address via our authentication provider
-                (Clerk). We do not store your password directly. Clerk manages it securely.
+            <h3 {{ lang_attrs('privacy.account_information') }}>{{ _('privacy.account_information') }}</h3>
+            <p {{ lang_attrs('privacy.when_you_create_an_account_we') }}>
+                {{ _('privacy.when_you_create_an_account_we') }}
             </p>
 
-            <h3 data-en="Age Requirement" data-he="דרישת גיל">Age Requirement</h3>
-            <p data-en="Every page displays a footer notice that using the Service requires you to be at least 13 years old (16+ if located in the EU/UK), per our Terms of Service. We do not verify age or collect your date of birth. Continued use of the Service is treated as your confirmation that you meet this requirement."
-                data-he="בכל עמוד מוצגת הודעת תחתית עמוד לפיה שימוש בשירות מחייב שתהיה בן/בת 13 לפחות (16+ אם נמצא/ת באיחוד האירופי/בריטניה), בהתאם לתנאי השירות שלנו. איננו מאמתים גיל ואיננו אוספים את תאריך הלידה שלך — המשך שימוש בשירות נחשב לאישורך כי אתה עומד בדרישה זו.">
-                Every page displays a footer notice that using the Service requires you to be at least 13 years old
-                (16+ if located in the EU/UK), per our Terms of Service. We do not verify age or collect your date
-                of birth. Continued use of the Service is treated as your confirmation that you meet this
-                requirement.
+            <h3 {{ lang_attrs('privacy.age_requirement') }}>{{ _('privacy.age_requirement') }}</h3>
+            <p {{ lang_attrs('privacy.every_page_displays_a_footer_notice') }}>
+                {{ _('privacy.every_page_displays_a_footer_notice') }}
             </p>
 
-            <h3 data-en="Usage Data" data-he="נתוני שימוש">Usage Data</h3>
-            <p data-en="We collect information about how you use the Service:" data-he="אנו אוספים מידע על האופן בו אתה משתמש בשירות:">
-                We collect information about how you use the Service:
+            <h3 {{ lang_attrs('privacy.usage_data') }}>{{ _('privacy.usage_data') }}</h3>
+            <p {{ lang_attrs('privacy.we_collect_information_about_how_you') }}>
+                {{ _('privacy.we_collect_information_about_how_you') }}
             </p>
             <ul>
-                <li data-en="Questions asked and AI responses received" data-he="שאלות שנשאלו ותשובות AI שהתקבלו">Questions asked and AI responses received</li>
-                <li data-en="Pages visited and features used" data-he="דפים שביקרו בהם ותכונות ששימשו">Pages visited and features used</li>
-                <li data-en="Timestamps of activity" data-he="חותמות זמן של פעילות">Timestamps of activity</li>
-                <li data-en="Bookmarks, notes, and saved preferences" data-he="סימניות, הערות והעדפות שמורות">Bookmarks, notes, and saved preferences</li>
+                <li {{ lang_attrs('privacy.questions_asked_and_ai_responses_received') }}>{{ _('privacy.questions_asked_and_ai_responses_received') }}</li>
+                <li {{ lang_attrs('privacy.pages_visited_and_features_used') }}>{{ _('privacy.pages_visited_and_features_used') }}</li>
+                <li {{ lang_attrs('privacy.timestamps_of_activity') }}>{{ _('privacy.timestamps_of_activity') }}</li>
+                <li {{ lang_attrs('privacy.bookmarks_notes_and_saved_preferences') }}>{{ _('privacy.bookmarks_notes_and_saved_preferences') }}</li>
             </ul>
 
-            <h3 data-en="Preferences" data-he="העדפות">Preferences</h3>
-            <p data-en="We store your user preferences to personalize your experience, including: language (English/Hebrew), theme (light/dark), community/tradition settings, and calendar display preferences."
-                data-he="אנו שומרים את העדפות המשתמש שלך כדי להתאים אישית את החוויה שלך, כולל: שפה (אנגלית/עברית), מראה (בהיר/כהה), הגדרות קהילה/מסורת והעדפות תצוגת לוח שנה.">
-                We store your user preferences to personalize your experience, including: language (English/Hebrew),
-                theme (light/dark), community/tradition settings, and calendar display preferences.
+            <h3 {{ lang_attrs('privacy.preferences') }}>{{ _('privacy.preferences') }}</h3>
+            <p {{ lang_attrs('privacy.we_store_your_user_preferences_to') }}>
+                {{ _('privacy.we_store_your_user_preferences_to') }}
             </p>
 
-            <h3 data-en="Device &amp; Technical Information" data-he="מידע טכני ומכשירים">Device &amp; Technical Information</h3>
-            <p data-en="We automatically collect certain technical information when you use the Service:"
-                data-he="אנו אוספים אוטומטית מידע טכני מסוים כאשר אתה משתמש בשירות:">
-                We automatically collect certain technical information when you use the Service:
+            <h3 {{ lang_attrs('privacy.device_technical_information') }}>{{ _('privacy.device_technical_information') }}</h3>
+            <p {{ lang_attrs('privacy.we_automatically_collect_certain_technical_infor') }}>
+                {{ _('privacy.we_automatically_collect_certain_technical_infor') }}
             </p>
             <ul>
-                <li data-en="Browser type and version" data-he="סוג וגרסת דפדפן">Browser type and version</li>
-                <li data-en="Operating system" data-he="מערכת הפעלה">Operating system</li>
-                <li data-en="IP address (for rate-limiting, security, and fraud prevention)" data-he="כתובת IP (להגבלת קצב, אבטחה ומניעת הונאות)">IP address (for rate-limiting, security, and fraud prevention)</li>
-                <li data-en="Error logs and AI usage/cost logs (request metadata, not full conversation content, beyond what §1 already discloses)" data-he="יומני שגיאות ויומני שימוש/עלות בינה מלאכותית (מטא-נתוני בקשה, לא תוכן שיחה מלא, מעבר למה שכבר נחשף בסעיף 1)">Error logs and AI usage/cost logs (request metadata, not full conversation content, beyond what §1 already discloses)</li>
-                <li data-en="Referring URLs" data-he="כתובות אתרים מפנות">Referring URLs</li>
+                <li {{ lang_attrs('privacy.browser_type_and_version') }}>{{ _('privacy.browser_type_and_version') }}</li>
+                <li {{ lang_attrs('privacy.operating_system') }}>{{ _('privacy.operating_system') }}</li>
+                <li {{ lang_attrs('privacy.ip_address_for_rate_limiting_security') }}>{{ _('privacy.ip_address_for_rate_limiting_security') }}</li>
+                <li {{ lang_attrs('privacy.error_logs_and_ai_usage_cost') }}>{{ _('privacy.error_logs_and_ai_usage_cost') }}</li>
+                <li {{ lang_attrs('privacy.referring_urls') }}>{{ _('privacy.referring_urls') }}</li>
             </ul>
 
-            <h3 data-en="Cookies &amp; Local Storage" data-he="עוגיות ואחסון מקומי">Cookies &amp; Local Storage</h3>
-            <p data-en="We use cookies and similar technologies:" data-he="אנו משתמשים בעוגיות ובטכנולוגיות דומות:">
-                We use cookies and similar technologies:
+            <h3 {{ lang_attrs('privacy.cookies_local_storage') }}>{{ _('privacy.cookies_local_storage') }}</h3>
+            <p {{ lang_attrs('privacy.we_use_cookies_and_similar_technologies') }}>
+                {{ _('privacy.we_use_cookies_and_similar_technologies') }}
             </p>
             <ul>
-                <li><strong data-en="Necessary cookies:" data-he="עוגיות הכרחיות:">Necessary cookies:</strong>
-                    <span data-en="Authentication session (Clerk) and location preferences, required for core functionality"
-                        data-he="הפעלת אימות (Clerk), העדפות מיקום — נדרש לפונקציונליות ליבה">Authentication session (Clerk) and location preferences, required for core functionality</span></li>
-                <li><strong data-en="Device cookie:" data-he="עוגיית מכשיר:">Device cookie:</strong>
-                    <span data-en="when you ask a question without signing in, we set one cookie, shelah_device (a random value, HttpOnly, SameSite=Lax, one year), so the private link to your answer opens again in this browser. We store only a one-way hash of it next to that answer. It holds no profile, is not used for tracking or advertising, and is sent only to this site. Clear your cookies, or delete the answer from its page, to cut the link."
-                        data-he="כששואלים שאלה בלי להתחבר, אנו קובעים עוגייה אחת, shelah_device (ערך אקראי, HttpOnly, SameSite=Lax, שנה), כדי שהקישור הפרטי לתשובתך ייפתח שוב בדפדפן הזה. אנו שומרים לצד התשובה רק גיבוב חד-כיווני שלה. היא אינה מכילה פרופיל, אינה משמשת למעקב או לפרסום, ונשלחת רק לאתר זה. מחיקת העוגיות, או מחיקת התשובה מדפה, מנתקת את הקישור.">when you ask a question without signing in, we set one cookie,
-                        shelah_device (a random value, HttpOnly, SameSite=Lax, one year), so the private link to your
-                        answer opens again in this browser. We store only a one-way hash of it next to that answer. It
-                        holds no profile, is not used for tracking or advertising, and is sent only to this site. Clear
-                        your cookies, or delete the answer from its page, to cut the link.</span></li>
-                <li><strong data-en="Browser localStorage:" data-he="localStorage של הדפדפן:">Browser
-                        localStorage:</strong>
-                    <span data-en="theme and language preference, stored only on your device and never transmitted to our servers"
-                        data-he="העדפת מראה ושפה — נשמרות רק במכשירך ולעולם אינן מועברות לשרתים שלנו">theme
-                        and language preference, stored only on your device and never transmitted to our
-                        servers</span></li>
-                <li><strong data-en="Analytics:" data-he="ניתוחים:">Analytics:</strong>
-                    <span data-en="Vercel Speed Insights / Web Analytics: cookieless and privacy-first. Aggregated, non-personally-identifiable page and performance metrics, with no cross-site tracking"
-                        data-he="Vercel Speed Insights / Web Analytics — ללא עוגיות ומכוון פרטיות: מדדי דף וביצועים מרוכזים ולא מזהים אישית, ללא מעקב חוצה-אתרים">Vercel
-                        Speed Insights / Web Analytics: cookieless and privacy-first. Aggregated,
-                        non-personally-identifiable page and performance metrics, with no cross-site tracking</span></li>
+                <li><strong {{ lang_attrs('privacy.necessary_cookies') }}>{{ _('privacy.necessary_cookies') }}</strong>
+                    <span {{ lang_attrs('privacy.authentication_session_clerk_and_location_prefer') }}>{{ _('privacy.authentication_session_clerk_and_location_prefer') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.device_cookie') }}>{{ _('privacy.device_cookie') }}</strong>
+                    <span {{ lang_attrs('privacy.when_you_ask_a_question_without') }}>{{ _('privacy.when_you_ask_a_question_without') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.browser_localstorage') }}>{{ _('privacy.browser_localstorage') }}</strong>
+                    <span {{ lang_attrs('privacy.theme_and_language_preference_stored_only') }}>{{ _('privacy.theme_and_language_preference_stored_only') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.analytics') }}>{{ _('privacy.analytics') }}</strong>
+                    <span {{ lang_attrs('privacy.vercel_speed_insights_web_analytics_cookieless') }}>{{ _('privacy.vercel_speed_insights_web_analytics_cookieless') }}</span></li>
             </ul>
-            <p data-en="Today the Service uses no non-essential, consent-gated cookies. If we add any in the future, we will gate them behind a consent prompt for EU/UK/California users before they load. You can disable non-essential cookies in your browser settings; necessary cookies cannot be disabled without breaking core sign-in functionality."
-                data-he="כיום השירות אינו משתמש בעוגיות לא-חיוניות המותנות בהסכמה. אם נוסיף כאלה בעתיד, נתנה את טעינתן בהצגת בקשת הסכמה למשתמשי האיחוד האירופי/בריטניה/קליפורניה לפני טעינתן. ניתן להשבית עוגיות לא חיוניות בהגדרות הדפדפן; לא ניתן להשבית עוגיות הכרחיות מבלי לפגוע בפונקציונליות הכניסה המרכזית.">
-                Today the Service uses no non-essential, consent-gated cookies. If we add any in the future, we will
-                gate them behind a consent prompt for EU/UK/California users before they load. You can disable
-                non-essential cookies in your browser settings; necessary cookies cannot be disabled without breaking
-                core sign-in functionality.
+            <p {{ lang_attrs('privacy.today_the_service_uses_no_non') }}>
+                {{ _('privacy.today_the_service_uses_no_non') }}
             </p>
 
-            <h2 data-en="2. Purposes &amp; Legal Bases (GDPR Art. 6)" data-he="2. מטרות ובסיסים חוקיים (סעיף 6 ל-GDPR)">2. Purposes &amp; Legal Bases (GDPR Art. 6)</h2>
-            <p data-en="For users in the EU/UK, we rely on the following legal bases for each processing purpose:"
-                data-he="עבור משתמשים באיחוד האירופי/בריטניה, אנו מסתמכים על הבסיסים החוקיים הבאים לכל מטרת עיבוד:">
-                For users in the EU/UK, we rely on the following legal bases for each processing purpose:
+            <h2 {{ lang_attrs('privacy.2_purposes_legal_bases_gdpr_art') }}>{{ _('privacy.2_purposes_legal_bases_gdpr_art') }}</h2>
+            <p {{ lang_attrs('privacy.for_users_in_the_eu_uk') }}>
+                {{ _('privacy.for_users_in_the_eu_uk') }}
             </p>
             <table class="rights-table w-full border-collapse mb-4">
                 <thead>
                     <tr>
-                        <th data-en="Purpose" data-he="מטרה">Purpose</th>
-                        <th data-en="Legal Basis" data-he="בסיס חוקי">Legal Basis</th>
+                        <th {{ lang_attrs('privacy.purpose') }}>{{ _('privacy.purpose') }}</th>
+                        <th {{ lang_attrs('privacy.legal_basis') }}>{{ _('privacy.legal_basis') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td data-en="Providing the Service (account, AI answers, bookmarks)" data-he="אספקת השירות (חשבון, תשובות AI, סימניות)">Providing the Service (account, AI answers, bookmarks)</td>
-                        <td data-en="Performance of a contract (Art. 6(1)(b))" data-he="ביצוע חוזה (סעיף 6(1)(ב))">Performance of a contract (Art. 6(1)(b))</td>
+                        <td {{ lang_attrs('privacy.providing_the_service_account_ai_answers') }}>{{ _('privacy.providing_the_service_account_ai_answers') }}</td>
+                        <td {{ lang_attrs('privacy.performance_of_a_contract_art_6') }}>{{ _('privacy.performance_of_a_contract_art_6') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="Security, fraud/abuse prevention, rate limiting" data-he="אבטחה, מניעת הונאות/שימוש לרעה, הגבלת קצב">Security, fraud/abuse prevention, rate limiting</td>
-                        <td data-en="Legitimate interest (Art. 6(1)(f))" data-he="אינטרס לגיטימי (סעיף 6(1)(ו))">Legitimate interest (Art. 6(1)(f))</td>
+                        <td {{ lang_attrs('privacy.security_fraud_abuse_prevention_rate_limiting') }}>{{ _('privacy.security_fraud_abuse_prevention_rate_limiting') }}</td>
+                        <td {{ lang_attrs('privacy.legitimate_interest_art_6_1_f') }}>{{ _('privacy.legitimate_interest_art_6_1_f') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="Aggregated, cookieless analytics" data-he="ניתוחים מרוכזים ללא עוגיות">Aggregated, cookieless analytics</td>
-                        <td data-en="Legitimate interest (Art. 6(1)(f))" data-he="אינטרס לגיטימי (סעיף 6(1)(ו))">Legitimate interest (Art. 6(1)(f))</td>
+                        <td {{ lang_attrs('privacy.aggregated_cookieless_analytics') }}>{{ _('privacy.aggregated_cookieless_analytics') }}</td>
+                        <td {{ lang_attrs('privacy.legitimate_interest_art_6_1_f') }}>{{ _('privacy.legitimate_interest_art_6_1_f') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="Any future non-essential cookie/marketing use" data-he="כל שימוש עתידי בעוגיה לא-חיונית/שיווק">Any future non-essential cookie/marketing use</td>
-                        <td data-en="Consent (Art. 6(1)(a)), opt-in only" data-he="הסכמה (סעיף 6(1)(א)), הצטרפות בלבד">Consent (Art. 6(1)(a)), opt-in only</td>
+                        <td {{ lang_attrs('privacy.any_future_non_essential_cookie_marketing') }}>{{ _('privacy.any_future_non_essential_cookie_marketing') }}</td>
+                        <td {{ lang_attrs('privacy.consent_art_6_1_a_opt') }}>{{ _('privacy.consent_art_6_1_a_opt') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="Legal compliance (e.g., responding to lawful requests)" data-he="ציות משפטי (למשל, מענה לבקשות חוקיות)">Legal compliance (e.g., responding to lawful requests)</td>
-                        <td data-en="Legal obligation (Art. 6(1)(c))" data-he="חובה חוקית (סעיף 6(1)(ג))">Legal obligation (Art. 6(1)(c))</td>
+                        <td {{ lang_attrs('privacy.legal_compliance_e_g_responding_to') }}>{{ _('privacy.legal_compliance_e_g_responding_to') }}</td>
+                        <td {{ lang_attrs('privacy.legal_obligation_art_6_1_c') }}>{{ _('privacy.legal_obligation_art_6_1_c') }}</td>
                     </tr>
                 </tbody>
             </table>
-            <p data-en="We do not use your questions or answers to train AI models without your explicit consent."
-                data-he="אנו לא משתמשים בשאלות או בתשובות שלך לאימון מודלים של בינה מלאכותית ללא הסכמתך המפורשת.">
+            <p {{ lang_attrs('privacy.we_do_not_use_your_questions') }}>
                 We do <strong>not</strong> use your questions or answers to train AI models without your explicit
                 consent.
             </p>
 
-            <h2 data-en="3. Data Retention" data-he="3. שמירת נתונים">3. Data Retention</h2>
+            <h2 {{ lang_attrs('privacy.3_data_retention') }}>{{ _('privacy.3_data_retention') }}</h2>
             <table class="rights-table w-full border-collapse mb-4">
                 <thead>
                     <tr>
-                        <th data-en="Data Type" data-he="סוג נתונים">Data Type</th>
-                        <th data-en="Retention Period" data-he="תקופת שמירה">Retention Period</th>
+                        <th {{ lang_attrs('privacy.data_type') }}>{{ _('privacy.data_type') }}</th>
+                        <th {{ lang_attrs('privacy.retention_period') }}>{{ _('privacy.retention_period') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td data-en="Account information (name, email)" data-he="מידע חשבון (שם, דוא״ל)">Account information (name, email)</td>
-                        <td data-en="Until account deletion or 1 year of inactivity" data-he="עד מחיקת החשבון או שנה של חוסר פעילות">Until account deletion or 1 year of inactivity</td>
+                        <td {{ lang_attrs('privacy.account_information_name_email') }}>{{ _('privacy.account_information_name_email') }}</td>
+                        <td {{ lang_attrs('privacy.until_account_deletion_or_1_year') }}>{{ _('privacy.until_account_deletion_or_1_year') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="Answer history (questions + AI answers, including answers asked without signing in)" data-he="היסטוריית תשובות (שאלות + תשובות AI, כולל תשובות שנשאלו ללא התחברות)">Answer history (questions + AI answers, including answers asked without signing in)</td>
-                        <td data-en="90 days, then automatically deleted" data-he="90 ימים, ואז נמחקים אוטומטית">90 days, then automatically deleted</td>
+                        <td {{ lang_attrs('privacy.answer_history_questions_ai_answers_including') }}>{{ _('privacy.answer_history_questions_ai_answers_including') }}</td>
+                        <td {{ lang_attrs('privacy.90_days_then_automatically_deleted') }}>{{ _('privacy.90_days_then_automatically_deleted') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="Cached AI responses" data-he="תשובות AI שמורות במטמון">Cached AI responses</td>
-                        <td data-en="24 hours (shared across users, not linked to you)" data-he="24 שעות (משותף בין משתמשים, לא מקושר אליך)">24 hours (shared across users, not linked to you)</td>
+                        <td {{ lang_attrs('privacy.cached_ai_responses') }}>{{ _('privacy.cached_ai_responses') }}</td>
+                        <td {{ lang_attrs('privacy.24_hours_shared_across_users_not') }}>{{ _('privacy.24_hours_shared_across_users_not') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="Saved AI conversations (signed-in users)" data-he="שיחות AI שמורות (משתמשים מחוברים)">Saved AI conversations (signed-in users)</td>
-                        <td data-en="Until you delete your account. Deleting a single conversation hides it from your list; the stored copy is removed when your account is deleted." data-he="עד שתמחקו את החשבון. מחיקת שיחה בודדת מסתירה אותה מהרשימה שלכם; העותק השמור נמחק כשהחשבון נמחק.">Until you delete your account. Deleting a single conversation hides it from your list; the stored copy is removed when your account is deleted.</td>
+                        <td {{ lang_attrs('privacy.saved_ai_conversations_signed_in_users') }}>{{ _('privacy.saved_ai_conversations_signed_in_users') }}</td>
+                        <td {{ lang_attrs('privacy.until_you_delete_your_account_deleting') }}>{{ _('privacy.until_you_delete_your_account_deleting') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="Short summaries of earlier questions (signed-in users)" data-he="סיכומים קצרים של שאלות קודמות (משתמשים מחוברים)">Short summaries of earlier questions (signed-in users)</td>
-                        <td data-en="Until account deletion" data-he="עד מחיקת החשבון">Until account deletion</td>
+                        <td {{ lang_attrs('privacy.short_summaries_of_earlier_questions_signed') }}>{{ _('privacy.short_summaries_of_earlier_questions_signed') }}</td>
+                        <td {{ lang_attrs('privacy.until_account_deletion') }}>{{ _('privacy.until_account_deletion') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="User preferences &amp; bookmarks" data-he="העדפות משתמש וסימניות">User preferences &amp; bookmarks</td>
-                        <td data-en="Until deleted by user or account deletion" data-he="עד שנמחק על ידי משתמש או מחיקת החשבון">Until deleted by user or account deletion</td>
+                        <td {{ lang_attrs('privacy.user_preferences_bookmarks') }}>{{ _('privacy.user_preferences_bookmarks') }}</td>
+                        <td {{ lang_attrs('privacy.until_deleted_by_user_or_account') }}>{{ _('privacy.until_deleted_by_user_or_account') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="Device cookie (shelah_device, signed-out answers)" data-he="עוגיית מכשיר (shelah_device, תשובות ללא התחברות)">Device cookie (shelah_device, signed-out answers)</td>
-                        <td data-en="Up to 1 year in your browser; the answer it unlocks is deleted after 90 days" data-he="עד שנה בדפדפן שלך; התשובה שהיא פותחת נמחקת לאחר 90 ימים">Up to 1 year in your browser; the answer it unlocks is deleted after 90 days</td>
+                        <td {{ lang_attrs('privacy.device_cookie_shelah_device_signed_out') }}>{{ _('privacy.device_cookie_shelah_device_signed_out') }}</td>
+                        <td {{ lang_attrs('privacy.up_to_1_year_in_your') }}>{{ _('privacy.up_to_1_year_in_your') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="Session cookies" data-he="עוגיות הפעלה">Session cookies</td>
-                        <td data-en="Deleted on logout" data-he="נמחק ביציאה">Deleted on logout</td>
+                        <td {{ lang_attrs('privacy.session_cookies') }}>{{ _('privacy.session_cookies') }}</td>
+                        <td {{ lang_attrs('privacy.deleted_on_logout') }}>{{ _('privacy.deleted_on_logout') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="Security logs (IP, access logs)" data-he="יומני אבטחה (IP, יומני גישה)">Security logs (IP, access logs)</td>
-                        <td data-en="30 days" data-he="30 ימים">30 days</td>
+                        <td {{ lang_attrs('privacy.security_logs_ip_access_logs') }}>{{ _('privacy.security_logs_ip_access_logs') }}</td>
+                        <td {{ lang_attrs('privacy.30_days') }}>{{ _('privacy.30_days') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="AI usage/cost logs" data-he="יומני שימוש/עלות בינה מלאכותית">AI usage/cost logs</td>
-                        <td data-en="90 days, then automatically deleted" data-he="90 ימים, ואז נמחקים אוטומטית">90 days, then automatically deleted</td>
+                        <td {{ lang_attrs('privacy.ai_usage_cost_logs') }}>{{ _('privacy.ai_usage_cost_logs') }}</td>
+                        <td {{ lang_attrs('privacy.90_days_then_automatically_deleted') }}>{{ _('privacy.90_days_then_automatically_deleted') }}</td>
                     </tr>
                 </tbody>
             </table>
-            <p data-en="An automated daily job enforces the answer-history and AI usage/cost log retention windows above in production (docs/PRIVACY_OPERATIONS.md §5). Account deletion is available on request at any time. See 'Your Rights' below for the self-serve download/delete tools in your account settings."
-                data-he="עבודה אוטומטית יומית אוכפת את חלונות השמירה של היסטוריית התשובות ויומני עלות/שימוש הבינה המלאכותית שלעיל בסביבת הייצור (docs/PRIVACY_OPERATIONS.md §5). מחיקת חשבון זמינה לפי בקשה בכל עת — ראה 'זכויותיך' למטה לכלי הורדה/מחיקה עצמאיים בהגדרות החשבון שלך.">
+            <p {{ lang_attrs('privacy.an_automated_daily_job_enforces_the') }}>
                 An automated daily job enforces the answer-history and AI usage/cost log retention windows above in
                 production (<code>docs/PRIVACY_OPERATIONS.md</code> §5). Account deletion is available on request at
                 any time. See "Your Rights" below for the self-serve download/delete tools in your account settings.
             </p>
 
-            <h2 data-en="4. Data Sharing &amp; Sub-Processors" data-he="4. שיתוף נתונים ומעבדי-משנה">4. Data Sharing
-                &amp; Sub-Processors</h2>
-            <p><strong data-en="We do not sell or share (as defined by CCPA/CPRA) your personal data to third parties for cross-context behavioral advertising."
-                    data-he="אנו לא מוכרים ולא משתפים (כהגדרתם ב-CCPA/CPRA) את הנתונים האישיים שלך עם צדדים שלישיים לצורך פרסום התנהגותי חוצה-הקשרים.">We
-                    do not sell or share (as defined by CCPA/CPRA) your personal data to third parties for
-                    cross-context behavioral advertising.</strong></p>
-            <p data-en="We share data with the following service providers ('sub-processors') who help us operate the Service, each under its own data-processing terms:"
-                data-he="אנו חולקים נתונים עם ספקי השירות הבאים ('מעבדי-משנה') המסייעים לנו להפעיל את השירות, כל אחד תחת תנאי עיבוד הנתונים שלו:">
-                We share data with the following service providers ('sub-processors') who help us operate the
-                Service, each under its own data-processing terms:
+            <h2 {{ lang_attrs('privacy.4_data_sharing_sub_processors') }}>{{ _('privacy.4_data_sharing_sub_processors') }}</h2>
+            <p><strong {{ lang_attrs('privacy.we_do_not_sell_or_share') }}>{{ _('privacy.we_do_not_sell_or_share') }}</strong></p>
+            <p {{ lang_attrs('privacy.we_share_data_with_the_following') }}>
+                {{ _('privacy.we_share_data_with_the_following') }}
             </p>
             <ul>
-                <li><strong data-en="Clerk" data-he="Clerk">Clerk</strong>
-                    <span data-en="(clerk.com, US): authentication. Stores your name and email, and handles login security."
-                        data-he="(clerk.com, ארה״ב) — אימות. שומר את שמך, דוא״ל, ומטפל באבטחת הכניסה.">(clerk.com, US): authentication. Stores your name and email, and handles login security.</span></li>
-                <li><strong data-en="Supabase" data-he="Supabase">Supabase</strong>
-                    <span data-en="(supabase.com): database hosting. Stores your preferences, bookmarks, and query history."
-                        data-he="(supabase.com) — אחסון מסד נתונים. שומר את העדפותיך, סימניות והיסטוריית השאילתות.">(supabase.com): database hosting. Stores your preferences, bookmarks, and query history.</span></li>
-                <li><strong data-en="Vercel" data-he="Vercel">Vercel</strong>
-                    <span data-en="(vercel.com, US): application hosting, request logs, and cookieless aggregated analytics."
-                        data-he="(vercel.com, ארה״ב) — אחסון יישומים, יומני בקשות, וניתוחים מרוכזים ללא עוגיות.">(vercel.com, US): application hosting, request logs, and cookieless aggregated analytics.</span></li>
-                <li><strong data-en="Google" data-he="Google">Google</strong>
-                    <span data-en="(Google Gemini API, US): the first AI model asked. It receives your question, the earlier turns of the same conversation, and the source excerpts found for the question. Your name and email are not sent. "
-                        data-he="(Google Gemini API, ארה״ב) — מודל ה-AI הראשון שפונים אליו. הוא מקבל את השאלה, את התורות הקודמות באותה שיחה ואת קטעי המקור שנמצאו לשאלה. השם והדוא״ל שלך לא נשלחים. ">(Google
-                        Gemini API, US): the first AI model asked. It receives your question, the earlier turns of
-                        the same conversation, and the source excerpts found for the question. Your name and email
-                        are not sent.</span></li>
-                <li><strong data-en="Anthropic" data-he="Anthropic">Anthropic</strong>
-                    <span data-en="(Claude API, US): the backup AI model, used when Gemini fails, times out or is paused. Receives the same things as Google above. When a question depends on a real-world fact the sources cannot settle (for example whether a product is kosher), the AI may also ask Anthropic's web search to look it up on a short list of Orthodox sites, such as Chabad.org, the OU and Sefaria. That lookup sends only a short search phrase the AI wrote, never your name, email or history, and you can turn it off under Web search in the chat menu."
-                        data-he="(Claude API, ארה״ב) — מודל ה-AI הגיבוי, בשימוש כש-Gemini נכשל, חורג ממגבלת הזמן שלו או מושהה. מקבל את אותם דברים כמו גוגל לעיל. כששאלה תלויה בעובדה מהעולם שהמקורות אינם מכריעים בה (למשל אם מוצר כשר), ה-AI עשוי גם לבקש מחיפוש הרשת של Anthropic לבדוק אותה ברשימה קצרה של אתרים אורתודוקסיים (למשל Chabad.org, ה-OU וספריא). הבדיקה שולחת רק משפט חיפוש קצר שה-AI כתב, אף פעם לא את שמך, הדוא״ל או ההיסטוריה שלך, ואפשר לכבות אותה תחת חיפוש ברשת בתפריט הצ׳אט.">(Claude
-                        API, US): the backup AI model, used when Gemini fails, times out or is paused. Receives the same
-                        things as Google above. When a question depends on a real-world fact the sources cannot
-                        settle (for example whether a product is kosher), the AI may also ask Anthropic's web
-                        search to look it up on a short list of Orthodox sites, such as Chabad.org, the OU
-                        and Sefaria. That lookup sends only a short search phrase the AI wrote, never your name,
-                        email or history, and you can turn it off under Web search in the chat menu.</span></li>
-                <li><strong data-en="Sefaria" data-he="Sefaria">Sefaria</strong>
-                    <span data-en="(sefaria.org): source-text retrieval. Receives search and lookup queries derived from your question, not your identity."
-                        data-he="(sefaria.org) — אחזור טקסטי מקור. מקבלת שאילתות חיפוש/בדיקה הנגזרות משאלתך, לא את זהותך.">(sefaria.org): source-text retrieval. Receives search and lookup queries derived from your question, not your identity.</span></li>
-                <li><strong data-en="Hebcal" data-he="Hebcal">Hebcal</strong>
-                    <span data-en="(hebcal.com): Jewish calendar, holiday and zmanim (halachic times) data, looked up by date and your general location (city or coordinates), not your identity."
-                        data-he="(hebcal.com) — נתוני לוח שנה יהודי, חגים וזמנים הלכתיים, המתבררים לפי תאריך ומיקומך הכללי (עיר/קואורדינטות), לא לפי זהותך.">(hebcal.com): Jewish calendar, holiday and zmanim (halachic times) data, looked up by date and your general location (city or coordinates), not your identity.</span></li>
-                <li><strong data-en="Location lookups" data-he="איתור מיקום">Location lookups</strong>
-                    <span data-en="(photon.komoot.io, geocoding-api.open-meteo.com, nominatim.openstreetmap.org, ipwho.is): turn a city you type into coordinates for zmanim. If you set no city and our host cannot tell your rough location, ipwho.is is asked once with your IP address to estimate it. None of them receive your identity."
-                        data-he="(photon.komoot.io, geocoding-api.open-meteo.com, nominatim.openstreetmap.org, ipwho.is) — ממירים עיר שהקלדת לקואורדינטות עבור הזמנים. אם לא בחרת עיר והשרת שלנו אינו יודע את מיקומך המשוער, נשלחת פעם אחת כתובת ה-IP שלך ל-ipwho.is כדי להעריך אותו. אף אחד מהם אינו מקבל את זהותך.">(photon.komoot.io, geocoding-api.open-meteo.com,
-                        nominatim.openstreetmap.org, ipwho.is): turn a city you type into coordinates for zmanim. If you
-                        set no city and our host cannot tell your rough location, ipwho.is is asked once with your IP
-                        address to estimate it. None of them receive your identity.</span></li>
-                <li><strong data-en="Halachipedia / Wikipedia" data-he="Halachipedia / Wikipedia">Halachipedia / Wikipedia</strong>
-                    <span data-en="(halachipedia.com, wikipedia.org): extra source lookups for some questions. They receive search terms taken from your question, not your identity."
-                        data-he="(halachipedia.com, wikipedia.org) — חיפושי מקור נוספים בחלק מהשאלות. הם מקבלים מילות חיפוש שנלקחו מהשאלה שלך, לא את זהותך.">(halachipedia.com, wikipedia.org): extra source lookups for some questions. They receive search terms taken from your question, not your identity.</span></li>
-                <li><strong data-en="Upstash" data-he="Upstash">Upstash</strong>
-                    <span data-en="(upstash.com, US): rate limiting. Holds short-lived request counters keyed to a hash of your IP address, to slow down abuse."
-                        data-he="(upstash.com, ארה״ב) — הגבלת קצב. שומר מונים קצרי-מועד של בקשות לפי גיבוב של כתובת ה-IP שלך, כדי להאט שימוש לרעה.">(upstash.com, US): rate
-                        limiting. Holds short-lived request counters keyed to a hash of your IP address, to slow down
-                        abuse.</span></li>
-                <li><strong data-en="Google Fonts / jsDelivr" data-he="Google Fonts / jsDelivr">Google Fonts / jsDelivr</strong>
-                    <span data-en="(fonts.googleapis.com, cdn.jsdelivr.net): serve the Cardo and Inter typefaces and some page scripts (calendar, animation, sign-in). Your browser fetches these directly, so those services see your IP address and browser details."
-                        data-he="(fonts.googleapis.com, cdn.jsdelivr.net) — מספקים את הגופנים Cardo ו-Inter ואת חלק מסקריפטי העמוד (לוח שנה, אנימציה, התחברות). הדפדפן שלך מושך אותם ישירות, ולכן השירותים האלה רואים את כתובת ה-IP ופרטי הדפדפן שלך.">(fonts.googleapis.com,
-                        cdn.jsdelivr.net): serve the Cardo and Inter typefaces and some page scripts (calendar, animation,
-                        sign-in). Your browser fetches these directly, so those services see your IP address and browser
-                        details.</span></li>
-                <li><strong data-en="MyMemory / Google Translate" data-he="MyMemory / Google Translate">MyMemory /
-                        Google Translate</strong>
-                    <span data-en="(Used as a fallback translation service for source-text passages when needed. Receives text snippets, not your identity.)"
-                        data-he="— משמשים כשירות תרגום גיבוי לקטעי טקסט מקור בעת הצורך. מקבלים קטעי טקסט, לא את זהותך.">(Used as a fallback translation service for source-text passages when needed. Receives text snippets, not your identity.)</span></li>
-                <li><strong data-en="Sentry" data-he="Sentry">Sentry</strong>
-                    <span data-en="(sentry.io): error tracking. Receives crash and error reports, with question and answer text scrubbed before transmission (see docs/OBSERVABILITY.md)."
-                        data-he="(sentry.io) — מעקב שגיאות. מקבלת דוחות קריסה/שגיאה כאשר טקסט השאלה והתשובה נמחקים לפני השידור (ראה docs/OBSERVABILITY.md).">(sentry.io): error tracking. Receives crash and error reports, with question and answer text scrubbed before transmission (see <code>docs/OBSERVABILITY.md</code>).</span></li>
+                <li><strong {{ lang_attrs('privacy.clerk') }}>{{ _('privacy.clerk') }}</strong>
+                    <span {{ lang_attrs('privacy.clerk_com_us_authentication_stores_your') }}>{{ _('privacy.clerk_com_us_authentication_stores_your') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.supabase') }}>{{ _('privacy.supabase') }}</strong>
+                    <span {{ lang_attrs('privacy.supabase_com_database_hosting_stores_your') }}>{{ _('privacy.supabase_com_database_hosting_stores_your') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.vercel') }}>{{ _('privacy.vercel') }}</strong>
+                    <span {{ lang_attrs('privacy.vercel_com_us_application_hosting_request') }}>{{ _('privacy.vercel_com_us_application_hosting_request') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.google') }}>{{ _('privacy.google') }}</strong>
+                    <span {{ lang_attrs('privacy.google_gemini_api_us_the_first') }}>{{ _('privacy.google_gemini_api_us_the_first') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.anthropic') }}>{{ _('privacy.anthropic') }}</strong>
+                    <span {{ lang_attrs('privacy.claude_api_us_the_backup_ai') }}>{{ _('privacy.claude_api_us_the_backup_ai') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.sefaria') }}>{{ _('privacy.sefaria') }}</strong>
+                    <span {{ lang_attrs('privacy.sefaria_org_source_text_retrieval_receives') }}>{{ _('privacy.sefaria_org_source_text_retrieval_receives') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.hebcal') }}>{{ _('privacy.hebcal') }}</strong>
+                    <span {{ lang_attrs('privacy.hebcal_com_jewish_calendar_holiday_and') }}>{{ _('privacy.hebcal_com_jewish_calendar_holiday_and') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.location_lookups') }}>{{ _('privacy.location_lookups') }}</strong>
+                    <span {{ lang_attrs('privacy.photon_komoot_io_geocoding_api_open') }}>{{ _('privacy.photon_komoot_io_geocoding_api_open') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.halachipedia_wikipedia') }}>{{ _('privacy.halachipedia_wikipedia') }}</strong>
+                    <span {{ lang_attrs('privacy.halachipedia_com_wikipedia_org_extra_source') }}>{{ _('privacy.halachipedia_com_wikipedia_org_extra_source') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.upstash') }}>{{ _('privacy.upstash') }}</strong>
+                    <span {{ lang_attrs('privacy.upstash_com_us_rate_limiting_holds') }}>{{ _('privacy.upstash_com_us_rate_limiting_holds') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.google_fonts_jsdelivr') }}>{{ _('privacy.google_fonts_jsdelivr') }}</strong>
+                    <span {{ lang_attrs('privacy.fonts_googleapis_com_cdn_jsdelivr_net') }}>{{ _('privacy.fonts_googleapis_com_cdn_jsdelivr_net') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.mymemory_google_translate') }}>{{ _('privacy.mymemory_google_translate') }}</strong>
+                    <span {{ lang_attrs('privacy.used_as_a_fallback_translation_service') }}>{{ _('privacy.used_as_a_fallback_translation_service') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.sentry') }}>{{ _('privacy.sentry') }}</strong>
+                    <span {{ lang_attrs('privacy.sentry_io_error_tracking_receives_crash') }}>(sentry.io): error tracking. Receives crash and error reports, with question and answer text scrubbed before transmission (see <code>docs/OBSERVABILITY.md</code>).</span></li>
             </ul>
-            <p data-en="We may share anonymized, aggregated data (no personal information) for academic or halachic research purposes."
-                data-he="אנו עשויים לחלוק נתונים אנונימיים ומרוכזים (ללא מידע אישי) למטרות מחקר אקדמי או הלכתי.">
-                We may share anonymized, aggregated data (no personal information) for academic or halachic research
-                purposes.
+            <p {{ lang_attrs('privacy.we_may_share_anonymized_aggregated_data') }}>
+                {{ _('privacy.we_may_share_anonymized_aggregated_data') }}
             </p>
-            <p data-en="We will disclose your data if required by law (e.g., subpoena, court order), or if we believe disclosure is necessary to protect the safety of any person or to prevent illegal activity."
-                data-he="אנו נחשוף את הנתונים שלך אם יידרש על פי חוק (למשל, צו זימון, צו בית משפט), או אם אנו מאמינים כי הגילוי נחוץ להגן על בטיחותו של כל אדם או למנוע פעילות בלתי חוקית.">
-                We will disclose your data if required by law (e.g., subpoena, court order), or if we believe
-                disclosure is necessary to protect the safety of any person or to prevent illegal activity.
+            <p {{ lang_attrs('privacy.we_will_disclose_your_data_if') }}>
+                {{ _('privacy.we_will_disclose_your_data_if') }}
             </p>
 
-            <h2 data-en="5. International Data Transfers" data-he="5. העברות נתונים בינלאומיות">5. International
-                Data Transfers</h2>
-            <p data-en="Several of our sub-processors process data in the United States. If you are located in the European Economic Area, United Kingdom, or Switzerland, your data may be transferred to and processed in the US or other countries outside your jurisdiction. As confirmed 2026-09-04 from each provider's own public DPF/DPA documentation: Clerk and Vercel are self-certified under the EU-U.S. Data Privacy Framework (DPF), including its UK and Swiss extensions, with Standard Contractual Clauses (SCCs) incorporated as a fallback where DPF does not apply; Google participates in the DPF and additionally relies on SCCs for transfers outside DPF's coverage; Anthropic documents SCCs (EU Module 2/3, plus UK and Swiss transfer addenda) as its primary transfer mechanism and separately participates in the DPF as a secondary basis. As confirmed 2026-09-05 from their own current public documentation, Supabase relies solely on SCCs (Module 2/3, plus UK and Swiss transfer addenda), with no DPF self-certification found in its DPA; Sentry is self-certified under the EU-U.S. DPF, with SCCs (Module 2/3, plus a UK addendum) incorporated as a fallback where DPF does not apply. See docs/PRIVACY_OPERATIONS.md §3 for source links. These are the standard transfer safeguards recognized by the European Commission (Standard Contractual Clauses and, where applicable, the EU-U.S. Data Privacy Framework) and most services that rely on US-based providers use them for this purpose. Sh'elah relies on each vendor's own executed safeguard as confirmed above, and will review this section if a vendor's certification or DPA terms materially change."
-                data-he="כמה ממעבדי-המשנה שלנו מעבדים נתונים בארצות הברית. אם אתה נמצא באזור הכלכלי האירופי, בבריטניה, או בשווייץ, ייתכן שהנתונים שלך יועברו ויעובדו בארה״ב או במדינות אחרות מחוץ לתחום השיפוט שלך. כפי שאושר בתאריך 4.9.2026 מתוך תיעוד ה-DPF/DPA הפומבי של כל ספק: Clerk ו-Vercel מוסמכות באופן עצמאי (self-certified) תחת מסגרת הפרטיות EU-U.S. Data Privacy Framework (DPF), לרבות ההרחבות לבריטניה ולשווייץ, עם סעיפים חוזיים סטנדרטיים (SCCs) המשולבים כגיבוי במקרים שבהם ה-DPF אינו חל; Google משתתפת ב-DPF ומסתמכת בנוסף על SCCs להעברות שאינן מכוסות במסגרת זו; Anthropic מתעדת SCCs (מודול 2/3 של האיחוד האירופי, בתוספת נספחים לבריטניה ולשווייץ) כמנגנון ההעברה העיקרי שלה, ומשתתפת בנפרד ב-DPF כבסיס משני. כפי שאושר בתאריך 5.9.2026 מתוך התיעוד הפומבי העדכני של כל ספק, Supabase מסתמכת אך ורק על SCCs (מודול 2/3, בתוספת נספחי העברה לבריטניה ולשווייץ), ולא נמצאה הסמכה עצמית תחת ה-DPF במסמך ה-DPA שלה; Sentry מוסמכת באופן עצמאי (self-certified) תחת מסגרת הפרטיות EU-U.S. Data Privacy Framework (DPF), עם SCCs (מודול 2/3, בתוספת נספח לבריטניה) המשולבים כגיבוי במקרים שבו ה-DPF אינו חל. ראה docs/PRIVACY_OPERATIONS.md §3 לקישורי המקורות. אלה מנגנוני ההעברה הסטנדרטיים המוכרים על ידי הנציבות האירופית (סעיפים חוזיים סטנדרטיים, וכאשר רלוונטי, מסגרת הפרטיות EU-U.S. Data Privacy Framework), והם המנגנונים שבהם משתמשים רוב השירותים המסתמכים על ספקים הממוקמים בארה״ב למטרה זו; Sh'elah מסתמכת על המנגנון המאושר של כל ספק כפי שאושר לעיל, ותבחן סעיף זה מחדש אם הסמכה או תנאי DPA של ספק ישתנו באופן מהותי.">
+            <h2 {{ lang_attrs('privacy.5_international_data_transfers') }}>{{ _('privacy.5_international_data_transfers') }}</h2>
+            <p {{ lang_attrs('privacy.several_of_our_sub_processors_process') }}>
                 Several of our sub-processors process data in the United States. If you are located in the European
                 Economic Area, United Kingdom, or Switzerland, your data may be transferred to and processed in the
                 US or other countries outside your jurisdiction. As confirmed 2026-09-04 from each provider's own
@@ -360,55 +285,29 @@
                 <code>docs/PRIVACY_OPERATIONS.md</code> §3 for source links. These are the standard transfer safeguards recognized by the European Commission (Standard Contractual Clauses and, where applicable, the EU-U.S. Data Privacy Framework), and most services that rely on US-based providers use them for this purpose. Sh'elah relies on each vendor's own executed safeguard as confirmed above, and will review this section if a vendor's certification or DPA terms materially change.
             </p>
 
-            <h2 data-en="6. Your Rights (GDPR, CCPA/CPRA &amp; Others)" data-he="6. זכויותיך (GDPR, CCPA/CPRA ואחרים)">6. Your Rights (GDPR, CCPA/CPRA &amp; Others)</h2>
-            <p data-en="Depending on your location, you have the following rights regarding your personal data:"
-                data-he="בהתאם למיקומך, יש לך את הזכויות הבאות בנוגע לנתונים האישיים שלך:">
-                Depending on your location, you have the following rights regarding your personal data:
+            <h2 {{ lang_attrs('privacy.6_your_rights_gdpr_ccpa_cpra') }}>{{ _('privacy.6_your_rights_gdpr_ccpa_cpra') }}</h2>
+            <p {{ lang_attrs('privacy.depending_on_your_location_you_have') }}>
+                {{ _('privacy.depending_on_your_location_you_have') }}
             </p>
             <ul>
-                <li><strong data-en="Access:" data-he="גישה:">Access:</strong>
-                    <span data-en="Request a copy of all personal data we hold about you. Signed-in users can self-serve this instantly via &quot;Privacy &amp; Data&quot; in the account menu"
-                        data-he="בקש עותק של כל הנתונים האישיים שאנו מחזיקים אודותיך — משתמשים מחוברים יכולים לבצע זאת מיידית באופן עצמאי דרך 'פרטיות ונתונים' בתפריט החשבון">Request a copy of all personal data we hold about you. Signed-in users can self-serve this
-                        instantly via "Privacy &amp; Data" in the account menu</span></li>
-                <li><strong data-en="Correction:" data-he="תיקון:">Correction:</strong>
-                    <span data-en="Request correction of inaccurate or incomplete data"
-                        data-he="בקש תיקון של נתונים לא מדויקים או חסרים">Request correction of inaccurate or incomplete data</span></li>
-                <li><strong data-en="Deletion (&quot;Right to be Forgotten&quot;):" data-he="מחיקה ('הזכות להישכח'):">Deletion ("Right to be Forgotten"):</strong>
-                    <span data-en="Request deletion of your account and all associated personal data. Signed-in users can self-serve this instantly via &quot;Privacy &amp; Data&quot; in the account menu, which also deletes your sign-in identity"
-                        data-he="בקש למחוק את החשבון שלך ואת כל הנתונים האישיים הקשורים אליו — משתמשים מחוברים יכולים לבצע זאת מיידית באופן עצמאי דרך 'פרטיות ונתונים' בתפריט החשבון, הכולל גם מחיקת זהות ההתחברות שלך">Request deletion of your account and all associated personal data. Signed-in users can self-serve
-                        this instantly via "Privacy &amp; Data" in the account menu, which also deletes your sign-in
-                        identity</span></li>
-                <li><strong data-en="Portability:" data-he="ניידות:">Portability:</strong>
-                    <span data-en="Request your data in a machine-readable format (JSON). It is available instantly via the same self-serve download tool"
-                        data-he="בקש את הנתונים שלך בפורמט קריא למכונה (JSON) — זמין מיידית דרך אותו כלי הורדה עצמאי">Request your data in a machine-readable format (JSON). It is available instantly via the same self-serve
-                        download tool</span></li>
-                <li><strong data-en="Opt-out / Do Not Sell or Share:" data-he="ביטול הסכמה / אין למכור או לשתף:">Opt-out
-                        / Do Not Sell or Share:</strong>
-                    <span data-en="We do not sell or share personal data as those terms are defined by CCPA/CPRA, so there is nothing to opt out of today; we honor the Global Privacy Control (GPC) browser signal as a valid opt-out request for any future data sale/sharing regardless. You can also disable non-essential analytics cookies and unsubscribe from service emails."
-                        data-he="אנו לא מוכרים ולא משתפים נתונים אישיים כהגדרתם ב-CCPA/CPRA, כך שאין כיום ממה לבטל הסכמה; אנו מכבדים את אות הדפדפן Global Privacy Control (GPC) כבקשת ביטול הסכמה תקפה לכל מכירה/שיתוף נתונים עתידיים בכל מקרה. ניתן גם להשבית עוגיות ניתוח לא חיוניות ולבטל הרשמה לדוא״ל שירות.">We
-                        do not sell or share personal data as those terms are defined by CCPA/CPRA, so there is
-                        nothing to opt out of today; we honor the Global Privacy Control (GPC) browser signal as a
-                        valid opt-out request for any future data sale/sharing regardless. You can also disable
-                        non-essential analytics cookies and unsubscribe from service emails.</span></li>
-                <li><strong data-en="Objection &amp; Restriction:" data-he="התנגדות והגבלה:">Objection &amp;
-                        Restriction:</strong>
-                    <span data-en="Object to, or request we restrict, processing of your data for certain purposes"
-                        data-he="התנגד לעיבוד הנתונים שלך למטרות מסוימות, או בקש שנגביל אותו">Object to, or request
-                        we restrict, processing of your data for certain purposes</span></li>
-                <li><strong data-en="Withdraw consent:" data-he="משיכת הסכמה:">Withdraw consent:</strong>
-                    <span data-en="Where processing is based on consent (e.g., any future non-essential cookies), withdraw it at any time without affecting the lawfulness of processing before withdrawal"
-                        data-he="כאשר עיבוד מבוסס על הסכמה (למשל, כל עוגיה לא-חיונית עתידית), משוך אותה בכל עת מבלי לפגוע בחוקיות העיבוד שקדם למשיכה">Where
-                        processing is based on consent (e.g., any future non-essential cookies),
-                        withdraw it at any time without affecting the lawfulness of processing before
-                        withdrawal</span></li>
-                <li><strong data-en="Non-discrimination:" data-he="אי-אפליה:">Non-discrimination:</strong>
-                    <span data-en="We will not deny you the Service, charge you a different price, or provide a different level of service because you exercised any of these rights"
-                        data-he="לא נמנע ממך את השירות, נגבה ממך מחיר שונה, או נספק רמת שירות שונה משום שמימשת זכות כלשהי מאלו">We
-                        will not deny you the Service, charge you a different price, or provide a different level of
-                        service because you exercised any of these rights</span></li>
+                <li><strong {{ lang_attrs('privacy.access') }}>{{ _('privacy.access') }}</strong>
+                    <span {{ lang_attrs('privacy.request_a_copy_of_all_personal') }}>{{ _('privacy.request_a_copy_of_all_personal') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.correction') }}>{{ _('privacy.correction') }}</strong>
+                    <span {{ lang_attrs('privacy.request_correction_of_inaccurate_or_incomplete') }}>{{ _('privacy.request_correction_of_inaccurate_or_incomplete') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.deletion_right_to_be_forgotten') }}>{{ _('privacy.deletion_right_to_be_forgotten') }}</strong>
+                    <span {{ lang_attrs('privacy.request_deletion_of_your_account_and') }}>{{ _('privacy.request_deletion_of_your_account_and') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.portability') }}>{{ _('privacy.portability') }}</strong>
+                    <span {{ lang_attrs('privacy.request_your_data_in_a_machine') }}>{{ _('privacy.request_your_data_in_a_machine') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.opt_out_do_not_sell_or') }}>{{ _('privacy.opt_out_do_not_sell_or') }}</strong>
+                    <span {{ lang_attrs('privacy.we_do_not_sell_or_share_2') }}>{{ _('privacy.we_do_not_sell_or_share_2') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.objection_restriction') }}>{{ _('privacy.objection_restriction') }}</strong>
+                    <span {{ lang_attrs('privacy.object_to_or_request_we_restrict') }}>{{ _('privacy.object_to_or_request_we_restrict') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.withdraw_consent') }}>{{ _('privacy.withdraw_consent') }}</strong>
+                    <span {{ lang_attrs('privacy.where_processing_is_based_on_consent') }}>{{ _('privacy.where_processing_is_based_on_consent') }}</span></li>
+                <li><strong {{ lang_attrs('privacy.non_discrimination') }}>{{ _('privacy.non_discrimination') }}</strong>
+                    <span {{ lang_attrs('privacy.we_will_not_deny_you_the') }}>{{ _('privacy.we_will_not_deny_you_the') }}</span></li>
             </ul>
-            <p data-en="Access and deletion are available instantly, with no need to email us, from &quot;Privacy &amp; Data&quot; in the account menu once you're signed in. For correction, objection/restriction, or any request you can't complete there, email contact@shelah.org with your account email and the specific request. We will respond within 30 days (or the timeframe required by applicable law, if shorter)."
-                data-he="גישה ומחיקה זמינות באופן מיידי, ללא צורך לשלוח לנו דוא״ל, דרך 'פרטיות ונתונים' בתפריט החשבון לאחר ההתחברות. לתיקון, התנגדות/הגבלה, או כל בקשה שאינך יכול להשלים שם, שלח דוא״ל ל-contact@shelah.org עם דוא״ל החשבון שלך והבקשה הספציפית. נגיב תוך 30 יום (או פרק הזמן הנדרש על פי דין חל, אם קצר יותר).">
+            <p {{ lang_attrs('privacy.access_and_deletion_are_available_instantly') }}>
                 Access and deletion are available instantly, with no need to email us, from "Privacy &amp; Data" in
                 the account menu once you're signed in. For correction, objection/restriction, or any request you
                 can't complete there, email <a href="mailto:contact@shelah.org">contact@shelah.org</a>
@@ -416,25 +315,19 @@
                 required by applicable law, if shorter).
             </p>
 
-            <h2 data-en="7. Security" data-he="7. אבטחה">7. Security</h2>
-            <p data-en="We take reasonable measures to protect your data:" data-he="אנו נוקטים צעדים סבירים כדי להגן על הנתונים שלך:">
-                We take reasonable measures to protect your data:
+            <h2 {{ lang_attrs('privacy.7_security') }}>{{ _('privacy.7_security') }}</h2>
+            <p {{ lang_attrs('privacy.we_take_reasonable_measures_to_protect') }}>
+                {{ _('privacy.we_take_reasonable_measures_to_protect') }}
             </p>
             <ul>
-                <li data-en="All data in transit is encrypted using HTTPS (TLS 1.2+)" data-he="כל הנתונים המועברים מוצפנים באמצעות HTTPS (TLS 1.2+)">All data in transit is encrypted using HTTPS (TLS 1.2+)</li>
-                <li data-en="Passwords are hashed and salted by Clerk, and we never see your password"
-                    data-he="סיסמאות מוגבבות ומומלחים על ידי Clerk - אנו אף פעם לא רואים את הסיסמה שלך">Passwords are hashed and salted by Clerk, and we never see your password</li>
-                <li data-en="Database data is encrypted at rest (Supabase default encryption), and Row-Level Security policies restrict each user's data to that user"
-                    data-he="נתוני מסד הנתונים מוצפנים במנוחה (הצפנת ברירת מחדל של Supabase), ומדיניות אבטחה ברמת השורה (RLS) מגבילה את נתוני כל משתמש לאותו משתמש בלבד">Database
-                    data is encrypted at rest (Supabase default encryption), and Row-Level Security policies restrict
-                    each user's data to that user</li>
-                <li data-en="Access to production systems is restricted to authorized personnel"
-                    data-he="הגישה למערכות ייצור מוגבלת לאנשי צוות מורשים">Access to production systems is restricted to authorized personnel</li>
-                <li data-en="We conduct regular security reviews" data-he="אנו מבצעים ביקורות אבטחה תקופתיות">We conduct regular security reviews</li>
+                <li {{ lang_attrs('privacy.all_data_in_transit_is_encrypted') }}>{{ _('privacy.all_data_in_transit_is_encrypted') }}</li>
+                <li {{ lang_attrs('privacy.passwords_are_hashed_and_salted_by') }}>{{ _('privacy.passwords_are_hashed_and_salted_by') }}</li>
+                <li {{ lang_attrs('privacy.database_data_is_encrypted_at_rest') }}>{{ _('privacy.database_data_is_encrypted_at_rest') }}</li>
+                <li {{ lang_attrs('privacy.access_to_production_systems_is_restricted') }}>{{ _('privacy.access_to_production_systems_is_restricted') }}</li>
+                <li {{ lang_attrs('privacy.we_conduct_regular_security_reviews') }}>{{ _('privacy.we_conduct_regular_security_reviews') }}</li>
             </ul>
-            <p data-en="Breach notification: if a security incident results in unauthorized access to your personal data, we will notify affected users and, where legally required, the relevant supervisory authority, without undue delay and in any case within the timeframe required by applicable law (e.g., 72 hours under GDPR Art. 33 once we become aware of a reportable breach), describing what happened, the data involved, and the steps we are taking."
-                data-he="הודעה על פרצת אבטחה: אם אירוע אבטחה יביא לגישה לא מורשית לנתונים האישיים שלך, נודיע למשתמשים שנפגעו, וכאשר נדרש על פי דין, לרשות הפיקוח הרלוונטית, ללא דיחוי בלתי סביר ובכל מקרה בתוך פרק הזמן הנדרש על פי דין חל (למשל, 72 שעות לפי סעיף 33 ל-GDPR מרגע שנודע לנו על פרצה בת-דיווח), תוך תיאור מה קרה, אילו נתונים היו מעורבים, והצעדים שאנו נוקטים.">
-                <strong data-en="Breach notification:" data-he="הודעה על פרצת אבטחה:">Breach notification:</strong> if
+            <p {{ lang_attrs('privacy.breach_notification_if_a_security_incident') }}>
+                <strong {{ lang_attrs('privacy.breach_notification') }}>{{ _('privacy.breach_notification') }}</strong> if
                 a security incident results in unauthorized access to your personal data, we will notify affected
                 users and, where legally required, the relevant supervisory authority, without undue delay and in
                 any case within the timeframe required by applicable law (e.g., 72 hours under GDPR Art. 33 once we
@@ -442,74 +335,46 @@
                 are taking.
             </p>
 
-            <h2 data-en="8. Children's Privacy" data-he="8. פרטיות ילדים">8. Children's Privacy</h2>
-            <p data-en="The Service is not directed to, and may not be used by, anyone under 13 years old (or under 16 in the EU/UK, absent verifiable parental consent; see our Terms of Service §3). We do not knowingly collect personal information from anyone below these thresholds. If we learn that we have collected personal information from a user below the applicable threshold, we will delete that account and its data. If you believe a minor has provided us with personal information in violation of this policy, please contact us so we can investigate and delete it."
-                data-he="השירות אינו מיועד לשימוש, ואין להשתמש בו, על ידי מי שמתחת לגיל 13 (או מתחת לגיל 16 באיחוד האירופי/בריטניה, בהיעדר הסכמת הורים הניתנת לאימות — ראה תנאי השירות שלנו סעיף 3). אנו לא אוספים במכוון מידע אישי ממי שמתחת לספים אלה. אם נלמד כי אספנו מידע אישי ממשתמש מתחת לסף החל, נמחק חשבון זה ואת נתוניו. אם אתה סבור שקטין מסר לנו מידע אישי בניגוד למדיניות זו, אנא צור קשר כדי שנוכל לחקור ולמחוק אותו.">
-                The Service is not directed to, and may not be used by, anyone under 13 years old (or under 16 in
-                the EU/UK, absent verifiable parental consent; see our Terms of Service §3). We do not knowingly
-                collect personal information from anyone below these thresholds. If we learn that we have collected
-                personal information from a user below the applicable threshold, we will delete that account and its
-                data. If you believe a minor has provided us with personal information in violation of this policy,
-                please contact us so we can investigate and delete it.
+            <h2 {{ lang_attrs('privacy.8_childrens_privacy') }}>{{ _('privacy.8_childrens_privacy') }}</h2>
+            <p {{ lang_attrs('privacy.the_service_is_not_directed_to') }}>
+                {{ _('privacy.the_service_is_not_directed_to') }}
             </p>
 
-            <h2 data-en="9. AI Processing &amp; Automated Decision-Making" data-he="9. עיבוד בינה מלאכותית וקבלת החלטות אוטומטית">9. AI Processing &amp; Automated Decision-Making</h2>
-            <p data-en="Your question, the earlier turns of the same conversation and the source excerpts found for it are sent to Google Gemini, or to Anthropic Claude if Gemini is unavailable, to write the answer. If you are signed in and short summaries of your earlier questions are stored for your account, up to two of them are sent too. This is automated, but it does not produce a legal or similarly significant decision about you. It writes study material, and the answer tells you to ask your own rabbi. See our AI Disclosure page for how this works and where it goes wrong."
-                data-he="השאלה שלך, התורות הקודמות באותה שיחה וקטעי המקור שנמצאו לה נשלחים ל-Google Gemini, או ל-Anthropic Claude אם Gemini אינו זמין, כדי לכתוב את התשובה. אם התחברת ויש שמורים בחשבונך סיכומים קצרים של שאלות קודמות, עד שניים מהם נשלחים גם הם. התהליך אוטומטי, אבל הוא אינו מייצר החלטה משפטית או משמעותית באופן דומה לגביך. הוא כותב חומר ללימוד, והתשובה מפנה אותך להתייעץ עם הרב שלך. ראו את עמוד גילוי הנאות בנושא בינה מלאכותית להסבר על אופן הפעולה ועל המקומות שבהם הוא טועה.">
+            <h2 {{ lang_attrs('privacy.9_ai_processing_automated_decision_making') }}>{{ _('privacy.9_ai_processing_automated_decision_making') }}</h2>
+            <p {{ lang_attrs('privacy.your_question_the_earlier_turns_of') }}>
                 Your question, the earlier turns of the same conversation and the source excerpts found for it are
                 sent to Google Gemini, or to Anthropic Claude if Gemini is unavailable, to write the answer. If you
                 are signed in and short summaries of your earlier questions are stored for your account, up to two of
                 them are sent too. This is automated, but it does not produce a legal or similarly significant
                 decision about you. It writes study material, and the answer tells you to ask your own rabbi. See our
-                <a href="/ai-disclosure" data-en="AI Disclosure" data-he="גילוי נאות בנושא בינה מלאכותית">AI
-                    Disclosure</a> page for how this works and where it goes wrong.
+                <a href="/ai-disclosure" {{ lang_attrs('privacy.ai_disclosure') }}>{{ _('privacy.ai_disclosure') }}</a> page for how this works and where it goes wrong.
             </p>
 
-            <h2 data-en="10. EU Representative &amp; Data Protection Officer" data-he="10. נציג באיחוד האירופי וממונה הגנת מידע">10. EU Representative &amp; Data Protection Officer</h2>
-            <p data-en="Sh'elah is currently operated by Akiva Yevdayev, an individual, not a registered company, and has not formally designated an EU representative under GDPR Art. 27 or a Data Protection Officer under Art. 37. Sh'elah does not specifically market or target the Service to residents of the EU, UK, or Switzerland (no EU-specific advertising, currency, or localized marketing), does not carry out large-scale or systematic monitoring of users, and does not process special-category data as a core business activity. Any sensitive subject matter arises incidentally within a user's own question, not through systematic collection or profiling. Based on GDPR Article 27(2)'s exemption for occasional, low-risk, non-large-scale processing and Article 37's large-scale/systematic-monitoring threshold for a Data Protection Officer, Sh'elah has determined that neither an EU representative nor a DPO is currently required. This determination will be revisited if the Service's scale, EU-specific marketing, or data-processing activities materially change. Direct any EU-specific inquiry to the contact in §12."
-                data-he="Sh'elah מופעלת כיום על ידי Akiva Yevdayev, יחיד, לא חברה רשומה, וטרם מינתה באופן פורמלי נציג באיחוד האירופי לפי סעיף 27 ל-GDPR או ממונה הגנת מידע לפי סעיף 37. Sh'elah אינה משווקת או מכוונת את השירות באופן ספציפי לתושבי האיחוד האירופי, בריטניה או שווייץ (ללא פרסום ספציפי לאיחוד האירופי, מטבע מקומי, או שיווק מותאם), אינה מבצעת מעקב שיטתי או בקנה מידה גדול אחר משתמשים, ואינה מעבדת נתונים מקטגוריות מיוחדות כפעילות עסקית מרכזית — כל נושא רגיש עולה באופן אגבי בתוך שאלת המשתמש עצמה, ולא באמצעות איסוף שיטתי או פרופיילינג. בהתבסס על הפטור בסעיף 27(2) ל-GDPR לעיבוד מזדמן, בסיכון נמוך ושאינו בקנה מידה גדול, ועל סף העיבוד בקנה מידה גדול/מעקב שיטתי הנדרש למינוי ממונה הגנת מידע לפי סעיף 37, קבעה Sh'elah כי נכון לעכשיו אין צורך לא בנציג באיחוד האירופי ולא בממונה הגנת מידע. קביעה זו תיבחן מחדש אם היקף השירות, שיווקו לאיחוד האירופי, או פעילויות עיבוד הנתונים שלו ישתנו באופן מהותי. יש להפנות כל פנייה ספציפית לאיחוד האירופי לפרטי הקשר בסעיף 12.">
-                Sh'elah is currently operated by Akiva Yevdayev, an individual, not a registered company, and has
-                not formally designated an EU representative under GDPR Art. 27 or a Data Protection Officer
-                under Art. 37. Sh'elah does not specifically market or target the Service to residents of the EU,
-                UK, or Switzerland (no EU-specific advertising, currency, or localized marketing), does not carry
-                out large-scale or systematic monitoring of users, and does not process special-category data as a
-                core business activity. Any sensitive subject matter arises incidentally within a user's own
-                question, not through systematic collection or profiling. Based on GDPR Article 27(2)'s exemption
-                for occasional, low-risk, non-large-scale processing and Article 37's large-scale/systematic-monitoring threshold for a Data Protection Officer, Sh'elah has determined that neither an EU
-                representative nor a DPO is currently required. This determination will be revisited if the
-                Service's scale, EU-specific marketing, or data-processing activities materially change. Direct any
-                EU-specific inquiry to the contact in §12.
+            <h2 {{ lang_attrs('privacy.10_eu_representative_data_protection_officer') }}>{{ _('privacy.10_eu_representative_data_protection_officer') }}</h2>
+            <p {{ lang_attrs('privacy.shelah_is_currently_operated_by_akiva') }}>
+                {{ _('privacy.shelah_is_currently_operated_by_akiva') }}
             </p>
 
-            <h2 data-en="11. Changes to This Policy" data-he="11. שינויים במדיניות זו">11. Changes to This Policy</h2>
-            <p data-en="We may update this Privacy Policy from time to time. We will post the revised policy here with an updated effective date and version, and the footer notice on every page always links to the current version. For material changes (e.g., a new category of data collected, a new sub-processor with a materially different purpose, or a reduced level of protection), we will call out the change in the footer notice and, where practical, notify signed-in users directly, consistent with how we handle material changes to our Terms of Service (§18)."
-                data-he="אנו עשויים לעדכן מדיניות פרטיות זו מעת לעת. נפרסם את המדיניות המתוקנת כאן עם תאריך תחולה וגרסה מעודכנים, והודעת תחתית העמוד בכל עמוד תמיד מקשרת לגרסה הנוכחית. עבור שינויים מהותיים (למשל, קטגוריית נתונים חדשה הנאספת, מעבד-משנה חדש בעל מטרה שונה באופן מהותי, או רמת הגנה מופחתת), נציין את השינוי בהודעת תחתית העמוד ונודיע ישירות למשתמשים מחוברים ככל שניתן, בהתאם לאופן שבו אנו מטפלים בשינויים מהותיים בתנאי השירות שלנו (סעיף 18).">
-                We may update this Privacy Policy from time to time. We will post the revised policy here with an
-                updated effective date and version, and the footer notice on every page always links to the current
-                version. For material changes (e.g., a new category of data collected, a new sub-processor with a
-                materially different purpose, or a reduced level of protection), we will call out the change in the
-                footer notice and, where practical, notify signed-in users directly, consistent with how we handle
-                material changes to our Terms of Service (§18).
+            <h2 {{ lang_attrs('privacy.11_changes_to_this_policy') }}>{{ _('privacy.11_changes_to_this_policy') }}</h2>
+            <p {{ lang_attrs('privacy.we_may_update_this_privacy_policy') }}>
+                {{ _('privacy.we_may_update_this_privacy_policy') }}
             </p>
 
-            <h2 data-en="12. Contact Us" data-he="12. צור קשר">12. Contact Us</h2>
-            <p data-en="For privacy-related questions, data requests, or to report a concern:" data-he="לשאלות בנושא פרטיות, בקשות נתונים או לדיווח על חשש:">
-                For privacy-related questions, data requests, or to report a concern:
+            <h2 {{ lang_attrs('privacy.12_contact_us') }}>{{ _('privacy.12_contact_us') }}</h2>
+            <p {{ lang_attrs('privacy.for_privacy_related_questions_data_requests') }}>
+                {{ _('privacy.for_privacy_related_questions_data_requests') }}
             </p>
             <ul>
-                <li><strong data-en="Contact:" data-he="איש קשר:">Contact:</strong> Akiva Yevdayev</li>
-                <li><strong data-en="Email:" data-he="דוא״ל:">Email:</strong> <a href="mailto:contact@shelah.org">contact@shelah.org</a></li>
+                <li><strong {{ lang_attrs('privacy.contact') }}>{{ _('privacy.contact') }}</strong> Akiva Yevdayev</li>
+                <li><strong {{ lang_attrs('privacy.email') }}>{{ _('privacy.email') }}</strong> <a href="mailto:contact@shelah.org">contact@shelah.org</a></li>
             </ul>
 
             <hr class="my-8" style="border-color: var(--surface-border);">
 
             <div class="info-box">
-                <p class="text-sm" data-en="This policy is provided for transparency about our data practices. It is not a substitute for independent legal advice in your jurisdiction. See also our Terms of Service and AI Disclosure."
-                    data-he="מדיניות זו מסופקת לשם שקיפות לגבי נוהלי הנתונים שלנו. היא אינה מהווה תחליף לייעוץ משפטי עצמאי בתחום השיפוט שלך. ראה גם את תנאי השירות וגילוי הנאות בנושא בינה מלאכותית שלנו.">
+                <p class="text-sm" {{ lang_attrs('privacy.this_policy_is_provided_for_transparency') }}>
                     This policy is provided for transparency about our data practices. It is not a substitute for
-                    independent legal advice in your jurisdiction. See also our <a href="/terms" data-en="Terms of Service"
-                        data-he="תנאי השירות">Terms of Service</a> and <a href="/ai-disclosure" data-en="AI Disclosure"
-                        data-he="גילוי נאות בינה מלאכותית">AI Disclosure</a>.
+                    independent legal advice in your jurisdiction. See also our <a href="/terms" {{ lang_attrs('privacy.terms_of_service') }}>{{ _('privacy.terms_of_service') }}</a> and <a href="/ai-disclosure" {{ lang_attrs('privacy.ai_disclosure_2') }}>{{ _('privacy.ai_disclosure_2') }}</a>.
                 </p>
             </div>
         </article>

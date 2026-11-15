@@ -46,86 +46,62 @@
     {% include 'components/legal_topbar.html' %}
 
     <section class="legal-hero" aria-labelledby="heroTitle">
-        <h1 id="heroTitle" data-en="About Sh'elah" data-he="אודות שאלה">About Sh'elah</h1>
-        <p class="subtitle" data-en="A Torah library and halachic AI assistant, built by one person."
-            data-he="ספריית תורה ועוזר בינה מלאכותית הלכתי, שנבנה על ידי אדם אחד.">A Torah library and halachic AI
-            assistant, built by one person.</p>
+        <h1 id="heroTitle" {{ lang_attrs('about.about_shelah') }}>{{ _('about.about_shelah') }}</h1>
+        <p class="subtitle" {{ lang_attrs('about.a_torah_library_and_halachic_ai') }}>{{ _('about.a_torah_library_and_halachic_ai') }}</p>
     </section>
 
     <main id="mainContent" class="flex-1">
         <article id="aboutBody" class="main-container prose prose-sm max-w-2xl" data-reveal>
             <div class="legal-toolbar">
-                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span data-en="Back to Sh'elah" data-he="חזרה לשאלה">Back to Sh'elah</span></a>
+                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span {{ lang_attrs('about.back_to_shelah') }}>{{ _('about.back_to_shelah') }}</span></a>
             </div>
 
-            <h2 data-en="Mission" data-he="שליחות">Mission</h2>
-            <p data-en="Sh'elah is for looking something up: a halacha, a custom, a source, a zman. You get the answer and the primary text behind it, not only a summary. The library, the calendar and the AI assistant all work that way. They take you to the sources, in a language and format you can use, and they leave the final word to your own rabbi."
-                data-he="שאלה נועדה לבדוק דבר מה: הלכה, מנהג, מקור, זמן. מקבלים את התשובה ואת הטקסט המקורי שמאחוריה, ולא רק תקציר. הספרייה, לוח השנה ועוזר הבינה המלאכותית עובדים כולם כך. הם מביאים אתכם למקורות, בשפה ובצורה שאפשר להשתמש בהן, ומשאירים את המילה האחרונה לרב שלכם.">
-                Sh'elah is for looking something up: a halacha, a custom, a source, a zman. You get the answer and
-                the primary text behind it, not only a summary. The library, the calendar and the AI assistant all
-                work that way. They take you to the sources, in a language and format you can use, and they leave
-                the final word to your own rabbi.
+            <h2 {{ lang_attrs('about.mission') }}>{{ _('about.mission') }}</h2>
+            <p {{ lang_attrs('about.shelah_is_for_looking_something_up') }}>
+                {{ _('about.shelah_is_for_looking_something_up') }}
             </p>
 
-            <h2 data-en="Who builds it" data-he="מי בונה את זה">Who builds it</h2>
-            <p data-en="I build and maintain Sh'elah on my own. There is no company, no editorial board and no team of poskim behind it, and nobody reviews an AI answer before you see it. Treat what you read here like a well-sourced reference book, not like a rabbi."
-                data-he="שאלה נבנית ומתוחזקת על ידי אדם אחד: אני. אין חברה, אין ועד עריכה ואין צוות פוסקים מאחוריה, ואף אחד לא בודק תשובה של בינה מלאכותית לפני שאתם רואים אותה. התייחסו למה שתקראו כאן כמו לספר עיון מבוסס מקורות, לא כמו לרב.">
-                I build and maintain Sh'elah on my own. There is no company, no editorial board and no team of
-                poskim behind it, and nobody reviews an AI answer before you see it. Treat what you read here like
-                a well-sourced reference book, not like a rabbi.
+            <h2 {{ lang_attrs('about.who_builds_it') }}>{{ _('about.who_builds_it') }}</h2>
+            <p {{ lang_attrs('about.i_build_and_maintain_shelah_on') }}>
+                {{ _('about.i_build_and_maintain_shelah_on') }}
             </p>
 
-            <h2 data-en="How answers are sourced" data-he="מאיפה התשובות מגיעות">How answers are sourced</h2>
-            <p data-en="The library takes its texts from Sefaria's open corpus: Tanakh, Talmud, halachic codes and commentaries. Hebcal and a zmanim library supply the calendar and the daily times, and a curated set of community customs (minhag) rounds it out. When you ask a question, the AI first searches Sefaria, the community customs and Halachipedia, and looks at Wikipedia only when the Jewish sources have nothing on the question. An answer is supposed to cite the sources it used."
-                data-he="הספרייה לוקחת את הטקסטים שלה מהמאגר הפתוח של ספריא: תנ״ך, תלמוד, ספרי הלכה ופרשנים. Hebcal וספריית חישוב זמנים מספקים את לוח השנה ואת זמני היום, ואוסף נבחר של מנהגי קהילות משלים את התמונה. כששואלים שאלה, הבינה המלאכותית מחפשת קודם בספריא, במנהגי הקהילות וב-Halachipedia, ופונה ל-Wikipedia רק כשאין למקורות היהודיים דבר בנושא. תשובה אמורה לצטט את המקורות שבהם השתמשה.">
-                The library takes its texts from Sefaria's open corpus: Tanakh, Talmud, halachic codes and
-                commentaries. Hebcal and a zmanim library supply the calendar and the daily times, and a curated set
-                of community customs (minhag) rounds it out. When you ask a question, the AI first searches Sefaria,
-                the community customs and Halachipedia, and looks at Wikipedia only when the Jewish sources have
-                nothing on the question. An answer is supposed to cite the sources it used.
+            <h2 {{ lang_attrs('about.how_answers_are_sourced') }}>{{ _('about.how_answers_are_sourced') }}</h2>
+            <p {{ lang_attrs('about.the_library_takes_its_texts_from') }}>
+                {{ _('about.the_library_takes_its_texts_from') }}
             </p>
-            <p data-en="For how the AI works in detail, and where it can go wrong, see the "
-                data-he="על אופן הפעולה של הבינה המלאכותית בפירוט, ועל המקומות שבהם היא עלולה לטעות, ראו את ">
+            <p {{ lang_attrs('about.for_how_the_ai_works_in') }}>
                 For how the AI works in detail, and where it can go wrong, see the
-                <a href="/ai-disclosure" data-en="AI Disclosure" data-he="גילוי נאות בנושא בינה מלאכותית">AI
-                    Disclosure</a>.
+                <a href="/ai-disclosure" {{ lang_attrs('about.ai_disclosure') }}>{{ _('about.ai_disclosure') }}</a>.
             </p>
 
-            <h2 data-en="Updates" data-he="עדכונים">Updates</h2>
-            <p data-en="Sh'elah is in active development. Features, sources and fixes go out when they are ready, not on a schedule. There is no uptime guarantee or support agreement; the Terms of Service say more about availability."
-                data-he="שאלה בפיתוח פעיל. תכונות, מקורות ותיקונים יוצאים כשהם מוכנים, ולא לפי לוח זמנים. אין התחייבות לזמינות ואין הסכם תמיכה; תנאי השירות אומרים עוד על זמינות.">
+            <h2 {{ lang_attrs('about.updates') }}>{{ _('about.updates') }}</h2>
+            <p {{ lang_attrs('about.shelah_is_in_active_development_features') }}>
                 Sh'elah is in active development. Features, sources and fixes go out when they are ready, not on a
-                schedule. There is no uptime guarantee or support agreement; the <a href="/terms" data-en="Terms of Service"
-                    data-he="תנאי השירות">Terms of Service</a> say more about availability.
+                schedule. There is no uptime guarantee or support agreement; the <a href="/terms" {{ lang_attrs('about.terms_of_service') }}>{{ _('about.terms_of_service') }}</a> say more about availability.
             </p>
 
-            <h2 data-en="Always ask your rabbi" data-he="תמיד שאלו את הרב שלכם">Always ask your rabbi</h2>
-            <p data-en="Nothing on Sh'elah is a halachic ruling, including what the AI writes. It is educational information meant to help you find and understand primary sources faster. If a question has real consequences, ask a rabbi who knows your situation and your community."
-                data-he="שום דבר בשאלה אינו פסק הלכה, כולל מה שהבינה המלאכותית כותבת. זה מידע חינוכי שנועד לעזור לכם למצוא ולהבין מקורות ראשוניים מהר יותר. אם לשאלה יש השלכות מעשיות, שאלו רב שמכיר את המצב שלכם ואת הקהילה שלכם.">
-                Nothing on Sh'elah is a halachic ruling, including what the AI writes. It is educational information
-                meant to help you find and understand primary sources faster. If a question has real consequences,
-                ask a rabbi who knows your situation and your community.
+            <h2 {{ lang_attrs('about.always_ask_your_rabbi') }}>{{ _('about.always_ask_your_rabbi') }}</h2>
+            <p {{ lang_attrs('about.nothing_on_shelah_is_a_halachic') }}>
+                {{ _('about.nothing_on_shelah_is_a_halachic') }}
             </p>
 
-            <h2 data-en="Contact" data-he="יצירת קשר">Contact</h2>
-            <p data-en="Questions, corrections, or a source that looks wrong? Write to me:"
-                data-he="שאלות, תיקונים, או מקור שנראה שגוי? כתבו לי:">
-                Questions, corrections, or a source that looks wrong? Write to me:
+            <h2 {{ lang_attrs('about.contact') }}>{{ _('about.contact') }}</h2>
+            <p {{ lang_attrs('about.questions_corrections_or_a_source_that') }}>
+                {{ _('about.questions_corrections_or_a_source_that') }}
             </p>
-            <p><strong data-en="Contact:" data-he="איש קשר:">Contact:</strong> Akiva Yevdayev</p>
-            <p><strong data-en="Email:" data-he="דוא״ל:">Email:</strong> <a
+            <p><strong {{ lang_attrs('about.contact_2') }}>{{ _('about.contact_2') }}</strong> Akiva Yevdayev</p>
+            <p><strong {{ lang_attrs('about.email') }}>{{ _('about.email') }}</strong> <a
                     href="mailto:contact@shelah.org">contact@shelah.org</a></p>
 
             <hr class="my-8" style="border-color: var(--surface-border);">
 
             <div class="info-box">
                 <p class="text-sm"
-                    data-en="The Terms of Service, Privacy Policy and AI Disclosure are the documents that govern your use of Sh'elah."
-                    data-he="תנאי השירות, מדיניות הפרטיות והגילוי הנאות בנושא בינה מלאכותית הם המסמכים שחלים על השימוש שלכם בשאלה.">
-                    The <a href="/terms" data-en="Terms of Service" data-he="תנאי השירות">Terms of Service</a>,
-                    <a href="/privacy" data-en="Privacy Policy" data-he="מדיניות הפרטיות">Privacy Policy</a> and
-                    <a href="/ai-disclosure" data-en="AI Disclosure" data-he="גילוי נאות בנושא בינה מלאכותית">AI
-                        Disclosure</a> are the documents that govern your use of Sh'elah.
+                    {{ lang_attrs('about.the_terms_of_service_privacy_policy') }}>
+                    The <a href="/terms" {{ lang_attrs('about.terms_of_service') }}>{{ _('about.terms_of_service') }}</a>,
+                    <a href="/privacy" {{ lang_attrs('about.privacy_policy') }}>{{ _('about.privacy_policy') }}</a> and
+                    <a href="/ai-disclosure" {{ lang_attrs('about.ai_disclosure') }}>{{ _('about.ai_disclosure') }}</a> are the documents that govern your use of Sh'elah.
                 </p>
             </div>
         </article>

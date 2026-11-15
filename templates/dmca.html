@@ -49,110 +49,72 @@
 
     <!-- Hero Banner -->
     <section class="legal-hero" aria-labelledby="heroTitle">
-        <h1 id="heroTitle" data-en="DMCA / Copyright Policy" data-he="מדיניות זכויות יוצרים / DMCA">DMCA / Copyright Policy</h1>
-        <p class="subtitle" data-en="Last updated: August 15, 2026 · v1.0" data-he="עדכון אחרון: 15 באוגוסט 2026 · v1.0">Last
-            updated: August 15, 2026 · v1.0</p>
+        <h1 id="heroTitle" {{ lang_attrs('dmca.dmca_copyright_policy') }}>{{ _('dmca.dmca_copyright_policy') }}</h1>
+        <p class="subtitle" {{ lang_attrs('dmca.last_updated_august_15_2026_v1') }}>{{ _('dmca.last_updated_august_15_2026_v1') }}</p>
     </section>
 
     <!-- MAIN CONTENT -->
     <main id="mainContent" class="flex-1">
         <article id="legalDocumentBody" class="main-container prose prose-sm max-w-2xl">
             <div class="legal-toolbar">
-                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span data-en="Back to Sh'elah" data-he="חזרה לשאלה">Back to Sh'elah</span></a>
+                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span {{ lang_attrs('dmca.back_to_shelah') }}>{{ _('dmca.back_to_shelah') }}</span></a>
                                 <button type="button" id="selectAllPolicyTextBtn" class="select-all-btn">
                     <span class="contents" aria-hidden="true">{{ phosphor('selection-all', size=16) }}</span>
-                    <span data-en="Select all text" data-he="בחר את כל הטקסט">Select all text</span>
+                    <span {{ lang_attrs('dmca.select_all_text') }}>{{ _('dmca.select_all_text') }}</span>
                 </button>
             
             </div>
 
 
             <div class="info-box">
-                <p data-en="Sh'elah displays third-party texts (Sefaria, Hebcal, Wikipedia, and other whitelisted sources) under their own respective licenses (see our Licenses page). If you believe Content on Sh'elah infringes your copyright, this page explains how to tell us."
-                    data-he="Sh'elah מציגה טקסטים של צד שלישי (Sefaria, Hebcal, Wikipedia ומקורות מאושרים נוספים) תחת הרישיונות שלהם. אם אתה סבור שתוכן ב-Sh'elah מפר את זכויות היוצרים שלך, עמוד זה מסביר כיצד להודיע לנו על כך.">
+                <p {{ lang_attrs('dmca.shelah_displays_third_party_texts_sefaria') }}>
                     Sh'elah displays third-party texts (Sefaria, Hebcal, Wikipedia, and other whitelisted sources)
-                    under their own respective licenses (see our <a href="/licenses" data-en="Licenses page"
-                        data-he="עמוד הרישיונות">Licenses page</a>). If you believe Content on Sh'elah infringes your
+                    under their own respective licenses (see our <a href="/licenses" {{ lang_attrs('dmca.licenses_page') }}>{{ _('dmca.licenses_page') }}</a>). If you believe Content on Sh'elah infringes your
                     copyright, this page explains how to tell us.
                 </p>
             </div>
 
-            <h2 data-en="1. Filing a Notice of Claimed Infringement" data-he="1. הגשת הודעה על הפרה נטענת">1. Filing
-                a Notice of Claimed Infringement</h2>
-            <p data-en="If you believe in good faith that Content available through the Service infringes your copyright, send a written notice to our designated contact (§4) that includes:"
-                data-he="אם אתה סבור בתום לב שתוכן הזמין דרך השירות מפר את זכויות היוצרים שלך, שלח הודעה בכתב לאיש הקשר הייעודי שלנו (סעיף 4) הכוללת:">
-                If you believe in good faith that Content available through the Service infringes your copyright,
-                send a written notice to our designated contact (§4) that includes:
+            <h2 {{ lang_attrs('dmca.1_filing_a_notice_of_claimed') }}>{{ _('dmca.1_filing_a_notice_of_claimed') }}</h2>
+            <p {{ lang_attrs('dmca.if_you_believe_in_good_faith') }}>
+                {{ _('dmca.if_you_believe_in_good_faith') }}
             </p>
             <ol>
-                <li data-en="A physical or electronic signature of the copyright owner or a person authorized to act on their behalf."
-                    data-he="חתימה פיזית או אלקטרונית של בעל זכויות היוצרים או אדם המוסמך לפעול מטעמו.">A physical or
-                    electronic signature of the copyright owner or a person authorized to act on their behalf.</li>
-                <li data-en="Identification of the copyrighted work claimed to have been infringed."
-                    data-he="זיהוי היצירה המוגנת בזכויות יוצרים הנטען כי הופרה.">Identification of the copyrighted
-                    work claimed to have been infringed.</li>
-                <li data-en="Identification of the material claimed to be infringing and its location on the Service (e.g., the URL), with enough detail for us to locate it."
-                    data-he="זיהוי החומר הנטען כמפר ומיקומו בשירות (למשל, כתובת ה-URL), בפירוט מספיק שיאפשר לנו לאתרו.">Identification
-                    of the material claimed to be infringing and its location on the Service (e.g., the URL), with
-                    enough detail for us to locate it.</li>
-                <li data-en="Your contact information: address, telephone number, and email address."
-                    data-he="פרטי הקשר שלך: כתובת, מספר טלפון וכתובת דוא״ל.">Your contact information: address,
-                    telephone number, and email address.</li>
-                <li data-en="A statement that you have a good-faith belief that the disputed use is not authorized by the copyright owner, its agent, or the law."
-                    data-he="הצהרה כי יש לך אמונה בתום לב שהשימוש השנוי במחלוקת אינו מורשה על ידי בעל זכויות היוצרים, סוכנו, או החוק.">A
-                    statement that you have a good-faith belief that the disputed use is not authorized by the
-                    copyright owner, its agent, or the law.</li>
-                <li data-en="A statement, made under penalty of perjury, that the above information is accurate and that you are the copyright owner or authorized to act on their behalf."
-                    data-he="הצהרה, הניתנת תחת עונשי עדות שקר, כי המידע לעיל מדויק וכי אתה בעל זכויות היוצרים או מוסמך לפעול מטעמו.">A
-                    statement, made under penalty of perjury, that the above information is accurate and that you
-                    are the copyright owner or authorized to act on their behalf.</li>
+                <li {{ lang_attrs('dmca.a_physical_or_electronic_signature_of') }}>{{ _('dmca.a_physical_or_electronic_signature_of') }}</li>
+                <li {{ lang_attrs('dmca.identification_of_the_copyrighted_work_claimed') }}>{{ _('dmca.identification_of_the_copyrighted_work_claimed') }}</li>
+                <li {{ lang_attrs('dmca.identification_of_the_material_claimed_to') }}>{{ _('dmca.identification_of_the_material_claimed_to') }}</li>
+                <li {{ lang_attrs('dmca.your_contact_information_address_telephone_numbe') }}>{{ _('dmca.your_contact_information_address_telephone_numbe') }}</li>
+                <li {{ lang_attrs('dmca.a_statement_that_you_have_a') }}>{{ _('dmca.a_statement_that_you_have_a') }}</li>
+                <li {{ lang_attrs('dmca.a_statement_made_under_penalty_of') }}>{{ _('dmca.a_statement_made_under_penalty_of') }}</li>
             </ol>
 
-            <h2 data-en="2. What Happens Next" data-he="2. מה קורה לאחר מכן">2. What Happens Next</h2>
-            <p data-en="Upon receiving a complete, valid notice, we will remove or disable access to the identified material and make a good-faith effort to notify the user who submitted it, where applicable."
-                data-he="עם קבלת הודעה שלמה ותקפה, אנו נסיר או נשבית גישה לחומר המזוהה ונעשה מאמץ בתום לב להודיע למשתמש שהגיש אותו, ככל שרלוונטי.">
-                Upon receiving a complete, valid notice, we will remove or disable access to the identified material
-                and make a good-faith effort to notify the user who submitted it, where applicable.
+            <h2 {{ lang_attrs('dmca.2_what_happens_next') }}>{{ _('dmca.2_what_happens_next') }}</h2>
+            <p {{ lang_attrs('dmca.upon_receiving_a_complete_valid_notice') }}>
+                {{ _('dmca.upon_receiving_a_complete_valid_notice') }}
             </p>
 
-            <h2 data-en="3. Counter-Notification" data-he="3. הודעה נגדית">3. Counter-Notification</h2>
-            <p data-en="If you believe material you submitted was removed by mistake or misidentification, you may send a counter-notification containing your identification of the material and its prior location, a statement under penalty of perjury that you have a good-faith belief the material was removed in error, your contact information, and a statement consenting to the jurisdiction of the relevant federal court. We may restore the material after a statutory waiting period unless the original complainant files a court action."
-                data-he="אם אתה סבור שחומר שהגשת הוסר בטעות או בשל זיהוי שגוי, באפשרותך לשלוח הודעה נגדית הכוללת את זיהוי החומר ומיקומו הקודם, הצהרה תחת עונשי עדות שקר כי יש לך אמונה בתום לב שהחומר הוסר בטעות, פרטי הקשר שלך, והצהרת הסכמה לסמכות השיפוט של בית המשפט הפדרלי הרלוונטי. אנו עשויים להשיב את החומר לאחר תקופת המתנה סטטוטורית אלא אם המתלונן המקורי יגיש תביעה משפטית.">
-                If you believe material you submitted was removed by mistake or misidentification, you may send a
-                counter-notification containing your identification of the material and its prior location, a
-                statement under penalty of perjury that you have a good-faith belief the material was removed in
-                error, your contact information, and a statement consenting to the jurisdiction of the relevant
-                federal court. We may restore the material after a statutory waiting period unless the original
-                complainant files a court action.
+            <h2 {{ lang_attrs('dmca.3_counter_notification') }}>{{ _('dmca.3_counter_notification') }}</h2>
+            <p {{ lang_attrs('dmca.if_you_believe_material_you_submitted') }}>
+                {{ _('dmca.if_you_believe_material_you_submitted') }}
             </p>
 
-            <h2 data-en="4. Designated Contact" data-he="4. איש קשר ייעודי">4. Designated Contact</h2>
-            <p data-en="Sh'elah is operated by Akiva Yevdayev, an individual, not a registered company. A DMCA designated agent has been registered with the U.S. Copyright Office (filed under a parent/guardian, Regina Pardilova, as required for that registration) and is listed in the Office's public Designated Agent Directory. Send all copyright notices to the contact below."
-                data-he="Sh'elah מופעלת על ידי Akiva Yevdayev, יחיד, לא חברה רשומה. נציג DMCA ייעודי נרשם במשרד זכויות היוצרים האמריקאי (הוגש תחת הורה/אפוטרופוס, Regina Pardilova, כנדרש עבור רישום זה) ומופיע במדריך הציבורי של נציגים ייעודיים של המשרד. יש לשלוח את כל הודעות זכויות היוצרים לפרטי הקשר למטה.">
-                Sh'elah is operated by Akiva Yevdayev, an individual, not a registered company. A DMCA designated
-                agent has been registered with the U.S. Copyright Office (filed under a parent/guardian, Regina
-                Pardilova, as required for that registration) and is listed in the Office's public Designated Agent
-                Directory. Send all copyright notices to the contact below.
+            <h2 {{ lang_attrs('dmca.4_designated_contact') }}>{{ _('dmca.4_designated_contact') }}</h2>
+            <p {{ lang_attrs('dmca.shelah_is_operated_by_akiva_yevdayev') }}>
+                {{ _('dmca.shelah_is_operated_by_akiva_yevdayev') }}
             </p>
-            <p><strong data-en="Contact:" data-he="איש קשר:">Contact:</strong> Akiva Yevdayev</p>
-            <p><strong data-en="Email:" data-he="דוא״ל:">Email:</strong> <a
+            <p><strong {{ lang_attrs('dmca.contact') }}>{{ _('dmca.contact') }}</strong> Akiva Yevdayev</p>
+            <p><strong {{ lang_attrs('dmca.email') }}>{{ _('dmca.email') }}</strong> <a
                     href="mailto:contact@shelah.org">contact@shelah.org</a></p>
 
-            <h2 data-en="5. Repeat Infringers" data-he="5. מפרים חוזרים">5. Repeat Infringers</h2>
-            <p data-en="We will terminate, in appropriate circumstances, the access of users who are determined to be repeat infringers."
-                data-he="אנו נסיים, בנסיבות המתאימות, את הגישה של משתמשים שנקבע כי הם מפרים חוזרים.">
-                We will terminate, in appropriate circumstances, the access of users who are determined to be repeat
-                infringers.
+            <h2 {{ lang_attrs('dmca.5_repeat_infringers') }}>{{ _('dmca.5_repeat_infringers') }}</h2>
+            <p {{ lang_attrs('dmca.we_will_terminate_in_appropriate_circumstances') }}>
+                {{ _('dmca.we_will_terminate_in_appropriate_circumstances') }}
             </p>
 
             <hr class="my-8" style="border-color: var(--surface-border);">
 
             <div class="info-box">
-                <p class="text-sm" data-en="See also our Terms of Service §9 (Intellectual Property) and Licenses page for the per-source content licensing breakdown."
-                    data-he="ראה גם את תנאי השירות שלנו סעיף 9 (קניין רוחני) ואת עמוד הרישיונות לפירוט רישוי התוכן לפי מקור.">
-                    See also our <a href="/terms" data-en="Terms of Service" data-he="תנאי השירות">Terms of
-                        Service</a> §9 (Intellectual Property) and <a href="/licenses" data-en="Licenses page"
-                        data-he="עמוד הרישיונות">Licenses page</a> for the per-source content licensing breakdown.
+                <p class="text-sm" {{ lang_attrs('dmca.see_also_our_terms_of_service') }}>
+                    See also our <a href="/terms" {{ lang_attrs('dmca.terms_of_service') }}>{{ _('dmca.terms_of_service') }}</a> §9 (Intellectual Property) and <a href="/licenses" {{ lang_attrs('dmca.licenses_page') }}>{{ _('dmca.licenses_page') }}</a> for the per-source content licensing breakdown.
                 </p>
             </div>
         </article>

@@ -10,6 +10,7 @@ no error. These tests make that failure loud.
 from __future__ import annotations
 
 import re
+from html import unescape
 
 import pytest
 
@@ -52,7 +53,8 @@ def test_footer_shows_the_current_year_in_text_and_both_languages(test_client):
     import datetime
 
     year = datetime.date.today().year
-    html = test_client.get("/terms").get_data(as_text=True)
+    # Decoded, since the page writes the apostrophe as &#39;.
+    html = unescape(test_client.get("/terms").get_data(as_text=True))
     # The visible text (not just the data-en attribute, which repeats the sentence).
     assert re.search(rf">©\s*Sh'elah {year}\. All rights reserved\.</p>", html)
     assert f'data-en="© Sh\'elah {year}. All rights reserved."' in html

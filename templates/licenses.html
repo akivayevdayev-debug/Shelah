@@ -49,26 +49,24 @@
 
     <!-- Hero Banner -->
     <section class="legal-hero" aria-labelledby="heroTitle">
-        <h1 id="heroTitle" data-en="Licenses &amp; Attribution" data-he="רישיונות וייחוס">Licenses &amp; Attribution</h1>
-        <p class="subtitle" data-en="Last updated: August 15, 2026 · v1.0" data-he="עדכון אחרון: 15 באוגוסט 2026 · v1.0">Last
-            updated: August 15, 2026 · v1.0</p>
+        <h1 id="heroTitle" {{ lang_attrs('licenses.licenses_attribution') }}>{{ _('licenses.licenses_attribution') }}</h1>
+        <p class="subtitle" {{ lang_attrs('licenses.last_updated_august_15_2026_v1') }}>{{ _('licenses.last_updated_august_15_2026_v1') }}</p>
     </section>
 
     <!-- MAIN CONTENT -->
     <main id="mainContent" class="flex-1">
         <article id="legalDocumentBody" class="main-container prose prose-sm max-w-2xl">
             <div class="legal-toolbar">
-                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span data-en="Back to Sh'elah" data-he="חזרה לשאלה">Back to Sh'elah</span></a>
+                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span {{ lang_attrs('licenses.back_to_shelah') }}>{{ _('licenses.back_to_shelah') }}</span></a>
                                 <button type="button" id="selectAllPolicyTextBtn" class="select-all-btn">
                     <span class="contents" aria-hidden="true">{{ phosphor('selection-all', size=16) }}</span>
-                    <span data-en="Select all text" data-he="בחר את כל הטקסט">Select all text</span>
+                    <span {{ lang_attrs('licenses.select_all_text') }}>{{ _('licenses.select_all_text') }}</span>
                 </button>
             
             </div>
 
             <div class="info-box">
-                <p data-en="Sh'elah's own original code is licensed under the MIT License. This page, the in-app companion to THIRD_PARTY_LICENSES.md in the source repository, covers the third-party content and libraries the Service displays or depends on. Sh'elah's MIT license does not relicense any of it: each item below remains under its own license."
-                    data-he="הקוד המקורי של Sh'elah עצמו מורשה תחת רישיון MIT. עמוד זה — הליווי בתוך האפליקציה ל-THIRD_PARTY_LICENSES.md במאגר המקור — מכסה את התוכן והספריות של צד שלישי בהם השירות משתמש או תלוי. אף אחד מהם אינו מורשה מחדש תחת רישיון ה-MIT של Sh'elah; כל פריט להלן נותר תחת הרישיון שלו.">
+                <p {{ lang_attrs('licenses.shelahs_own_original_code_is_licensed') }}>
                     Sh'elah's own original code is licensed under the MIT License. This page, the in-app companion
                     to <code>THIRD_PARTY_LICENSES.md</code> in the source repository, covers the third-party content
                     and libraries the Service displays or depends on. Sh'elah's MIT license does not relicense any of it:
@@ -76,44 +74,38 @@
                 </p>
             </div>
 
-            <h2 data-en="1. Content Sources" data-he="1. מקורות תוכן">1. Content Sources</h2>
+            <h2 {{ lang_attrs('licenses.1_content_sources') }}>{{ _('licenses.1_content_sources') }}</h2>
 
-            <h3 data-en="Sefaria" data-he="ספריא">Sefaria</h3>
-            <p data-en="Torah, Talmud, halachic, and commentary texts are retrieved live from the Sefaria API. Much of the Sefaria corpus is licensed CC-BY or is public domain, but licensing varies by text, and some texts on Sefaria carry more restrictive terms. Sh'elah displays Sefaria content under Sefaria's own terms of use. Verify the license of any specific text on Sefaria before reusing it outside this app. See Sefaria's licensing page for the authoritative, per-text breakdown."
-                data-he="טקסטי תורה, תלמוד, הלכה ופרשנות מתקבלים באופן חי מ-API של ספריא. חלק ניכר ממאגר ספריא מורשה תחת CC-BY או נחלת הכלל, אך הרישוי משתנה לפי טקסט ספציפי — חלק מהטקסטים בספריא נושאים תנאים מגבילים יותר. Sh'elah מציגה תוכן ספריא תחת תנאי השימוש של ספריא עצמה; יש לאמת את הרישיון של כל טקסט ספציפי ישירות בספריא לפני שימוש חוזר מחוץ לאפליקציה זו. ראו את דף הרישוי של ספריא לפירוט המוסמך לפי טקסט.">
+            <h3 {{ lang_attrs('licenses.sefaria') }}>{{ _('licenses.sefaria') }}</h3>
+            <p {{ lang_attrs('licenses.torah_talmud_halachic_and_commentary_texts') }}>
                 Torah, Talmud, halachic, and commentary texts are retrieved live from the
                 <a href="https://www.sefaria.org" target="_blank" rel="noopener">Sefaria</a> API. Much of the
                 Sefaria corpus is licensed CC-BY or is public domain, but licensing varies by text, and
                 some texts on Sefaria carry more restrictive terms. Sh'elah displays Sefaria content under Sefaria's
                 own terms of use. Verify the license of any specific text on Sefaria before reusing it outside
                 this app. See <a href="https://www.sefaria.org/about" target="_blank" rel="noopener"
-                    data-en="Sefaria's licensing page" data-he="דף הרישוי של ספריא">Sefaria's licensing page</a> for the authoritative, per-text breakdown.
+                    {{ lang_attrs('licenses.sefarias_licensing_page') }}>{{ _('licenses.sefarias_licensing_page') }}</a> for the authoritative, per-text breakdown.
             </p>
 
-            <h3 data-en="Hebcal" data-he="Hebcal">Hebcal</h3>
-            <p data-en="Jewish calendar, holiday, and zmanim (halachic times) data is retrieved from the Hebcal API. Hebcal's own license terms apply to that data; see Hebcal's developer documentation for details."
-                data-he="נתוני לוח שנה יהודי, חגים וזמנים הלכתיים מתקבלים מ-API של Hebcal. תנאי הרישיון של Hebcal עצמה חלים על נתונים אלה; לפרטים ראו את התיעוד למפתחים של Hebcal.">
+            <h3 {{ lang_attrs('licenses.hebcal') }}>{{ _('licenses.hebcal') }}</h3>
+            <p {{ lang_attrs('licenses.jewish_calendar_holiday_and_zmanim_halachic') }}>
                 Jewish calendar, holiday, and zmanim (halachic times) data is retrieved from the
                 <a href="https://www.hebcal.com" target="_blank" rel="noopener">Hebcal</a> API. Hebcal's own license
                 terms apply to that data; see <a href="https://www.hebcal.com/home/developer-apis" target="_blank"
-                    rel="noopener" data-en="Hebcal's developer documentation"
-                    data-he="התיעוד למפתחים של Hebcal">Hebcal's developer documentation</a> for details.
+                    rel="noopener" {{ lang_attrs('licenses.hebcals_developer_documentation') }}>{{ _('licenses.hebcals_developer_documentation') }}</a> for details.
             </p>
 
-            <h3 data-en="Wikipedia" data-he="Wikipedia">Wikipedia</h3>
-            <p data-en="Used only as a last-resort general-knowledge source when Judaic texts and computed calendar data cannot answer a question. Wikipedia content is licensed CC-BY-SA, which carries a share-alike obligation. Any downstream reuse of Wikipedia-sourced material retrieved through this app must itself be licensed CC-BY-SA and attributed to Wikipedia. See Wikipedia's reuse guide for the full terms."
-                data-he="משמש רק כמקור ידע כללי כמוצא אחרון, כאשר טקסטים יהודיים ונתוני לוח שנה מחושבים אינם יכולים לענות על שאלה. תוכן Wikipedia מורשה תחת CC-BY-SA, הנושא חובת share-alike — כל שימוש חוזר בחומר ממקור Wikipedia שאוחזר דרך אפליקציה זו חייב להיות מורשה בעצמו תחת CC-BY-SA ולייחס ל-Wikipedia. לתנאים המלאים ראו את מדריך השימוש החוזר של Wikipedia.">
+            <h3 {{ lang_attrs('licenses.wikipedia') }}>{{ _('licenses.wikipedia') }}</h3>
+            <p {{ lang_attrs('licenses.used_only_as_a_last_resort') }}>
                 Used only as a last-resort general-knowledge source when Judaic texts and computed calendar data
                 cannot answer a question. Wikipedia content is licensed <strong>CC-BY-SA</strong>, which carries a
                 <strong>share-alike</strong> obligation. Any downstream reuse of Wikipedia-sourced material
                 retrieved through this app must itself be licensed CC-BY-SA and attributed to Wikipedia. See
                 <a href="https://en.wikipedia.org/wiki/Wikipedia:Reusing_Wikipedia_content" target="_blank"
-                    rel="noopener" data-en="Wikipedia's reuse guide"
-                    data-he="מדריך השימוש החוזר של Wikipedia">Wikipedia's reuse guide</a> for the full terms.
+                    rel="noopener" {{ lang_attrs('licenses.wikipedias_reuse_guide') }}>{{ _('licenses.wikipedias_reuse_guide') }}</a> for the full terms.
             </p>
-            <p data-en="This obligation is not limited to a user's own downstream reuse. It also covers Sh'elah's own act of serving an AI Output. Where an AI Output substantially synthesizes retrieved Wikipedia content (the last-resort case described in the AI Disclosure page), that specific answer is treated as CC-BY-SA Adapted Material of the underlying Wikipedia passage: it is attributed to Wikipedia and made available under CC-BY-SA 4.0 for that specific answer. This overrides the general 'personal use only' Content license in the Terms of Service §9, which does not apply to this subset of AI Output. This is a deliberately conservative operator choice, adopted 2026-09-06 without a definitive legal determination of whether such synthesis actually creates an 'Adapted Material' obligation under CC BY-SA 4.0 §1.1. The choice was made because treating the obligation as applicable carries less risk than assuming it does not."
-                data-he="חובה זו אינה מוגבלת לשימוש חוזר של המשתמש עצמו — היא חלה גם על עצם מסירת פלט בינה מלאכותית על ידי Sh'elah. כאשר פלט בינה מלאכותית משלב באופן מהותי תוכן Wikipedia שאוחזר (המקרה של מוצא אחרון המתואר בעמוד גילוי הנאות בנושא בינה מלאכותית), אותה תשובה ספציפית מטופלת כ'חומר מותאם' (Adapted Material) תחת CC-BY-SA של קטע ה-Wikipedia הבסיסי: היא מיוחסת ל-Wikipedia ומוצגת תחת רישיון CC-BY-SA 4.0 עבור אותה תשובה ספציפית, על אף רישיון התוכן הכללי 'לשימוש אישי בלבד' בתנאי השירות סעיף 9, שאינו חל על תת-קבוצה זו של פלט בינה מלאכותית. זוהי בחירה שמרנית במכוון של המפעיל — שאומצה ב-2026-09-06 ללא קביעה משפטית סופית האם שילוב כאמור אכן יוצר חובת 'חומר מותאם' תחת CC BY-SA 4.0 סעיף 1.1 — שנעשתה משום שהתייחסות לחובה כחלה טומנת בחובה סיכון נמוך יותר מהנחה שאינה חלה.">
-                <strong data-en="Extended to Sh'elah's own AI Output (2026-09-06):" data-he="מורחב לפלט הבינה המלאכותית של Sh'elah עצמה (2026-09-06):">Extended to Sh'elah's own AI Output (2026-09-06):</strong>
+            <p {{ lang_attrs('licenses.this_obligation_is_not_limited_to') }}>
+                <strong {{ lang_attrs('licenses.extended_to_shelahs_own_ai_output') }}>{{ _('licenses.extended_to_shelahs_own_ai_output') }}</strong>
                 this obligation is not limited to a user's own downstream reuse. It also covers Sh'elah's own act of
                 serving an AI Output. Where an AI Output substantially synthesizes retrieved Wikipedia content (the
                 last-resort case described in the AI Disclosure page), that specific answer is treated as CC-BY-SA
@@ -125,19 +117,15 @@
                 The choice was made because treating the obligation as applicable carries less risk than assuming it does not.
             </p>
 
-            <h3 data-en="Halachipedia / HebrewBooks" data-he="Halachipedia / HebrewBooks">Halachipedia / HebrewBooks
+            <h3 {{ lang_attrs('licenses.halachipedia_hebrewbooks') }}>{{ _('licenses.halachipedia_hebrewbooks') }}
             </h3>
-            <p data-en="Whitelisted external halachic sources used as second-tier evidence (after Sefaria and before general web sources). Each carries its own site terms of use; Sh'elah links to and quotes brief excerpts from these sources under fair-use / attribution norms, not a blanket relicense."
-                data-he="מקורות הלכתיים חיצוניים מאושרים המשמשים כראיה מדרג-2 (לאחר ספריא, לפני האינטרנט הכללי). כל אחד נושא את תנאי השימוש של אתרו; Sh'elah מקשרת ומצטטת קטעים קצרים ממקורות אלה תחת נורמות שימוש הוגן/ייחוס, לא רישוי מחדש גורף.">
-                Whitelisted external halachic sources used as second-tier evidence (after Sefaria and before general web sources).
-                Each carries its own site terms of use; Sh'elah links to and quotes brief excerpts from these
-                sources under fair-use / attribution norms, not a blanket relicense.
+            <p {{ lang_attrs('licenses.whitelisted_external_halachic_sources_used_as') }}>
+                {{ _('licenses.whitelisted_external_halachic_sources_used_as') }}
             </p>
 
-            <h2 data-en="2. Fonts" data-he="2. גופנים">2. Fonts</h2>
+            <h2 {{ lang_attrs('licenses.2_fonts') }}>{{ _('licenses.2_fonts') }}</h2>
             <h3>SILEOT</h3>
-            <p data-en="static/fonts/SILEOT.woff / SILEOT.woff2: the font's own name table identifies this as Ezra SIL (also distributed as &quot;SIL Ezra&quot;), a Hebrew biblical OpenType typeface published by SIL International (version 2.51, 2007). Ezra SIL's font software is licensed under the SIL Open Font License (OFL) 1.1, with Reserved Font Names &quot;SIL&quot; and &quot;Ezra&quot;; the OFL permits embedding, use, redistribution, and modification (including in a web/@font-face context) provided the font is not sold on its own and modified versions are renamed away from the reserved names. A separate Hebrew-layout-intelligence component is licensed under the MIT/X11 License (Ralph Hancock and John Hudson)."
-                data-he="static/fonts/SILEOT.woff / SILEOT.woff2 — טבלת השמות של הגופן עצמו מזהה אותו כ-Ezra SIL (המופץ גם בשם &quot;SIL Ezra&quot;), גופן עברי מקראי מסוג OpenType שפורסם על ידי SIL International (גרסה 2.51, 2007). תוכנת הגופן של Ezra SIL מורשית תחת SIL Open Font License (OFL) גרסה 1.1, עם שמות גופן שמורים (Reserved Font Names) &quot;SIL&quot; ו-&quot;Ezra&quot;; רישיון ה-OFL מתיר הטמעה, שימוש, הפצה מחדש ושינוי (לרבות בהקשר של רשת/@font-face), בתנאי שהגופן אינו נמכר בפני עצמו ושגרסאות ששונו מכונות מחדש כך שלא ישאו את השמות השמורים. רכיב נפרד של אינטליגנציית פריסת עברית מורשה תחת רישיון MIT/X11 (Ralph Hancock ו-John Hudson).">
+            <p {{ lang_attrs('licenses.static_fonts_sileot_woff_sileot_woff2') }}>
                 <code>static/fonts/SILEOT.woff</code> / <code>SILEOT.woff2</code>: the font's own name table identifies this
                 as <strong>Ezra SIL</strong> (also distributed as "SIL Ezra"), a Hebrew biblical OpenType
                 typeface published by <a href="https://software.sil.org/ezra/" target="_blank"
@@ -149,19 +137,13 @@
                 component is licensed under the <strong>MIT/X11 License</strong> (Ralph Hancock and John Hudson).            </p>
 
             <h3>Cardo and Inter</h3>
-            <p data-en="The text typefaces Cardo and Inter are loaded from Google Fonts. Both are published under the SIL Open Font License 1.1."
-                data-he="גופני הטקסט Cardo ו-Inter נטענים מ-Google Fonts. שניהם מפורסמים תחת SIL Open Font License 1.1.">
-                The text typefaces Cardo and Inter are loaded from Google Fonts. Both are published under the SIL
-                Open Font License 1.1.
+            <p {{ lang_attrs('licenses.the_text_typefaces_cardo_and_inter') }}>
+                {{ _('licenses.the_text_typefaces_cardo_and_inter') }}
             </p>
 
-            <h2 data-en="3. Open-Source Libraries: Frontend (JavaScript/CSS)"
-                data-he="3. ספריות קוד פתוח — צד לקוח (JavaScript/CSS)">3. Open-Source Libraries: Frontend
-                (JavaScript/CSS)</h2>
-            <p data-en="The following libraries are used in the Service's own frontend code and are each MIT-licensed. See each project's own repository for the full license text:"
-                data-he="הספריות הבאות משמשות בקוד הפרונט-אנד של השירות עצמו ומורשות כל אחת תחת MIT — ראה את המאגר של כל פרויקט למלוא נוסח הרישיון:">
-                The following libraries are used in the Service's own frontend code and are each MIT-licensed. See
-                each project's own repository for the full license text:
+            <h2 {{ lang_attrs('licenses.3_open_source_libraries_frontend_javascript') }}>{{ _('licenses.3_open_source_libraries_frontend_javascript') }}</h2>
+            <p {{ lang_attrs('licenses.the_following_libraries_are_used_in') }}>
+                {{ _('licenses.the_following_libraries_are_used_in') }}
             </p>
             <ul>
                 <li><strong>Tailwind CSS</strong>: <a href="https://github.com/tailwindlabs/tailwindcss"
@@ -177,9 +159,8 @@
                 <li><strong>Sentry browser SDK</strong>: <a href="https://github.com/getsentry/sentry-javascript"
                         target="_blank" rel="noopener">github.com/getsentry/sentry-javascript</a></li>
             </ul>
-            <p data-en="A typical MIT notice (see each project for its exact copyright line):"
-                data-he="נוסח MIT אופייני (ראה כל פרויקט לשורת זכויות היוצרים המדויקת שלו):">
-                A typical MIT notice (see each project for its exact copyright line):
+            <p {{ lang_attrs('licenses.a_typical_mit_notice_see_each') }}>
+                {{ _('licenses.a_typical_mit_notice_see_each') }}
             </p>
             <pre>MIT License
 
@@ -203,10 +184,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.</pre>
 
-            <h3 data-en="DOMPurify (not MIT, dual-licensed)" data-he="DOMPurify (לא MIT — רישוי כפול)">DOMPurify
-                (not MIT, dual-licensed)</h3>
-            <p data-en="DOMPurify: github.com/cure53/DOMPurify. DOMPurify is not MIT-licensed. Its own package.json declares &quot;license&quot;: &quot;(MPL-2.0 OR Apache-2.0)&quot;, meaning a dual license under the Mozilla Public License 2.0 or, at the recipient's option, the Apache License 2.0. Both permit the use made of it here (bundling a minified, unmodified build via CDN into this app); MPL-2.0's file-level copyleft only attaches if DOMPurify's own source files are modified and redistributed, which this project does not do. See DOMPurify's repository for the full license text of both options."
-                data-he="DOMPurify — github.com/cure53/DOMPurify. DOMPurify אינה מורשית תחת MIT. קובץ ה-package.json שלה עצמו מצהיר &quot;license&quot;: &quot;(MPL-2.0 OR Apache-2.0)&quot; — רישוי כפול תחת Mozilla Public License 2.0 או, לבחירת מקבל הרישיון, Apache License 2.0. שני הרישיונות מתירים את השימוש שנעשה בה כאן (צירוף גרסה ממוזערת ובלתי משונה דרך CDN לתוך אפליקציה זו); ה-copyleft ברמת הקובץ של MPL-2.0 חל רק אם קבצי המקור של DOMPurify עצמם משתנים ומופצים מחדש, מה שפרויקט זה אינו עושה. ראה את המאגר של DOMPurify לנוסח המלא של שני הרישיונות.">
+            <h3 {{ lang_attrs('licenses.dompurify_not_mit_dual_licensed') }}>{{ _('licenses.dompurify_not_mit_dual_licensed') }}</h3>
+            <p {{ lang_attrs('licenses.dompurify_github_com_cure53_dompurify_dompurify') }}>
                 <strong>DOMPurify</strong>: <a href="https://github.com/cure53/DOMPurify" target="_blank"
                     rel="noopener">github.com/cure53/DOMPurify</a>. DOMPurify is <strong>not</strong>
                 MIT-licensed. Its own <code>package.json</code> declares
@@ -218,15 +197,12 @@ SOFTWARE.</pre>
                 DOMPurify's repository for the full license text of both options.
             </p>
 
-            <h2 data-en="4. Backend (Python) Dependencies" data-he="4. תלויות צד שרת (Python)">4. Backend (Python)
-                Dependencies</h2>
-            <p data-en="Direct dependencies pinned in requirements.txt. All are permissively licensed (MIT / BSD-3-Clause / Apache-2.0, or a permissive dual choice of those) except one flagged below:"
-                data-he="תלויות ישירות מוצמדות (pinned) בקובץ requirements.txt. כולן מורשות באופן חופשי (MIT / BSD-3-Clause / Apache-2.0, או בחירה כפולה חופשית מביניהם) פרט לאחת המסומנת להלן:">
+            <h2 {{ lang_attrs('licenses.4_backend_python_dependencies') }}>{{ _('licenses.4_backend_python_dependencies') }}</h2>
+            <p {{ lang_attrs('licenses.direct_dependencies_pinned_in_requirements_txt') }}>
                 Direct dependencies pinned in <code>requirements.txt</code>. All are permissively licensed (MIT /
                 BSD-3-Clause / Apache-2.0, or a permissive dual choice of those) except one flagged below:
             </p>
-            <p data-en="Permissive (MIT / BSD-3-Clause / Apache-2.0): Flask 3.1.3 (BSD-3-Clause), FastAPI 0.141.1 (MIT), Starlette 1.3.1 (BSD-3-Clause), Uvicorn 0.35.0 (BSD-3-Clause), a2wsgi 1.10.10 (MIT), redis 7.4.0 (MIT), python-dotenv 1.2.2 (BSD-3-Clause), requests 2.33.1 (Apache-2.0), httpx 0.28.1 (BSD-3-Clause), pyluach 2.3.0 (MIT), tzdata 2026.2 (Apache-2.0), timezonefinder 8.2.2 (MIT), the Anthropic SDK 0.89.0 (MIT), google-genai 2.23.0 (Apache-2.0), tenacity 9.1.2 (Apache-2.0), PyJWT 2.15.0 (MIT), cryptography 50.0.0 (Apache-2.0 OR BSD-3-Clause, dual), supabase 2.31.0 (MIT), python-docx 1.1.2 (MIT), reportlab 4.2.2 (BSD-style license, per its own license.txt), and sentry-sdk 2.63.0 (MIT)."
-                data-he="רישיונות חופשיים (MIT / BSD-3-Clause / Apache-2.0): Flask 3.1.3 (BSD-3-Clause), FastAPI 0.141.1 (MIT), Starlette 1.3.1 (BSD-3-Clause), Uvicorn 0.35.0 (BSD-3-Clause), a2wsgi 1.10.10 (MIT), redis 7.4.0 (MIT), python-dotenv 1.2.2 (BSD-3-Clause), requests 2.33.1 (Apache-2.0), httpx 0.28.1 (BSD-3-Clause), pyluach 2.3.0 (MIT), tzdata 2026.2 (Apache-2.0), timezonefinder 8.2.2 (MIT), ה-Anthropic SDK 0.89.0 (MIT), google-genai 2.23.0 (Apache-2.0), tenacity 9.1.2 (Apache-2.0), PyJWT 2.15.0 (MIT), cryptography 50.0.0 (Apache-2.0 OR BSD-3-Clause, כפול), supabase 2.31.0 (MIT), python-docx 1.1.2 (MIT), reportlab 4.2.2 (רישיון בסגנון BSD, לפי קובץ ה-license.txt שלו), ו-sentry-sdk 2.63.0 (MIT).">
+            <p {{ lang_attrs('licenses.permissive_mit_bsd_3_clause_apache') }}>
                 <strong>Permissive (MIT / BSD-3-Clause / Apache-2.0):</strong> Flask 3.1.3 (BSD-3-Clause), FastAPI
                 0.141.1 (MIT), Starlette 1.3.1 (BSD-3-Clause), Uvicorn 0.35.0 (BSD-3-Clause), a2wsgi 1.10.10 (MIT), redis 7.4.0 (MIT), python-dotenv 1.2.2 (BSD-3-Clause), requests 2.33.1 (Apache-2.0), httpx 0.28.1
                 (BSD-3-Clause), pyluach 2.3.0 (MIT), tzdata 2026.2 (Apache-2.0), timezonefinder 8.2.2 (MIT), the
@@ -235,8 +211,7 @@ SOFTWARE.</pre>
                 python-docx 1.1.2 (MIT), reportlab 4.2.2 (BSD-style license, per its own <code>license.txt</code>),
                 and sentry-sdk 2.63.0 (MIT).
             </p>
-            <p>{{ phosphor('warning', 18, 'legal-inline-icon') }}<span data-en="zmanim 0.3.1 (used in the Service's zmanim/halachic-times calculation engine, backend/zmanim_engine.py) is not a simple permissive license. Its installed package metadata declares the GNU Lesser General Public License v2 or later (LGPLv2+). LGPLv2+ is a &quot;weak copyleft&quot; library license: this project's own code may use the library and remain under its own MIT license (dynamic use/import doesn't trigger the copyleft), but redistributing the zmanim package itself would carry LGPL obligations, including making the LGPL-covered source available and, per LGPLv2 §6, allowing the library to be replaced or relinked with a modified version. No modifications to zmanim's own source are made in this repo."
-                data-he="zmanim 0.3.1 (המשמשת במנוע חישוב הזמנים ההלכתיים של השירות, backend/zmanim_engine.py) אינה רישיון חופשי פשוט — מטא-נתוני החבילה המותקנת מצהירים על GNU Lesser General Public License v2 or later (LGPLv2+). LGPLv2+ הוא רישיון ספרייה מסוג &quot;copyleft חלש&quot;: הקוד של פרויקט זה עצמו רשאי להשתמש בספרייה ולהישאר תחת רישיון ה-MIT שלו (שימוש/ייבוא דינמי אינו מפעיל את חובת ה-copyleft), אך הפצה מחדש של חבילת zmanim עצמה תטיל חובות LGPL — לרבות הנגשת קוד המקור המכוסה תחת LGPL, ולפי סעיף 6 של LGPLv2, אפשרות להחליף או לקשר מחדש (relink) את הספרייה עם גרסה ששונתה. אין שינויים במקור של zmanim עצמה במאגר זה.">
+            <p>{{ phosphor('warning', 18, 'legal-inline-icon') }}<span {{ lang_attrs('licenses.zmanim_0_3_1_used_in') }}>
                 <strong>zmanim</strong> 0.3.1 (used in the Service's zmanim/halachic-times calculation engine,
                 <code>backend/zmanim_engine.py</code>) is <strong>not</strong> a simple permissive license. Its
                 installed package metadata declares the <strong>GNU Lesser General Public License v2 or later
@@ -247,23 +222,19 @@ SOFTWARE.</pre>
                 source are made in this repo.
             </span></p>
 
-            <h2 data-en="5. AI Model Providers" data-he="5. ספקי מודלי בינה מלאכותית">5. AI Model Providers</h2>
-            <p data-en="Anthropic (Claude) and Google (Gemini) provide the AI synthesis models used by the Service under their respective commercial API terms, not open-source licenses. See our AI Disclosure page for how these are used."
-                data-he="Anthropic (Claude) ו-Google (Gemini) מספקות את מודלי סינתזת הבינה המלאכותית המשמשים את השירות תחת תנאי ה-API המסחריים שלהם — לא רישיונות קוד פתוח. ראה את עמוד גילוי הנאות בנושא בינה מלאכותית שלנו לאופן השימוש בהם.">
+            <h2 {{ lang_attrs('licenses.5_ai_model_providers') }}>{{ _('licenses.5_ai_model_providers') }}</h2>
+            <p {{ lang_attrs('licenses.anthropic_claude_and_google_gemini_provide') }}>
                 Anthropic (Claude) and Google (Gemini) provide the AI synthesis models used by the Service under
                 their respective commercial API terms, not open-source licenses. See our <a href="/ai-disclosure"
-                    data-en="AI Disclosure" data-he="גילוי נאות בינה מלאכותית">AI Disclosure</a> page for how these
+                    {{ lang_attrs('licenses.ai_disclosure') }}>{{ _('licenses.ai_disclosure') }}</a> page for how these
                 are used.
             </p>
 
             <hr class="my-8" style="border-color: var(--surface-border);">
 
             <div class="info-box">
-                <p class="text-sm" data-en="See also our Terms of Service §9 (Intellectual Property), the DMCA / Copyright Policy, and THIRD_PARTY_LICENSES.md in the source repository."
-                    data-he="ראה גם את תנאי השירות שלנו סעיף 9 (קניין רוחני), את מדיניות זכויות היוצרים / DMCA, ואת THIRD_PARTY_LICENSES.md במאגר המקור.">
-                    See also our <a href="/terms" data-en="Terms of Service" data-he="תנאי השירות">Terms of
-                        Service</a> §9 (Intellectual Property), the <a href="/dmca" data-en="DMCA / Copyright Policy"
-                        data-he="מדיניות זכויות יוצרים / DMCA">DMCA / Copyright Policy</a>, and
+                <p class="text-sm" {{ lang_attrs('licenses.see_also_our_terms_of_service') }}>
+                    See also our <a href="/terms" {{ lang_attrs('licenses.terms_of_service') }}>{{ _('licenses.terms_of_service') }}</a> §9 (Intellectual Property), the <a href="/dmca" {{ lang_attrs('licenses.dmca_copyright_policy') }}>{{ _('licenses.dmca_copyright_policy') }}</a>, and
                     <code>THIRD_PARTY_LICENSES.md</code> in the source repository.
                 </p>
             </div>

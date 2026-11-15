@@ -359,14 +359,11 @@
          already recorded, and by initAnalyticsConsent() once one is made. -->
     <section id="analyticsConsentBanner" aria-label="Analytics consent">
         <p>
-            <span data-en="We use cookieless, privacy-first analytics (no ad tracking, no cross-site profiling) to see which pages are useful. Is that OK?"
-                data-he="אנו משתמשים באנליטיקס ללא עוגיות ולא פוגעני פרטיות (ללא מעקב פרסומי, ללא פרופיל חוצה אתרים) כדי לראות אילו עמודים שימושיים. זה בסדר?">We
-                use cookieless, privacy-first analytics (no ad tracking, no cross-site profiling) to see which pages
-                are useful. Is that OK?</span>
+            <span {{ lang_attrs('home.we_use_cookieless_privacy_first_analytics') }}>{{ _('home.we_use_cookieless_privacy_first_analytics') }}</span>
         </p>
         <div class="analytics-consent-actions">
-            <button type="button" id="analyticsConsentDecline" data-en="Decline" data-he="דחה">Decline</button>
-            <button type="button" id="analyticsConsentAccept" data-en="Accept" data-he="קבל">Accept</button>
+            <button type="button" id="analyticsConsentDecline" {{ lang_attrs('home.decline') }}>{{ _('home.decline') }}</button>
+            <button type="button" id="analyticsConsentAccept" {{ lang_attrs('home.accept') }}>{{ _('home.accept') }}</button>
         </div>
     </section>
     <script>swapPendingLanguage(document.getElementById('analyticsConsentBanner'))</script>
@@ -389,9 +386,9 @@
                         ש
                     </span>
                     <span class="topbar-brand-title text-sm sm:text-base font-serif tracking-tight text-navy font-semibold leading-none sm:leading-6 text-start">
-                        <span class="block" data-en="Sh'elah" data-he="שאלה">Sh'elah</span>
+                        <span class="block" {{ lang_attrs('home.shelah') }}>{{ _('home.shelah') }}</span>
                         <span class="block text-[10px] font-normal text-slate-500 italic topbar-brand-subtitle"
-                            data-en="Torah Encyclopedia" data-he="אנציקלופדיית תורה">Torah Encyclopedia</span>
+                            {{ lang_attrs('home.torah_encyclopedia') }}>{{ _('home.torah_encyclopedia') }}</span>
                     </span>
                 </button>
 
@@ -402,7 +399,7 @@
                     class="topbar-flat-btn hidden shrink-0 items-center gap-1.5 topbar-library-btn"
                     data-onclick="openLibrarySidebar" title="Library">
                     {{ phosphor('book-open', size=20, class='h-5 w-5 shrink-0') }}
-                    <span class="text-xs font-medium" data-en="Library" data-he="ספרייה">Library</span>
+                    <span class="text-xs font-medium" {{ lang_attrs('home.library') }}>{{ _('home.library') }}</span>
                 </button>
 
                 <!-- Top Navigation Menu Toggle + Search Bar -->
@@ -490,7 +487,7 @@
                             <path d="{{ phosphor_path('sparkle') }}" fill="url(#askMarkGradient)"/>
                             <path class="topbar-ask-btn__mark-hover" d="{{ phosphor_path('sparkle') }}" fill="url(#askMarkGradientHover)"/>
                         </svg>
-                        <span class="sr-only" data-en="Ask AI" data-he="שאל AI">Ask AI</span>
+                        <span class="sr-only" {{ lang_attrs('home.ask_ai') }}>{{ _('home.ask_ai') }}</span>
                     </button>
                 </div>
 
@@ -504,69 +501,67 @@
 
                         <div id="settingsPanel"
                             class="hidden absolute bg-slate-50 border border-slate-300 rounded-xl shadow-lg p-2.5 z-200 space-y-2.5 overflow-y-auto w-max max-w-[360px]">
-                            <p class="text-[11px] uppercase tracking-widest text-slate-500 font-bold" data-en="Quick Settings"
-                                data-he="הגדרות מהירות">Quick Settings</p>
+                            <p class="text-[11px] uppercase tracking-widest text-slate-500 font-bold" {{ lang_attrs('home.quick_settings') }}>{{ _('home.quick_settings') }}</p>
 
                             <button id="openAiSettingsBtn" type="button"
                                 class="w-full px-3 py-2 rounded-sm bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition font-semibold text-xs text-start">
                                 {{ phosphor('sparkle', size=14, class='h-3.5 w-3.5 shrink-0') }}
                                 <span class="flex-1">
-                                    <span class="block" data-en="AI settings" data-he="הגדרות בינה מלאכותית">AI settings</span>
-                                    <span class="block font-normal text-[11px] text-slate-600" data-en="Community, answer mode and web search, in the chat" data-he="קהילה, מצב תשובה וחיפוש ברשת, בצ׳אט">Community, answer mode and web search, in the chat</span>
+                                    <span class="block" {{ lang_attrs('home.ai_settings') }}>{{ _('home.ai_settings') }}</span>
+                                    <span class="block font-normal text-[11px] text-slate-600" {{ lang_attrs('home.community_answer_mode_and_web_search') }}>{{ _('home.community_answer_mode_and_web_search') }}</span>
                                 </span>
                                 {{ phosphor('caret-right', size=12, class='h-3 w-3 shrink-0 ai-settings-caret') }}
                             </button>
                             <div class="border-t border-slate-100 pt-2">
                                 <fieldset id="minhagSetting" class="minhag-setting" aria-describedby="minhagSettingHint">
-                                    <legend class="minhag-setting__legend" data-en="Community" data-he="קהילה">Community</legend>
-                                    <p id="minhagSettingHint" class="minhag-setting__hint" data-en="Sets the haftarah, siddur, halacha sources and AI answers." data-he="קובע את ההפטרה, הסידור, מקורות ההלכה ותשובות הבינה המלאכותית.">Sets the haftarah, siddur, halacha sources and AI answers.</p>
+                                    <legend class="minhag-setting__legend" {{ lang_attrs('home.community') }}>{{ _('home.community') }}</legend>
+                                    <p id="minhagSettingHint" class="minhag-setting__hint" {{ lang_attrs('home.sets_the_haftarah_siddur_halacha_sources') }}>{{ _('home.sets_the_haftarah_siddur_halacha_sources') }}</p>
                                     <label class="minhag-option">
                                         <input type="radio" name="minhag" value="sephardi" class="minhag-option__input" checked>
                                         <span class="minhag-option__text">
-                                            <span class="minhag-option__name" data-en="Sephardi" data-he="ספרדי">Sephardi</span>
-                                            <span class="minhag-option__desc" data-en="Shulchan Aruch and the Sephardi poskim" data-he="השולחן ערוך ופוסקי ספרד">Shulchan Aruch and the Sephardi poskim</span>
+                                            <span class="minhag-option__name" {{ lang_attrs('home.sephardi') }}>{{ _('home.sephardi') }}</span>
+                                            <span class="minhag-option__desc" {{ lang_attrs('home.shulchan_aruch_and_the_sephardi_poskim') }}>{{ _('home.shulchan_aruch_and_the_sephardi_poskim') }}</span>
                                         </span>
                                     </label>
                                     <label class="minhag-option">
                                         <input type="radio" name="minhag" value="mizrahi" class="minhag-option__input">
                                         <span class="minhag-option__text">
-                                            <span class="minhag-option__name" data-en="Mizrahi (Edot HaMizrach)" data-he="עדות המזרח">Mizrahi (Edot HaMizrach)</span>
-                                            <span class="minhag-option__desc" data-en="Middle Eastern customs: Ben Ish Chai, Kaf HaChaim" data-he="מנהגי עדות המזרח: בן איש חי, כף החיים">Middle Eastern customs: Ben Ish Chai, Kaf HaChaim</span>
+                                            <span class="minhag-option__name" {{ lang_attrs('home.mizrahi_edot_hamizrach') }}>{{ _('home.mizrahi_edot_hamizrach') }}</span>
+                                            <span class="minhag-option__desc" {{ lang_attrs('home.middle_eastern_customs_ben_ish_chai') }}>{{ _('home.middle_eastern_customs_ben_ish_chai') }}</span>
                                         </span>
                                     </label>
                                     <label class="minhag-option">
                                         <input type="radio" name="minhag" value="ashkenazi" class="minhag-option__input">
                                         <span class="minhag-option__text">
-                                            <span class="minhag-option__name" data-en="Ashkenazi" data-he="אשכנזי">Ashkenazi</span>
-                                            <span class="minhag-option__desc" data-en="Rema and the Mishnah Berurah" data-he="הרמ״א והמשנה ברורה">Rema and the Mishnah Berurah</span>
+                                            <span class="minhag-option__name" {{ lang_attrs('home.ashkenazi') }}>{{ _('home.ashkenazi') }}</span>
+                                            <span class="minhag-option__desc" {{ lang_attrs('home.rema_and_the_mishnah_berurah') }}>{{ _('home.rema_and_the_mishnah_berurah') }}</span>
                                         </span>
                                     </label>
                                 </fieldset>
                             </div>
                             <template id="communityOptions">
-                                <option value="All" data-en="All communities" data-he="כל הקהילות">All communities</option>
-                                <option value="Ashkenaz" data-en="Ashkenaz" data-he="אשכנז">Ashkenaz</option>
-                                <option value="Sefardic" data-en="Sefardic" data-he="ספרדי">Sefardic</option>
-                                <option value="Bukharian" data-en="Bukharian" data-he="בוכרי">Bukharian</option>
-                                <option value="Persian" data-en="Persian" data-he="פרסי">Persian</option>
-                                <option value="Ethiopian" data-en="Ethiopian" data-he="אתיופי">Ethiopian</option>
-                                <option value="Georgian" data-en="Georgian" data-he="גרוזיני">Georgian</option>
-                                <option value="Greek-Romaniote" data-en="Greek-Romaniote" data-he="רומניוטי">Greek-Romaniote</option>
-                                <option value="Iraqi" data-en="Iraqi" data-he="עיראקי">Iraqi</option>
-                                <option value="Syrian" data-en="Syrian" data-he="סורי">Syrian</option>
-                                <option value="Yemenite" data-en="Yemenite" data-he="תימני">Yemenite</option>
-                                <option value="Moroccan" data-en="Moroccan" data-he="מרוקאי">Moroccan</option>
-                                <option value="Kavkazi" data-en="Kavkazi" data-he="קווקזי">Kavkazi</option>
-                                <option value="Turkish-Ottoman" data-en="Turkish-Ottoman" data-he="טורקי-עות׳מאני">Turkish-Ottoman</option>
-                                <option value="Israeli" data-en="Israeli" data-he="ישראלי">Israeli</option>
+                                <option value="All" {{ lang_attrs('home.all_communities') }}>{{ _('home.all_communities') }}</option>
+                                <option value="Ashkenaz" {{ lang_attrs('home.ashkenaz') }}>{{ _('home.ashkenaz') }}</option>
+                                <option value="Sefardic" {{ lang_attrs('home.sefardic') }}>{{ _('home.sefardic') }}</option>
+                                <option value="Bukharian" {{ lang_attrs('home.bukharian') }}>{{ _('home.bukharian') }}</option>
+                                <option value="Persian" {{ lang_attrs('home.persian') }}>{{ _('home.persian') }}</option>
+                                <option value="Ethiopian" {{ lang_attrs('home.ethiopian') }}>{{ _('home.ethiopian') }}</option>
+                                <option value="Georgian" {{ lang_attrs('home.georgian') }}>{{ _('home.georgian') }}</option>
+                                <option value="Greek-Romaniote" {{ lang_attrs('home.greek_romaniote') }}>{{ _('home.greek_romaniote') }}</option>
+                                <option value="Iraqi" {{ lang_attrs('home.iraqi') }}>{{ _('home.iraqi') }}</option>
+                                <option value="Syrian" {{ lang_attrs('home.syrian') }}>{{ _('home.syrian') }}</option>
+                                <option value="Yemenite" {{ lang_attrs('home.yemenite') }}>{{ _('home.yemenite') }}</option>
+                                <option value="Moroccan" {{ lang_attrs('home.moroccan') }}>{{ _('home.moroccan') }}</option>
+                                <option value="Kavkazi" {{ lang_attrs('home.kavkazi') }}>{{ _('home.kavkazi') }}</option>
+                                <option value="Turkish-Ottoman" {{ lang_attrs('home.turkish_ottoman') }}>{{ _('home.turkish_ottoman') }}</option>
+                                <option value="Israeli" {{ lang_attrs('home.israeli') }}>{{ _('home.israeli') }}</option>
                             </template>
 
                             <div class="border-t border-slate-100 pt-2">
                                 <button id="themeToggleBtn" type="button"
                                     class="w-full px-3 py-1.5 rounded-sm bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition font-semibold text-xs text-start"
                                     aria-live="polite">
-                                    <span id="themeToggleLabel" data-en="Appearance: Light" data-he="מראה: בהיר">Appearance:
-                                        Light</span>
+                                    <span id="themeToggleLabel" {{ lang_attrs('home.appearance_light') }}>{{ _('home.appearance_light') }}</span>
                                 </button>
                             </div>
 
@@ -577,26 +572,26 @@
                                 </button>
                                 <button id="semanticBookmarkBtn" type="button"
                                     class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition font-semibold text-xs"
-                                    data-en="Save Study Note" data-he="שמור הערת לימוד">Save Study Note</button>
+                                    {{ lang_attrs('home.save_study_note') }}>{{ _('home.save_study_note') }}</button>
                             </div>
 
                             <!-- Export needs an open text: syncSettingsExportControls() hides this
                                  whole row everywhere else. -->
                             <div id="exportControls" class="export-text-only hidden grid grid-cols-2 gap-2 border-t border-slate-100 pt-2">
                                 <label id="exportFormatField" class="col-span-2 text-xs text-slate-600">
-                                    <span data-en="Export format" data-he="פורמט ייצוא">Export format</span>
+                                    <span {{ lang_attrs('home.export_format') }}>{{ _('home.export_format') }}</span>
                                     <span class="select-field">
                                     <select id="exportFormatSelect"
                                         class="w-full px-2 py-1.5 rounded-sm border bg-slate-50 text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-400">
-                                        <option value="txt" data-en="Text (.txt)" data-he="טקסט (.txt)">Text (.txt)</option>
-                                        <option value="docx" data-en="Word (.docx)" data-he="וורד (.docx)">Word (.docx)</option>
-                                        <option value="pdf" data-en="PDF (.pdf)" data-he="PDF (.pdf)">PDF (.pdf)</option>
+                                        <option value="txt" {{ lang_attrs('home.text_txt') }}>{{ _('home.text_txt') }}</option>
+                                        <option value="docx" {{ lang_attrs('home.word_docx') }}>{{ _('home.word_docx') }}</option>
+                                        <option value="pdf" {{ lang_attrs('home.pdf_pdf') }}>{{ _('home.pdf_pdf') }}</option>
                                     </select>
                                     </span>
                                 </label>
                                 <button id="exportCitationBtn" type="button"
                                     class="col-span-2 px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition font-semibold text-xs"
-                                    data-en="Export" data-he="ייצוא">Export</button>
+                                    {{ lang_attrs('home.export') }}>{{ _('home.export') }}</button>
                             </div>
                         </div>
                     </div>
@@ -645,18 +640,17 @@
                                 class="hidden absolute top-full right-0 w-44 max-w-[calc(100vw-1rem)] bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-999">
                                 <a id="userProfileLink" href="/profile"
                                     class="topbar-user-menu-item block px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 transition"
-                                    data-en="Profile" data-he="פרופיל">Profile</a>
+                                    {{ lang_attrs('home.profile') }}>{{ _('home.profile') }}</a>
                                 <button id="userProfilePrivacyDataAction" type="button"
                                     class="topbar-user-menu-item w-full text-start px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 transition"
-                                    data-en="Privacy &amp; Data" data-he="פרטיות ונתונים">Privacy &amp; Data</button>
+                                    {{ lang_attrs('home.privacy_data') }}>{{ _('home.privacy_data') }}</button>
                                 <button id="userProfileSignOutAction" type="button"
                                     class="topbar-user-menu-item topbar-user-menu-signout w-full text-start px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 transition"
-                                    data-en="Sign Out" data-he="התנתקות">Sign Out</button>
+                                    {{ lang_attrs('home.sign_out') }}>{{ _('home.sign_out') }}</button>
                             </div>
                         </div>
 
-                        <a id="signInBtn" href="/signin" class="topbar-flat-btn" data-en="Sign In" data-he="התחברות">Sign
-                            In</a>
+                        <a id="signInBtn" href="/signin" class="topbar-flat-btn" {{ lang_attrs('home.sign_in') }}>{{ _('home.sign_in') }}</a>
                     </div>
 
                     <div id="hebrewDateDisplay" class="text-xs font-serif italic text-slate-500 mr-1">Today</div>
@@ -673,8 +667,7 @@
                         data-lang="en">English</button>
                     <button data-onclick="chooseLanguage" data-onclick-arg="he" class="hidden lg:inline-flex topbar-flat-btn font-hebrew lang-btn"
                         data-lang="he">עברית</button>
-                    <button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn" data-en="עברית"
-                        data-he="English">עברית</button>
+                    <button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn" {{ lang_attrs('common.other_language_name') }}>{{ _('common.other_language_name') }}</button>
                 </div>
             </header>
             <script>swapPendingLanguage(document.querySelector('header[role="banner"]'))</script>
@@ -701,28 +694,26 @@
                         title="Reader Settings">
                         <span class="reader-topbar-settings-icon" aria-hidden="true">&#9776;</span>
                         <span id="readerSettingsBtnLabel" class="reader-topbar-settings-label"
-                            data-en="Reader Settings" data-he="הגדרות קריאה">Reader Settings</span>
+                            {{ lang_attrs('home.reader_settings') }}>{{ _('home.reader_settings') }}</span>
                     </button>
 
                     <div id="readerSettingsPanel"
                         class="hidden absolute reader-settings-dropdown top-full mt-1 w-[min(92vw,24rem)] z-80 text-start">
                         <p class="reader-settings__eyebrow"
-                            data-en="Reader Settings" data-he="הגדרות קריאה">Reader Settings</p>
+                            {{ lang_attrs('home.reader_settings') }}>{{ _('home.reader_settings') }}</p>
 
                         <label class="block reader-settings__label">
-                            <span data-en="Layout" data-he="פריסה">Layout</span>
+                            <span {{ lang_attrs('home.layout') }}>{{ _('home.layout') }}</span>
                             <span class="select-field">
                             <select id="readerLayoutSelect"
                                 class="reader-select">
-                                <option value="bilingual" data-en="Side by Side (Hebrew Left)"
-                                    data-he="דו-עמודי (עברית משמאל)">Side by Side (Hebrew Left)
+                                <option value="bilingual" {{ lang_attrs('home.side_by_side_hebrew_left') }}>{{ _('home.side_by_side_hebrew_left') }}
                                 </option>
-                                <option value="bilingual-reverse" data-en="Side by Side (English Left)"
-                                    data-he="דו-עמודי (אנגלית משמאל)">Side by Side (English Left)</option>
-                                <option value="interleaved" data-en="Interleaved" data-he="משולב שורה-שורה">
-                                    Interleaved</option>
-                                <option value="english" data-en="English" data-he="אנגלית">English</option>
-                                <option value="hebrew" data-en="Hebrew" data-he="עברית">Hebrew</option>
+                                <option value="bilingual-reverse" {{ lang_attrs('home.side_by_side_english_left') }}>{{ _('home.side_by_side_english_left') }}</option>
+                                <option value="interleaved" {{ lang_attrs('home.interleaved') }}>
+                                    {{ _('home.interleaved') }}</option>
+                                <option value="english" {{ lang_attrs('home.english') }}>{{ _('home.english') }}</option>
+                                <option value="hebrew" {{ lang_attrs('home.hebrew') }}>{{ _('home.hebrew') }}</option>
                             </select>
                             </span>
                         </label>
@@ -731,52 +722,49 @@
                              hidden until a text with a choice is open. -->
                         <fieldset id="readerVersionPicker" class="reader-version-picker reader-settings__group hidden"
                             aria-describedby="readerVersionHint">
-                            <legend class="reader-settings__label" data-en="Text Version" data-he="מהדורה ותרגום">Text Version</legend>
+                            <legend class="reader-settings__label" {{ lang_attrs('home.text_version') }}>{{ _('home.text_version') }}</legend>
                             <label id="readerVersionHeRow" class="block reader-settings__label">
-                                <span data-en="Hebrew" data-he="עברית">Hebrew</span>
+                                <span {{ lang_attrs('home.hebrew') }}>{{ _('home.hebrew') }}</span>
                                 <span class="select-field">
                                 <select id="readerVersionHe"
                                     class="reader-select reader-version-select"></select>
                                 </span>
                             </label>
                             <label id="readerVersionEnRow" class="block reader-settings__label">
-                                <span data-en="Translation" data-he="תרגום">Translation</span>
+                                <span {{ lang_attrs('home.translation') }}>{{ _('home.translation') }}</span>
                                 <span class="select-field">
                                 <select id="readerVersionEn"
                                     class="reader-select reader-version-select"></select>
                                 </span>
                             </label>
                             <p id="readerVersionHint" class="reader-settings__hint"
-                                data-en="Orthodox editions only, chosen for your community."
-                                data-he="רק מהדורות אורתודוקסיות, לפי הקהילה שלך.">Orthodox editions only, chosen for your community.</p>
+                                {{ lang_attrs('home.orthodox_editions_only_chosen_for_your') }}>{{ _('home.orthodox_editions_only_chosen_for_your') }}</p>
                         </fieldset>
 
                         <label class="block reader-settings__label">
-                            <span data-en="Text Size" data-he="גודל טקסט">Text Size</span>
+                            <span {{ lang_attrs('home.text_size') }}>{{ _('home.text_size') }}</span>
                             <input id="readerFontSize" type="range" min="14" max="30" value="18"
                                 class="reader-range-slider w-full" />
                         </label>
 
                         <label class="block reader-settings__label">
-                            <span data-en="Density" data-he="ריווח">Density</span>
+                            <span {{ lang_attrs('home.density') }}>{{ _('home.density') }}</span>
                             <input id="readerLineHeight" type="range" min="1.4" max="2.4" step="0.1" value="1.8"
                                 class="reader-range-slider w-full" />
                         </label>
 
                         <div class="reader-settings__group">
                             <label class="flex reader-toggle-row">
-                                <span data-en="Source Transliteration" data-he="תעתיק מהמקור">Source
-                                    Transliteration</span>
+                                <span {{ lang_attrs('home.source_transliteration') }}>{{ _('home.source_transliteration') }}</span>
                                 <input id="transliterationToggle" type="checkbox" class="reader-switch" />
                             </label>
                             <label class="flex reader-toggle-row">
-                                <span data-en="Show Vowels" data-he="הצג ניקוד">Show Vowels</span>
+                                <span {{ lang_attrs('home.show_vowels') }}>{{ _('home.show_vowels') }}</span>
                                 <input id="showVowelsToggle" type="checkbox" class="reader-switch" checked />
                             </label>
                             <label id="cantillationToggleRow"
                                 class="flex reader-toggle-row">
-                                <span data-en="Show Cantillation" data-he="הצג טעמי מקרא">Show
-                                    Cantillation</span>
+                                <span {{ lang_attrs('home.show_cantillation') }}>{{ _('home.show_cantillation') }}</span>
                                 <input id="showCantillationToggle" type="checkbox" class="reader-switch"
                                     checked />
                             </label>
@@ -784,7 +772,7 @@
 
                         <div class="reader-settings__group">
                             <label class="flex reader-toggle-row">
-                                <span data-en="Shul Mode" data-he="מצב בית כנסת">Shul Mode</span>
+                                <span {{ lang_attrs('home.shul_mode') }}>{{ _('home.shul_mode') }}</span>
                                 <input id="shulModeToggle" type="checkbox" class="reader-switch" />
                             </label>
                             <!-- Only relevant once Shul Mode is on; applyShulMode() reveals this
@@ -793,11 +781,11 @@
                             <div id="shulSubControls" class="shul-sub-controls">
                                 <div class="shul-sub-controls-inner">
                                     <label class="flex reader-toggle-row">
-                                        <span data-en="Auto Scroll" data-he="גלילה אוטומטית">Auto Scroll</span>
+                                        <span {{ lang_attrs('home.auto_scroll') }}>{{ _('home.auto_scroll') }}</span>
                                         <input id="shulAutoScrollToggle" type="checkbox" class="reader-switch" />
                                     </label>
                                     <label class="block reader-settings__label">
-                                        <span data-en="Scroll Speed" data-he="מהירות גלילה">Scroll Speed</span>
+                                        <span {{ lang_attrs('home.scroll_speed') }}>{{ _('home.scroll_speed') }}</span>
                                         <input id="shulScrollSpeed" type="range" min="8" max="80" value="28"
                                             class="reader-range-slider w-full" />
                                     </label>
@@ -826,35 +814,32 @@
 
         <button id="showLeftSidebarTopBtn" type="button"
             class="sidebar-show-tab hidden items-center gap-1 absolute left-3 top-3 z-30 px-2 py-1 rounded-md border border-slate-200 bg-white/85 text-slate-500 text-[10px] font-medium tracking-wide hover:bg-white hover:text-slate-700"
-            data-en="Library" data-he="ספרייה" aria-label="Show Library">Library</button>
+            {{ lang_attrs('home.library') }} aria-label="Show Library">{{ _('home.library') }}</button>
 
         <!-- Column 1: Library (Left) -->
         <nav id="leftSidebar" aria-label="Library navigation"
             class="navigator-pane mobile-drawer mobile-drawer-left w-64 xl:w-72 border-r bg-white p-6 overflow-y-auto hidden lg:block shrink-0 custom-scrollbar">
             <div
                 class="library-sidebar-header flex lg:hidden items-center justify-between mb-4 pb-3 border-b border-slate-200">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" data-en="Library"
-                    data-he="ספרייה">
-                    Library</h3>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" {{ lang_attrs('home.library') }}>
+                    {{ _('home.library') }}</h3>
                 <button id="closeLeftSidebarBtn" type="button"
                     class="px-2 py-1 text-xs border border-slate-300 rounded-sm bg-white hover:bg-slate-100 transition"
-                    data-en="Close" data-he="סגור">Close</button>
+                    {{ lang_attrs('home.close') }}>{{ _('home.close') }}</button>
             </div>
             <div
                 class="library-sidebar-header hidden lg:flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" data-en="Library"
-                    data-he="ספרייה">
-                    Library</h3>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" {{ lang_attrs('home.library') }}>
+                    {{ _('home.library') }}</h3>
                 <button id="hideLeftSidebarBtn" type="button"
                     class="text-xs text-slate-500 hover:text-slate-800 font-semibold uppercase tracking-wide"
-                    data-en="Hide" data-he="הסתר">Hide</button>
+                    {{ lang_attrs('home.hide') }}>{{ _('home.hide') }}</button>
             </div>
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6" data-en="Table of Contents"
-                data-he="תוכן עניינים">Table of Contents</h3>
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6" {{ lang_attrs('home.table_of_contents') }}>{{ _('home.table_of_contents') }}</h3>
             <div class="space-y-4 text-sm text-slate-700">
                 <details class="group cursor-pointer" open>
                     <summary class="font-semibold hover:text-[#004e5f] border-b pb-2 mb-2">
-                        <span data-en="Tanakh" data-he="תנ״ך">Tanakh</span>
+                        <span {{ lang_attrs('home.tanakh') }}>{{ _('home.tanakh') }}</span>
                     </summary>
                     <div class="ml-2 space-y-1 border-l-2 pl-3 border-[#004e5f]/30">
                         <details class="group">
@@ -1016,7 +1001,7 @@
 
                 <details class="group cursor-pointer">
                     <summary class="font-semibold hover:text-[#8b5e34] list-none border-b pb-2 mb-2"
-                        data-en="Torah Commentaries" data-he="מפרשי התורה">Torah Commentaries</summary>
+                        {{ lang_attrs('home.torah_commentaries') }}>{{ _('home.torah_commentaries') }}</summary>
                     <ul class="ml-2 space-y-1 border-l-2 pl-3 border-[#8b5e34]/30">
                         <li><button data-onclick="openRashiCommentaryFromLibrary"
                                 class="text-start text-slate-600 hover:text-[#8b5e34] text-sm w-full py-0.5">Rashi on
@@ -1037,8 +1022,7 @@
                     </ul>
                 </details>
                 <details class="group cursor-pointer">
-                    <summary class="font-semibold hover:text-[#5a99b7] list-none border-b pb-2 mb-2" data-en="Mishnah"
-                        data-he="משנה">Mishnah</summary>
+                    <summary class="font-semibold hover:text-[#5a99b7] list-none border-b pb-2 mb-2" {{ lang_attrs('home.mishnah') }}>{{ _('home.mishnah') }}</summary>
                     <ul class="ml-2 space-y-1 border-l-2 pl-3 border-[#5a99b7]/30">
                         <li><button data-onclick="readText" data-onclick-arg="Mishnah Berakhot 1"
                                 class="text-start text-slate-600 hover:text-[#5a99b7] text-sm w-full py-0.5">Berakhot
@@ -1071,14 +1055,14 @@
                 </details>
                 <details class="group cursor-pointer">
                     <summary class="font-semibold hover:text-[#a08a4a] list-none border-b pb-2 mb-2"
-                        data-en="Talmud Bavli" data-he="תלמוד בבלי">Talmud Bavli
+                        {{ lang_attrs('home.talmud_bavli') }}>{{ _('home.talmud_bavli') }}
                     </summary>
                     <ul class="ml-2 space-y-1 border-l-2 pl-3 border-[#ccb479]/50">
                         <li>
                             <details class="group mt-1" open>
                                 <summary
                                     class="text-slate-500 hover:text-[#a08a4a] cursor-pointer font-medium text-[13px]"
-                                    data-en="Seder Zeraim" data-he="סדר זרעים">Seder Zeraim</summary>
+                                    {{ lang_attrs('home.seder_zeraim') }}>{{ _('home.seder_zeraim') }}</summary>
                                 <ul class="ml-3 mt-1 space-y-1">
                                     <li><button data-onclick="readText" data-onclick-arg="Berakhot 2a"
                                             class="text-start text-slate-600 hover:text-[#a08a4a] text-sm w-full py-0.5">Berakhot</button>
@@ -1090,7 +1074,7 @@
                             <details class="group mt-1" open>
                                 <summary
                                     class="text-slate-500 hover:text-[#a08a4a] cursor-pointer font-medium text-[13px]"
-                                    data-en="Seder Moed" data-he="סדר מועד">Seder Moed</summary>
+                                    {{ lang_attrs('home.seder_moed') }}>{{ _('home.seder_moed') }}</summary>
                                 <ul class="ml-3 mt-1 space-y-1">
                                     <li><button data-onclick="readText" data-onclick-arg="Shabbat 2a"
                                             class="text-start text-slate-600 hover:text-[#a08a4a] text-sm w-full py-0.5">Shabbat</button>
@@ -1108,7 +1092,7 @@
                             <details class="group mt-1" open>
                                 <summary
                                     class="text-slate-500 hover:text-[#a08a4a] cursor-pointer font-medium text-[13px]"
-                                    data-en="Seder Nashim" data-he="סדר נשים">Seder Nashim</summary>
+                                    {{ lang_attrs('home.seder_nashim') }}>{{ _('home.seder_nashim') }}</summary>
                                 <ul class="ml-3 mt-1 space-y-1">
                                     <li><button data-onclick="readText" data-onclick-arg="Kiddushin 2a"
                                             class="text-start text-slate-600 hover:text-[#a08a4a] text-sm w-full py-0.5">Kiddushin</button>
@@ -1126,7 +1110,7 @@
                             <details class="group mt-1" open>
                                 <summary
                                     class="text-slate-500 hover:text-[#a08a4a] cursor-pointer font-medium text-[13px]"
-                                    data-en="Seder Nezikin" data-he="סדר נזיקין">Seder Nezikin</summary>
+                                    {{ lang_attrs('home.seder_nezikin') }}>{{ _('home.seder_nezikin') }}</summary>
                                 <ul class="ml-3 mt-1 space-y-1">
                                     <li><button data-onclick="readText" data-onclick-arg="Sanhedrin 37a"
                                             class="text-start text-slate-600 hover:text-[#a08a4a] text-sm w-full py-0.5">Sanhedrin</button>
@@ -1137,8 +1121,7 @@
                     </ul>
                 </details>
                 <details class="group cursor-pointer">
-                    <summary class="font-semibold hover:text-[#802f3e] list-none border-b pb-2 mb-2" data-en="Halakhah"
-                        data-he="הלכה">Halakhah</summary>
+                    <summary class="font-semibold hover:text-[#802f3e] list-none border-b pb-2 mb-2" {{ lang_attrs('home.halakhah') }}>{{ _('home.halakhah') }}</summary>
                     <ul class="ml-2 space-y-1 border-l-2 pl-3 border-[#802f3e]/30">
                         <li><button data-onclick="readText" data-onclick-arg="Shulchan Arukh, Orach Chayim 1"
                                 class="text-start text-slate-600 hover:text-[#802f3e] text-sm w-full py-0.5">Shulchan
@@ -1165,15 +1148,15 @@
                 </details>
 
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-6 mb-3"
-                    data-en="Prayer Services" data-he="שירותי תפילה">
-                    Prayer Services</h3>
+                    {{ lang_attrs('home.prayer_services') }}>
+                    {{ _('home.prayer_services') }}</h3>
                 <!-- The siddur (Edot HaMizrach): one curated tree, the same one the
                      Texts menu shows (static/js/siddur-reader.js tocMarkup). -->
                 <details class="group cursor-pointer" open>
                     <summary class="font-semibold hover:text-[#00827f] list-none border-b pb-2 mb-2"
-                        data-en="Siddur" data-he="סידור">Siddur</summary>
+                        {{ lang_attrs('home.siddur') }}>{{ _('home.siddur') }}</summary>
                     <div id="siddurTocSidebar" class="siddur-toc-mount" aria-busy="true">
-                        <p class="sr-only" data-en="Loading the siddur..." data-he="טוען את הסידור...">Loading the siddur...</p>
+                        <p class="sr-only" {{ lang_attrs('home.loading_the_siddur') }}>{{ _('home.loading_the_siddur') }}</p>
                         <div class="sk-tree-row" aria-hidden="true"></div>
                         <div class="sk-tree-row" aria-hidden="true" style="width:80%"></div>
                         <div class="sk-tree-row" aria-hidden="true" style="width:90%"></div>
@@ -1181,58 +1164,58 @@
                 </details>
                 <details class="group cursor-pointer">
                     <summary class="font-semibold hover:text-[#594176] list-none border-b pb-2 mb-2"
-                        data-en="Community Customs" data-he="מנהגים קהילתיים">Community Customs
+                        {{ lang_attrs('home.community_customs') }}>{{ _('home.community_customs') }}
                     </summary>
                     <ul class="ml-2 space-y-1 border-l-2 pl-3 border-[#594176]/30">
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Ashkenaz"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Ashkenaz" data-he="אשכנז">Ashkenaz</button>
+                                {{ lang_attrs('home.ashkenaz') }}>{{ _('home.ashkenaz') }}</button>
                         </li>
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Sefardic"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Sefardic" data-he="ספרדי">Sefardic</button></li>
+                                {{ lang_attrs('home.sefardic') }}>{{ _('home.sefardic') }}</button></li>
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Iraqi"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Iraqi" data-he="עיראקי">Iraqi</button></li>
+                                {{ lang_attrs('home.iraqi') }}>{{ _('home.iraqi') }}</button></li>
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Syrian"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Syrian" data-he="סורי">Syrian</button></li>
+                                {{ lang_attrs('home.syrian') }}>{{ _('home.syrian') }}</button></li>
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Yemenite"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Yemenite" data-he="תימני">Yemenite</button></li>
+                                {{ lang_attrs('home.yemenite') }}>{{ _('home.yemenite') }}</button></li>
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Moroccan"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Moroccan" data-he="מרוקאי">Moroccan</button></li>
+                                {{ lang_attrs('home.moroccan') }}>{{ _('home.moroccan') }}</button></li>
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Bukharian"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Bukharian" data-he="בוכרי">Bukharian</button></li>
+                                {{ lang_attrs('home.bukharian') }}>{{ _('home.bukharian') }}</button></li>
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Persian"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Persian" data-he="פרסי">Persian</button></li>
+                                {{ lang_attrs('home.persian') }}>{{ _('home.persian') }}</button></li>
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Ethiopian"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Ethiopian" data-he="אתיופי">Ethiopian</button></li>
+                                {{ lang_attrs('home.ethiopian') }}>{{ _('home.ethiopian') }}</button></li>
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Georgian"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Georgian" data-he="גרוזיני">Georgian</button></li>
+                                {{ lang_attrs('home.georgian') }}>{{ _('home.georgian') }}</button></li>
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Greek-Romaniote"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Greek-Romaniote" data-he="רומניוטי">Greek-Romaniote</button></li>
+                                {{ lang_attrs('home.greek_romaniote') }}>{{ _('home.greek_romaniote') }}</button></li>
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Kavkazi"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Kavkazi" data-he="קווקזי">Kavkazi</button></li>
+                                {{ lang_attrs('home.kavkazi') }}>{{ _('home.kavkazi') }}</button></li>
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Turkish-Ottoman"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Turkish-Ottoman" data-he="טורקי-עות׳מאני">Turkish-Ottoman</button></li>
+                                {{ lang_attrs('home.turkish_ottoman') }}>{{ _('home.turkish_ottoman') }}</button></li>
                         <li><button data-onclick="displayCommunity" data-onclick-arg="Israeli"
                                 class="text-start text-slate-600 hover:text-[#594176] text-sm w-full py-0.5"
-                                data-en="Israeli" data-he="ישראלי">Israeli</button></li>
+                                {{ lang_attrs('home.israeli') }}>{{ _('home.israeli') }}</button></li>
                     </ul>
                 </details>
 
                 <details class="group cursor-pointer">
                     <summary class="font-semibold hover:text-[#002147] list-none border-b pb-2 mb-2"
-                        data-en="All Topics & Texts" data-he="כל הנושאים והטקסטים">All Topics & Texts</summary>
+                        {{ lang_attrs('home.all_topics_texts') }}>{{ _('home.all_topics_texts') }}</summary>
                     <output id="libraryIndexSidebar" class="block library-index-sidebar-tree space-y-1"
                         aria-busy="true">
                         <div class="sk-tree-row" aria-hidden="true"></div>
@@ -1243,29 +1226,26 @@
                 </details>
 
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-10 mb-4"
-                    data-en="Active Synthesis" data-he="סינתזה פעילה">
-                    Active Synthesis</h3>
+                    {{ lang_attrs('home.active_synthesis') }}>
+                    {{ _('home.active_synthesis') }}</h3>
                 <div id="sourcesDynamicContent" class="text-sm text-slate-600 pb-10">
                     <p class="italic text-slate-400"
-                        data-en="Search a halacha to view cross-referenced Encyclopedia and Customs data..."
-                        data-he="חפש הלכה כדי לצפות בנתונים מהאנציקלופדיה ומהמנהגים המקושרים...">
-                        Search a halacha to view cross-referenced Encyclopedia and Customs data...</p>
+                        {{ lang_attrs('home.search_a_halacha_to_view_cross') }}>
+                        {{ _('home.search_a_halacha_to_view_cross') }}</p>
                 </div>
 
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2 mb-3"
-                    data-en="Personal Shelf" data-he="מדף אישי">Personal Shelf</h3>
+                    {{ lang_attrs('home.personal_shelf') }}>{{ _('home.personal_shelf') }}</h3>
                 <div id="personalShelf" class="text-sm text-slate-600 pb-10">
-                    <p class="italic text-slate-400" data-en="Your recent reads and saved items will appear here."
-                        data-he="הקריאות האחרונות והפריטים השמורים יופיעו כאן.">Your recent reads and saved items will
-                        appear here.</p>
+                    <p class="italic text-slate-400" {{ lang_attrs('home.your_recent_reads_and_saved_items') }}>{{ _('home.your_recent_reads_and_saved_items') }}</p>
                 </div>
 
                 <div id="askHistorySection" class="hidden">
                     <div class="ask-history-head">
                         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest"
-                            data-en="Ask History" data-he="היסטוריית שאלות">Ask History</h3>
+                            {{ lang_attrs('home.ask_history') }}>{{ _('home.ask_history') }}</h3>
                         <a href="/history" id="askHistoryViewAll" class="ask-history-view-all"
-                            data-en="View all" data-he="הצג הכול">View all</a>
+                            {{ lang_attrs('home.view_all') }}>{{ _('home.view_all') }}</a>
                     </div>
                     <div id="askHistoryList" class="text-sm pb-10 space-y-1"></div>
                 </div>
@@ -1279,88 +1259,70 @@
             <!-- HOME: BROWSE THE LIBRARY GRID -->
             <div id="homeGrid"{% if ssr_text %} style="display: none"{% endif %}
                 class="home-typography w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-12">
-                <h1 class="sr-only" data-en="Sh'elah: Torah Encyclopedia" data-he="שאלה: אנציקלופדיית תורה">Sh'elah: Torah Encyclopedia</h1>
+                <h1 class="sr-only" {{ lang_attrs('home.shelah_torah_encyclopedia') }}>{{ _('home.shelah_torah_encyclopedia') }}</h1>
                 <section class="home-topic-hero mb-10">
-                    <p class="home-section-label" data-en="Parasha of the Week" data-he="פרשת השבוע">Parasha of the Week
+                    <p class="home-section-label" {{ lang_attrs('home.parasha_of_the_week') }}>{{ _('home.parasha_of_the_week') }}
                     </p>
                     <button id="homeParashaQuickLink" type="button"
                         class="home-topic-title text-start font-serif text-3xl sm:text-4xl text-navy leading-tight sm:leading-10 hover:text-[#0f4d67] transition"
                         data-onclick="readText" data-onclick-arg="Genesis 1">Parashat HaShavua</button>
                     <p class="mt-3 text-sm text-slate-600 max-w-2xl"
-                        data-en="Start from today's anchor text, then branch into side commentaries and related sources."
-                        data-he="התחל מטקסט העוגן של היום ואז הסתעף למפרשים צדדיים ולמקורות קשורים.">
-                        Start from today's anchor text, then branch into side commentaries and related sources.
+                        {{ lang_attrs('home.start_from_todays_anchor_text_then') }}>
+                        {{ _('home.start_from_todays_anchor_text_then') }}
                     </p>
                 </section>
 
                 <div class="home-main-layout grid grid-cols-1 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.9fr)] gap-10">
                     <section>
-                        <p class="home-section-label mb-5" data-en="Library" data-he="ספרייה">Library</p>
+                        <p class="home-section-label mb-5" {{ lang_attrs('home.library') }}>{{ _('home.library') }}</p>
                         <div class="space-y-6">
                             <button type="button" data-onclick="openLibraryCategory" data-onclick-arg="tanakh"
                                 class="home-library-link home-link-tanakh text-start w-full">
-                                <span class="home-library-title" data-en="Tanakh" data-he="תנ״ך">Tanakh</span>
+                                <span class="home-library-title" {{ lang_attrs('home.tanakh') }}>{{ _('home.tanakh') }}</span>
                                 <span class="home-library-description"
-                                    data-en="Torah, Nevi'im, and Ketuvim: the foundational text of Jewish learning and life."
-                                    data-he="תורה, נביאים וכתובים: טקסט היסוד של הלימוד והחיים היהודיים.">Torah,
-                                    Nevi'im, and Ketuvim: the foundational text of Jewish learning and life.</span>
+                                    {{ lang_attrs('home.torah_neviim_and_ketuvim_the_foundational') }}>{{ _('home.torah_neviim_and_ketuvim_the_foundational') }}</span>
                             </button>
 
                             <button type="button" data-onclick="openLibraryCategory" data-onclick-arg="mishnah"
                                 class="home-library-link home-link-mishnah text-start w-full">
-                                <span class="home-library-title" data-en="Mishnah" data-he="משנה">Mishnah</span>
+                                <span class="home-library-title" {{ lang_attrs('home.mishnah') }}>{{ _('home.mishnah') }}</span>
                                 <span class="home-library-description"
-                                    data-en="The first major rabbinic legal corpus, organized for practical study."
-                                    data-he="הקורפוס ההלכתי הרבני המרכזי הראשון, מסודר ללימוד מעשי.">The first major
-                                    rabbinic legal corpus, organized for practical study.</span>
+                                    {{ lang_attrs('home.the_first_major_rabbinic_legal_corpus') }}>{{ _('home.the_first_major_rabbinic_legal_corpus') }}</span>
                             </button>
 
                             <button type="button" data-onclick="openLibraryCategory" data-onclick-arg="talmud"
                                 class="home-library-link home-link-talmud text-start w-full">
-                                <span class="home-library-title" data-en="Talmud" data-he="תלמוד">Talmud</span>
+                                <span class="home-library-title" {{ lang_attrs('home.talmud') }}>{{ _('home.talmud') }}</span>
                                 <span class="home-library-description"
-                                    data-en="Generations of analysis on law, ethics, and scripture around the Mishnah."
-                                    data-he="דורות של עיון בהלכה, אתיקה וכתבי הקודש סביב המשנה.">Generations of analysis
-                                    on law, ethics, and scripture around the Mishnah.</span>
+                                    {{ lang_attrs('home.generations_of_analysis_on_law_ethics') }}>{{ _('home.generations_of_analysis_on_law_ethics') }}</span>
                             </button>
 
                             <button type="button" data-onclick="openLibraryCategory" data-onclick-arg="halakhah"
                                 class="home-library-link home-link-halakhah text-start w-full">
-                                <span class="home-library-title" data-en="Halakhah" data-he="הלכה">Halakhah</span>
+                                <span class="home-library-title" {{ lang_attrs('home.halakhah') }}>{{ _('home.halakhah') }}</span>
                                 <span class="home-library-description"
-                                    data-en="Legal works guiding daily Jewish practice through classical rulings."
-                                    data-he="יצירות הלכתיות המדריכות את חיי המעשה היהודיים לפי פסיקה קלאסית.">Legal
-                                    works guiding daily Jewish practice through classical rulings.</span>
+                                    {{ lang_attrs('home.legal_works_guiding_daily_jewish_practice') }}>{{ _('home.legal_works_guiding_daily_jewish_practice') }}</span>
                             </button>
 
                             <a href="/siddur/edot-hamizrach" data-siddur-path="edot-hamizrach"
                                 class="home-library-link home-link-siddur text-start w-full">
-                                <span class="home-library-title" data-en="Siddur" data-he="סידור">Siddur</span>
+                                <span class="home-library-title" {{ lang_attrs('home.siddur') }}>{{ _('home.siddur') }}</span>
                                 <span class="home-library-description"
-                                    data-en="The Sephardi (Edot HaMizrach) siddur in prayer order, with what changes today."
-                                    data-he="סידור עדות המזרח לפי סדר התפילה, עם מה שמשתנה היום.">The Sephardi
-                                    (Edot HaMizrach) siddur in prayer order, with what changes today.</span>
+                                    {{ lang_attrs('home.the_sephardi_edot_hamizrach_siddur_in') }}>{{ _('home.the_sephardi_edot_hamizrach_siddur_in') }}</span>
                             </a>
 
                             <button type="button" data-onclick="openLibraryCategory" data-onclick-arg="customs"
                                 class="home-library-link home-link-customs text-start w-full">
-                                <span class="home-library-title" data-en="Community Customs"
-                                    data-he="מנהגים קהילתיים">Community Customs</span>
+                                <span class="home-library-title" {{ lang_attrs('home.community_customs') }}>{{ _('home.community_customs') }}</span>
                                 <span class="home-library-description"
-                                    data-en="Trace minhagim across Iraqi, Syrian, Yemenite, Moroccan, Ashkenaz, Israeli, and more."
-                                    data-he="עקוב אחר מנהגים עיראקיים, סוריים, תימניים, מרוקאיים, אשכנזיים, ישראליים ועוד.">Trace
-                                    minhagim across Iraqi, Syrian, Yemenite, Moroccan, Ashkenaz, Israeli, and
-                                    more.</span>
+                                    {{ lang_attrs('home.trace_minhagim_across_iraqi_syrian_yemenite') }}>{{ _('home.trace_minhagim_across_iraqi_syrian_yemenite') }}</span>
                             </button>
 
                             <button type="button" data-onclick="openLibraryCategory" data-onclick-arg="kabbalah"
                                 class="home-library-link home-link-thought text-start w-full">
-                                <span class="home-library-title" data-en="Kabbalah &amp; Thought"
-                                    data-he="קבלה ומחשבה">Kabbalah &amp; Thought</span>
+                                <span class="home-library-title" {{ lang_attrs('home.kabbalah_thought') }}>{{ _('home.kabbalah_thought') }}</span>
                                 <span class="home-library-description"
-                                    data-en="Mysticism and philosophy on divine attributes, soul, and existence."
-                                    data-he="מיסטיקה ופילוסופיה על התכונות האלוהיות, הנפש ומהות הקיום.">Mysticism and
-                                    philosophy on divine attributes, soul, and existence.</span>
+                                    {{ lang_attrs('home.mysticism_and_philosophy_on_divine_attributes') }}>{{ _('home.mysticism_and_philosophy_on_divine_attributes') }}</span>
                             </button>
                         </div>
                     </section>
@@ -1368,7 +1330,7 @@
                     <aside id="dailyPulseColumn" class="space-y-8" aria-label="Daily pulse">
                         <section class="home-today-section relative">
                             <h2 class="home-section-label flex justify-between items-center mb-3">
-                                <span data-en="Zmanim" data-he="זמנים">Zmanim</span>
+                                <span {{ lang_attrs('home.zmanim') }}>{{ _('home.zmanim') }}</span>
                                 <span class="flex items-center gap-1.5">
                                     <span id="zmanLoc" class="text-xs normal-case tracking-normal text-slate-500 sk-line"
                                         style="display:inline-block;width:4.5rem;height:0.75rem;vertical-align:middle;"></span>
@@ -1389,7 +1351,7 @@
                                      under the 4.5:1 AA text threshold; #566175 clears 5.5:1+ here and against the
                                      calendar-modal header gradient below that shares this same hardcoded hex. -->
                                 <p class="text-[11px] font-bold uppercase tracking-widest text-[#566175] mb-2"
-                                    data-en="Search by City" data-he="חיפוש לפי עיר">Search by City</p>
+                                    {{ lang_attrs('home.search_by_city') }}>{{ _('home.search_by_city') }}</p>
                                 <div class="flex gap-2">
                                     <input id="citySearchInput" type="text" aria-label="Search by city" placeholder="e.g. Jerusalem, New York..."
                                         role="combobox" aria-autocomplete="both" aria-expanded="false"
@@ -1423,55 +1385,47 @@
                             <div id="todayZmanimList" class="space-y-1 text-sm today-zmanim-list">
                                 <div id="zRowDawn" data-zman-row="Dawn (16.1° / 72m)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Dawn (16.1° / 72m)"
-                                        data-he="עלות השחר (16.1° / 72 דק׳)">Dawn (16.1° / 72m)</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.dawn_16_1_72m') }}>{{ _('home.dawn_16_1_72m') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zDawn">--:--</b>
                                 </div>
                                 <div id="zRowTalit" data-zman-row="Earliest Tallit/Tefillin (10.2°)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Earliest Tallit/Tefillin (10.2°)"
-                                        data-he="זמן טלית ותפילין (10.2°)">Earliest Tallit/Tefillin (10.2°)</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.earliest_tallit_tefillin_10_2') }}>{{ _('home.earliest_tallit_tefillin_10_2') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zTalit">--:--</b>
                                 </div>
                                 <div id="zRowSunrise" data-zman-row="Sunrise"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Sunrise" data-he="זריחה">Sunrise</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.sunrise') }}>{{ _('home.sunrise') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zSunrise">--:--</b>
                                 </div>
                                 <div id="shemaGraRow" data-zman-row="Latest Shema (GRA)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span id="shemaGraLabel" class="text-slate-500" data-en="Latest Shema (GRA)"
-                                        data-he="סוף זמן שמע (גר״א)">Latest Shema (GRA)</span>
+                                    <span id="shemaGraLabel" class="text-slate-500" {{ lang_attrs('home.latest_shema_gra') }}>{{ _('home.latest_shema_gra') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zShemaGra">--:--</b>
                                 </div>
                                 <div id="shemaBhtRow" data-zman-row="Latest Shema (Baal HaTanya)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Latest Shema (Baal HaTanya)"
-                                        data-he="סוף זמן שמע (בעל התניא)">Latest Shema (Baal HaTanya)</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.latest_shema_baal_hatanya') }}>{{ _('home.latest_shema_baal_hatanya') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zShemaBht">--:--</b>
                                 </div>
                                 <div id="shacharitGraRow" data-zman-row="Latest Shacharit (GRA)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span id="shacharitGraLabel" class="text-slate-500" data-en="Latest Shacharit (GRA)"
-                                        data-he="סוף זמן תפילת שחרית (גר״א)">Latest Shacharit (GRA)</span>
+                                    <span id="shacharitGraLabel" class="text-slate-500" {{ lang_attrs('home.latest_shacharit_gra') }}>{{ _('home.latest_shacharit_gra') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zShacharitGra">--:--</b>
                                 </div>
                                 <div id="shacharitBhtRow" data-zman-row="Latest Shacharit (Baal HaTanya)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Latest Shacharit (Baal HaTanya)"
-                                        data-he="סוף זמן תפילת שחרית (בעל התניא)">Latest Shacharit (Baal HaTanya)</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.latest_shacharit_baal_hatanya') }}>{{ _('home.latest_shacharit_baal_hatanya') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zShacharitBht">--:--</b>
                                 </div>
                                 <div id="zRowChatzot" data-zman-row="Chatzot (Midday)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Midday (Chatzot)" data-he="חצות היום">Midday
-                                        (Chatzot)</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.midday_chatzot') }}>{{ _('home.midday_chatzot') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zChatzot">--:--</b>
                                 </div>
                                 <div id="zRowMincha" data-zman-row="Earliest Mincha (Mincha Gedola)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Earliest Mincha" data-he="מנחה גדולה">Earliest
-                                        Mincha</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.earliest_mincha') }}>{{ _('home.earliest_mincha') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zMincha">--:--</b>
                                 </div>
                                 <!-- Fast Starts/Ends: only shown on a fast day (Tzom Gedaliah, 10
@@ -1482,60 +1436,53 @@
                                      indicators rather than duplicating those Yom-Tov-only rows. -->
                                 <div id="zRowFastStart" data-zman-row="Fast Starts"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100 hidden">
-                                    <span class="text-slate-500" data-en="Fast Starts" data-he="תחילת הצום">Fast
-                                        Starts</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.fast_starts') }}>{{ _('home.fast_starts') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zFastStart">--:--</b>
                                 </div>
                                 <div id="zRowMusaf" data-zman-row="Latest Musaf"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100 hidden">
-                                    <span class="text-slate-500" data-en="Latest Musaf" data-he="סוף זמן מוסף">Latest
-                                        Musaf</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.latest_musaf') }}>{{ _('home.latest_musaf') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zMusaf">--:--</b>
                                 </div>
                                 <div id="zRowPlag" data-zman-row="Plag HaMincha"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Plag HaMincha" data-he="פלג המנחה">Plag
-                                        HaMincha</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.plag_hamincha') }}>{{ _('home.plag_hamincha') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zPlag">--:--</b>
                                 </div>
                                 <div id="zRowCandles" data-zman-row="Candle Lighting"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100 hidden">
-                                    <span class="text-slate-500" data-en="Candle Lighting" data-he="הדלקת נרות">Candle
-                                        Lighting</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.candle_lighting') }}>{{ _('home.candle_lighting') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zCandles">--:--</b>
                                 </div>
                                 <div id="zRowSunset" data-zman-row="Sunset"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Sunset" data-he="שקיעת החמה">Shkiya
+                                    <span class="text-slate-500" {{ lang_attrs('home.sunset') }}>Shkiya
                                         (Sunset)</span>
                                     <b class="text-slate-700 tabular-nums" id="zSunset">--:--</b>
                                 </div>
                                 <div id="zRowMaariv" data-zman-row="Arvit (Maariv)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Arvit (Maariv)" data-he="ערבית (מעריב)">Arvit
-                                        (Maariv)</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.arvit_maariv') }}>{{ _('home.arvit_maariv') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zMaariv">--:--</b>
                                 </div>
                                 <div id="zRowNight" data-zman-row="Nightfall (3 Stars)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Nightfall (3 Stars)"
-                                        data-he="צאת הכוכבים (3 כוכבים)">Nightfall (3 Stars)</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.nightfall_3_stars') }}>{{ _('home.nightfall_3_stars') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zNight">--:--</b>
                                 </div>
                                 <div id="zRowFastEnd" data-zman-row="Fast Ends"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100 hidden">
-                                    <span class="text-slate-500" data-en="Fast Ends" data-he="סוף הצום">Fast Ends</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.fast_ends') }}>{{ _('home.fast_ends') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zFastEnd">--:--</b>
                                 </div>
                                 <div id="zRowHavdalah" data-zman-row="Havdalah"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100 hidden">
-                                    <span class="text-slate-500" data-en="Havdalah" data-he="הבדלה">Havdalah</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.havdalah') }}>{{ _('home.havdalah') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zHavdalah">--:--</b>
                                 </div>
                                 <div id="zRowMidnight" data-zman-row="Chatzot HaLailah (Midnight)"
                                     class="flex justify-between items-center py-1.5">
-                                    <span class="text-slate-500" data-en="Midnight (Chatzot HaLailah)"
-                                        data-he="חצות הלילה">Midnight (Chatzot HaLailah)</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.midnight_chatzot_halailah') }}>{{ _('home.midnight_chatzot_halailah') }}</span>
                                     <b class="text-slate-700 tabular-nums" id="zMidnight">--:--</b>
                                 </div>
                             </div>
@@ -1548,41 +1495,36 @@
 
                             <button data-onclick="openCalendarModal" class="home-calendar-btn">
                                 {{ phosphor('calendar-blank', size=16, class='home-calendar-btn__icon') }}
-                                <span data-en="Monthly Holiday Calendar" data-he="לוח חגים חודשי">Monthly Holiday
-                                    Calendar</span></button>
+                                <span {{ lang_attrs('home.monthly_holiday_calendar') }}>{{ _('home.monthly_holiday_calendar') }}</span></button>
                         </section>
 
                         <section class="home-today-section">
-                            <h2 class="home-section-label mb-3" data-en="Holiday Season" data-he="עונת חגים">Holiday
-                                Season</h2>
+                            <h2 class="home-section-label mb-3" {{ lang_attrs('home.holiday_season') }}>{{ _('home.holiday_season') }}</h2>
                             <div class="space-y-2 text-sm">
                                 <div class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Today" data-he="היום">Today</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.today') }}>{{ _('home.today') }}</span>
                                     <button type="button" id="holidayName"
                                         class="home-stat-link text-slate-700 text-end max-w-[60%] font-bold"
                                         data-onclick="openTodayInCalendar">Regular Day</button>
                                 </div>
                                 <div class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="This Week's Shabbat" data-he="שבת השבוע">This
-                                        Week's Shabbat</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.this_weeks_shabbat') }}>{{ _('home.this_weeks_shabbat') }}</span>
                                     <button type="button" id="shabbatWeekName"
                                         class="home-stat-link text-slate-700 text-end max-w-[60%] font-bold"
                                         data-onclick="readText" data-onclick-arg="Genesis 1">--</button>
                                 </div>
                                 <div id="omerRow"
                                     class="hidden flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Omer Count" data-he="ספירת העומר">Omer
-                                        Count</span>
+                                    <span class="text-slate-500" {{ lang_attrs('home.omer_count') }}>{{ _('home.omer_count') }}</span>
                                     <b id="omerCount" class="text-slate-700">--</b>
                                 </div>
                                 <p id="omerHint" class="text-slate-500 italic py-1"
-                                    data-en="Outside Omer counting period." data-he="מחוץ לתקופת ספירת העומר.">Outside
-                                    Omer counting period.</p>
+                                    {{ lang_attrs('home.outside_omer_counting_period') }}>{{ _('home.outside_omer_counting_period') }}</p>
                             </div>
                         </section>
 
                         <section class="home-today-section">
-                            <h2 class="home-section-label mb-3" data-en="Daily Study" data-he="לימוד יומי">Daily Study
+                            <h2 class="home-section-label mb-3" {{ lang_attrs('home.daily_study') }}>{{ _('home.daily_study') }}
                             </h2>
                             <div id="dailyStudyList" class="space-y-4" aria-busy="true">
                                 <div class="home-daily-entry" aria-hidden="true">
@@ -1597,7 +1539,7 @@
                                     <span class="sk-line sk-daily-label"></span>
                                     <span class="sk-line sk-daily-link"></span>
                                 </div>
-                                <output class="sr-only" data-en="Loading daily study schedule..." data-he="טוען לימוד יומי...">Loading daily study schedule...</output>
+                                <output class="sr-only" {{ lang_attrs('home.loading_daily_study_schedule') }}>{{ _('home.loading_daily_study_schedule') }}</output>
                             </div>
                         </section>
                     </aside>
@@ -1605,14 +1547,12 @@
 
                 <!-- POPULAR TEXTS QUICK ACCESS -->
                 <div class="mt-12 border-t pt-8">
-                    <h3 class="text-lg font-serif text-slate-700 mb-6" data-en="Popular Texts"
-                        data-he="טקסטים פופולריים">Popular Texts
+                    <h3 class="text-lg font-serif text-slate-700 mb-6" {{ lang_attrs('home.popular_texts') }}>{{ _('home.popular_texts') }}
                     </h3>
                     <output class="grid grid-cols-2 md:grid-cols-4 gap-3" id="popularTextsGrid"
                         aria-live="polite" aria-busy="true">
                         <!-- Populated via JS from /api/library/popular -->
-                        <span class="sr-only" data-en="Loading library..." data-he="טוען ספרייה...">Loading
-                            library...</span>
+                        <span class="sr-only" {{ lang_attrs('home.loading_library') }}>{{ _('home.loading_library') }}</span>
                         <div class="p-3 rounded-sm border border-[#ddd4c3] bg-[#fffaf1] space-y-2" aria-hidden="true">
                             <div class="sk-line" style="height:1.5rem;width:70%"></div>
                             <div class="sk-line" style="height:0.65rem;width:90%"></div>
@@ -1650,14 +1590,12 @@
                     <nav id="readerKindBadge" aria-label="breadcrumb"
                         class="hidden flex justify-center items-center gap-2 text-sm text-slate-500 uppercase tracking-widest font-bold">
                         <ol class="flex items-center gap-2">
-                            <li><span class="bg-slate-100 px-3 py-1 rounded-sm" data-en="Sh'elah Synthesis"
-                                    data-he="סינתזת שאילה">Sh'elah Synthesis</span></li>
+                            <li><span class="bg-slate-100 px-3 py-1 rounded-sm" {{ lang_attrs('home.shelah_synthesis') }}>{{ _('home.shelah_synthesis') }}</span></li>
                         </ol>
                     </nav>
 
                     <p id="shulAutoScrollStatus" class="hidden mt-2 text-xs text-emerald-700 font-semibold"
-                        data-en="Shul mode auto-scroll active" data-he="מצב בית כנסת: גלילה פעילה">Shul mode auto-scroll
-                        active</p>
+                        {{ lang_attrs('home.shul_mode_auto_scroll_active') }}>{{ _('home.shul_mode_auto_scroll_active') }}</p>
                 </header>
 
                 <!-- Drawn in place of the text while a text, prayer or community
@@ -1783,38 +1721,22 @@
             </style>
             <div class="site-footer">
                 <p class="site-footer-inner">
-                    <span class="site-footer-copyright" style="display: block; margin-bottom: 0.35rem;"
-                        data-en="© Sh'elah {{ current_year }}. All rights reserved."
-                        data-he="© Sh'elah {{ current_year }}. כל הזכויות שמורות.">© Sh'elah {{ current_year }}. All rights reserved.</span>
+                    <span class="site-footer-copyright" style="display: block; margin-bottom: 0.35rem;" {{ lang_attrs('common.copyright', year=current_year) }}>{{ _('common.copyright', year=current_year) }}</span>
                     <span
-                        data-en="Sh'elah provides educational halachic information — not a binding halachic ruling (p'sak); always consult a qualified rabbi. By using this site you confirm you are at least 13 years old (16+ in the EU/UK) and agree to the following:"
-                        data-he="Sh'elah מספקת מידע הלכתי לצורכי לימוד — לא פסק הלכה מחייב; יש להתייעץ תמיד עם רב מוסמך. בשימוש באתר זה הנך מאשר/ת שאתה/את בן/בת 13 לפחות (16+ באיחוד האירופי/בריטניה) ומסכים/ה למסמכים הבאים:">Sh'elah
-                        provides educational halachic information — not a binding halachic ruling (p'sak); always consult a
-                        qualified rabbi. By using this site you confirm you are at least 13 years old (16+ in the EU/UK) and
-                        agree to the following:</span>
+                        {{ lang_attrs('home.shelah_provides_educational_halachic_information') }}>{{ _('home.shelah_provides_educational_halachic_information') }}</span>
                     <span class="site-footer-links">
-                        <a href="/about" target="_blank" rel="noopener" data-en="About"
-                            data-he="אודות">About</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/help" target="_blank" rel="noopener" data-en="Help"
-                            data-he="עזרה">Help</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/glossary" target="_blank" rel="noopener" data-en="Glossary"
-                            data-he="מילון מונחים">Glossary</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/tanakh" target="_blank" rel="noopener" data-en="Tanakh"
-                            data-he="תנ״ך">Tanakh</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/terms" target="_blank" rel="noopener" data-en="Terms of Service"
-                            data-he="תנאי השירות">Terms of Service</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/privacy" target="_blank" rel="noopener" data-en="Privacy Policy"
-                            data-he="מדיניות הפרטיות">Privacy Policy</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/ai-disclosure" target="_blank" rel="noopener" data-en="AI Disclosure"
-                            data-he="גילוי נאות בינה מלאכותית">AI Disclosure</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/acceptable-use" target="_blank" rel="noopener" data-en="Acceptable Use"
-                            data-he="שימוש מותר">Acceptable Use</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/dmca" target="_blank" rel="noopener" data-en="DMCA" data-he="DMCA">DMCA</a><span
+                        <a href="/about" target="_blank" rel="noopener" {{ lang_attrs('home.about') }}>{{ _('home.about') }}</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/help" target="_blank" rel="noopener" {{ lang_attrs('home.help') }}>{{ _('home.help') }}</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/glossary" target="_blank" rel="noopener" {{ lang_attrs('home.glossary') }}>{{ _('home.glossary') }}</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/tanakh" target="_blank" rel="noopener" {{ lang_attrs('home.tanakh') }}>{{ _('home.tanakh') }}</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/terms" target="_blank" rel="noopener" {{ lang_attrs('home.terms_of_service') }}>{{ _('home.terms_of_service') }}</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/privacy" target="_blank" rel="noopener" {{ lang_attrs('home.privacy_policy') }}>{{ _('home.privacy_policy') }}</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/ai-disclosure" target="_blank" rel="noopener" {{ lang_attrs('home.ai_disclosure') }}>{{ _('home.ai_disclosure') }}</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/acceptable-use" target="_blank" rel="noopener" {{ lang_attrs('home.acceptable_use') }}>{{ _('home.acceptable_use') }}</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/dmca" target="_blank" rel="noopener" {{ lang_attrs('home.dmca') }}>{{ _('home.dmca') }}</a><span
                             class="sep" aria-hidden="true">·</span>
-                        <a href="/accessibility" target="_blank" rel="noopener" data-en="Accessibility"
-                            data-he="נגישות">Accessibility</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/licenses" target="_blank" rel="noopener" data-en="Licenses"
-                            data-he="רישיונות">Licenses</a>
+                        <a href="/accessibility" target="_blank" rel="noopener" {{ lang_attrs('home.accessibility') }}>{{ _('home.accessibility') }}</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/licenses" target="_blank" rel="noopener" {{ lang_attrs('home.licenses') }}>{{ _('home.licenses') }}</a>
                     </span>
                 </p>
             </div>
@@ -1829,27 +1751,22 @@
             class="pulse-pane mobile-drawer mobile-drawer-right w-80 border-l bg-slate-50 p-6 hidden shrink-0 custom-scrollbar overflow-y-auto">
 
             <div class="flex lg:hidden items-center justify-between mb-4 pb-3 border-b border-slate-200">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" data-en="Commentary"
-                    data-he="מפרשים">Commentary</h3>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" {{ lang_attrs('home.commentary') }}>{{ _('home.commentary') }}</h3>
                 <button id="closeRightSidebarBtn" type="button"
                     class="px-2 py-1 text-xs border border-slate-300 rounded-sm bg-white hover:bg-slate-100 transition"
-                    data-en="Close" data-he="סגור">Close</button>
+                    {{ lang_attrs('home.close') }}>{{ _('home.close') }}</button>
             </div>
             <div class="hidden lg:flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" data-en="Commentary"
-                    data-he="מפרשים">Commentary</h3>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" {{ lang_attrs('home.commentary') }}>{{ _('home.commentary') }}</h3>
                 <button id="hideRightSidebarBtn" type="button"
                     class="text-xs text-slate-500 hover:text-slate-800 font-semibold uppercase tracking-wide"
-                    data-en="Hide" data-he="הסתר">Hide</button>
+                    {{ lang_attrs('home.hide') }}>{{ _('home.hide') }}</button>
             </div>
 
             <section id="selectionInsights" class="hidden mb-6 border border-slate-200 rounded-xl bg-white p-4">
-                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-widest" data-en="Selected Passage Tools"
-                    data-he="כלים לקטע שנבחר">Selected Passage Tools</h3>
+                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-widest" {{ lang_attrs('home.selected_passage_tools') }}>{{ _('home.selected_passage_tools') }}</h3>
                 <output id="selectionInsightsHint" class="block text-xs text-slate-500 mt-2" aria-live="polite"
-                    data-en="Highlight a passage to load linked commentaries. Highlight one word to see its meaning."
-                    data-he="סמן קטע כדי לטעון מפרשים מקושרים. סמן מילה אחת כדי לראות את פירושה.">Highlight a
-                    passage to load linked commentaries. Highlight one word to see its meaning.</output>
+                    {{ lang_attrs('home.highlight_a_passage_to_load_linked') }}>{{ _('home.highlight_a_passage_to_load_linked') }}</output>
                 <output id="selectionInsightsBody" class="block mt-3 space-y-3" aria-live="polite"
                     aria-busy="false"></output>
             </section>
@@ -1866,22 +1783,22 @@
              which would erase the icon if it sat on the button. -->
         <button type="button" class="mobile-tab-btn" data-mobile-tab="home">
             <span class="mobile-tab-btn__icon">{{ phosphor('house', size=20) }}</span>
-            <span class="mobile-tab-btn__label" data-en="Home" data-he="בית">Home</span>
+            <span class="mobile-tab-btn__label" {{ lang_attrs('home.home') }}>{{ _('home.home') }}</span>
         </button>
         <button type="button" class="mobile-tab-btn mobile-tab-btn-ai" data-mobile-tab="search">
             <span class="mobile-tab-btn__icon">
                 {{ phosphor('magnifying-glass', size=20) }}
                 <span class="ai-hint-icon mobile-tab-btn__ai" aria-hidden="true" title="Powered by AI">{{ phosphor('sparkle', size=10) }}</span>
             </span>
-            <span class="mobile-tab-btn__label" data-en="Search" data-he="חיפוש">Search</span>
+            <span class="mobile-tab-btn__label" {{ lang_attrs('home.search') }}>{{ _('home.search') }}</span>
         </button>
         <button type="button" class="mobile-tab-btn" data-mobile-tab="library">
             <span class="mobile-tab-btn__icon">{{ phosphor('book-open', size=20) }}</span>
-            <span class="mobile-tab-btn__label" data-en="Library" data-he="ספרייה">Library</span>
+            <span class="mobile-tab-btn__label" {{ lang_attrs('home.library') }}>{{ _('home.library') }}</span>
         </button>
         <button type="button" class="mobile-tab-btn" data-mobile-tab="daily">
             <span class="mobile-tab-btn__icon">{{ phosphor('sun', size=20) }}</span>
-            <span class="mobile-tab-btn__label" data-en="Daily" data-he="יומי">Daily</span>
+            <span class="mobile-tab-btn__label" {{ lang_attrs('home.daily') }}>{{ _('home.daily') }}</span>
         </button>
     </nav>
 
@@ -1898,12 +1815,9 @@
         aria-labelledby="turnstileModalTitle" aria-describedby="turnstileModalDesc" inert>
         <div class="turnstile-modal__scrim" aria-hidden="true"></div>
         <div class="turnstile-modal__card" tabindex="-1">
-            <h2 id="turnstileModalTitle" class="turnstile-modal__title" data-en="Quick verification"
-                data-he="אימות קצר">Quick verification</h2>
+            <h2 id="turnstileModalTitle" class="turnstile-modal__title" {{ lang_attrs('home.quick_verification') }}>{{ _('home.quick_verification') }}</h2>
             <p id="turnstileModalDesc" class="turnstile-modal__desc"
-                data-en="Please confirm you're human to keep asking questions."
-                data-he="אנא אשר שאתה אדם כדי להמשיך לשאול שאלות.">Please confirm you're human to keep asking
-                questions.</p>
+                {{ lang_attrs('home.please_confirm_youre_human_to_keep') }}>{{ _('home.please_confirm_youre_human_to_keep') }}</p>
             <div id="turnstileWidget" class="cf-turnstile turnstile-modal__widget"
                 data-sitekey="{{ turnstile_site_key }}" data-appearance="interaction-only"
                 data-size="flexible" data-callback="onTurnstileToken"
@@ -1928,23 +1842,21 @@
                     </div>
                     <div>
                         <h2 id="calendarModalTitle" class="font-serif text-lg font-bold text-[#002147] leading-tight"
-                            data-en="Monthly Jewish Holiday Calendar" data-he="לוח חגים יהודי חודשי">Monthly Jewish
-                            Holiday Calendar</h2>
+                            {{ lang_attrs('home.monthly_jewish_holiday_calendar') }}>{{ _('home.monthly_jewish_holiday_calendar') }}</h2>
                         <!-- text-[#64748b] (Tailwind slate-500) measured 3.85-4.45:1 against this header's
                              #f5efe5→#ede7d5 gradient (fails 4.5:1 AA at the gradient's darker end); #566175
                              clears 5.05-5.46:1 across the gradient. Applied to all 3 uses in this header for
                              visual consistency. -->
-                        <p class="text-xs text-[#566175] mt-0.5" data-en="Jewish holidays and Shabbat"
-                            data-he="חגים יהודיים ושבת">Jewish holidays &amp; Shabbat</p>
+                        <p class="text-xs text-[#566175] mt-0.5" {{ lang_attrs('home.jewish_holidays_and_shabbat') }}>Jewish holidays &amp; Shabbat</p>
                     </div>
                 </div>
                 <!-- Legend + close -->
                 <div class="flex items-center gap-3">
                     <div class="hidden sm:flex items-center gap-3 text-xs text-[#566175]">
                         <span class="flex items-center gap-1"><span class="cal-legend-mark cal-legend-mark--holiday"
-                                aria-hidden="true"></span><span data-en="Holiday" data-he="חג">Holiday</span></span>
+                                aria-hidden="true"></span><span {{ lang_attrs('home.holiday') }}>{{ _('home.holiday') }}</span></span>
                         <span class="flex items-center gap-1"><span class="cal-legend-mark cal-legend-mark--shabbat"
-                                aria-hidden="true"></span><span data-en="Shabbat" data-he="שבת">Shabbat</span></span>
+                                aria-hidden="true"></span><span {{ lang_attrs('home.shabbat') }}>{{ _('home.shabbat') }}</span></span>
                     </div>
                     <button data-onclick="closeCalendarModal" type="button"
                         class="w-8 h-8 flex items-center justify-center rounded-full border border-[#c8b88a] bg-white/70 hover:bg-white text-[#566175] hover:text-[#1f3f63] transition"
@@ -1963,7 +1875,7 @@
                      show a full holiday name, so the tapped day's events are listed here
                      in full. Filled by renderCalendarAgenda(). -->
                 <section id="calendarAgenda" class="cal-agenda" aria-labelledby="calendarAgendaHeading" hidden>
-                    <h3 id="calendarAgendaHeading" class="cal-agenda-heading" data-en="Selected day" data-he="היום הנבחר">Selected day</h3>
+                    <h3 id="calendarAgendaHeading" class="cal-agenda-heading" {{ lang_attrs('home.selected_day') }}>{{ _('home.selected_day') }}</h3>
                     <p id="calendarAgendaHebrew" class="cal-agenda-hebrew" lang="he"></p>
                     <ul id="calendarAgendaList" class="cal-agenda-list" aria-live="polite"></ul>
                 </section>
@@ -2001,20 +1913,17 @@
                 class="absolute top-4 right-4 z-10 modal-close-icon-btn"><span class="contents" aria-hidden="true">{{ phosphor('x', size=20) }}</span></button>
 
             <div class="bg-linear-to-r from-navy to-blue-900 text-white px-6 py-4 border-b">
-                <h2 class="font-serif text-xl font-bold" data-en="Browse Jewish Library" data-he="עיון בספרייה היהודית">
-                    Browse
-                    Jewish Library</h2>
-                <p class="text-blue-100 text-sm mt-1" data-en="Siddur, Communities, and Text Library"
-                    data-he="סידור, קהילות וספריית טקסטים">Siddur, Communities, and Text Library</p>
+                <h2 class="font-serif text-xl font-bold" {{ lang_attrs('home.browse_jewish_library') }}>
+                    {{ _('home.browse_jewish_library') }}</h2>
+                <p class="text-blue-100 text-sm mt-1" {{ lang_attrs('home.siddur_communities_and_text_library') }}>{{ _('home.siddur_communities_and_text_library') }}</p>
             </div>
 
             <div class="overflow-y-auto flex-1 px-6 py-6 custom-scrollbar">
                 <!-- Siddur Section: the curated Edot HaMizrach siddur first -->
                 <div class="mb-8">
-                    <h3 class="font-serif text-lg font-bold text-[#00827f] mb-4 pb-2 border-b" data-en="Siddur"
-                        data-he="סידור">Siddur</h3>
+                    <h3 class="font-serif text-lg font-bold text-[#00827f] mb-4 pb-2 border-b" {{ lang_attrs('home.siddur') }}>{{ _('home.siddur') }}</h3>
                     <div id="siddurTocMenu" class="siddur-toc-mount" aria-busy="true">
-                        <p class="sr-only" data-en="Loading the siddur..." data-he="טוען את הסידור...">Loading the siddur...</p>
+                        <p class="sr-only" {{ lang_attrs('home.loading_the_siddur') }}>{{ _('home.loading_the_siddur') }}</p>
                         <div class="sk-prayer-row" aria-hidden="true"></div>
                         <div class="sk-prayer-row" aria-hidden="true" style="width:85%"></div>
                         <div class="sk-prayer-row" aria-hidden="true" style="width:70%"></div>
@@ -2024,7 +1933,7 @@
                 <!-- Communities Section -->
                 <div class="mb-8">
                     <h3 class="font-serif text-lg font-bold text-[#594176] mb-4 pb-2 border-b"
-                        data-en="Community Customs" data-he="מנהגים קהילתיים">Community Customs
+                        {{ lang_attrs('home.community_customs') }}>{{ _('home.community_customs') }}
                     </h3>
                     <output id="communitiesList" class="block space-y-2" aria-busy="true">
                         <div class="sk-prayer-row" aria-hidden="true"></div>
@@ -2036,7 +1945,7 @@
                 <!-- Text Library Section -->
                 <div>
                     <h3 class="font-serif text-lg font-bold text-[#802f3e] mb-4 pb-2 border-b"
-                        data-en="Text Library (Browse Categories)" data-he="ספריית טקסטים">Text Library</h3>
+                        {{ lang_attrs('home.text_library_browse_categories') }}>Text Library</h3>
                     <div class="flex gap-2 mb-3">
                         <input id="libraryIndexFilterInput" type="text"
                             aria-label="Filter topics or texts"
@@ -2045,7 +1954,7 @@
                             data-he-placeholder="סנן נושאים או טקסטים..." />
                         <button id="libraryIndexFilterClear" type="button"
                             class="px-3 py-2 rounded-sm border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-600 hover:bg-slate-200 transition"
-                            data-en="Clear" data-he="נקה">Clear</button>
+                            {{ lang_attrs('home.clear') }}>{{ _('home.clear') }}</button>
                     </div>
                     <output id="libraryIndexModal" class="block space-y-1 text-sm" aria-busy="true">
                         <div class="sk-tree-row" aria-hidden="true"></div>
@@ -2097,16 +2006,16 @@
                     ש
                 </span>
                 <span class="topbar-brand-title text-sm sm:text-base font-serif tracking-tight text-navy font-semibold leading-none sm:leading-6 text-start">
-                    <span class="block" data-en="Sh'elah" data-he="שאלה">Sh'elah</span>
+                    <span class="block" {{ lang_attrs('home.shelah') }}>{{ _('home.shelah') }}</span>
                     <span class="block text-[10px] font-normal text-slate-500 italic topbar-brand-subtitle"
-                        data-en="Torah Encyclopedia" data-he="אנציקלופדיית תורה">Torah Encyclopedia</span>
+                        {{ lang_attrs('home.torah_encyclopedia') }}>{{ _('home.torah_encyclopedia') }}</span>
                 </span>
             </button>
             <button type="button" class="conv-new-btn" data-conv-action="new">
                 {{ phosphor('plus', size=14, class='h-3.5 w-3.5') }}
-                <span data-en="New conversation" data-he="שיחה חדשה">New conversation</span>
+                <span {{ lang_attrs('home.new_conversation') }}>{{ _('home.new_conversation') }}</span>
             </button>
-            <h3 id="convSidebarHeading" class="conv-eyebrow" data-en="Conversations" data-he="שיחות">Conversations</h3>
+            <h3 id="convSidebarHeading" class="conv-eyebrow" {{ lang_attrs('home.conversations') }}>{{ _('home.conversations') }}</h3>
             <ul class="conv-list" data-conv-list="sidebar" aria-labelledby="convSidebarHeading"></ul>
         </aside>
 
@@ -2140,15 +2049,14 @@
                         <dialog open id="convSharePop" class="dialog-box-reset conv-sharepop hidden" aria-modal="false"
                             aria-labelledby="convSharePopTitle">
                             <p id="convSharePopTitle" class="conv-sharepop__title"
-                                data-en="Stop sharing public link?" data-he="להפסיק את השיתוף הציבורי?">Stop sharing public link?</p>
+                                {{ lang_attrs('home.stop_sharing_public_link') }}>{{ _('home.stop_sharing_public_link') }}</p>
                             <p class="conv-sharepop__text"
-                                data-en="Anyone with the link can still read this chat until you stop."
-                                data-he="כל מי שיש לו את הקישור יכול לקרוא את השיחה עד שתפסיק/י את השיתוף.">Anyone with the link can still read this chat until you stop.</p>
+                                {{ lang_attrs('home.anyone_with_the_link_can_still') }}>{{ _('home.anyone_with_the_link_can_still') }}</p>
                             <div class="conv-sharepop__actions">
                                 <button type="button" class="conv-sharepop__btn conv-sharepop__btn--quiet" data-conv-action="share-copy"
-                                    data-en="Copy link" data-he="העתק קישור">Copy link</button>
+                                    {{ lang_attrs('home.copy_link') }}>{{ _('home.copy_link') }}</button>
                                 <button type="button" class="conv-sharepop__btn conv-sharepop__btn--danger" data-conv-action="share-stop"
-                                    data-en="Stop sharing" data-he="הפסק שיתוף">Stop sharing</button>
+                                    {{ lang_attrs('home.stop_sharing') }}>{{ _('home.stop_sharing') }}</button>
                             </div>
                         </dialog>
                     </div>
@@ -2165,58 +2073,58 @@
                             </span>
                         </button>
                         <fieldset id="convMenu" class="conv-menu hidden">
-                            <legend class="sr-only" data-en="Conversation settings" data-he="הגדרות שיחה">Conversation settings</legend>
-                            <p id="convMenuHeading" class="conv-eyebrow" data-en="Community" data-he="קהילה">Community</p>
+                            <legend class="sr-only" {{ lang_attrs('home.conversation_settings') }}>{{ _('home.conversation_settings') }}</legend>
+                            <p id="convMenuHeading" class="conv-eyebrow" {{ lang_attrs('home.community') }}>{{ _('home.community') }}</p>
                             <p id="convMenuMinhagLocked" class="conv-menu__note"></p>
                             <label id="convMenuMinhagDraft" class="conv-menu__field">
-                                <span class="sr-only" data-en="Community for this conversation" data-he="קהילה לשיחה זו">Community for this conversation</span>
+                                <span class="sr-only" {{ lang_attrs('home.community_for_this_conversation') }}>{{ _('home.community_for_this_conversation') }}</span>
                                 <select id="convMinhagSelect" class="conv-select"></select>
                             </label>
                             <div class="conv-menu__rule" aria-hidden="true"></div>
-                            <p class="conv-eyebrow" id="convModeHeading" data-en="AI mode" data-he="מצב בינה מלאכותית">AI mode</p>
+                            <p class="conv-eyebrow" id="convModeHeading" {{ lang_attrs('home.ai_mode') }}>{{ _('home.ai_mode') }}</p>
                             <div class="conv-mode-group" role="radiogroup" aria-labelledby="convModeHeading">
-                                <label class="conv-mode-opt" data-conv-mode="balanced"><input type="radio" name="convMode" class="sr-only" value="balanced" checked><span data-en="Balanced" data-he="מאוזן">Balanced</span></label>
-                                <label class="conv-mode-opt" data-conv-mode="practical"><input type="radio" name="convMode" class="sr-only" value="practical"><span data-en="Practical First" data-he="מעשי תחילה">Practical First</span></label>
-                                <label class="conv-mode-opt" data-conv-mode="sources"><input type="radio" name="convMode" class="sr-only" value="sources"><span data-en="Deep Sources" data-he="מקורות מעמיקים">Deep Sources</span></label>
-                                <label class="conv-mode-opt" data-conv-mode="strict"><input type="radio" name="convMode" class="sr-only" value="strict"><span data-en="Strict Sources" data-he="מקורות בלבד">Strict Sources</span></label>
+                                <label class="conv-mode-opt" data-conv-mode="balanced"><input type="radio" name="convMode" class="sr-only" value="balanced" checked><span {{ lang_attrs('home.balanced') }}>{{ _('home.balanced') }}</span></label>
+                                <label class="conv-mode-opt" data-conv-mode="practical"><input type="radio" name="convMode" class="sr-only" value="practical"><span {{ lang_attrs('home.practical_first') }}>{{ _('home.practical_first') }}</span></label>
+                                <label class="conv-mode-opt" data-conv-mode="sources"><input type="radio" name="convMode" class="sr-only" value="sources"><span {{ lang_attrs('home.deep_sources') }}>{{ _('home.deep_sources') }}</span></label>
+                                <label class="conv-mode-opt" data-conv-mode="strict"><input type="radio" name="convMode" class="sr-only" value="strict"><span {{ lang_attrs('home.strict_sources') }}>{{ _('home.strict_sources') }}</span></label>
                             </div>
                             <div class="conv-menu__rule" aria-hidden="true"></div>
-                            <p class="conv-eyebrow" id="convWebSearchHeading" data-en="Web search" data-he="חיפוש ברשת">Web search</p>
+                            <p class="conv-eyebrow" id="convWebSearchHeading" {{ lang_attrs('home.web_search') }}>{{ _('home.web_search') }}</p>
                             <!-- The reader's switch for the AI's last-resort web lookup
                                  (backend/web_lookup.py): on by default, saved with the
                                  other AI defaults, sent as web_search only when off. -->
                             <button type="button" role="switch" aria-checked="true" id="convWebSearchSwitch"
                                 class="conv-web-opt" data-conv-websearch aria-labelledby="convWebSearchHeading"
                                 aria-describedby="convWebSearchHint">
-                                <span class="conv-web-opt__label" data-en="Let the AI check the web" data-he="לאפשר לבינה המלאכותית לבדוק ברשת">Let the AI check the web</span>
+                                <span class="conv-web-opt__label" {{ lang_attrs('home.let_the_ai_check_the_web') }}>{{ _('home.let_the_ai_check_the_web') }}</span>
                                 <span class="conv-web-opt__state" id="convWebSearchState" aria-hidden="true">On</span>
                             </button>
-                            <p id="convWebSearchHint" class="conv-menu__note conv-menu__note--hint" data-en="Only as a last resort, for a fact no source covers, such as whether a product is kosher. Answers then say they used the web." data-he="רק כמוצא אחרון, לעובדה שאף מקור אינו מכסה, כמו אם מוצר מסוים כשר. התשובה תציין שנעשה שימוש ברשת.">Only as a last resort, for a fact no source covers, such as whether a product is kosher. Answers then say they used the web.</p>
+                            <p id="convWebSearchHint" class="conv-menu__note conv-menu__note--hint" {{ lang_attrs('home.only_as_a_last_resort_for') }}>{{ _('home.only_as_a_last_resort_for') }}</p>
                             <div class="conv-menu__rule" aria-hidden="true"></div>
                             <div class="conv-menu__actions">
                                 <button type="button" class="conv-menu__item" data-conv-action="new">
                                     {{ phosphor('plus', size=14, class='h-3.5 w-3.5') }}
-                                    <span data-en="New conversation" data-he="שיחה חדשה">New conversation</span>
+                                    <span {{ lang_attrs('home.new_conversation') }}>{{ _('home.new_conversation') }}</span>
                                 </button>
                                 <button type="button" class="conv-menu__item conv-only-mobile-overlay" data-conv-size="full">
                                     {{ phosphor('arrows-out-simple', size=14, class='h-3.5 w-3.5') }}
-                                    <span data-en="Open full page" data-he="פתח בעמוד מלא">Open full page</span>
+                                    <span {{ lang_attrs('home.open_full_page') }}>{{ _('home.open_full_page') }}</span>
                                 </button>
                                 <button type="button" class="conv-menu__item conv-only-mobile-full" data-conv-size="overlay">
                                     {{ phosphor('arrows-in-simple', size=14, class='h-3.5 w-3.5') }}
-                                    <span data-en="Collapse to sheet" data-he="כווץ לחלונית">Collapse to sheet</span>
+                                    <span {{ lang_attrs('home.collapse_to_sheet') }}>{{ _('home.collapse_to_sheet') }}</span>
                                 </button>
                                 <button type="button" class="conv-menu__item conv-needs-thread" data-conv-action="rename">
                                     {{ phosphor('pencil-simple', size=14, class='h-3.5 w-3.5') }}
-                                    <span data-en="Rename" data-he="שנה שם">Rename</span>
+                                    <span {{ lang_attrs('home.rename') }}>{{ _('home.rename') }}</span>
                                 </button>
                                 <button type="button" class="conv-menu__item conv-menu-share conv-needs-thread" data-conv-action="share">
                                     {{ phosphor('share-network', size=14, class='h-3.5 w-3.5') }}
-                                    <span data-en="Share conversation" data-he="שתף שיחה">Share conversation</span>
+                                    <span {{ lang_attrs('home.share_conversation') }}>{{ _('home.share_conversation') }}</span>
                                 </button>
                                 <button type="button" class="conv-menu__item conv-needs-thread conv-needs-share" data-conv-action="stop-share">
                                     {{ phosphor('globe-simple', size=14, class='h-3.5 w-3.5') }}
-                                    <span data-en="Stop sharing" data-he="הפסקת שיתוף">Stop sharing</span>
+                                    <span {{ lang_attrs('home.stop_sharing_2') }}>{{ _('home.stop_sharing_2') }}</span>
                                 </button>
                                 <button type="button" class="conv-menu__item conv-needs-thread" data-conv-action="pin">
                                     {{ phosphor('push-pin', size=14, class='h-3.5 w-3.5') }}
@@ -2224,7 +2132,7 @@
                                 </button>
                                 <button type="button" class="conv-menu__item conv-menu__item--danger conv-needs-thread" data-conv-action="delete">
                                     {{ phosphor('trash', size=14, class='h-3.5 w-3.5') }}
-                                    <span data-en="Delete conversation" data-he="מחק שיחה">Delete conversation</span>
+                                    <span {{ lang_attrs('home.delete_conversation') }}>{{ _('home.delete_conversation') }}</span>
                                 </button>
                             </div>
                         </fieldset>
@@ -2268,31 +2176,28 @@
 
             <div id="convScroller" class="conv-scroller">
                 <div id="convEmpty" class="conv-empty">
-                    <p class="conv-empty__title font-serif" data-en="What would you like to learn?" data-he="מה תרצה ללמוד?">What would you like to learn?</p>
+                    <p class="conv-empty__title font-serif" {{ lang_attrs('home.what_would_you_like_to_learn') }}>{{ _('home.what_would_you_like_to_learn') }}</p>
                     <p class="conv-empty__text"
-                        data-en="Ask a question and follow up as much as you like. Answers show the sources they used."
-                        data-he="שאל שאלה והמשך לשאול כרצונך. התשובות מציגות את המקורות שבהם נעשה שימוש.">Ask a question and follow up
-                        as much as you like. Answers show the sources they used.</p>
+                        {{ lang_attrs('home.ask_a_question_and_follow_up') }}>{{ _('home.ask_a_question_and_follow_up') }}</p>
                     <!-- Signed out: a question still gets an answer (a one-shot /ask) and
                          can be followed up, within the guest limits (backend/guest_cap.py)
                          -- say so up front. -->
                     <p id="convSignedOutHint" class="conv-empty__hint conv-signin-callout hidden">
                         <span class="conv-signin-callout__icon" aria-hidden="true">{{ phosphor('lock-simple', size=16) }}</span>
                         <span class="conv-signin-callout__text"
-                            data-en="You can ask as a guest. Sign in to save your conversations and go past the guest limits."
-                            data-he="אפשר לשאול כאורח. התחברו כדי לשמור את השיחות ולעבור את מגבלות האורחים.">You can ask as a guest. Sign in to save your conversations and go past the guest limits.</span>
-                        <button type="button" class="conv-link-btn" data-conv-action="sign-in" data-en="Sign in" data-he="התחברות">Sign in</button>
+                            {{ lang_attrs('home.you_can_ask_as_a_guest') }}>{{ _('home.you_can_ask_as_a_guest') }}</span>
+                        <button type="button" class="conv-link-btn" data-conv-action="sign-in" {{ lang_attrs('home.sign_in_2') }}>{{ _('home.sign_in_2') }}</button>
                     </p>
                     <!-- A few places to start; pressing one fills the question box (it does not send). -->
                     <ul class="conv-suggest" aria-label="Questions to start with" data-aria-en="Questions to start with" data-aria-he="שאלות להתחלה">
                         <li><button type="button" class="conv-suggest__btn" data-conv-suggest
-                            data-en="What blessing do I say when I see a rainbow?" data-he="איזו ברכה מברכים כשרואים קשת בענן?">What blessing do I say when I see a rainbow?</button></li>
+                            {{ lang_attrs('home.what_blessing_do_i_say_when') }}>{{ _('home.what_blessing_do_i_say_when') }}</button></li>
                         <li><button type="button" class="conv-suggest__btn" data-conv-suggest
-                            data-en="Why do we read Bamidbar before Shavuot?" data-he="מדוע קוראים את פרשת במדבר לפני שבועות?">Why do we read Bamidbar before Shavuot?</button></li>
+                            {{ lang_attrs('home.why_do_we_read_bamidbar_before') }}>{{ _('home.why_do_we_read_bamidbar_before') }}</button></li>
                         <li><button type="button" class="conv-suggest__btn" data-conv-suggest
-                            data-en="Can one dishwasher be used for meat and dairy?" data-he="האם אפשר להשתמש במדיח כלים אחד לבשרי ולחלבי?">Can one dishwasher be used for meat and dairy?</button></li>
+                            {{ lang_attrs('home.can_one_dishwasher_be_used_for') }}>{{ _('home.can_one_dishwasher_be_used_for') }}</button></li>
                         <li><button type="button" class="conv-suggest__btn" data-conv-suggest
-                            data-en="What does the Rambam teach about teshuvah?" data-he="מה מלמד הרמב״ם על תשובה?">What does the Rambam teach about teshuvah?</button></li>
+                            {{ lang_attrs('home.what_does_the_rambam_teach_about') }}>{{ _('home.what_does_the_rambam_teach_about') }}</button></li>
                     </ul>
                 </div>
                 <div id="convLoading" class="conv-loading hidden" aria-hidden="true">
@@ -2332,12 +2237,12 @@
                      the box, with the way out (conversation-ui.js render, guestBannerText). -->
                 <output id="convGuestBanner" class="conv-signin-follow hidden">
                     <span id="convGuestBannerText" class="conv-signin-follow__text"></span>
-                    <button type="button" class="conv-signin-follow__btn" data-conv-action="sign-in" data-en="Sign in" data-he="התחברות">Sign in</button>
+                    <button type="button" class="conv-signin-follow__btn" data-conv-action="sign-in" {{ lang_attrs('home.sign_in_2') }}>{{ _('home.sign_in_2') }}</button>
                 </output>
                 <form id="convComposer" class="conv-composer" novalidate>
                     <div class="conv-halo" aria-hidden="true"></div>
                     <div class="conv-composer__fill">
-                        <label for="convInput" class="sr-only" data-en="Ask a question" data-he="שאל שאלה">Ask a question</label>
+                        <label for="convInput" class="sr-only" {{ lang_attrs('home.ask_a_question') }}>{{ _('home.ask_a_question') }}</label>
                         <textarea id="convInput" rows="1" dir="auto" maxlength="2000" autocomplete="off"></textarea>
                         <!-- Dictation with the device's own speech recognition
                              (conversation-voice.js). Hidden where the browser has none. -->
@@ -2353,9 +2258,7 @@
                     </div>
                 </form>
                 <p class="conv-disclaimer"
-                    data-en="AI-generated educational information, not a halachic ruling. Ask your rabbi for practical guidance."
-                    data-he="מידע חינוכי שנוצר על ידי בינה מלאכותית, לא פסיקה הלכתית. שאל את רבך להנחיה מעשית.">AI-generated
-                    educational information, not a halachic ruling. Ask your rabbi for practical guidance.</p>
+                    {{ lang_attrs('home.ai_generated_educational_information_not_a') }}>{{ _('home.ai_generated_educational_information_not_a') }}</p>
                 <!-- The guest limit was reached (backend/guest_cap.py). A native modal dialog:
                      it traps focus and closes on Escape by itself. Words are set by
                      conversation-ui.js (guestCapCopy) from the server's reason; the text
@@ -2365,9 +2268,9 @@
                         <h2 id="convGuestCapTitle" class="conv-capdialog__title">You've reached the guest limit for this conversation</h2>
                         <p id="convGuestCapBody" class="conv-capdialog__body">Sign in or create a free account to keep going.</p>
                         <div class="conv-capdialog__actions">
-                            <button type="button" class="conv-capdialog__btn conv-capdialog__btn--primary" data-conv-action="guest-sign-in" data-en="Sign in" data-he="התחברות">Sign in</button>
-                            <button type="button" class="conv-capdialog__btn" data-conv-action="guest-sign-up" data-en="Create free account" data-he="יצירת חשבון חינם">Create free account</button>
-                            <button type="button" class="conv-capdialog__btn conv-capdialog__btn--quiet" data-conv-action="guest-cap-close" data-en="Not now" data-he="לא עכשיו">Not now</button>
+                            <button type="button" class="conv-capdialog__btn conv-capdialog__btn--primary" data-conv-action="guest-sign-in" {{ lang_attrs('home.sign_in_2') }}>{{ _('home.sign_in_2') }}</button>
+                            <button type="button" class="conv-capdialog__btn" data-conv-action="guest-sign-up" {{ lang_attrs('home.create_free_account') }}>{{ _('home.create_free_account') }}</button>
+                            <button type="button" class="conv-capdialog__btn conv-capdialog__btn--quiet" data-conv-action="guest-cap-close" {{ lang_attrs('home.not_now') }}>{{ _('home.not_now') }}</button>
                         </div>
                     </div>
                 </dialog>
@@ -2383,11 +2286,11 @@
                     data-aria-en="Share this answer publicly" data-aria-he="שתף את התשובה בציבור">
                     <span class="answer-link-btn__face answer-link-btn__face--idle">
                         <span class="contents" aria-hidden="true">{{ phosphor('share-network', size=16) }}</span>
-                        <span data-en="Share" data-he="שיתוף">Share</span>
+                        <span {{ lang_attrs('home.share') }}>{{ _('home.share') }}</span>
                     </span>
                     <span class="answer-link-btn__face answer-link-btn__face--copied" aria-hidden="true">
                         <span class="contents" aria-hidden="true">{{ phosphor('check', size=16) }}</span>
-                        <span data-en="Copied!" data-he="הועתק!">Copied!</span>
+                        <span {{ lang_attrs('home.copied') }}>{{ _('home.copied') }}</span>
                     </span>
                 </button>
                 <!-- Public share state (static/js/answer-share.js): shown while
@@ -2395,9 +2298,9 @@
                 <p class="answer-share-state hidden">
                     <span class="answer-share-state__label">
                         <span class="contents" aria-hidden="true">{{ phosphor('globe-simple', size=16) }}</span>
-                        <span data-en="Shared · anyone with the link can view" data-he="משותף · כל מי שיש לו את הקישור יכול לצפות">Shared · anyone with the link can view</span>
+                        <span {{ lang_attrs('home.shared_anyone_with_the_link_can') }}>{{ _('home.shared_anyone_with_the_link_can') }}</span>
                     </span>
-                    <button type="button" class="answer-share-revoke" data-en="Stop sharing" data-he="הפסקת שיתוף">Stop sharing</button>
+                    <button type="button" class="answer-share-revoke" {{ lang_attrs('home.stop_sharing_2') }}>{{ _('home.stop_sharing_2') }}</button>
                 </p>
                 <input type="text" class="answer-link-fallback hidden" readonly
                     aria-label="Link to this answer" data-aria-en="Link to this answer" data-aria-he="קישור לתשובה זו">
@@ -2418,7 +2321,7 @@
             </svg>
         </button>
         <span id="convResizeHint" class="sr-only"
-            data-en="Arrow keys resize the chat. Home restores the default size." data-he="מקשי החצים משנים את הגודל. מקש Home מחזיר לגודל המקורי.">Arrow keys resize the chat. Home restores the default size.</span>
+            {{ lang_attrs('home.arrow_keys_resize_the_chat_home') }}>{{ _('home.arrow_keys_resize_the_chat_home') }}</span>
     </dialog>
 
     <!-- Phone "minimized" state: a now-playing style bar above the tab bar. -->
@@ -2443,23 +2346,23 @@
     <dialog open id="convHistoryPop" class="dialog-box-reset conv-pop hidden" aria-labelledby="convHistoryPopHeading">
         <button type="button" class="conv-pop__new" data-conv-action="new">
             {{ phosphor('plus', size=14, class='h-3.5 w-3.5') }}
-            <span data-en="New conversation" data-he="שיחה חדשה">New conversation</span>
+            <span {{ lang_attrs('home.new_conversation') }}>{{ _('home.new_conversation') }}</span>
         </button>
-        <p id="convHistoryPopHeading" class="conv-eyebrow" data-en="Recent conversations" data-he="שיחות אחרונות">Recent conversations</p>
+        <p id="convHistoryPopHeading" class="conv-eyebrow" {{ lang_attrs('home.recent_conversations') }}>{{ _('home.recent_conversations') }}</p>
         <ul class="conv-list" data-conv-list="popover" aria-labelledby="convHistoryPopHeading"></ul>
         <p class="conv-pop__signed-out hidden">
-            <span data-en="Sign in to save and revisit your conversations." data-he="התחבר כדי לשמור ולחזור לשיחות שלך.">Sign in to save and revisit your conversations.</span>
-            <button type="button" class="conv-link-btn" data-conv-action="sign-in" data-en="Sign in" data-he="התחברות">Sign in</button>
+            <span {{ lang_attrs('home.sign_in_to_save_and_revisit') }}>{{ _('home.sign_in_to_save_and_revisit') }}</span>
+            <button type="button" class="conv-link-btn" data-conv-action="sign-in" {{ lang_attrs('home.sign_in_2') }}>{{ _('home.sign_in_2') }}</button>
         </p>
     </dialog>
 
     <!-- Phone search tray: rises above the tab bar while search is open, with the
          AI conversation button and the history button side by side. -->
     <fieldset id="mobileSearchTray" class="mobile-search-tray hidden">
-        <legend class="sr-only" data-en="Ask Sh'elah" data-he="שאל את ש׳אלה">Ask Sh'elah</legend>
+        <legend class="sr-only" {{ lang_attrs('home.ask_shelah') }}>{{ _('home.ask_shelah') }}</legend>
         <button type="button" id="mobileTrayAskBtn" class="mobile-search-tray__ask">
             {{ phosphor('chat-text', size=16, class='h-4 w-4') }}
-            <span data-en="Ask Sh'elah" data-he="שאל את ש׳אלה">Ask Sh'elah</span>
+            <span {{ lang_attrs('home.ask_shelah') }}>{{ _('home.ask_shelah') }}</span>
         </button>
         <button type="button" id="mobileTrayHistoryBtn" class="conv-icon-btn conv-history-trigger mobile-search-tray__history"
             aria-haspopup="dialog" aria-expanded="false" aria-controls="convHistoryPop"
@@ -2478,13 +2381,12 @@
         <span class="ai-tip__arrow" aria-hidden="true"></span>
         <span class="ai-tip__badge" aria-hidden="true">{{ phosphor('chat-text', size=18, class='h-[18px] w-[18px]') }}</span>
         <div class="ai-tip__body">
-            <p id="aiDiscoveryTipTitle" class="ai-tip__title" data-en="Ask Sh'elah anything" data-he="שאל את ש׳אלה כל שאלה">Ask Sh'elah anything</p>
+            <p id="aiDiscoveryTipTitle" class="ai-tip__title" {{ lang_attrs('home.ask_shelah_anything') }}>{{ _('home.ask_shelah_anything') }}</p>
             <p id="aiDiscoveryTipText" class="ai-tip__text"
-                data-en="Our AI answers questions on halachah, customs and texts, and shows the sources it used."
-                data-he="הבינה המלאכותית שלנו עונה על שאלות בהלכה, במנהגים ובטקסטים, ומציגה את המקורות שבהם השתמשה.">Our AI answers questions on halachah, customs and texts, and shows the sources it used.</p>
+                {{ lang_attrs('home.our_ai_answers_questions_on_halachah') }}>{{ _('home.our_ai_answers_questions_on_halachah') }}</p>
             <div class="ai-tip__actions">
-                <button type="button" id="aiDiscoveryTipTry" class="ai-tip__try" data-en="Try it" data-he="נסה עכשיו">Try it</button>
-                <button type="button" id="aiDiscoveryTipDismiss" class="ai-tip__dismiss" data-en="Not now" data-he="לא עכשיו">Not now</button>
+                <button type="button" id="aiDiscoveryTipTry" class="ai-tip__try" {{ lang_attrs('home.try_it') }}>{{ _('home.try_it') }}</button>
+                <button type="button" id="aiDiscoveryTipDismiss" class="ai-tip__dismiss" {{ lang_attrs('home.not_now') }}>{{ _('home.not_now') }}</button>
             </div>
         </div>
     </dialog>
@@ -2794,12 +2696,9 @@
             <header class="privacy-head">
                 <span class="privacy-head__mark" aria-hidden="true">{{ phosphor('shield-check', size=16) }}</span>
                 <div class="privacy-head__text">
-                    <h2 id="privacyDataModalTitle" class="privacy-head__title" data-en="Privacy &amp; data"
-                        data-he="פרטיות ונתונים">Privacy &amp; data</h2>
+                    <h2 id="privacyDataModalTitle" class="privacy-head__title" {{ lang_attrs('home.privacy_data_2') }}>{{ _('home.privacy_data_2') }}</h2>
                     <p id="privacyDataModalDesc" class="privacy-head__desc"
-                        data-en="Download or delete the personal data associated with your account."
-                        data-he="הורד או מחק את הנתונים האישיים המשויכים לחשבונך.">Download or delete the personal
-                        data associated with your account.</p>
+                        {{ lang_attrs('home.download_or_delete_the_personal_data') }}>{{ _('home.download_or_delete_the_personal_data') }}</p>
                 </div>
                 <button id="privacyDataModalCloseBtn" type="button" data-onclick="closePrivacyDataModal"
                     class="privacy-close" aria-label="Close">
@@ -2809,32 +2708,28 @@
 
             <div class="privacy-body">
                 <section class="privacy-section" aria-labelledby="privacyExportHeading">
-                    <h3 id="privacyExportHeading" class="privacy-section__title" data-en="Download my data"
-                        data-he="הורד את הנתונים שלי">Download my data</h3>
+                    <h3 id="privacyExportHeading" class="privacy-section__title" {{ lang_attrs('home.download_my_data') }}>{{ _('home.download_my_data') }}</h3>
                     <p class="privacy-section__text"
-                        data-en="A JSON file with your AI chats, search and reading history, bookmarks, notes, preferences, study memories and AI usage logs."
-                        data-he="קובץ JSON עם שיחות הבינה המלאכותית, היסטוריית החיפוש והקריאה, הסימניות, ההערות, ההעדפות, זיכרונות הלימוד ויומני השימוש בבינה מלאכותית שלך.">
-                        A JSON file with your AI chats, search and reading history, bookmarks, notes, preferences, study memories and AI usage logs.</p>
+                        {{ lang_attrs('home.a_json_file_with_your_ai') }}>
+                        {{ _('home.a_json_file_with_your_ai') }}</p>
                     <button id="privacyDataExportBtn" type="button" data-onclick="handlePrivacyDataExport"
                         class="privacy-btn privacy-btn--primary">
                         {{ phosphor('download-simple', size=16) }}
-                        <span data-en="Download JSON" data-he="הורד JSON">Download JSON</span>
+                        <span {{ lang_attrs('home.download_json') }}>{{ _('home.download_json') }}</span>
                     </button>
                     <output id="privacyDataExportStatus" class="hidden" aria-live="polite"></output>
                 </section>
 
                 <section class="privacy-section privacy-section--danger" aria-labelledby="privacyDeleteHeading">
-                    <h3 id="privacyDeleteHeading" class="privacy-section__title" data-en="Delete my account"
-                        data-he="מחק את החשבון שלי">Delete my account</h3>
+                    <h3 id="privacyDeleteHeading" class="privacy-section__title" {{ lang_attrs('home.delete_my_account') }}>{{ _('home.delete_my_account') }}</h3>
                     <p class="privacy-section__text"
-                        data-en="Permanently deletes your account, your sign-in and all of the data above. This can't be undone."
-                        data-he="מוחק לצמיתות את חשבונך, את ההתחברות שלך ואת כל הנתונים שלמעלה. לא ניתן לבטל פעולה זו.">
-                        Permanently deletes your account, your sign-in and all of the data above. This can't be undone.</p>
+                        {{ lang_attrs('home.permanently_deletes_your_account_your_sign') }}>
+                        {{ _('home.permanently_deletes_your_account_your_sign') }}</p>
                     <div class="privacy-confirm">
                         <label class="privacy-confirm__label" for="privacyDeleteConfirmInput">
-                            <span data-en="Type" data-he="הקלד">Type</span>
+                            <span {{ lang_attrs('home.type') }}>{{ _('home.type') }}</span>
                             <span class="privacy-confirm__word">DELETE</span>
-                            <span data-en="to confirm" data-he="לאישור">to confirm</span>
+                            <span {{ lang_attrs('home.to_confirm') }}>{{ _('home.to_confirm') }}</span>
                         </label>
                         <div class="privacy-confirm__row">
                             <input id="privacyDeleteConfirmInput" type="text" autocomplete="off" spellcheck="false"
@@ -2842,7 +2737,7 @@
                                 class="privacy-input" placeholder="DELETE" />
                             <button id="privacyDeleteAccountBtn" type="button" disabled data-onclick="handlePrivacyDeleteAccount"
                                 class="privacy-btn privacy-btn--danger">
-                                <span data-en="Delete account" data-he="מחק חשבון">Delete account</span>
+                                <span {{ lang_attrs('home.delete_account') }}>{{ _('home.delete_account') }}</span>
                             </button>
                         </div>
                     </div>
@@ -2852,7 +2747,7 @@
 
             <footer class="privacy-foot">
                 <a href="/privacy" target="_blank" rel="noopener" class="privacy-link">
-                    <span data-en="Privacy policy" data-he="מדיניות הפרטיות">Privacy policy</span>
+                    <span {{ lang_attrs('home.privacy_policy_2') }}>{{ _('home.privacy_policy_2') }}</span>
                     {{ phosphor('arrow-up-right', size=14) }}
                 </a>
             </footer>
@@ -2884,10 +2779,9 @@
             <button id="closeDevtoolsInspectorBtn" type="button"
                 class="absolute top-4 right-4 z-10 modal-close-icon-btn" aria-label="Close"><span class="contents" aria-hidden="true">{{ phosphor('x', size=20) }}</span></button>
             <div class="bg-linear-to-r from-navy to-blue-900 text-white px-6 py-4 border-b">
-                <h2 class="font-serif text-xl font-bold" data-en="System Inspector" data-he="בודק מערכת">System
-                    Inspector</h2>
-                <p class="text-blue-100 text-sm mt-1" data-en="Diagnostics and reliability logs" data-he="אבחון ולוגים">
-                    Diagnostics and reliability logs</p>
+                <h2 class="font-serif text-xl font-bold" {{ lang_attrs('home.system_inspector') }}>{{ _('home.system_inspector') }}</h2>
+                <p class="text-blue-100 text-sm mt-1" {{ lang_attrs('home.diagnostics_and_reliability_logs') }}>
+                    {{ _('home.diagnostics_and_reliability_logs') }}</p>
             </div>
             <div class="overflow-y-auto flex-1 px-6 py-4 space-y-3 bg-slate-50">
                 <pre id="devtoolsLog"

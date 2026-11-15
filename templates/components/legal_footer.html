@@ -1,30 +1,30 @@
 {#- Shared footer for the legal pages. `current` (set by the including page via
-    {% with current='<page>' %}) picks which link is emphasised. The links are
-    autoescaped, so labels here must not contain characters HTML would escape. -#}
-{%- macro footer_link(key, en, he) -%}
+    {% with current='<page>' %}) picks which link is emphasised. Each label is
+    legal_footer.link.<page> in locales/, with - written as _. -#}
+{%- macro footer_link(key) -%}
+{%- set text_key = 'legal_footer.link.' ~ key|replace('-', '_') -%}
 <a href="/{{ key }}" class="hover:underline{{ ' font-medium' if current == key }}" style="color: var({{ '--ink-heading' if current == key else '--ink-secondary' }});"
-                data-en="{{ en }}" data-he="{{ he }}">{{ en }}</a>
+                {{ lang_attrs(text_key) }}>{{ _(text_key) }}</a>
 {%- endmacro -%}
 <footer class="border-t py-6 text-center text-xs"
         style="border-color: var(--surface-border); color: var(--ink-secondary); background: var(--surface-1);">
-        <p class="mb-2" data-en="© Sh'elah {{ current_year }}. All rights reserved." data-he="© Sh'elah {{ current_year }}. כל הזכויות שמורות.">©
-            Sh'elah {{ current_year }}. All rights reserved.</p>
+        <p class="mb-2" {{ lang_attrs('common.copyright', year=current_year) }}>{{ _('common.copyright', year=current_year) }}</p>
         <p>
             <a href="/" class="font-semibold hover:underline" style="color: var(--ink-heading);"
-                data-en="Sh'elah Torah Encyclopedia" data-he="שאלה אנציקלופדיית תורה">Sh'elah Torah Encyclopedia</a>
+                {{ lang_attrs('legal_footer.shelah_torah_encyclopedia') }}>{{ _('legal_footer.shelah_torah_encyclopedia') }}</a>
             &nbsp;·&nbsp;
-            {{ footer_link('terms', 'Terms of Service', 'תנאי שירות') }}
+            {{ footer_link('terms') }}
             &nbsp;·&nbsp;
-            {{ footer_link('privacy', 'Privacy Policy', 'מדיניות פרטיות') }}
+            {{ footer_link('privacy') }}
             &nbsp;·&nbsp;
-            {{ footer_link('ai-disclosure', 'AI Disclosure', 'גילוי נאות בינה מלאכותית') }}
+            {{ footer_link('ai-disclosure') }}
             &nbsp;·&nbsp;
-            {{ footer_link('acceptable-use', 'Acceptable Use', 'שימוש מותר') }}
+            {{ footer_link('acceptable-use') }}
             &nbsp;·&nbsp;
-            {{ footer_link('dmca', 'DMCA', 'DMCA') }}
+            {{ footer_link('dmca') }}
             &nbsp;·&nbsp;
-            {{ footer_link('accessibility', 'Accessibility', 'נגישות') }}
+            {{ footer_link('accessibility') }}
             &nbsp;·&nbsp;
-            {{ footer_link('licenses', 'Licenses', 'רישיונות') }}
+            {{ footer_link('licenses') }}
         </p>
     </footer>

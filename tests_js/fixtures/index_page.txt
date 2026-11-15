@@ -161,10 +161,7 @@
          already recorded, and by initAnalyticsConsent() once one is made. -->
     <section id="analyticsConsentBanner" aria-label="Analytics consent">
         <p>
-            <span data-en="We use cookieless, privacy-first analytics (no ad tracking, no cross-site profiling) to see which pages are useful. Is that OK?"
-                data-he="אנו משתמשים באנליטיקס ללא עוגיות ולא פוגעני פרטיות (ללא מעקב פרסומי, ללא פרופיל חוצה אתרים) כדי לראות אילו עמודים שימושיים. זה בסדר?">We
-                use cookieless, privacy-first analytics (no ad tracking, no cross-site profiling) to see which pages
-                are useful. Is that OK?</span>
+            <span data-en="We use cookieless, privacy-first analytics (no ad tracking, no cross-site profiling) to see which pages are useful. Is that OK?" data-he="אנו משתמשים באנליטיקס ללא עוגיות ולא פוגעני פרטיות (ללא מעקב פרסומי, ללא פרופיל חוצה אתרים) כדי לראות אילו עמודים שימושיים. זה בסדר?">We use cookieless, privacy-first analytics (no ad tracking, no cross-site profiling) to see which pages are useful. Is that OK?</span>
         </p>
         <div class="analytics-consent-actions">
             <button type="button" id="analyticsConsentDecline" data-en="Decline" data-he="דחה">Decline</button>
@@ -191,7 +188,7 @@
                         ש
                     </span>
                     <span class="topbar-brand-title text-sm sm:text-base font-serif tracking-tight text-navy font-semibold leading-none sm:leading-6 text-start">
-                        <span class="block" data-en="Sh'elah" data-he="שאלה">Sh'elah</span>
+                        <span class="block" data-en="Sh&#39;elah" data-he="שאלה">Sh&#39;elah</span>
                         <span class="block text-[10px] font-normal text-slate-500 italic topbar-brand-subtitle"
                             data-en="Torah Encyclopedia" data-he="אנציקלופדיית תורה">Torah Encyclopedia</span>
                     </span>
@@ -304,8 +301,7 @@
 
                         <div id="settingsPanel"
                             class="hidden absolute bg-slate-50 border border-slate-300 rounded-xl shadow-lg p-2.5 z-200 space-y-2.5 overflow-y-auto w-max max-w-[360px]">
-                            <p class="text-[11px] uppercase tracking-widest text-slate-500 font-bold" data-en="Quick Settings"
-                                data-he="הגדרות מהירות">Quick Settings</p>
+                            <p class="text-[11px] uppercase tracking-widest text-slate-500 font-bold" data-en="Quick Settings" data-he="הגדרות מהירות">Quick Settings</p>
 
                             <button id="openAiSettingsBtn" type="button"
                                 class="w-full px-3 py-2 rounded-sm bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition font-semibold text-xs text-start">
@@ -365,8 +361,7 @@
                                 <button id="themeToggleBtn" type="button"
                                     class="w-full px-3 py-1.5 rounded-sm bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition font-semibold text-xs text-start"
                                     aria-live="polite">
-                                    <span id="themeToggleLabel" data-en="Appearance: Light" data-he="מראה: בהיר">Appearance:
-                                        Light</span>
+                                    <span id="themeToggleLabel" data-en="Appearance: Light" data-he="מראה: בהיר">Appearance: Light</span>
                                 </button>
                             </div>
 
@@ -453,8 +448,7 @@
                             </div>
                         </div>
 
-                        <a id="signInBtn" href="/signin" class="topbar-flat-btn" data-en="Sign In" data-he="התחברות">Sign
-                            In</a>
+                        <a id="signInBtn" href="/signin" class="topbar-flat-btn" data-en="Sign In" data-he="התחברות">Sign In</a>
                     </div>
 
                     <div id="hebrewDateDisplay" class="text-xs font-serif italic text-slate-500 mr-1">Today</div>
@@ -471,8 +465,7 @@
                         data-lang="en">English</button>
                     <button data-onclick="chooseLanguage" data-onclick-arg="he" class="hidden lg:inline-flex topbar-flat-btn font-hebrew lang-btn"
                         data-lang="he">עברית</button>
-                    <button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn" data-en="עברית"
-                        data-he="English">עברית</button>
+                    <button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn" data-en="עברית" data-he="English">עברית</button>
                 </div>
             </header>
             
@@ -512,11 +505,9 @@
                             <span class="select-field">
                             <select id="readerLayoutSelect"
                                 class="reader-select">
-                                <option value="bilingual" data-en="Side by Side (Hebrew Left)"
-                                    data-he="דו-עמודי (עברית משמאל)">Side by Side (Hebrew Left)
+                                <option value="bilingual" data-en="Side by Side (Hebrew Left)" data-he="דו-עמודי (עברית משמאל)">Side by Side (Hebrew Left)
                                 </option>
-                                <option value="bilingual-reverse" data-en="Side by Side (English Left)"
-                                    data-he="דו-עמודי (אנגלית משמאל)">Side by Side (English Left)</option>
+                                <option value="bilingual-reverse" data-en="Side by Side (English Left)" data-he="דו-עמודי (אנגלית משמאל)">Side by Side (English Left)</option>
                                 <option value="interleaved" data-en="Interleaved" data-he="משולב שורה-שורה">
                                     Interleaved</option>
                                 <option value="english" data-en="English" data-he="אנגלית">English</option>
@@ -545,8 +536,7 @@
                                 </span>
                             </label>
                             <p id="readerVersionHint" class="reader-settings__hint"
-                                data-en="Orthodox editions only, chosen for your community."
-                                data-he="רק מהדורות אורתודוקסיות, לפי הקהילה שלך.">Orthodox editions only, chosen for your community.</p>
+                                data-en="Orthodox editions only, chosen for your community." data-he="רק מהדורות אורתודוקסיות, לפי הקהילה שלך.">Orthodox editions only, chosen for your community.</p>
                         </fieldset>
 
                         <label class="block reader-settings__label">
@@ -563,8 +553,7 @@
 
                         <div class="reader-settings__group">
                             <label class="flex reader-toggle-row">
-                                <span data-en="Source Transliteration" data-he="תעתיק מהמקור">Source
-                                    Transliteration</span>
+                                <span data-en="Source Transliteration" data-he="תעתיק מהמקור">Source Transliteration</span>
                                 <input id="transliterationToggle" type="checkbox" class="reader-switch" />
                             </label>
                             <label class="flex reader-toggle-row">
@@ -573,8 +562,7 @@
                             </label>
                             <label id="cantillationToggleRow"
                                 class="flex reader-toggle-row">
-                                <span data-en="Show Cantillation" data-he="הצג טעמי מקרא">Show
-                                    Cantillation</span>
+                                <span data-en="Show Cantillation" data-he="הצג טעמי מקרא">Show Cantillation</span>
                                 <input id="showCantillationToggle" type="checkbox" class="reader-switch"
                                     checked />
                             </label>
@@ -631,8 +619,7 @@
             class="navigator-pane mobile-drawer mobile-drawer-left w-64 xl:w-72 border-r bg-white p-6 overflow-y-auto hidden lg:block shrink-0 custom-scrollbar">
             <div
                 class="library-sidebar-header flex lg:hidden items-center justify-between mb-4 pb-3 border-b border-slate-200">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" data-en="Library"
-                    data-he="ספרייה">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" data-en="Library" data-he="ספרייה">
                     Library</h3>
                 <button id="closeLeftSidebarBtn" type="button"
                     class="px-2 py-1 text-xs border border-slate-300 rounded-sm bg-white hover:bg-slate-100 transition"
@@ -640,15 +627,13 @@
             </div>
             <div
                 class="library-sidebar-header hidden lg:flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" data-en="Library"
-                    data-he="ספרייה">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" data-en="Library" data-he="ספרייה">
                     Library</h3>
                 <button id="hideLeftSidebarBtn" type="button"
                     class="text-xs text-slate-500 hover:text-slate-800 font-semibold uppercase tracking-wide"
                     data-en="Hide" data-he="הסתר">Hide</button>
             </div>
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6" data-en="Table of Contents"
-                data-he="תוכן עניינים">Table of Contents</h3>
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6" data-en="Table of Contents" data-he="תוכן עניינים">Table of Contents</h3>
             <div class="space-y-4 text-sm text-slate-700">
                 <details class="group cursor-pointer" open>
                     <summary class="font-semibold hover:text-[#004e5f] border-b pb-2 mb-2">
@@ -835,8 +820,7 @@
                     </ul>
                 </details>
                 <details class="group cursor-pointer">
-                    <summary class="font-semibold hover:text-[#5a99b7] list-none border-b pb-2 mb-2" data-en="Mishnah"
-                        data-he="משנה">Mishnah</summary>
+                    <summary class="font-semibold hover:text-[#5a99b7] list-none border-b pb-2 mb-2" data-en="Mishnah" data-he="משנה">Mishnah</summary>
                     <ul class="ml-2 space-y-1 border-l-2 pl-3 border-[#5a99b7]/30">
                         <li><button data-onclick="readText" data-onclick-arg="Mishnah Berakhot 1"
                                 class="text-start text-slate-600 hover:text-[#5a99b7] text-sm w-full py-0.5">Berakhot
@@ -935,8 +919,7 @@
                     </ul>
                 </details>
                 <details class="group cursor-pointer">
-                    <summary class="font-semibold hover:text-[#802f3e] list-none border-b pb-2 mb-2" data-en="Halakhah"
-                        data-he="הלכה">Halakhah</summary>
+                    <summary class="font-semibold hover:text-[#802f3e] list-none border-b pb-2 mb-2" data-en="Halakhah" data-he="הלכה">Halakhah</summary>
                     <ul class="ml-2 space-y-1 border-l-2 pl-3 border-[#802f3e]/30">
                         <li><button data-onclick="readText" data-onclick-arg="Shulchan Arukh, Orach Chayim 1"
                                 class="text-start text-slate-600 hover:text-[#802f3e] text-sm w-full py-0.5">Shulchan
@@ -1030,7 +1013,7 @@
 
                 <details class="group cursor-pointer">
                     <summary class="font-semibold hover:text-[#002147] list-none border-b pb-2 mb-2"
-                        data-en="All Topics & Texts" data-he="כל הנושאים והטקסטים">All Topics & Texts</summary>
+                        data-en="All Topics &amp; Texts" data-he="כל הנושאים והטקסטים">All Topics &amp; Texts</summary>
                     <output id="libraryIndexSidebar" class="block library-index-sidebar-tree space-y-1"
                         aria-busy="true">
                         <div class="sk-tree-row" aria-hidden="true"></div>
@@ -1045,17 +1028,14 @@
                     Active Synthesis</h3>
                 <div id="sourcesDynamicContent" class="text-sm text-slate-600 pb-10">
                     <p class="italic text-slate-400"
-                        data-en="Search a halacha to view cross-referenced Encyclopedia and Customs data..."
-                        data-he="חפש הלכה כדי לצפות בנתונים מהאנציקלופדיה ומהמנהגים המקושרים...">
+                        data-en="Search a halacha to view cross-referenced Encyclopedia and Customs data..." data-he="חפש הלכה כדי לצפות בנתונים מהאנציקלופדיה ומהמנהגים המקושרים...">
                         Search a halacha to view cross-referenced Encyclopedia and Customs data...</p>
                 </div>
 
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2 mb-3"
                     data-en="Personal Shelf" data-he="מדף אישי">Personal Shelf</h3>
                 <div id="personalShelf" class="text-sm text-slate-600 pb-10">
-                    <p class="italic text-slate-400" data-en="Your recent reads and saved items will appear here."
-                        data-he="הקריאות האחרונות והפריטים השמורים יופיעו כאן.">Your recent reads and saved items will
-                        appear here.</p>
+                    <p class="italic text-slate-400" data-en="Your recent reads and saved items will appear here." data-he="הקריאות האחרונות והפריטים השמורים יופיעו כאן.">Your recent reads and saved items will appear here.</p>
                 </div>
 
                 <div id="askHistorySection" class="hidden">
@@ -1077,7 +1057,7 @@
             <!-- HOME: BROWSE THE LIBRARY GRID -->
             <div id="homeGrid"
                 class="home-typography w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-12">
-                <h1 class="sr-only" data-en="Sh'elah: Torah Encyclopedia" data-he="שאלה: אנציקלופדיית תורה">Sh'elah: Torah Encyclopedia</h1>
+                <h1 class="sr-only" data-en="Sh&#39;elah: Torah Encyclopedia" data-he="שאלה: אנציקלופדיית תורה">Sh&#39;elah: Torah Encyclopedia</h1>
                 <section class="home-topic-hero mb-10">
                     <p class="home-section-label" data-en="Parasha of the Week" data-he="פרשת השבוע">Parasha of the Week
                     </p>
@@ -1085,9 +1065,8 @@
                         class="home-topic-title text-start font-serif text-3xl sm:text-4xl text-navy leading-tight sm:leading-10 hover:text-[#0f4d67] transition"
                         data-onclick="readText" data-onclick-arg="Genesis 1">Parashat HaShavua</button>
                     <p class="mt-3 text-sm text-slate-600 max-w-2xl"
-                        data-en="Start from today's anchor text, then branch into side commentaries and related sources."
-                        data-he="התחל מטקסט העוגן של היום ואז הסתעף למפרשים צדדיים ולמקורות קשורים.">
-                        Start from today's anchor text, then branch into side commentaries and related sources.
+                        data-en="Start from today&#39;s anchor text, then branch into side commentaries and related sources." data-he="התחל מטקסט העוגן של היום ואז הסתעף למפרשים צדדיים ולמקורות קשורים.">
+                        Start from today&#39;s anchor text, then branch into side commentaries and related sources.
                     </p>
                 </section>
 
@@ -1099,66 +1078,49 @@
                                 class="home-library-link home-link-tanakh text-start w-full">
                                 <span class="home-library-title" data-en="Tanakh" data-he="תנ״ך">Tanakh</span>
                                 <span class="home-library-description"
-                                    data-en="Torah, Nevi'im, and Ketuvim: the foundational text of Jewish learning and life."
-                                    data-he="תורה, נביאים וכתובים: טקסט היסוד של הלימוד והחיים היהודיים.">Torah,
-                                    Nevi'im, and Ketuvim: the foundational text of Jewish learning and life.</span>
+                                    data-en="Torah, Nevi&#39;im, and Ketuvim: the foundational text of Jewish learning and life." data-he="תורה, נביאים וכתובים: טקסט היסוד של הלימוד והחיים היהודיים.">Torah, Nevi&#39;im, and Ketuvim: the foundational text of Jewish learning and life.</span>
                             </button>
 
                             <button type="button" data-onclick="openLibraryCategory" data-onclick-arg="mishnah"
                                 class="home-library-link home-link-mishnah text-start w-full">
                                 <span class="home-library-title" data-en="Mishnah" data-he="משנה">Mishnah</span>
                                 <span class="home-library-description"
-                                    data-en="The first major rabbinic legal corpus, organized for practical study."
-                                    data-he="הקורפוס ההלכתי הרבני המרכזי הראשון, מסודר ללימוד מעשי.">The first major
-                                    rabbinic legal corpus, organized for practical study.</span>
+                                    data-en="The first major rabbinic legal corpus, organized for practical study." data-he="הקורפוס ההלכתי הרבני המרכזי הראשון, מסודר ללימוד מעשי.">The first major rabbinic legal corpus, organized for practical study.</span>
                             </button>
 
                             <button type="button" data-onclick="openLibraryCategory" data-onclick-arg="talmud"
                                 class="home-library-link home-link-talmud text-start w-full">
                                 <span class="home-library-title" data-en="Talmud" data-he="תלמוד">Talmud</span>
                                 <span class="home-library-description"
-                                    data-en="Generations of analysis on law, ethics, and scripture around the Mishnah."
-                                    data-he="דורות של עיון בהלכה, אתיקה וכתבי הקודש סביב המשנה.">Generations of analysis
-                                    on law, ethics, and scripture around the Mishnah.</span>
+                                    data-en="Generations of analysis on law, ethics, and scripture around the Mishnah." data-he="דורות של עיון בהלכה, אתיקה וכתבי הקודש סביב המשנה.">Generations of analysis on law, ethics, and scripture around the Mishnah.</span>
                             </button>
 
                             <button type="button" data-onclick="openLibraryCategory" data-onclick-arg="halakhah"
                                 class="home-library-link home-link-halakhah text-start w-full">
                                 <span class="home-library-title" data-en="Halakhah" data-he="הלכה">Halakhah</span>
                                 <span class="home-library-description"
-                                    data-en="Legal works guiding daily Jewish practice through classical rulings."
-                                    data-he="יצירות הלכתיות המדריכות את חיי המעשה היהודיים לפי פסיקה קלאסית.">Legal
-                                    works guiding daily Jewish practice through classical rulings.</span>
+                                    data-en="Legal works guiding daily Jewish practice through classical rulings." data-he="יצירות הלכתיות המדריכות את חיי המעשה היהודיים לפי פסיקה קלאסית.">Legal works guiding daily Jewish practice through classical rulings.</span>
                             </button>
 
                             <a href="/siddur/edot-hamizrach" data-siddur-path="edot-hamizrach"
                                 class="home-library-link home-link-siddur text-start w-full">
                                 <span class="home-library-title" data-en="Siddur" data-he="סידור">Siddur</span>
                                 <span class="home-library-description"
-                                    data-en="The Sephardi (Edot HaMizrach) siddur in prayer order, with what changes today."
-                                    data-he="סידור עדות המזרח לפי סדר התפילה, עם מה שמשתנה היום.">The Sephardi
-                                    (Edot HaMizrach) siddur in prayer order, with what changes today.</span>
+                                    data-en="The Sephardi (Edot HaMizrach) siddur in prayer order, with what changes today." data-he="סידור עדות המזרח לפי סדר התפילה, עם מה שמשתנה היום.">The Sephardi (Edot HaMizrach) siddur in prayer order, with what changes today.</span>
                             </a>
 
                             <button type="button" data-onclick="openLibraryCategory" data-onclick-arg="customs"
                                 class="home-library-link home-link-customs text-start w-full">
-                                <span class="home-library-title" data-en="Community Customs"
-                                    data-he="מנהגים קהילתיים">Community Customs</span>
+                                <span class="home-library-title" data-en="Community Customs" data-he="מנהגים קהילתיים">Community Customs</span>
                                 <span class="home-library-description"
-                                    data-en="Trace minhagim across Iraqi, Syrian, Yemenite, Moroccan, Ashkenaz, Israeli, and more."
-                                    data-he="עקוב אחר מנהגים עיראקיים, סוריים, תימניים, מרוקאיים, אשכנזיים, ישראליים ועוד.">Trace
-                                    minhagim across Iraqi, Syrian, Yemenite, Moroccan, Ashkenaz, Israeli, and
-                                    more.</span>
+                                    data-en="Trace minhagim across Iraqi, Syrian, Yemenite, Moroccan, Ashkenaz, Israeli, and more." data-he="עקוב אחר מנהגים עיראקיים, סוריים, תימניים, מרוקאיים, אשכנזיים, ישראליים ועוד.">Trace minhagim across Iraqi, Syrian, Yemenite, Moroccan, Ashkenaz, Israeli, and more.</span>
                             </button>
 
                             <button type="button" data-onclick="openLibraryCategory" data-onclick-arg="kabbalah"
                                 class="home-library-link home-link-thought text-start w-full">
-                                <span class="home-library-title" data-en="Kabbalah &amp; Thought"
-                                    data-he="קבלה ומחשבה">Kabbalah &amp; Thought</span>
+                                <span class="home-library-title" data-en="Kabbalah &amp; Thought" data-he="קבלה ומחשבה">Kabbalah &amp; Thought</span>
                                 <span class="home-library-description"
-                                    data-en="Mysticism and philosophy on divine attributes, soul, and existence."
-                                    data-he="מיסטיקה ופילוסופיה על התכונות האלוהיות, הנפש ומהות הקיום.">Mysticism and
-                                    philosophy on divine attributes, soul, and existence.</span>
+                                    data-en="Mysticism and philosophy on divine attributes, soul, and existence." data-he="מיסטיקה ופילוסופיה על התכונות האלוהיות, הנפש ומהות הקיום.">Mysticism and philosophy on divine attributes, soul, and existence.</span>
                             </button>
                         </div>
                     </section>
@@ -1221,14 +1183,12 @@
                             <div id="todayZmanimList" class="space-y-1 text-sm today-zmanim-list">
                                 <div id="zRowDawn" data-zman-row="Dawn (16.1° / 72m)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Dawn (16.1° / 72m)"
-                                        data-he="עלות השחר (16.1° / 72 דק׳)">Dawn (16.1° / 72m)</span>
+                                    <span class="text-slate-500" data-en="Dawn (16.1° / 72m)" data-he="עלות השחר (16.1° / 72 דק׳)">Dawn (16.1° / 72m)</span>
                                     <b class="text-slate-700 tabular-nums" id="zDawn">--:--</b>
                                 </div>
                                 <div id="zRowTalit" data-zman-row="Earliest Tallit/Tefillin (10.2°)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Earliest Tallit/Tefillin (10.2°)"
-                                        data-he="זמן טלית ותפילין (10.2°)">Earliest Tallit/Tefillin (10.2°)</span>
+                                    <span class="text-slate-500" data-en="Earliest Tallit/Tefillin (10.2°)" data-he="זמן טלית ותפילין (10.2°)">Earliest Tallit/Tefillin (10.2°)</span>
                                     <b class="text-slate-700 tabular-nums" id="zTalit">--:--</b>
                                 </div>
                                 <div id="zRowSunrise" data-zman-row="Sunrise"
@@ -1238,38 +1198,32 @@
                                 </div>
                                 <div id="shemaGraRow" data-zman-row="Latest Shema (GRA)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span id="shemaGraLabel" class="text-slate-500" data-en="Latest Shema (GRA)"
-                                        data-he="סוף זמן שמע (גר״א)">Latest Shema (GRA)</span>
+                                    <span id="shemaGraLabel" class="text-slate-500" data-en="Latest Shema (GRA)" data-he="סוף זמן שמע (גר״א)">Latest Shema (GRA)</span>
                                     <b class="text-slate-700 tabular-nums" id="zShemaGra">--:--</b>
                                 </div>
                                 <div id="shemaBhtRow" data-zman-row="Latest Shema (Baal HaTanya)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Latest Shema (Baal HaTanya)"
-                                        data-he="סוף זמן שמע (בעל התניא)">Latest Shema (Baal HaTanya)</span>
+                                    <span class="text-slate-500" data-en="Latest Shema (Baal HaTanya)" data-he="סוף זמן שמע (בעל התניא)">Latest Shema (Baal HaTanya)</span>
                                     <b class="text-slate-700 tabular-nums" id="zShemaBht">--:--</b>
                                 </div>
                                 <div id="shacharitGraRow" data-zman-row="Latest Shacharit (GRA)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span id="shacharitGraLabel" class="text-slate-500" data-en="Latest Shacharit (GRA)"
-                                        data-he="סוף זמן תפילת שחרית (גר״א)">Latest Shacharit (GRA)</span>
+                                    <span id="shacharitGraLabel" class="text-slate-500" data-en="Latest Shacharit (GRA)" data-he="סוף זמן תפילת שחרית (גר״א)">Latest Shacharit (GRA)</span>
                                     <b class="text-slate-700 tabular-nums" id="zShacharitGra">--:--</b>
                                 </div>
                                 <div id="shacharitBhtRow" data-zman-row="Latest Shacharit (Baal HaTanya)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Latest Shacharit (Baal HaTanya)"
-                                        data-he="סוף זמן תפילת שחרית (בעל התניא)">Latest Shacharit (Baal HaTanya)</span>
+                                    <span class="text-slate-500" data-en="Latest Shacharit (Baal HaTanya)" data-he="סוף זמן תפילת שחרית (בעל התניא)">Latest Shacharit (Baal HaTanya)</span>
                                     <b class="text-slate-700 tabular-nums" id="zShacharitBht">--:--</b>
                                 </div>
                                 <div id="zRowChatzot" data-zman-row="Chatzot (Midday)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Midday (Chatzot)" data-he="חצות היום">Midday
-                                        (Chatzot)</span>
+                                    <span class="text-slate-500" data-en="Midday (Chatzot)" data-he="חצות היום">Midday (Chatzot)</span>
                                     <b class="text-slate-700 tabular-nums" id="zChatzot">--:--</b>
                                 </div>
                                 <div id="zRowMincha" data-zman-row="Earliest Mincha (Mincha Gedola)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Earliest Mincha" data-he="מנחה גדולה">Earliest
-                                        Mincha</span>
+                                    <span class="text-slate-500" data-en="Earliest Mincha" data-he="מנחה גדולה">Earliest Mincha</span>
                                     <b class="text-slate-700 tabular-nums" id="zMincha">--:--</b>
                                 </div>
                                 <!-- Fast Starts/Ends: only shown on a fast day (Tzom Gedaliah, 10
@@ -1280,26 +1234,22 @@
                                      indicators rather than duplicating those Yom-Tov-only rows. -->
                                 <div id="zRowFastStart" data-zman-row="Fast Starts"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100 hidden">
-                                    <span class="text-slate-500" data-en="Fast Starts" data-he="תחילת הצום">Fast
-                                        Starts</span>
+                                    <span class="text-slate-500" data-en="Fast Starts" data-he="תחילת הצום">Fast Starts</span>
                                     <b class="text-slate-700 tabular-nums" id="zFastStart">--:--</b>
                                 </div>
                                 <div id="zRowMusaf" data-zman-row="Latest Musaf"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100 hidden">
-                                    <span class="text-slate-500" data-en="Latest Musaf" data-he="סוף זמן מוסף">Latest
-                                        Musaf</span>
+                                    <span class="text-slate-500" data-en="Latest Musaf" data-he="סוף זמן מוסף">Latest Musaf</span>
                                     <b class="text-slate-700 tabular-nums" id="zMusaf">--:--</b>
                                 </div>
                                 <div id="zRowPlag" data-zman-row="Plag HaMincha"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Plag HaMincha" data-he="פלג המנחה">Plag
-                                        HaMincha</span>
+                                    <span class="text-slate-500" data-en="Plag HaMincha" data-he="פלג המנחה">Plag HaMincha</span>
                                     <b class="text-slate-700 tabular-nums" id="zPlag">--:--</b>
                                 </div>
                                 <div id="zRowCandles" data-zman-row="Candle Lighting"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100 hidden">
-                                    <span class="text-slate-500" data-en="Candle Lighting" data-he="הדלקת נרות">Candle
-                                        Lighting</span>
+                                    <span class="text-slate-500" data-en="Candle Lighting" data-he="הדלקת נרות">Candle Lighting</span>
                                     <b class="text-slate-700 tabular-nums" id="zCandles">--:--</b>
                                 </div>
                                 <div id="zRowSunset" data-zman-row="Sunset"
@@ -1310,14 +1260,12 @@
                                 </div>
                                 <div id="zRowMaariv" data-zman-row="Arvit (Maariv)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Arvit (Maariv)" data-he="ערבית (מעריב)">Arvit
-                                        (Maariv)</span>
+                                    <span class="text-slate-500" data-en="Arvit (Maariv)" data-he="ערבית (מעריב)">Arvit (Maariv)</span>
                                     <b class="text-slate-700 tabular-nums" id="zMaariv">--:--</b>
                                 </div>
                                 <div id="zRowNight" data-zman-row="Nightfall (3 Stars)"
                                     class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Nightfall (3 Stars)"
-                                        data-he="צאת הכוכבים (3 כוכבים)">Nightfall (3 Stars)</span>
+                                    <span class="text-slate-500" data-en="Nightfall (3 Stars)" data-he="צאת הכוכבים (3 כוכבים)">Nightfall (3 Stars)</span>
                                     <b class="text-slate-700 tabular-nums" id="zNight">--:--</b>
                                 </div>
                                 <div id="zRowFastEnd" data-zman-row="Fast Ends"
@@ -1332,8 +1280,7 @@
                                 </div>
                                 <div id="zRowMidnight" data-zman-row="Chatzot HaLailah (Midnight)"
                                     class="flex justify-between items-center py-1.5">
-                                    <span class="text-slate-500" data-en="Midnight (Chatzot HaLailah)"
-                                        data-he="חצות הלילה">Midnight (Chatzot HaLailah)</span>
+                                    <span class="text-slate-500" data-en="Midnight (Chatzot HaLailah)" data-he="חצות הלילה">Midnight (Chatzot HaLailah)</span>
                                     <b class="text-slate-700 tabular-nums" id="zMidnight">--:--</b>
                                 </div>
                             </div>
@@ -1346,13 +1293,11 @@
 
                             <button data-onclick="openCalendarModal" class="home-calendar-btn">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="16" height="16" fill="currentColor" class="home-calendar-btn__icon" aria-hidden="true"><path d="M208,28H188V24a12,12,0,0,0-24,0v4H92V24a12,12,0,0,0-24,0v4H48A20,20,0,0,0,28,48V208a20,20,0,0,0,20,20H208a20,20,0,0,0,20-20V48A20,20,0,0,0,208,28ZM68,52a12,12,0,0,0,24,0h72a12,12,0,0,0,24,0h16V76H52V52ZM52,204V100H204V204Z"/></svg>
-                                <span data-en="Monthly Holiday Calendar" data-he="לוח חגים חודשי">Monthly Holiday
-                                    Calendar</span></button>
+                                <span data-en="Monthly Holiday Calendar" data-he="לוח חגים חודשי">Monthly Holiday Calendar</span></button>
                         </section>
 
                         <section class="home-today-section">
-                            <h2 class="home-section-label mb-3" data-en="Holiday Season" data-he="עונת חגים">Holiday
-                                Season</h2>
+                            <h2 class="home-section-label mb-3" data-en="Holiday Season" data-he="עונת חגים">Holiday Season</h2>
                             <div class="space-y-2 text-sm">
                                 <div class="flex justify-between items-center py-1.5 border-b border-slate-100">
                                     <span class="text-slate-500" data-en="Today" data-he="היום">Today</span>
@@ -1361,21 +1306,18 @@
                                         data-onclick="openTodayInCalendar">Regular Day</button>
                                 </div>
                                 <div class="flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="This Week's Shabbat" data-he="שבת השבוע">This
-                                        Week's Shabbat</span>
+                                    <span class="text-slate-500" data-en="This Week&#39;s Shabbat" data-he="שבת השבוע">This Week&#39;s Shabbat</span>
                                     <button type="button" id="shabbatWeekName"
                                         class="home-stat-link text-slate-700 text-end max-w-[60%] font-bold"
                                         data-onclick="readText" data-onclick-arg="Genesis 1">--</button>
                                 </div>
                                 <div id="omerRow"
                                     class="hidden flex justify-between items-center py-1.5 border-b border-slate-100">
-                                    <span class="text-slate-500" data-en="Omer Count" data-he="ספירת העומר">Omer
-                                        Count</span>
+                                    <span class="text-slate-500" data-en="Omer Count" data-he="ספירת העומר">Omer Count</span>
                                     <b id="omerCount" class="text-slate-700">--</b>
                                 </div>
                                 <p id="omerHint" class="text-slate-500 italic py-1"
-                                    data-en="Outside Omer counting period." data-he="מחוץ לתקופת ספירת העומר.">Outside
-                                    Omer counting period.</p>
+                                    data-en="Outside Omer counting period." data-he="מחוץ לתקופת ספירת העומר.">Outside Omer counting period.</p>
                             </div>
                         </section>
 
@@ -1403,14 +1345,12 @@
 
                 <!-- POPULAR TEXTS QUICK ACCESS -->
                 <div class="mt-12 border-t pt-8">
-                    <h3 class="text-lg font-serif text-slate-700 mb-6" data-en="Popular Texts"
-                        data-he="טקסטים פופולריים">Popular Texts
+                    <h3 class="text-lg font-serif text-slate-700 mb-6" data-en="Popular Texts" data-he="טקסטים פופולריים">Popular Texts
                     </h3>
                     <output class="grid grid-cols-2 md:grid-cols-4 gap-3" id="popularTextsGrid"
                         aria-live="polite" aria-busy="true">
                         <!-- Populated via JS from /api/library/popular -->
-                        <span class="sr-only" data-en="Loading library..." data-he="טוען ספרייה...">Loading
-                            library...</span>
+                        <span class="sr-only" data-en="Loading library..." data-he="טוען ספרייה...">Loading library...</span>
                         <div class="p-3 rounded-sm border border-[#ddd4c3] bg-[#fffaf1] space-y-2" aria-hidden="true">
                             <div class="sk-line" style="height:1.5rem;width:70%"></div>
                             <div class="sk-line" style="height:0.65rem;width:90%"></div>
@@ -1448,14 +1388,12 @@
                     <nav id="readerKindBadge" aria-label="breadcrumb"
                         class="hidden flex justify-center items-center gap-2 text-sm text-slate-500 uppercase tracking-widest font-bold">
                         <ol class="flex items-center gap-2">
-                            <li><span class="bg-slate-100 px-3 py-1 rounded-sm" data-en="Sh'elah Synthesis"
-                                    data-he="סינתזת שאילה">Sh'elah Synthesis</span></li>
+                            <li><span class="bg-slate-100 px-3 py-1 rounded-sm" data-en="Sh&#39;elah Synthesis" data-he="סינתזת שאילה">Sh&#39;elah Synthesis</span></li>
                         </ol>
                     </nav>
 
                     <p id="shulAutoScrollStatus" class="hidden mt-2 text-xs text-emerald-700 font-semibold"
-                        data-en="Shul mode auto-scroll active" data-he="מצב בית כנסת: גלילה פעילה">Shul mode auto-scroll
-                        active</p>
+                        data-en="Shul mode auto-scroll active" data-he="מצב בית כנסת: גלילה פעילה">Shul mode auto-scroll active</p>
                 </header>
 
                 <!-- Drawn in place of the text while a text, prayer or community
@@ -1499,38 +1437,22 @@
             
             <div class="site-footer">
                 <p class="site-footer-inner">
-                    <span class="site-footer-copyright" style="display: block; margin-bottom: 0.35rem;"
-                        data-en="© Sh'elah 2026. All rights reserved."
-                        data-he="© Sh'elah 2026. כל הזכויות שמורות.">© Sh'elah 2026. All rights reserved.</span>
+                    <span class="site-footer-copyright" style="display: block; margin-bottom: 0.35rem;" data-en="© Sh&#39;elah 2026. All rights reserved." data-he="© Sh&#39;elah 2026. כל הזכויות שמורות.">© Sh&#39;elah 2026. All rights reserved.</span>
                     <span
-                        data-en="Sh'elah provides educational halachic information — not a binding halachic ruling (p'sak); always consult a qualified rabbi. By using this site you confirm you are at least 13 years old (16+ in the EU/UK) and agree to the following:"
-                        data-he="Sh'elah מספקת מידע הלכתי לצורכי לימוד — לא פסק הלכה מחייב; יש להתייעץ תמיד עם רב מוסמך. בשימוש באתר זה הנך מאשר/ת שאתה/את בן/בת 13 לפחות (16+ באיחוד האירופי/בריטניה) ומסכים/ה למסמכים הבאים:">Sh'elah
-                        provides educational halachic information — not a binding halachic ruling (p'sak); always consult a
-                        qualified rabbi. By using this site you confirm you are at least 13 years old (16+ in the EU/UK) and
-                        agree to the following:</span>
+                        data-en="Sh&#39;elah provides educational halachic information — not a binding halachic ruling (p&#39;sak); always consult a qualified rabbi. By using this site you confirm you are at least 13 years old (16+ in the EU/UK) and agree to the following:" data-he="Sh&#39;elah מספקת מידע הלכתי לצורכי לימוד — לא פסק הלכה מחייב; יש להתייעץ תמיד עם רב מוסמך. בשימוש באתר זה הנך מאשר/ת שאתה/את בן/בת 13 לפחות (16+ באיחוד האירופי/בריטניה) ומסכים/ה למסמכים הבאים:">Sh&#39;elah provides educational halachic information — not a binding halachic ruling (p&#39;sak); always consult a qualified rabbi. By using this site you confirm you are at least 13 years old (16+ in the EU/UK) and agree to the following:</span>
                     <span class="site-footer-links">
-                        <a href="/about" target="_blank" rel="noopener" data-en="About"
-                            data-he="אודות">About</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/help" target="_blank" rel="noopener" data-en="Help"
-                            data-he="עזרה">Help</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/glossary" target="_blank" rel="noopener" data-en="Glossary"
-                            data-he="מילון מונחים">Glossary</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/tanakh" target="_blank" rel="noopener" data-en="Tanakh"
-                            data-he="תנ״ך">Tanakh</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/terms" target="_blank" rel="noopener" data-en="Terms of Service"
-                            data-he="תנאי השירות">Terms of Service</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/privacy" target="_blank" rel="noopener" data-en="Privacy Policy"
-                            data-he="מדיניות הפרטיות">Privacy Policy</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/ai-disclosure" target="_blank" rel="noopener" data-en="AI Disclosure"
-                            data-he="גילוי נאות בינה מלאכותית">AI Disclosure</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/acceptable-use" target="_blank" rel="noopener" data-en="Acceptable Use"
-                            data-he="שימוש מותר">Acceptable Use</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/about" target="_blank" rel="noopener" data-en="About" data-he="אודות">About</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/help" target="_blank" rel="noopener" data-en="Help" data-he="עזרה">Help</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/glossary" target="_blank" rel="noopener" data-en="Glossary" data-he="מילון מונחים">Glossary</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/tanakh" target="_blank" rel="noopener" data-en="Tanakh" data-he="תנ״ך">Tanakh</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/terms" target="_blank" rel="noopener" data-en="Terms of Service" data-he="תנאי השירות">Terms of Service</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/privacy" target="_blank" rel="noopener" data-en="Privacy Policy" data-he="מדיניות הפרטיות">Privacy Policy</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/ai-disclosure" target="_blank" rel="noopener" data-en="AI Disclosure" data-he="גילוי נאות בינה מלאכותית">AI Disclosure</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/acceptable-use" target="_blank" rel="noopener" data-en="Acceptable Use" data-he="שימוש מותר">Acceptable Use</a><span class="sep" aria-hidden="true">·</span>
                         <a href="/dmca" target="_blank" rel="noopener" data-en="DMCA" data-he="DMCA">DMCA</a><span
                             class="sep" aria-hidden="true">·</span>
-                        <a href="/accessibility" target="_blank" rel="noopener" data-en="Accessibility"
-                            data-he="נגישות">Accessibility</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/licenses" target="_blank" rel="noopener" data-en="Licenses"
-                            data-he="רישיונות">Licenses</a>
+                        <a href="/accessibility" target="_blank" rel="noopener" data-en="Accessibility" data-he="נגישות">Accessibility</a><span class="sep" aria-hidden="true">·</span>
+                        <a href="/licenses" target="_blank" rel="noopener" data-en="Licenses" data-he="רישיונות">Licenses</a>
                     </span>
                 </p>
             </div>
@@ -1543,27 +1465,22 @@
             class="pulse-pane mobile-drawer mobile-drawer-right w-80 border-l bg-slate-50 p-6 hidden shrink-0 custom-scrollbar overflow-y-auto">
 
             <div class="flex lg:hidden items-center justify-between mb-4 pb-3 border-b border-slate-200">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" data-en="Commentary"
-                    data-he="מפרשים">Commentary</h3>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" data-en="Commentary" data-he="מפרשים">Commentary</h3>
                 <button id="closeRightSidebarBtn" type="button"
                     class="px-2 py-1 text-xs border border-slate-300 rounded-sm bg-white hover:bg-slate-100 transition"
                     data-en="Close" data-he="סגור">Close</button>
             </div>
             <div class="hidden lg:flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" data-en="Commentary"
-                    data-he="מפרשים">Commentary</h3>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest" data-en="Commentary" data-he="מפרשים">Commentary</h3>
                 <button id="hideRightSidebarBtn" type="button"
                     class="text-xs text-slate-500 hover:text-slate-800 font-semibold uppercase tracking-wide"
                     data-en="Hide" data-he="הסתר">Hide</button>
             </div>
 
             <section id="selectionInsights" class="hidden mb-6 border border-slate-200 rounded-xl bg-white p-4">
-                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-widest" data-en="Selected Passage Tools"
-                    data-he="כלים לקטע שנבחר">Selected Passage Tools</h3>
+                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-widest" data-en="Selected Passage Tools" data-he="כלים לקטע שנבחר">Selected Passage Tools</h3>
                 <output id="selectionInsightsHint" class="block text-xs text-slate-500 mt-2" aria-live="polite"
-                    data-en="Highlight a passage to load linked commentaries. Highlight one word to see its meaning."
-                    data-he="סמן קטע כדי לטעון מפרשים מקושרים. סמן מילה אחת כדי לראות את פירושה.">Highlight a
-                    passage to load linked commentaries. Highlight one word to see its meaning.</output>
+                    data-en="Highlight a passage to load linked commentaries. Highlight one word to see its meaning." data-he="סמן קטע כדי לטעון מפרשים מקושרים. סמן מילה אחת כדי לראות את פירושה.">Highlight a passage to load linked commentaries. Highlight one word to see its meaning.</output>
                 <output id="selectionInsightsBody" class="block mt-3 space-y-3" aria-live="polite"
                     aria-busy="false"></output>
             </section>
@@ -1616,14 +1533,12 @@
                     </div>
                     <div>
                         <h2 id="calendarModalTitle" class="font-serif text-lg font-bold text-[#002147] leading-tight"
-                            data-en="Monthly Jewish Holiday Calendar" data-he="לוח חגים יהודי חודשי">Monthly Jewish
-                            Holiday Calendar</h2>
+                            data-en="Monthly Jewish Holiday Calendar" data-he="לוח חגים יהודי חודשי">Monthly Jewish Holiday Calendar</h2>
                         <!-- text-[#64748b] (Tailwind slate-500) measured 3.85-4.45:1 against this header's
                              #f5efe5→#ede7d5 gradient (fails 4.5:1 AA at the gradient's darker end); #566175
                              clears 5.05-5.46:1 across the gradient. Applied to all 3 uses in this header for
                              visual consistency. -->
-                        <p class="text-xs text-[#566175] mt-0.5" data-en="Jewish holidays and Shabbat"
-                            data-he="חגים יהודיים ושבת">Jewish holidays &amp; Shabbat</p>
+                        <p class="text-xs text-[#566175] mt-0.5" data-en="Jewish holidays and Shabbat" data-he="חגים יהודיים ושבת">Jewish holidays &amp; Shabbat</p>
                     </div>
                 </div>
                 <!-- Legend + close -->
@@ -1690,17 +1605,14 @@
 
             <div class="bg-linear-to-r from-navy to-blue-900 text-white px-6 py-4 border-b">
                 <h2 class="font-serif text-xl font-bold" data-en="Browse Jewish Library" data-he="עיון בספרייה היהודית">
-                    Browse
-                    Jewish Library</h2>
-                <p class="text-blue-100 text-sm mt-1" data-en="Siddur, Communities, and Text Library"
-                    data-he="סידור, קהילות וספריית טקסטים">Siddur, Communities, and Text Library</p>
+                    Browse Jewish Library</h2>
+                <p class="text-blue-100 text-sm mt-1" data-en="Siddur, Communities, and Text Library" data-he="סידור, קהילות וספריית טקסטים">Siddur, Communities, and Text Library</p>
             </div>
 
             <div class="overflow-y-auto flex-1 px-6 py-6 custom-scrollbar">
                 <!-- Siddur Section: the curated Edot HaMizrach siddur first -->
                 <div class="mb-8">
-                    <h3 class="font-serif text-lg font-bold text-[#00827f] mb-4 pb-2 border-b" data-en="Siddur"
-                        data-he="סידור">Siddur</h3>
+                    <h3 class="font-serif text-lg font-bold text-[#00827f] mb-4 pb-2 border-b" data-en="Siddur" data-he="סידור">Siddur</h3>
                     <div id="siddurTocMenu" class="siddur-toc-mount" aria-busy="true">
                         <p class="sr-only" data-en="Loading the siddur..." data-he="טוען את הסידור...">Loading the siddur...</p>
                         <div class="sk-prayer-row" aria-hidden="true"></div>
@@ -1785,7 +1697,7 @@
                     ש
                 </span>
                 <span class="topbar-brand-title text-sm sm:text-base font-serif tracking-tight text-navy font-semibold leading-none sm:leading-6 text-start">
-                    <span class="block" data-en="Sh'elah" data-he="שאלה">Sh'elah</span>
+                    <span class="block" data-en="Sh&#39;elah" data-he="שאלה">Sh&#39;elah</span>
                     <span class="block text-[10px] font-normal text-slate-500 italic topbar-brand-subtitle"
                         data-en="Torah Encyclopedia" data-he="אנציקלופדיית תורה">Torah Encyclopedia</span>
                 </span>
@@ -1830,8 +1742,7 @@
                             <p id="convSharePopTitle" class="conv-sharepop__title"
                                 data-en="Stop sharing public link?" data-he="להפסיק את השיתוף הציבורי?">Stop sharing public link?</p>
                             <p class="conv-sharepop__text"
-                                data-en="Anyone with the link can still read this chat until you stop."
-                                data-he="כל מי שיש לו את הקישור יכול לקרוא את השיחה עד שתפסיק/י את השיתוף.">Anyone with the link can still read this chat until you stop.</p>
+                                data-en="Anyone with the link can still read this chat until you stop." data-he="כל מי שיש לו את הקישור יכול לקרוא את השיחה עד שתפסיק/י את השיתוף.">Anyone with the link can still read this chat until you stop.</p>
                             <div class="conv-sharepop__actions">
                                 <button type="button" class="conv-sharepop__btn conv-sharepop__btn--quiet" data-conv-action="share-copy"
                                     data-en="Copy link" data-he="העתק קישור">Copy link</button>
@@ -1958,17 +1869,14 @@
                 <div id="convEmpty" class="conv-empty">
                     <p class="conv-empty__title font-serif" data-en="What would you like to learn?" data-he="מה תרצה ללמוד?">What would you like to learn?</p>
                     <p class="conv-empty__text"
-                        data-en="Ask a question and follow up as much as you like. Answers show the sources they used."
-                        data-he="שאל שאלה והמשך לשאול כרצונך. התשובות מציגות את המקורות שבהם נעשה שימוש.">Ask a question and follow up
-                        as much as you like. Answers show the sources they used.</p>
+                        data-en="Ask a question and follow up as much as you like. Answers show the sources they used." data-he="שאל שאלה והמשך לשאול כרצונך. התשובות מציגות את המקורות שבהם נעשה שימוש.">Ask a question and follow up as much as you like. Answers show the sources they used.</p>
                     <!-- Signed out: a question still gets an answer (a one-shot /ask) and
                          can be followed up, within the guest limits (backend/guest_cap.py)
                          -- say so up front. -->
                     <p id="convSignedOutHint" class="conv-empty__hint conv-signin-callout hidden">
                         <span class="conv-signin-callout__icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M208,76H180V56A52,52,0,0,0,76,56V76H48A20,20,0,0,0,28,96V208a20,20,0,0,0,20,20H208a20,20,0,0,0,20-20V96A20,20,0,0,0,208,76ZM100,56a28,28,0,0,1,56,0V76H100ZM204,204H52V100H204Z"/></svg></span>
                         <span class="conv-signin-callout__text"
-                            data-en="You can ask as a guest. Sign in to save your conversations and go past the guest limits."
-                            data-he="אפשר לשאול כאורח. התחברו כדי לשמור את השיחות ולעבור את מגבלות האורחים.">You can ask as a guest. Sign in to save your conversations and go past the guest limits.</span>
+                            data-en="You can ask as a guest. Sign in to save your conversations and go past the guest limits." data-he="אפשר לשאול כאורח. התחברו כדי לשמור את השיחות ולעבור את מגבלות האורחים.">You can ask as a guest. Sign in to save your conversations and go past the guest limits.</span>
                         <button type="button" class="conv-link-btn" data-conv-action="sign-in" data-en="Sign in" data-he="התחברות">Sign in</button>
                     </p>
                     <!-- A few places to start; pressing one fills the question box (it does not send). -->
@@ -2041,9 +1949,7 @@
                     </div>
                 </form>
                 <p class="conv-disclaimer"
-                    data-en="AI-generated educational information, not a halachic ruling. Ask your rabbi for practical guidance."
-                    data-he="מידע חינוכי שנוצר על ידי בינה מלאכותית, לא פסיקה הלכתית. שאל את רבך להנחיה מעשית.">AI-generated
-                    educational information, not a halachic ruling. Ask your rabbi for practical guidance.</p>
+                    data-en="AI-generated educational information, not a halachic ruling. Ask your rabbi for practical guidance." data-he="מידע חינוכי שנוצר על ידי בינה מלאכותית, לא פסיקה הלכתית. שאל את רבך להנחיה מעשית.">AI-generated educational information, not a halachic ruling. Ask your rabbi for practical guidance.</p>
                 <!-- The guest limit was reached (backend/guest_cap.py). A native modal dialog:
                      it traps focus and closes on Escape by itself. Words are set by
                      conversation-ui.js (guestCapCopy) from the server's reason; the text
@@ -2144,10 +2050,10 @@
     <!-- Phone search tray: rises above the tab bar while search is open, with the
          AI conversation button and the history button side by side. -->
     <fieldset id="mobileSearchTray" class="mobile-search-tray hidden">
-        <legend class="sr-only" data-en="Ask Sh'elah" data-he="שאל את ש׳אלה">Ask Sh'elah</legend>
+        <legend class="sr-only" data-en="Ask Sh&#39;elah" data-he="שאל את ש׳אלה">Ask Sh&#39;elah</legend>
         <button type="button" id="mobileTrayAskBtn" class="mobile-search-tray__ask">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="16" height="16" fill="currentColor" class="h-4 w-4" aria-hidden="true"><path d="M216,44H40A20,20,0,0,0,20,64V224A19.82,19.82,0,0,0,31.56,242.1a20.14,20.14,0,0,0,8.49,1.9,19.91,19.91,0,0,0,12.82-4.72l.12-.11L84.47,212H216a20,20,0,0,0,20-20V64A20,20,0,0,0,216,44Zm-4,144H80a11.93,11.93,0,0,0-7.84,2.92L44,215.23V68H212ZM84,108A12,12,0,0,1,96,96h64a12,12,0,1,1,0,24H96A12,12,0,0,1,84,108Zm0,40a12,12,0,0,1,12-12h64a12,12,0,0,1,0,24H96A12,12,0,0,1,84,148Z"/></svg>
-            <span data-en="Ask Sh'elah" data-he="שאל את ש׳אלה">Ask Sh'elah</span>
+            <span data-en="Ask Sh&#39;elah" data-he="שאל את ש׳אלה">Ask Sh&#39;elah</span>
         </button>
         <button type="button" id="mobileTrayHistoryBtn" class="conv-icon-btn conv-history-trigger mobile-search-tray__history"
             aria-haspopup="dialog" aria-expanded="false" aria-controls="convHistoryPop"
@@ -2166,10 +2072,9 @@
         <span class="ai-tip__arrow" aria-hidden="true"></span>
         <span class="ai-tip__badge" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="18" height="18" fill="currentColor" class="h-[18px] w-[18px]" aria-hidden="true"><path d="M216,44H40A20,20,0,0,0,20,64V224A19.82,19.82,0,0,0,31.56,242.1a20.14,20.14,0,0,0,8.49,1.9,19.91,19.91,0,0,0,12.82-4.72l.12-.11L84.47,212H216a20,20,0,0,0,20-20V64A20,20,0,0,0,216,44Zm-4,144H80a11.93,11.93,0,0,0-7.84,2.92L44,215.23V68H212ZM84,108A12,12,0,0,1,96,96h64a12,12,0,1,1,0,24H96A12,12,0,0,1,84,108Zm0,40a12,12,0,0,1,12-12h64a12,12,0,0,1,0,24H96A12,12,0,0,1,84,148Z"/></svg></span>
         <div class="ai-tip__body">
-            <p id="aiDiscoveryTipTitle" class="ai-tip__title" data-en="Ask Sh'elah anything" data-he="שאל את ש׳אלה כל שאלה">Ask Sh'elah anything</p>
+            <p id="aiDiscoveryTipTitle" class="ai-tip__title" data-en="Ask Sh&#39;elah anything" data-he="שאל את ש׳אלה כל שאלה">Ask Sh&#39;elah anything</p>
             <p id="aiDiscoveryTipText" class="ai-tip__text"
-                data-en="Our AI answers questions on halachah, customs and texts, and shows the sources it used."
-                data-he="הבינה המלאכותית שלנו עונה על שאלות בהלכה, במנהגים ובטקסטים, ומציגה את המקורות שבהם השתמשה.">Our AI answers questions on halachah, customs and texts, and shows the sources it used.</p>
+                data-en="Our AI answers questions on halachah, customs and texts, and shows the sources it used." data-he="הבינה המלאכותית שלנו עונה על שאלות בהלכה, במנהגים ובטקסטים, ומציגה את המקורות שבהם השתמשה.">Our AI answers questions on halachah, customs and texts, and shows the sources it used.</p>
             <div class="ai-tip__actions">
                 <button type="button" id="aiDiscoveryTipTry" class="ai-tip__try" data-en="Try it" data-he="נסה עכשיו">Try it</button>
                 <button type="button" id="aiDiscoveryTipDismiss" class="ai-tip__dismiss" data-en="Not now" data-he="לא עכשיו">Not now</button>
@@ -2220,12 +2125,9 @@
             <header class="privacy-head">
                 <span class="privacy-head__mark" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M208,36H48A20,20,0,0,0,28,56v56c0,54.29,26.32,87.22,48.4,105.29,23.71,19.39,47.44,26,48.44,26.29a12.1,12.1,0,0,0,6.32,0c1-.28,24.73-6.9,48.44-26.29,22.08-18.07,48.4-51,48.4-105.29V56A20,20,0,0,0,208,36Zm-4,76c0,35.71-13.09,64.69-38.91,86.15A126.28,126.28,0,0,1,128,219.38a126.14,126.14,0,0,1-37.09-21.23C65.09,176.69,52,147.71,52,112V60H204ZM79.51,144.49a12,12,0,1,1,17-17L112,143l47.51-47.52a12,12,0,0,1,17,17l-56,56a12,12,0,0,1-17,0Z"/></svg></span>
                 <div class="privacy-head__text">
-                    <h2 id="privacyDataModalTitle" class="privacy-head__title" data-en="Privacy &amp; data"
-                        data-he="פרטיות ונתונים">Privacy &amp; data</h2>
+                    <h2 id="privacyDataModalTitle" class="privacy-head__title" data-en="Privacy &amp; data" data-he="פרטיות ונתונים">Privacy &amp; data</h2>
                     <p id="privacyDataModalDesc" class="privacy-head__desc"
-                        data-en="Download or delete the personal data associated with your account."
-                        data-he="הורד או מחק את הנתונים האישיים המשויכים לחשבונך.">Download or delete the personal
-                        data associated with your account.</p>
+                        data-en="Download or delete the personal data associated with your account." data-he="הורד או מחק את הנתונים האישיים המשויכים לחשבונך.">Download or delete the personal data associated with your account.</p>
                 </div>
                 <button id="privacyDataModalCloseBtn" type="button" data-onclick="closePrivacyDataModal"
                     class="privacy-close" aria-label="Close">
@@ -2235,11 +2137,9 @@
 
             <div class="privacy-body">
                 <section class="privacy-section" aria-labelledby="privacyExportHeading">
-                    <h3 id="privacyExportHeading" class="privacy-section__title" data-en="Download my data"
-                        data-he="הורד את הנתונים שלי">Download my data</h3>
+                    <h3 id="privacyExportHeading" class="privacy-section__title" data-en="Download my data" data-he="הורד את הנתונים שלי">Download my data</h3>
                     <p class="privacy-section__text"
-                        data-en="A JSON file with your AI chats, search and reading history, bookmarks, notes, preferences, study memories and AI usage logs."
-                        data-he="קובץ JSON עם שיחות הבינה המלאכותית, היסטוריית החיפוש והקריאה, הסימניות, ההערות, ההעדפות, זיכרונות הלימוד ויומני השימוש בבינה מלאכותית שלך.">
+                        data-en="A JSON file with your AI chats, search and reading history, bookmarks, notes, preferences, study memories and AI usage logs." data-he="קובץ JSON עם שיחות הבינה המלאכותית, היסטוריית החיפוש והקריאה, הסימניות, ההערות, ההעדפות, זיכרונות הלימוד ויומני השימוש בבינה מלאכותית שלך.">
                         A JSON file with your AI chats, search and reading history, bookmarks, notes, preferences, study memories and AI usage logs.</p>
                     <button id="privacyDataExportBtn" type="button" data-onclick="handlePrivacyDataExport"
                         class="privacy-btn privacy-btn--primary">
@@ -2250,12 +2150,10 @@
                 </section>
 
                 <section class="privacy-section privacy-section--danger" aria-labelledby="privacyDeleteHeading">
-                    <h3 id="privacyDeleteHeading" class="privacy-section__title" data-en="Delete my account"
-                        data-he="מחק את החשבון שלי">Delete my account</h3>
+                    <h3 id="privacyDeleteHeading" class="privacy-section__title" data-en="Delete my account" data-he="מחק את החשבון שלי">Delete my account</h3>
                     <p class="privacy-section__text"
-                        data-en="Permanently deletes your account, your sign-in and all of the data above. This can't be undone."
-                        data-he="מוחק לצמיתות את חשבונך, את ההתחברות שלך ואת כל הנתונים שלמעלה. לא ניתן לבטל פעולה זו.">
-                        Permanently deletes your account, your sign-in and all of the data above. This can't be undone.</p>
+                        data-en="Permanently deletes your account, your sign-in and all of the data above. This can&#39;t be undone." data-he="מוחק לצמיתות את חשבונך, את ההתחברות שלך ואת כל הנתונים שלמעלה. לא ניתן לבטל פעולה זו.">
+                        Permanently deletes your account, your sign-in and all of the data above. This can&#39;t be undone.</p>
                     <div class="privacy-confirm">
                         <label class="privacy-confirm__label" for="privacyDeleteConfirmInput">
                             <span data-en="Type" data-he="הקלד">Type</span>
@@ -2310,8 +2208,7 @@
             <button id="closeDevtoolsInspectorBtn" type="button"
                 class="absolute top-4 right-4 z-10 modal-close-icon-btn" aria-label="Close"><span class="contents" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/></svg></span></button>
             <div class="bg-linear-to-r from-navy to-blue-900 text-white px-6 py-4 border-b">
-                <h2 class="font-serif text-xl font-bold" data-en="System Inspector" data-he="בודק מערכת">System
-                    Inspector</h2>
+                <h2 class="font-serif text-xl font-bold" data-en="System Inspector" data-he="בודק מערכת">System Inspector</h2>
                 <p class="text-blue-100 text-sm mt-1" data-en="Diagnostics and reliability logs" data-he="אבחון ולוגים">
                     Diagnostics and reliability logs</p>
             </div>

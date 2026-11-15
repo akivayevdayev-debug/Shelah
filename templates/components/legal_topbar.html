@@ -7,9 +7,9 @@
             ש
         </span>
         <span class="topbar-brand-title text-sm sm:text-base font-serif tracking-tight text-navy font-semibold leading-none sm:leading-6 text-start">
-            <span class="block" data-en="Sh'elah" data-he="שאלה">Sh'elah</span>
+            <span class="block" {{ lang_attrs('legal_topbar.shelah') }}>{{ _('legal_topbar.shelah') }}</span>
             <span class="block text-[10px] font-normal text-slate-500 italic topbar-brand-subtitle"
-                data-en="Torah Encyclopedia" data-he="אנציקלופדיית תורה">Torah Encyclopedia</span>
+                {{ lang_attrs('legal_topbar.torah_encyclopedia') }}>{{ _('legal_topbar.torah_encyclopedia') }}</span>
         </span>
     </button>
 
@@ -38,27 +38,26 @@
                     class="hidden absolute top-full right-0 w-44 max-w-[calc(100vw-1rem)] bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-999">
                     <a id="userProfileLink" href="/profile"
                         class="topbar-user-menu-item block px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 transition"
-                        data-en="Profile" data-he="פרופיל">Profile</a>
+                        {{ lang_attrs('legal_topbar.profile') }}>{{ _('legal_topbar.profile') }}</a>
                     <button id="userProfileSignOutAction" type="button"
                         class="topbar-user-menu-item topbar-user-menu-signout w-full text-start px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 transition"
-                        data-en="Sign Out" data-he="התנתקות">Sign Out</button>
+                        {{ lang_attrs('legal_topbar.sign_out') }}>{{ _('legal_topbar.sign_out') }}</button>
                     <a id="userProfileTermsLink" href="/terms" target="_blank" rel="noopener"
                         class="topbar-user-menu-item block px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 transition"
-                        data-en="Terms of Service" data-he="תנאי השירות">Terms of Service</a>
+                        {{ lang_attrs('legal_topbar.terms_of_service') }}>{{ _('legal_topbar.terms_of_service') }}</a>
                     <a id="userProfilePrivacyLink" href="/privacy" target="_blank" rel="noopener"
                         class="topbar-user-menu-item block px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 transition"
-                        data-en="Privacy Policy" data-he="מדיניות הפרטיות">Privacy Policy</a>
+                        {{ lang_attrs('legal_topbar.privacy_policy') }}>{{ _('legal_topbar.privacy_policy') }}</a>
                     <a id="userProfileAccessibilityLink" href="/accessibility" target="_blank" rel="noopener"
                         class="topbar-user-menu-item block px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 transition"
-                        data-en="Accessibility" data-he="נגישות">Accessibility</a>
+                        {{ lang_attrs('legal_topbar.accessibility') }}>{{ _('legal_topbar.accessibility') }}</a>
                     <a id="userProfileAiDisclosureLink" href="/ai-disclosure" target="_blank" rel="noopener"
                         class="topbar-user-menu-item block px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 transition"
-                        data-en="AI Disclosure" data-he="גילוי נאות בינה מלאכותית">AI Disclosure</a>
+                        {{ lang_attrs('legal_topbar.ai_disclosure') }}>{{ _('legal_topbar.ai_disclosure') }}</a>
                 </div>
             </div>
 
-            <a id="signInBtn" href="/signin" class="topbar-flat-btn" data-en="Sign In" data-he="התחברות">Sign
-                In</a>
+            <a id="signInBtn" href="/signin" class="topbar-flat-btn" {{ lang_attrs('legal_topbar.sign_in') }}>{{ _('legal_topbar.sign_in') }}</a>
         </div>
 
         <!-- Translator Toggles -->
@@ -66,7 +65,6 @@
             data-lang="en">English</button>
         <button data-onclick="chooseLanguage" data-onclick-arg="he" class="hidden lg:inline-flex topbar-flat-btn font-hebrew lang-btn"
             data-lang="he">עברית</button>
-        <button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn" data-en="עברית"
-            data-he="English">עברית</button>
+        <button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn" {{ lang_attrs('common.other_language_name') }}>{{ _('common.other_language_name') }}</button>
     </div>
 </header>

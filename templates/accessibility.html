@@ -49,125 +49,87 @@
 
     <!-- Hero Banner -->
     <section class="legal-hero" aria-labelledby="heroTitle">
-        <h1 id="heroTitle" data-en="Accessibility Statement" data-he="הצהרת נגישות">Accessibility Statement</h1>
-        <p class="subtitle" data-en="Last updated: August 15, 2026 · v1.0" data-he="עדכון אחרון: 15 באוגוסט 2026 · v1.0">Last updated: August 15, 2026 · v1.0</p>
+        <h1 id="heroTitle" {{ lang_attrs('accessibility.accessibility_statement') }}>{{ _('accessibility.accessibility_statement') }}</h1>
+        <p class="subtitle" {{ lang_attrs('accessibility.last_updated_august_15_2026_v1') }}>{{ _('accessibility.last_updated_august_15_2026_v1') }}</p>
     </section>
 
     <!-- MAIN CONTENT -->
     <main id="mainContent" class="flex-1">
         <article id="legalDocumentBody" class="main-container prose prose-sm max-w-2xl" data-reveal>
             <div class="legal-toolbar">
-                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span data-en="Back to Sh'elah" data-he="חזרה לשאלה">Back to Sh'elah</span></a>
+                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span {{ lang_attrs('accessibility.back_to_shelah') }}>{{ _('accessibility.back_to_shelah') }}</span></a>
                                 <button type="button" id="selectAllPolicyTextBtn" class="select-all-btn">
                     <span class="contents" aria-hidden="true">{{ phosphor('selection-all', size=16) }}</span>
-                    <span data-en="Select all text" data-he="בחר את כל הטקסט">Select all text</span>
+                    <span {{ lang_attrs('accessibility.select_all_text') }}>{{ _('accessibility.select_all_text') }}</span>
                 </button>
             
             </div>
 
             <div class="info-box">
-                <p data-en="I want Sh'elah to work for people who use a keyboard, a screen reader, zoom or other assistive technology. This page says what is in place, what is not yet, and how to tell me about a problem."
-                    data-he="אני רוצה ש-Sh'elah תעבוד גם עבור מי שמשתמשים במקלדת, בקורא מסך, בהגדלה או בטכנולוגיה מסייעת אחרת. בעמוד הזה כתוב מה כבר קיים, מה עדיין לא, ואיך לספר לי על בעיה.">
-                    I want Sh'elah to work for people who use a keyboard, a screen reader, zoom or other assistive
-                    technology. This page says what is in place, what is not yet, and how to tell me about a
-                    problem.
+                <p {{ lang_attrs('accessibility.i_want_shelah_to_work_for') }}>
+                    {{ _('accessibility.i_want_shelah_to_work_for') }}
                 </p>
             </div>
 
-            <h2 data-en="1. The standard" data-he="1. הסטנדרט">1. The standard</h2>
-            <p data-en="Sh'elah is built to meet the Web Content Accessibility Guidelines (WCAG) 2.1, Level AA. That is a target, not a certification. The list of known limitations below shows where it falls short."
-                data-he="Sh'elah נבנית כדי לעמוד בהנחיות הנגישות לתוכן אינטרנט (WCAG) 2.1, רמה AA. זה יעד ולא אישור רשמי. רשימת המגבלות הידועות למטה מראה איפה היא עדיין לא שם.">
+            <h2 {{ lang_attrs('accessibility.1_the_standard') }}>{{ _('accessibility.1_the_standard') }}</h2>
+            <p {{ lang_attrs('accessibility.shelah_is_built_to_meet_the') }}>
                 Sh'elah is built to meet the Web Content Accessibility Guidelines (WCAG) 2.1, Level AA. That is a
                 target, not a certification. The list of <a href="#limitations">known limitations</a> below shows
                 where it falls short.
             </p>
 
-            <h2 data-en="2. What is in place" data-he="2. מה קיים">2. What is in place</h2>
+            <h2 {{ lang_attrs('accessibility.2_what_is_in_place') }}>{{ _('accessibility.2_what_is_in_place') }}</h2>
             <ul>
-                <li data-en="A 'skip to main content' link on every page, for keyboard and screen-reader users"
-                    data-he="קישור 'דלגו לתוכן הראשי' בכל עמוד, למשתמשי מקלדת וקוראי מסך">A 'skip to main content' link
-                    on every page, for keyboard and screen-reader users</li>
-                <li data-en="Menus, the reader settings panel and dialogs work from the keyboard, with a visible focus indicator"
-                    data-he="תפריטים, לוח הגדרות הקריאה וחלונות דו-שיח עובדים מהמקלדת, עם סימון פוקוס גלוי">
-                    Menus, the reader settings panel and dialogs work from the keyboard, with a visible focus
-                    indicator</li>
-                <li data-en="ARIA roles, labels and live-region announcements on interactive controls, including menus, toggles and the AI answer panel"
-                    data-he="תפקידי ARIA, תוויות והכרזות אזור-חי על פקדים אינטראקטיביים, ובהם תפריטים, מתגים ופאנל התשובות של הבינה המלאכותית">
-                    ARIA roles, labels and live-region announcements on interactive controls, including menus, toggles
-                    and the AI answer panel</li>
-                <li data-en="Text and control contrast checked against WCAG AA (4.5:1 for text, 3:1 for controls) in both the light and dark themes"
-                    data-he="ניגודיות הטקסט והפקדים נבדקת מול WCAG AA (4.5:1 לטקסט, 3:1 לפקדים) במראה הבהיר והכהה">
-                    Text and control contrast checked against WCAG AA (4.5:1 for text, 3:1 for controls) in both the
-                    light and dark themes</li>
-                <li data-en="Hebrew pages are mirrored right to left, not only set in a right-to-left text direction"
-                    data-he="עמודים בעברית משוקפים מימין לשמאל, ולא רק מוגדרים בכיוון טקסט מימין לשמאל">
-                    Hebrew pages are mirrored right to left, not only set in a right-to-left text direction</li>
-                <li data-en="Text size, font and line spacing can be changed in the reader settings"
-                    data-he="אפשר לשנות את גודל הטקסט, הגופן ומרווח השורות בהגדרות הקריאה">Text size, font and line
-                    spacing can be changed in the reader settings</li>
-                <li data-en="Animations are reduced or removed when your operating system's 'reduce motion' setting is on"
-                    data-he="האנימציות מצטמצמות או נעלמות כשהגדרת 'הפחתת תנועה' של מערכת ההפעלה פעילה">Animations are
-                    reduced or removed when your operating system's 'reduce motion' setting is on</li>
-                <li data-en="Buttons and links are at least 44×44 px on touch devices"
-                    data-he="כפתורים וקישורים הם בגודל של 44×44 פיקסלים לפחות במכשירי מגע">Buttons and links are at
-                    least 44×44 px on touch devices</li>
-                <li data-en="Status is shown with text or an icon as well as color"
-                    data-he="מצבים מוצגים גם בטקסט או בסמל, ולא רק בצבע">Status is shown with text or an icon as well
-                    as color</li>
-                <li data-en="An automated WCAG 2.1 AA check (pa11y) runs on every push against the home page, the legal and info pages and the Tanakh page, in both themes. A failure stops the build."
-                    data-he="בדיקת WCAG 2.1 AA אוטומטית (pa11y) רצה בכל דחיפת קוד מול דף הבית, דפי המשפט והמידע ודף התנ״ך, בשני המראות. כשל עוצר את הבנייה.">
+                <li {{ lang_attrs('accessibility.a_skip_to_main_content_link') }}>{{ _('accessibility.a_skip_to_main_content_link') }}</li>
+                <li {{ lang_attrs('accessibility.menus_the_reader_settings_panel_and') }}>
+                    {{ _('accessibility.menus_the_reader_settings_panel_and') }}</li>
+                <li {{ lang_attrs('accessibility.aria_roles_labels_and_live_region') }}>
+                    {{ _('accessibility.aria_roles_labels_and_live_region') }}</li>
+                <li {{ lang_attrs('accessibility.text_and_control_contrast_checked_against') }}>
+                    {{ _('accessibility.text_and_control_contrast_checked_against') }}</li>
+                <li {{ lang_attrs('accessibility.hebrew_pages_are_mirrored_right_to') }}>
+                    {{ _('accessibility.hebrew_pages_are_mirrored_right_to') }}</li>
+                <li {{ lang_attrs('accessibility.text_size_font_and_line_spacing') }}>{{ _('accessibility.text_size_font_and_line_spacing') }}</li>
+                <li {{ lang_attrs('accessibility.animations_are_reduced_or_removed_when') }}>{{ _('accessibility.animations_are_reduced_or_removed_when') }}</li>
+                <li {{ lang_attrs('accessibility.buttons_and_links_are_at_least') }}>{{ _('accessibility.buttons_and_links_are_at_least') }}</li>
+                <li {{ lang_attrs('accessibility.status_is_shown_with_text_or') }}>{{ _('accessibility.status_is_shown_with_text_or') }}</li>
+                <li {{ lang_attrs('accessibility.an_automated_wcag_2_1_aa') }}>
                     An automated WCAG 2.1 AA check (<code>pa11y</code>) runs on every push against the home page,
                     the legal and info pages and the Tanakh page, in both themes. A failure stops the build.</li>
             </ul>
 
-            <h2 id="limitations" data-en="3. Known limitations" data-he="3. מגבלות ידועות">3. Known limitations</h2>
-            <p data-en="Not every part of Sh'elah meets the standard yet:"
-                data-he="לא כל חלק ב-Sh'elah עומד בתקן עדיין:">
-                Not every part of Sh'elah meets the standard yet:
+            <h2 id="limitations" {{ lang_attrs('accessibility.3_known_limitations') }}>{{ _('accessibility.3_known_limitations') }}</h2>
+            <p {{ lang_attrs('accessibility.not_every_part_of_shelah_meets') }}>
+                {{ _('accessibility.not_every_part_of_shelah_meets') }}
             </p>
             <ul>
-                <li data-en="Two third-party components, the sign-in widget and the calendar, follow their vendors' own accessibility work, which I do not control"
-                    data-he="שני רכיבים של צדדים שלישיים, חלונית ההתחברות ולוח השנה, פועלים לפי עבודת הנגישות של הספקים שלהם, ואין לי שליטה בה">Two third-party components, the sign-in widget and the calendar, follow their
-                    vendors' own accessibility work, which I do not control</li>
-                <li data-en="AI answers are long prose. Their structure, such as heading levels inside an answer, may not suit screen-reader navigation"
-                    data-he="תשובות הבינה המלאכותית הן טקסט ארוך. המבנה שלהן, למשל רמות הכותרות בתוך תשובה, עשוי שלא להתאים לניווט בקורא מסך">AI answers are long prose. Their structure, such as heading levels inside an
-                    answer, may not suit screen-reader navigation</li>
-                <li data-en="Some historical source texts, such as scanned or OCR'd Hebrew manuscripts, arrive as-is from the source libraries and can have inconsistent markup"
-                    data-he="חלק מטקסטי המקור ההיסטוריים, כמו כתבי יד עבריים סרוקים או שעברו OCR, מגיעים כמו שהם מספריות המקור ועלולים לכלול סימון לא עקבי">Some historical source texts, such as scanned or OCR'd Hebrew manuscripts,
-                    arrive as-is from the source libraries and can have inconsistent markup</li>
+                <li {{ lang_attrs('accessibility.two_third_party_components_the_sign') }}>{{ _('accessibility.two_third_party_components_the_sign') }}</li>
+                <li {{ lang_attrs('accessibility.ai_answers_are_long_prose_their') }}>{{ _('accessibility.ai_answers_are_long_prose_their') }}</li>
+                <li {{ lang_attrs('accessibility.some_historical_source_texts_such_as') }}>{{ _('accessibility.some_historical_source_texts_such_as') }}</li>
             </ul>
-            <p data-en="These are open items, not permanent exceptions. I fix them as I find them."
-                data-he="אלה פריטים פתוחים ולא חריגים קבועים. אני מתקן אותם ככל שאני מוצא אותם.">
-                These are open items, not permanent exceptions. I fix them as I find them.
+            <p {{ lang_attrs('accessibility.these_are_open_items_not_permanent') }}>
+                {{ _('accessibility.these_are_open_items_not_permanent') }}
             </p>
 
-            <h2 data-en="4. Browsers and screen readers" data-he="4. דפדפנים וקוראי מסך">4. Browsers and screen readers</h2>
-            <p data-en="Sh'elah is built for current versions of Chrome, Safari, Firefox and Edge, and is meant to work with screen readers such as VoiceOver, NVDA and JAWS. The automated checks run in Chrome only."
-                data-he="Sh'elah נבנית עבור הגרסאות הנוכחיות של Chrome, Safari, Firefox ו-Edge, ונועדה לעבוד עם קוראי מסך כמו VoiceOver, NVDA ו-JAWS. הבדיקות האוטומטיות רצות ב-Chrome בלבד.">
-                Sh'elah is built for current versions of Chrome, Safari, Firefox and Edge, and is meant to work with
-                screen readers such as VoiceOver, NVDA and JAWS. The automated checks run in Chrome only.
+            <h2 {{ lang_attrs('accessibility.4_browsers_and_screen_readers') }}>{{ _('accessibility.4_browsers_and_screen_readers') }}</h2>
+            <p {{ lang_attrs('accessibility.shelah_is_built_for_current_versions') }}>
+                {{ _('accessibility.shelah_is_built_for_current_versions') }}
             </p>
 
-            <h2 data-en="5. Tell me about a problem" data-he="5. ספרו לי על בעיה">5. Tell me about a problem</h2>
-            <p data-en="If something on Sh'elah is hard or impossible to use, write to me. Say which page it was, what you were trying to do and, if it matters, which assistive technology you use. I will do my best to reply promptly and fix real barriers."
-                data-he="אם משהו ב-Sh'elah קשה או בלתי אפשרי לשימוש, כתבו לי. ציינו באיזה עמוד זה קרה, מה ניסיתם לעשות, ואם זה רלוונטי, באיזו טכנולוגיה מסייעת אתם משתמשים. אעשה כמיטב יכולתי להשיב במהירות ולתקן מכשולים אמיתיים.">
-                If something on Sh'elah is hard or impossible to use, write to me. Say which page it was, what you
-                were trying to do and, if it matters, which assistive technology you use. I will do my best to reply
-                promptly and fix real barriers.
+            <h2 {{ lang_attrs('accessibility.5_tell_me_about_a_problem') }}>{{ _('accessibility.5_tell_me_about_a_problem') }}</h2>
+            <p {{ lang_attrs('accessibility.if_something_on_shelah_is_hard') }}>
+                {{ _('accessibility.if_something_on_shelah_is_hard') }}
             </p>
-            <p><strong data-en="Contact:" data-he="איש קשר:">Contact:</strong> Akiva Yevdayev</p>
-            <p><strong data-en="Email:" data-he="דוא״ל:">Email:</strong> <a
+            <p><strong {{ lang_attrs('accessibility.contact') }}>{{ _('accessibility.contact') }}</strong> Akiva Yevdayev</p>
+            <p><strong {{ lang_attrs('accessibility.email') }}>{{ _('accessibility.email') }}</strong> <a
                     href="mailto:contact@shelah.org">contact@shelah.org</a></p>
 
             <hr class="my-8" style="border-color: var(--surface-border);">
 
             <div class="info-box">
                 <p class="text-sm"
-                    data-en="See also the Terms of Service and the Privacy Policy."
-                    data-he="ראו גם את תנאי השירות ואת מדיניות הפרטיות.">
-                    See also the <a href="/terms" data-en="Terms of Service" data-he="תנאי השירות">Terms of
-                        Service</a> and the <a href="/privacy" data-en="Privacy Policy" data-he="מדיניות הפרטיות">Privacy
-                        Policy</a>.
+                    {{ lang_attrs('accessibility.see_also_the_terms_of_service') }}>
+                    See also the <a href="/terms" {{ lang_attrs('accessibility.terms_of_service') }}>{{ _('accessibility.terms_of_service') }}</a> and the <a href="/privacy" {{ lang_attrs('accessibility.privacy_policy') }}>{{ _('accessibility.privacy_policy') }}</a>.
                 </p>
             </div>
         </article>

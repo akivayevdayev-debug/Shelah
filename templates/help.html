@@ -46,107 +46,84 @@
     {% include 'components/legal_topbar.html' %}
 
     <section class="legal-hero" aria-labelledby="heroTitle">
-        <h1 id="heroTitle" data-en="Help &amp; Guide" data-he="עזרה ומדריך">Help &amp; Guide</h1>
-        <p class="subtitle" data-en="How to get the most out of Sh'elah." data-he="כיצד להפיק את המרב משאלה.">How to
-            get the most out of Sh'elah.</p>
+        <h1 id="heroTitle" {{ lang_attrs('help.help_guide') }}>{{ _('help.help_guide') }}</h1>
+        <p class="subtitle" {{ lang_attrs('help.how_to_get_the_most_out') }}>{{ _('help.how_to_get_the_most_out') }}</p>
     </section>
 
     <main id="mainContent" class="flex-1">
         <article id="helpBody" class="main-container prose prose-sm max-w-2xl" data-reveal>
             <div class="legal-toolbar">
-                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span data-en="Back to Sh'elah" data-he="חזרה לשאלה">Back to Sh'elah</span></a>
+                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span {{ lang_attrs('help.back_to_shelah') }}>{{ _('help.back_to_shelah') }}</span></a>
             </div>
 
-            <h2 data-en="Asking a good sh'elah" data-he="איך שואלים שאלה טובה">Asking a good sh'elah</h2>
-            <p data-en="A specific question gets a more useful answer. Describe the situation as well as the topic: &quot;Can I turn on a light with a timer before Shabbat starts?&quot; finds better sources than &quot;Shabbat rules&quot;. If the answer depends on where you live or which community's customs you follow, say so. You can also pick a community in the conversation's ⋮ menu."
-                data-he="שאלה מפורטת מקבלת תשובה שימושית יותר. תארו את המצב ולא רק את הנושא: 'האם מותר להדליק אור בטיימר לפני כניסת שבת?' מוצאת מקורות טובים יותר מ'הלכות שבת'. אם התשובה תלויה במקום שבו אתם גרים או במנהג הקהילה שלכם, כתבו זאת. אפשר גם לבחור קהילה בתפריט ⋮ של השיחה.">
-                A specific question gets a more useful answer. Describe the situation as well as the topic: "Can I
-                turn on a light with a timer before Shabbat starts?" finds better sources than "Shabbat rules". If
-                the answer depends on where you live or which community's customs you follow, say so. You can also
-                pick a community in the conversation's ⋮ menu.
+            <h2 {{ lang_attrs('help.asking_a_good_shelah') }}>{{ _('help.asking_a_good_shelah') }}</h2>
+            <p {{ lang_attrs('help.a_specific_question_gets_a_more') }}>
+                {{ _('help.a_specific_question_gets_a_more') }}
             </p>
 
-            <h2 data-en="Answer modes" data-he="מצבי תשובה">Answer modes</h2>
-            <p data-en="Pick one of four modes in the conversation's ⋮ menu, under AI mode:"
-                data-he="בחרו אחד מארבעה מצבים בתפריט ⋮ של השיחה, תחת מצב בינה מלאכותית:">
-                Pick one of four modes in the conversation's ⋮ menu, under AI mode:
+            <h2 {{ lang_attrs('help.answer_modes') }}>{{ _('help.answer_modes') }}</h2>
+            <p {{ lang_attrs('help.pick_one_of_four_modes_in') }}>
+                {{ _('help.pick_one_of_four_modes_in') }}
             </p>
             <ul>
-                <li data-en="Balanced: the default. A short, direct answer to an everyday question, and more depth only when the answer turns on a dispute."
-                    data-he="מאוזן: ברירת המחדל. תשובה קצרה וישירה לשאלה יומיומית, ועומק רב יותר רק כשהתשובה תלויה במחלוקת.">
-                    <strong data-en="Balanced" data-he="מאוזן">Balanced</strong>: the default. A short, direct answer
+                <li {{ lang_attrs('help.balanced_the_default_a_short_direct') }}>
+                    <strong {{ lang_attrs('help.balanced') }}>{{ _('help.balanced') }}</strong>: the default. A short, direct answer
                     to an everyday question, and more depth only when the answer turns on a dispute.
                 </li>
-                <li data-en="Practical First: the direct answer, then the steps to take."
-                    data-he="מעשי תחילה: התשובה הישירה קודם, ואחריה הצעדים לביצוע.">
-                    <strong data-en="Practical First" data-he="מעשי תחילה">Practical First</strong>: the direct
+                <li {{ lang_attrs('help.practical_first_the_direct_answer_then') }}>
+                    <strong {{ lang_attrs('help.practical_first') }}>{{ _('help.practical_first') }}</strong>: the direct
                     answer, then the steps to take.
                 </li>
-                <li data-en="Deep Sources: a fuller explanation with the background, the main positions and a synthesis, together with the sources."
-                    data-he="מקורות מעמיקים: הסבר מלא עם הרקע, הדעות העיקריות וסיכום, יחד עם המקורות.">
-                    <strong data-en="Deep Sources" data-he="מקורות מעמיקים">Deep Sources</strong>: a fuller
+                <li {{ lang_attrs('help.deep_sources_a_fuller_explanation_with') }}>
+                    <strong {{ lang_attrs('help.deep_sources') }}>{{ _('help.deep_sources') }}</strong>: a fuller
                     explanation with the background, the main positions and a synthesis, together with the sources.
                 </li>
-                <li data-en="Strict Sources: only claims the sources support, explained in full paragraphs."
-                    data-he="מקורות בלבד: רק טענות שהמקורות תומכים בהן, בפסקאות מלאות.">
-                    <strong data-en="Strict Sources" data-he="מקורות בלבד">Strict Sources</strong>: only claims the
+                <li {{ lang_attrs('help.strict_sources_only_claims_the_sources') }}>
+                    <strong {{ lang_attrs('help.strict_sources') }}>{{ _('help.strict_sources') }}</strong>: only claims the
                     sources support, explained in full paragraphs.
                 </li>
             </ul>
 
-            <h2 data-en="Community" data-he="קהילה">Community</h2>
-            <p data-en="Many practical questions have different answers in different communities, such as Ashkenazi, Sephardic and Yemenite. Choosing a community tells Sh'elah whose customs to put first. It does not hide other views, and the AI is told to say when a practice is genuinely disputed."
-                data-he="לשאלות מעשיות רבות יש תשובות שונות בקהילות שונות, למשל אשכנזים, ספרדים ותימנים. בחירת קהילה אומרת ל-Sh'elah מנהגי מי להציג קודם. היא לא מסתירה דעות אחרות, והבינה המלאכותית מונחית לציין כשנוהג שנוי במחלוקת של ממש.">
-                Many practical questions have different answers in different communities, such as Ashkenazi,
-                Sephardic and Yemenite. Choosing a community tells Sh'elah whose customs to put first. It does not
-                hide other views, and the AI is told to say when a practice is genuinely disputed.
+            <h2 {{ lang_attrs('help.community') }}>{{ _('help.community') }}</h2>
+            <p {{ lang_attrs('help.many_practical_questions_have_different_answers') }}>
+                {{ _('help.many_practical_questions_have_different_answers') }}
             </p>
 
-            <h2 data-en="Reader features" data-he="תכונות הקורא">Reader features</h2>
+            <h2 {{ lang_attrs('help.reader_features') }}>{{ _('help.reader_features') }}</h2>
             <ul>
-                <li data-en="Shul Mode: a larger display for reading along during services, with optional auto-scroll. Turn it on in the reader's settings."
-                    data-he="מצב בית כנסת: תצוגה גדולה יותר לקריאה בזמן התפילה, עם גלילה אוטומטית אופציונלית. מפעילים אותו בהגדרות הקורא.">
-                    <strong data-en="Shul Mode" data-he="מצב בית כנסת">Shul Mode</strong>: a larger display for
+                <li {{ lang_attrs('help.shul_mode_a_larger_display_for') }}>
+                    <strong {{ lang_attrs('help.shul_mode') }}>{{ _('help.shul_mode') }}</strong>: a larger display for
                     reading along during services, with optional auto-scroll. Turn it on in the reader's settings.
                 </li>
-                <li data-en="Bookmarks: save a passage or an answer for later. If you are signed in, they follow you to other devices."
-                    data-he="סימניות: שומרים קטע או תשובה למועד מאוחר יותר. אם אתם מחוברים, הסימניות עוברות איתכם למכשירים אחרים.">
-                    <strong data-en="Bookmarks" data-he="סימניות">Bookmarks</strong>: save a passage or an answer
+                <li {{ lang_attrs('help.bookmarks_save_a_passage_or_an') }}>
+                    <strong {{ lang_attrs('help.bookmarks') }}>{{ _('help.bookmarks') }}</strong>: save a passage or an answer
                     for later. If you are signed in, they follow you to other devices.
                 </li>
-                <li data-en="Export: download a chapter as a Word, PDF or text file for offline study or printing."
-                    data-he="ייצוא: מורידים פרק כקובץ Word, PDF או טקסט ללימוד ללא חיבור לרשת או להדפסה.">
-                    <strong data-en="Export" data-he="ייצוא">Export</strong>: download a chapter as a Word, PDF or
+                <li {{ lang_attrs('help.export_download_a_chapter_as_a') }}>
+                    <strong {{ lang_attrs('help.export') }}>{{ _('help.export') }}</strong>: download a chapter as a Word, PDF or
                     text file for offline study or printing.
                 </li>
-                <li data-en="Cited sources: the sources listed under an AI answer link to the text in the reader, where Sh'elah can match them."
-                    data-he="מקורות מצוטטים: המקורות שמופיעים מתחת לתשובת בינה מלאכותית מקושרים לטקסט בקורא, כשאפשר להתאים אותם.">
-                    <strong data-en="Cited sources" data-he="מקורות מצוטטים">Cited sources</strong>: the sources
+                <li {{ lang_attrs('help.cited_sources_the_sources_listed_under') }}>
+                    <strong {{ lang_attrs('help.cited_sources') }}>{{ _('help.cited_sources') }}</strong>: the sources
                     listed under an AI answer link to the text in the reader, where Sh'elah can match them.
                 </li>
             </ul>
-            <p data-en="Looking for a term you don't know? Try the "
-                data-he="מחפשים מונח שאתם לא מכירים? הציצו ב">
+            <p {{ lang_attrs('help.looking_for_a_term_you_dont') }}>
                 Looking for a term you don't know? Try the
-                <a href="/glossary" data-en="Glossary" data-he="מילון המונחים">Glossary</a>.
+                <a href="/glossary" {{ lang_attrs('help.glossary') }}>{{ _('help.glossary') }}</a>.
             </p>
 
-            <h2 data-en="Calendar and zmanim" data-he="לוח שנה וזמנים">Calendar and zmanim</h2>
-            <p data-en="The calendar shows the Hebrew date, the week's parasha, holidays and the day's zmanim for your location. Sh'elah can detect your location, or you can enter it yourself if you would rather not share it. Candle-lighting and havdalah times are on the calendar for Shabbat and holidays."
-                data-he="לוח השנה מציג את התאריך העברי, פרשת השבוע, חגים והזמנים ההלכתיים של היום לפי המיקום שלכם. Sh'elah יכולה לזהות את המיקום, או שאפשר להזין אותו ידנית אם אתם מעדיפים לא לשתף אותו. זמני הדלקת נרות והבדלה מופיעים בלוח לשבת ולחגים.">
-                The calendar shows the Hebrew date, the week's parasha, holidays and the day's zmanim for your
-                location. Sh'elah can detect your location, or you can enter it yourself if you would rather not
-                share it. Candle-lighting and havdalah times are on the calendar for Shabbat and holidays.
+            <h2 {{ lang_attrs('help.calendar_and_zmanim') }}>{{ _('help.calendar_and_zmanim') }}</h2>
+            <p {{ lang_attrs('help.the_calendar_shows_the_hebrew_date') }}>
+                {{ _('help.the_calendar_shows_the_hebrew_date') }}
             </p>
 
             <hr class="my-8" style="border-color: var(--surface-border);">
 
             <div class="info-box">
                 <p class="text-sm"
-                    data-en="Still stuck, or found something that looks wrong? The About page has my contact details."
-                    data-he="תקועים, או מצאתם משהו שנראה שגוי? בעמוד האודות יש דרכים ליצור איתי קשר.">
-                    Still stuck, or found something that looks wrong? The <a href="/about" data-en="About page"
-                        data-he="עמוד האודות">About page</a> has my contact details.
+                    {{ lang_attrs('help.still_stuck_or_found_something_that') }}>
+                    Still stuck, or found something that looks wrong? The <a href="/about" {{ lang_attrs('help.about_page') }}>{{ _('help.about_page') }}</a> has my contact details.
                 </p>
             </div>
         </article>

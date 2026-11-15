@@ -49,185 +49,139 @@
 
     <!-- Hero Banner -->
     <section class="legal-hero" aria-labelledby="heroTitle">
-        <h1 id="heroTitle" data-en="AI Disclosure" data-he="גילוי נאות בנושא בינה מלאכותית">AI Disclosure</h1>
-        <p class="subtitle" data-en="Last updated: October 23, 2026 · v1.0" data-he="עדכון אחרון: 23 באוקטובר 2026 · v1.0">Last
-            updated: October 23, 2026 · v1.0</p>
+        <h1 id="heroTitle" {{ lang_attrs('ai_disclosure.ai_disclosure') }}>{{ _('ai_disclosure.ai_disclosure') }}</h1>
+        <p class="subtitle" {{ lang_attrs('ai_disclosure.last_updated_october_23_2026_v1') }}>{{ _('ai_disclosure.last_updated_october_23_2026_v1') }}</p>
     </section>
 
     <!-- MAIN CONTENT -->
     <main id="mainContent" class="flex-1">
         <article id="legalDocumentBody" class="main-container prose prose-sm max-w-2xl" data-reveal>
             <div class="legal-toolbar">
-                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span data-en="Back to Sh'elah" data-he="חזרה לשאלה">Back to Sh'elah</span></a>
+                <a href="/" class="legal-back-link">{{ phosphor('arrow-left', size=16) }}<span {{ lang_attrs('ai_disclosure.back_to_shelah') }}>{{ _('ai_disclosure.back_to_shelah') }}</span></a>
                                 <button type="button" id="selectAllPolicyTextBtn" class="select-all-btn">
                     <span class="contents" aria-hidden="true">{{ phosphor('selection-all', size=16) }}</span>
-                    <span data-en="Select all text" data-he="בחר את כל הטקסט">Select all text</span>
+                    <span {{ lang_attrs('ai_disclosure.select_all_text') }}>{{ _('ai_disclosure.select_all_text') }}</span>
                 </button>
             
             </div>
 
 
             <div class="info-box">
-                <p>{{ phosphor('robot', 18, 'legal-inline-icon') }}<span data-en="You are talking to an AI. A language model writes the answers on Sh'elah, and nobody reads or checks an answer before it reaches you. This page explains how that works, where it can go wrong, and what the AI does not do."
-                    data-he="אתם משוחחים עם בינה מלאכותית. מודל שפה כותב את התשובות ב-Sh'elah, ואף אדם לא קורא או בודק תשובה לפני שהיא מגיעה אליכם. בעמוד הזה מוסבר איך זה עובד, איפה זה עלול לטעות, ומה הבינה המלאכותית לא עושה.">
+                <p>{{ phosphor('robot', 18, 'legal-inline-icon') }}<span {{ lang_attrs('ai_disclosure.you_are_talking_to_an_ai') }}>
                     <strong>You are talking to an AI.</strong> A language model writes the answers on Sh'elah, and
                     nobody reads or checks an answer before it reaches you. This page explains how that works, where
                     it can go wrong, and what the AI does not do.
                 </span></p>
             </div>
 
-            <h2 data-en="1. Which AI models answer your questions" data-he="1. אילו מודלי בינה מלאכותית עונים על השאלות שלכם">1. Which AI models answer your questions</h2>
-            <p data-en="Sh'elah sends your question to Google Gemini first. If Gemini is not available, Anthropic's Claude answers instead. After Gemini fails twice in a row, Sh'elah pauses it for 45 minutes and uses Claude alone, then tries Gemini again on a later question."
-                data-he="Sh'elah שולחת את השאלה שלכם קודם כול ל-Google Gemini. אם Gemini אינו זמין, Claude של Anthropic עונה במקומו. אחרי שני כשלים רצופים של Gemini, Sh'elah מפסיקה לפנות אליו למשך 45 דקות ומשתמשת ב-Claude בלבד, ואז מנסה שוב את Gemini בשאלה מאוחרת יותר.">
-                Sh'elah sends your question to Google Gemini first. If Gemini is not available, Anthropic's Claude
-                answers instead. After Gemini fails twice in a row, Sh'elah pauses it for 45 minutes and uses
-                Claude alone, then tries Gemini again on a later question.
+            <h2 {{ lang_attrs('ai_disclosure.1_which_ai_models_answer_your') }}>{{ _('ai_disclosure.1_which_ai_models_answer_your') }}</h2>
+            <p {{ lang_attrs('ai_disclosure.shelah_sends_your_question_to_google') }}>
+                {{ _('ai_disclosure.shelah_sends_your_question_to_google') }}
             </p>
             <table class="rights-table w-full border-collapse mb-4">
                 <thead>
                     <tr>
-                        <th data-en="Provider" data-he="ספק">Provider</th>
-                        <th data-en="Role" data-he="תפקיד">Role</th>
+                        <th {{ lang_attrs('ai_disclosure.provider') }}>{{ _('ai_disclosure.provider') }}</th>
+                        <th {{ lang_attrs('ai_disclosure.role') }}>{{ _('ai_disclosure.role') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td data-en="Google Gemini" data-he="Google Gemini">Google Gemini</td>
-                        <td data-en="First choice for every answer" data-he="הבחירה הראשונה לכל תשובה">First choice for every answer</td>
+                        <td {{ lang_attrs('ai_disclosure.google_gemini') }}>{{ _('ai_disclosure.google_gemini') }}</td>
+                        <td {{ lang_attrs('ai_disclosure.first_choice_for_every_answer') }}>{{ _('ai_disclosure.first_choice_for_every_answer') }}</td>
                     </tr>
                     <tr>
-                        <td data-en="Anthropic Claude" data-he="Anthropic Claude">Anthropic Claude</td>
-                        <td data-en="Answers when Gemini is not available" data-he="עונה כש-Gemini אינו זמין">Answers when Gemini is not available</td>
+                        <td {{ lang_attrs('ai_disclosure.anthropic_claude') }}>{{ _('ai_disclosure.anthropic_claude') }}</td>
+                        <td {{ lang_attrs('ai_disclosure.answers_when_gemini_is_not_available') }}>{{ _('ai_disclosure.answers_when_gemini_is_not_available') }}</td>
                     </tr>
                 </tbody>
             </table>
-            <p data-en="An answer does not say which of the two wrote it. Source passages that come without a translation can be translated by separate online services (MyMemory and Google Translate), not by these models."
-                data-he="התשובה לא מציינת איזה משני המודלים כתב אותה. קטעי מקור שאין להם תרגום יכולים להיות מתורגמים בשירותי תרגום מקוונים נפרדים (MyMemory ו-Google Translate), לא על ידי המודלים האלה.">
-                An answer does not say which of the two wrote it. Source passages that come without a translation
-                can be translated by separate online services (MyMemory and Google Translate), not by these models.
+            <p {{ lang_attrs('ai_disclosure.an_answer_does_not_say_which') }}>
+                {{ _('ai_disclosure.an_answer_does_not_say_which') }}
             </p>
-            <p data-en="Sh'elah does not use your questions or answers to train AI models without your explicit consent. What each provider receives is listed in the Privacy Policy, §4 and §9, and each provider's own terms cover what it does with that data."
-                data-he="Sh'elah אינה משתמשת בשאלות או בתשובות שלכם כדי לאמן מודלי בינה מלאכותית בלי הסכמה מפורשת מצדכם. מה שכל ספק מקבל מפורט במדיניות הפרטיות, סעיפים 4 ו-9, ותנאי השימוש של כל ספק קובעים מה הוא עושה במידע הזה.">
+            <p {{ lang_attrs('ai_disclosure.shelah_does_not_use_your_questions') }}>
                 Sh'elah does not use your questions or answers to train AI models without your explicit consent.
-                What each provider receives is listed in the <a href="/privacy" data-en="Privacy Policy"
-                    data-he="מדיניות הפרטיות">Privacy Policy</a>, §4 and §9, and each provider's own terms cover what
+                What each provider receives is listed in the <a href="/privacy" {{ lang_attrs('ai_disclosure.privacy_policy') }}>{{ _('ai_disclosure.privacy_policy') }}</a>, §4 and §9, and each provider's own terms cover what
                 it does with that data.
             </p>
 
-            <h2 data-en="2. Where the answers come from" data-he="2. מאיפה התשובות מגיעות">2. Where the answers come from</h2>
-            <p data-en="Before the model writes anything, Sh'elah searches for sources and gives what it finds to the model along with your question. The technical name for this is retrieval-augmented generation, or RAG. The search covers:"
-                data-he="לפני שהמודל כותב משהו, Sh'elah מחפשת מקורות ומעבירה אליו את מה שמצאה יחד עם השאלה שלכם. השם הטכני לכך הוא retrieval-augmented generation, או RAG. החיפוש כולל:">
-                Before the model writes anything, Sh'elah searches for sources and gives what it finds to the model
-                along with your question. The technical name for this is retrieval-augmented generation, or RAG.
-                The search covers:
+            <h2 {{ lang_attrs('ai_disclosure.2_where_the_answers_come_from') }}>{{ _('ai_disclosure.2_where_the_answers_come_from') }}</h2>
+            <p {{ lang_attrs('ai_disclosure.before_the_model_writes_anything_shelah') }}>
+                {{ _('ai_disclosure.before_the_model_writes_anything_shelah') }}
             </p>
             <ul>
-                <li data-en="Sefaria, for the text of the Torah, Talmud, halachic codes and commentaries."
-                    data-he="ספריא, לטקסטים של התורה, התלמוד, ספרי ההלכה והפרשנים.">Sefaria, for the text of the Torah, Talmud, halachic codes and commentaries.</li>
-                <li data-en="Halachipedia, a wiki of halachic sources and discussion."
-                    data-he="Halachipedia, אתר ויקי של מקורות ודיונים הלכתיים.">Halachipedia, a wiki of halachic sources and discussion.</li>
-                <li data-en="Community customs, from a set of entries that Sh'elah keeps in its own database."
-                    data-he="מנהגי קהילות, מתוך אוסף ערכים ש-Sh'elah שומרת במסד הנתונים שלה.">Community customs, from a set of entries that Sh'elah keeps in its own database.</li>
-                <li data-en="Hebcal, for dates, holidays and zmanim."
-                    data-he="Hebcal, לתאריכים, חגים וזמני היום.">Hebcal, for dates, holidays and zmanim.</li>
-                <li data-en="Wikipedia, only as a last resort when the Jewish sources have nothing on the question."
-                    data-he="Wikipedia, רק כמוצא אחרון כשאין למקורות היהודיים דבר בנושא השאלה.">Wikipedia, only as a last resort when the Jewish sources have nothing on the question.</li>
-                <li data-en="A short list of Orthodox sites (Chabad.org, the OU, Star-K, the CRC and a few others), only as a last resort for a real-world fact no source covers, such as whether a product is kosher. The AI sends a short search phrase to Anthropic's web search, which can reach only those sites. The answer then says it used the web and shows each page as &quot;From the web&quot;. You can turn this off under Web search in the chat menu."
-                    data-he="רשימה קצרה של אתרים אורתודוקסיים (Chabad.org, ה-OU, Star-K, ה-CRC ועוד כמה), רק כמוצא אחרון לעובדה מהעולם שאף מקור אינו מכסה, כמו אם מוצר כשר. הבינה המלאכותית שולחת משפט חיפוש קצר לחיפוש הרשת של Anthropic, שמגיע רק לאתרים האלה. התשובה מציינת שנעשה שימוש ברשת ומציגה כל דף כ&quot;מהרשת&quot;. אפשר לכבות זאת תחת חיפוש ברשת בתפריט הצ׳אט.">A short list of Orthodox sites (Chabad.org, the OU, Star-K, the CRC and a few others), only as a last resort for a real-world fact no source covers, such as whether a product is kosher. The AI sends a short search phrase to Anthropic's web search, which can reach only those sites. The answer then says it used the web and shows each page as "From the web". You can turn this off under Web search in the chat menu.</li>
+                <li {{ lang_attrs('ai_disclosure.sefaria_for_the_text_of_the') }}>{{ _('ai_disclosure.sefaria_for_the_text_of_the') }}</li>
+                <li {{ lang_attrs('ai_disclosure.halachipedia_a_wiki_of_halachic_sources') }}>{{ _('ai_disclosure.halachipedia_a_wiki_of_halachic_sources') }}</li>
+                <li {{ lang_attrs('ai_disclosure.community_customs_from_a_set_of') }}>{{ _('ai_disclosure.community_customs_from_a_set_of') }}</li>
+                <li {{ lang_attrs('ai_disclosure.hebcal_for_dates_holidays_and_zmanim') }}>{{ _('ai_disclosure.hebcal_for_dates_holidays_and_zmanim') }}</li>
+                <li {{ lang_attrs('ai_disclosure.wikipedia_only_as_a_last_resort') }}>{{ _('ai_disclosure.wikipedia_only_as_a_last_resort') }}</li>
+                <li {{ lang_attrs('ai_disclosure.a_short_list_of_orthodox_sites') }}>{{ _('ai_disclosure.a_short_list_of_orthodox_sites') }}</li>
             </ul>
-            <p data-en="The model also sees the earlier messages of the same conversation. If you are signed in, it sees short summaries of your two most recent earlier questions as well. It does not see your name or email."
-                data-he="המודל רואה גם את ההודעות הקודמות באותה שיחה. אם אתם מחוברים, הוא רואה גם תקצירים קצרים של שתי השאלות האחרונות שלכם. הוא לא רואה את השם או את כתובת הדוא״ל שלכם.">
-                The model also sees the earlier messages of the same conversation. If you are signed in, it sees
-                short summaries of your two most recent earlier questions as well. It does not see your name or
-                email.
+            <p {{ lang_attrs('ai_disclosure.the_model_also_sees_the_earlier') }}>
+                {{ _('ai_disclosure.the_model_also_sees_the_earlier') }}
             </p>
-            <p data-en="Starting from real texts keeps answers closer to the sources than a chatbot answering from memory. It does not make them correct. The search can bring back the wrong passage, or one that only touches the topic, and the model can still misread a good one."
-                data-he="כשמתחילים מטקסטים אמיתיים, התשובות נשארות קרובות יותר למקורות מאשר בצ'אטבוט שעונה מהזיכרון. זה לא הופך אותן לנכונות. החיפוש יכול להחזיר קטע לא נכון, או קטע שנוגע בנושא בלבד, והמודל עלול לקרוא לא נכון גם קטע טוב.">
-                Starting from real texts keeps answers closer to the sources than a chatbot answering from memory.
-                It does not make them correct. The search can bring back the wrong passage, or one that only touches
-                the topic, and the model can still misread a good one.
+            <p {{ lang_attrs('ai_disclosure.starting_from_real_texts_keeps_answers') }}>
+                {{ _('ai_disclosure.starting_from_real_texts_keeps_answers') }}
             </p>
 
-            <h2 data-en="3. Where it can go wrong" data-he="3. איפה זה עלול לטעות">3. Where it can go wrong</h2>
-            <p data-en="Language models sometimes state something confidently that is wrong, made up, or not in the sources they were given. On Sh'elah that usually looks like one of these:"
-                data-he="מודלי שפה לפעמים קובעים בביטחון דבר שגוי, מומצא, או שאינו במקורות שניתנו להם. ב-Sh'elah זה נראה בדרך כלל כך:">
-                Language models sometimes state something confidently that is wrong, made up, or not in the sources
-                they were given. On Sh'elah that usually looks like one of these:
+            <h2 {{ lang_attrs('ai_disclosure.3_where_it_can_go_wrong') }}>{{ _('ai_disclosure.3_where_it_can_go_wrong') }}</h2>
+            <p {{ lang_attrs('ai_disclosure.language_models_sometimes_state_something_confid') }}>
+                {{ _('ai_disclosure.language_models_sometimes_state_something_confid') }}
             </p>
             <ul>
-                <li data-en="A citation that looks real but points to the wrong place, or to a text that does not exist."
-                    data-he="מקור שנראה אמיתי אבל מפנה למקום שגוי, או לטקסט שלא קיים.">A citation that looks real but points to the wrong place, or to a text that does not exist.</li>
-                <li data-en="One opinion presented as the only one, when the sources disagree."
-                    data-he="דעה אחת שמוצגת כיחידה, כשהמקורות חלוקים.">One opinion presented as the only one, when the sources disagree.</li>
-                <li data-en="A passage that matches the topic but not the question."
-                    data-he="קטע שמתאים לנושא אבל לא לשאלה.">A passage that matches the topic but not the question.</li>
-                <li data-en="Meaning that shifts when a Hebrew or Aramaic text is put into English, or the other way around."
-                    data-he="משמעות שמשתנה כשטקסט בעברית או בארמית עובר לאנגלית, או להפך.">Meaning that shifts when a Hebrew or Aramaic text is put into English, or the other way around.</li>
+                <li {{ lang_attrs('ai_disclosure.a_citation_that_looks_real_but') }}>{{ _('ai_disclosure.a_citation_that_looks_real_but') }}</li>
+                <li {{ lang_attrs('ai_disclosure.one_opinion_presented_as_the_only') }}>{{ _('ai_disclosure.one_opinion_presented_as_the_only') }}</li>
+                <li {{ lang_attrs('ai_disclosure.a_passage_that_matches_the_topic') }}>{{ _('ai_disclosure.a_passage_that_matches_the_topic') }}</li>
+                <li {{ lang_attrs('ai_disclosure.meaning_that_shifts_when_a_hebrew') }}>{{ _('ai_disclosure.meaning_that_shifts_when_a_hebrew') }}</li>
             </ul>
-            <p data-en="Some things help. The model is told to cite only sources it is sure exist. A check on the finished answer catches explicit content and leaked instructions, though not factual mistakes. Citations link to the source text where Sh'elah can match it, so you can read the original yourself. These reduce the risk and do not remove it. Open the source before you rely on an answer (see Terms of Service §6)."
-                data-he="כמה דברים עוזרים. המודל מונחה לצטט רק מקורות שהוא בטוח שקיימים. בדיקה של התשובה המוגמרת תופסת תוכן מפורש והנחיות פנימיות שדלפו, אבל לא טעויות עובדתיות. ההפניות מקושרות לטקסט המקור כשאפשר להתאים אותו, כך שאפשר לקרוא את המקור בעצמכם. אלה מקטינים את הסיכון ולא מבטלים אותו. פתחו את המקור לפני שאתם סומכים על תשובה (ראו תנאי השירות, סעיף 6).">
+            <p {{ lang_attrs('ai_disclosure.some_things_help_the_model_is') }}>
                 Some things help. The model is told to cite only sources it is sure exist. A check on the finished
                 answer catches explicit content and leaked instructions, though not factual mistakes. Citations link
                 to the source text where Sh'elah can match it, so you can read the original yourself. These reduce
                 the risk and do not remove it. Open the source before you rely on an answer (see
-                <a href="/terms" data-en="Terms of Service" data-he="תנאי השירות">Terms of Service</a> §6).
+                <a href="/terms" {{ lang_attrs('ai_disclosure.terms_of_service') }}>{{ _('ai_disclosure.terms_of_service') }}</a> §6).
             </p>
 
-            <h2 data-en="4. What the AI does not do" data-he="4. מה הבינה המלאכותית לא עושה">4. What the AI does not do</h2>
+            <h2 {{ lang_attrs('ai_disclosure.4_what_the_ai_does_not') }}>{{ _('ai_disclosure.4_what_the_ai_does_not') }}</h2>
             <ul>
-                <li data-en="It does not give a psak halacha. An answer is study material, not a ruling."
-                    data-he="היא לא פוסקת הלכה. תשובה היא חומר ללימוד, לא פסק.">It does not give a psak halacha. An answer is study material, not a ruling.</li>
-                <li data-en="It does not replace your rabbi or posek."
-                    data-he="היא לא מחליפה את הרב או הפוסק שלכם.">It does not replace your rabbi or posek.</li>
-                <li data-en="It does not give legal, medical, mental-health or financial advice."
-                    data-he="היא לא נותנת ייעוץ משפטי, רפואי, נפשי או פיננסי.">It does not give legal, medical, mental-health or financial advice.</li>
-                <li data-en="It is told never to claim to be a rabbi or a person."
-                    data-he="היא מונחית לעולם לא לטעון שהיא רב או אדם.">It is told never to claim to be a rabbi or a person.</li>
-                <li data-en="It does not answer when a message sounds like an emergency, self-harm or abuse. Sh'elah shows a fixed message instead, pointing to emergency services, a crisis line or a trusted adult, and the model is never called. Everyday health questions with a halachic angle, such as fasting with a medical condition, are answered like any other question."
-                    data-he="היא לא עונה כשהודעה נשמעת כמו מצב חירום, פגיעה עצמית או התעללות. במקום זה Sh'elah מציגה הודעה קבועה שמפנה לשירותי חירום, לקו משבר או למבוגר שאפשר לסמוך עליו, והמודל כלל לא נקרא. שאלות בריאות יומיומיות עם היבט הלכתי, כמו צום עם מצב רפואי, מקבלות תשובה כמו כל שאלה אחרת.">It does not answer when a message sounds like an emergency, self-harm or abuse. Sh'elah shows a fixed message instead, pointing to emergency services, a crisis line or a trusted adult, and the model is never called. Everyday health questions with a halachic angle, such as fasting with a medical condition, are answered like any other question.</li>
-                <li data-en="It declines hateful, violent or explicit requests, and subjects with no Jewish angle."
-                    data-he="היא מסרבת לבקשות שנאה, אלימות או תוכן מפורש, ולנושאים שאין להם זווית יהודית.">It declines hateful, violent or explicit requests, and subjects with no Jewish angle.</li>
+                <li {{ lang_attrs('ai_disclosure.it_does_not_give_a_psak') }}>{{ _('ai_disclosure.it_does_not_give_a_psak') }}</li>
+                <li {{ lang_attrs('ai_disclosure.it_does_not_replace_your_rabbi') }}>{{ _('ai_disclosure.it_does_not_replace_your_rabbi') }}</li>
+                <li {{ lang_attrs('ai_disclosure.it_does_not_give_legal_medical') }}>{{ _('ai_disclosure.it_does_not_give_legal_medical') }}</li>
+                <li {{ lang_attrs('ai_disclosure.it_is_told_never_to_claim') }}>{{ _('ai_disclosure.it_is_told_never_to_claim') }}</li>
+                <li {{ lang_attrs('ai_disclosure.it_does_not_answer_when_a') }}>{{ _('ai_disclosure.it_does_not_answer_when_a') }}</li>
+                <li {{ lang_attrs('ai_disclosure.it_declines_hateful_violent_or_explicit') }}>{{ _('ai_disclosure.it_declines_hateful_violent_or_explicit') }}</li>
             </ul>
 
-            <h2 data-en="5. Your rabbi makes the call" data-he="5. הרב שלכם מחליט">5. Your rabbi makes the call</h2>
-            <p data-en="Every answer comes with a note: AI-generated educational information, not a halachic ruling, ask your rabbi for practical guidance. The note stays on screen and cannot be turned off. Sh'elah is meant to help you find and understand sources faster. If you plan to act on an answer, your rabbi decides."
-                data-he="כל תשובה מלווה בהערה: מידע חינוכי שנוצר על ידי בינה מלאכותית, לא פסיקה הלכתית, שאלו את הרב שלכם להנחיה מעשית. ההערה נשארת על המסך ואי אפשר לכבות אותה. Sh'elah נועדה לעזור לכם למצוא ולהבין מקורות מהר יותר. אם אתם מתכוונים לפעול לפי תשובה, הרב שלכם מחליט.">
-                Every answer comes with a note: AI-generated educational information, not a halachic ruling, ask
-                your rabbi for practical guidance. The note stays on screen and cannot be turned off. Sh'elah is
-                meant to help you find and understand sources faster. If you plan to act on an answer, your rabbi
-                decides.
+            <h2 {{ lang_attrs('ai_disclosure.5_your_rabbi_makes_the_call') }}>{{ _('ai_disclosure.5_your_rabbi_makes_the_call') }}</h2>
+            <p {{ lang_attrs('ai_disclosure.every_answer_comes_with_a_note') }}>
+                {{ _('ai_disclosure.every_answer_comes_with_a_note') }}
             </p>
 
-            <h2 data-en="6. Age and sensitive topics" data-he="6. גיל ונושאים רגישים">6. Age and sensitive topics</h2>
-            <p data-en="You must be at least 13 to use Sh'elah, and at least 16 in the EU and UK (see Terms of Service §3). The AI is told to assume the reader could be 13. On sensitive subjects such as niddah, mikveh and intimacy, it explains the halachic framework in clinical language, cites sources, and sends you to a rabbi, teacher or parent for practical details. If an answer comes back with explicit content anyway, a check replaces it with a short explanation and a referral."
-                data-he="כדי להשתמש ב-Sh'elah צריך להיות בן 13 לפחות, ובאיחוד האירופי ובבריטניה בן 16 לפחות (ראו תנאי השירות, סעיף 3). הבינה המלאכותית מונחית להניח שהקורא יכול להיות בן 13. בנושאים רגישים כמו נידה, מקווה ואינטימיות, היא מסבירה את המסגרת ההלכתית בלשון עניינית, מציינת מקורות, ומפנה לרב, למורה או להורה לפרטים מעשיים. אם בכל זאת מתקבלת תשובה עם תוכן מפורש, בדיקה מחליפה אותה בהסבר קצר ובהפניה.">
+            <h2 {{ lang_attrs('ai_disclosure.6_age_and_sensitive_topics') }}>{{ _('ai_disclosure.6_age_and_sensitive_topics') }}</h2>
+            <p {{ lang_attrs('ai_disclosure.you_must_be_at_least_13') }}>
                 You must be at least 13 to use Sh'elah, and at least 16 in the EU and UK (see
-                <a href="/terms" data-en="Terms of Service" data-he="תנאי השירות">Terms of Service</a> §3). The AI
+                <a href="/terms" {{ lang_attrs('ai_disclosure.terms_of_service') }}>{{ _('ai_disclosure.terms_of_service') }}</a> §3). The AI
                 is told to assume the reader could be 13. On sensitive subjects such as niddah, mikveh and intimacy,
                 it explains the halachic framework in clinical language, cites sources, and sends you to a rabbi,
                 teacher or parent for practical details. If an answer comes back with explicit content anyway, a
                 check replaces it with a short explanation and a referral.
             </p>
 
-            <h2 data-en="7. Contact" data-he="7. יצירת קשר">7. Contact</h2>
-            <p data-en="Questions about this page, or an answer that seemed unsafe, wrong or inappropriate: write to the address below. The thumbs-up and thumbs-down under an answer reach me too."
-                data-he="שאלות על העמוד הזה, או על תשובה שנראתה לא בטוחה, לא נכונה או לא הולמת: כתבו לכתובת שלמטה. גם האגודלים למעלה ולמטה שמתחת לתשובה מגיעים אליי.">
-                Questions about this page, or an answer that seemed unsafe, wrong or inappropriate: write to the
-                address below. The thumbs-up and thumbs-down under an answer reach me too.
+            <h2 {{ lang_attrs('ai_disclosure.7_contact') }}>{{ _('ai_disclosure.7_contact') }}</h2>
+            <p {{ lang_attrs('ai_disclosure.questions_about_this_page_or_an') }}>
+                {{ _('ai_disclosure.questions_about_this_page_or_an') }}
             </p>
-            <p><strong data-en="Contact:" data-he="איש קשר:">Contact:</strong> Akiva Yevdayev</p>
-            <p><strong data-en="Email:" data-he="דוא״ל:">Email:</strong> <a
+            <p><strong {{ lang_attrs('ai_disclosure.contact') }}>{{ _('ai_disclosure.contact') }}</strong> Akiva Yevdayev</p>
+            <p><strong {{ lang_attrs('ai_disclosure.email') }}>{{ _('ai_disclosure.email') }}</strong> <a
                     href="mailto:contact@shelah.org">contact@shelah.org</a></p>
 
             <hr class="my-8" style="border-color: var(--surface-border);">
 
             <div class="info-box">
                 <p class="text-sm"
-                    data-en="See also the Terms of Service (§6–§8: AI output, not professional advice, assumption of risk) and the Privacy Policy (§4 and §9: what is sent to AI providers)."
-                    data-he="ראו גם את תנאי השירות (סעיפים 6–8: פלט בינה מלאכותית, אין כאן ייעוץ מקצועי, נטילת סיכון) ואת מדיניות הפרטיות (סעיפים 4 ו-9: מה נשלח לספקי בינה מלאכותית).">
-                    See also the <a href="/terms" data-en="Terms of Service" data-he="תנאי השירות">Terms of
-                        Service</a> (§6–§8: AI output, not professional advice, assumption of risk) and the
-                    <a href="/privacy" data-en="Privacy Policy" data-he="מדיניות הפרטיות">Privacy Policy</a> (§4 and
+                    {{ lang_attrs('ai_disclosure.see_also_the_terms_of_service') }}>
+                    See also the <a href="/terms" {{ lang_attrs('ai_disclosure.terms_of_service') }}>{{ _('ai_disclosure.terms_of_service') }}</a> (§6–§8: AI output, not professional advice, assumption of risk) and the
+                    <a href="/privacy" {{ lang_attrs('ai_disclosure.privacy_policy') }}>{{ _('ai_disclosure.privacy_policy') }}</a> (§4 and
                     §9: what is sent to AI providers).
                 </p>
             </div>

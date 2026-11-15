@@ -1,7 +1,9 @@
 {
   "back_to_shelah": "Back to Sh'elah",
+  "copyright": "© Sh'elah {year}. All rights reserved.",
   "footer.accessibility": "Accessibility",
   "footer.privacy": "Privacy Policy",
   "footer.site_name": "Sh'elah Torah Encyclopedia",
-  "footer.terms": "Terms of Service"
+  "footer.terms": "Terms of Service",
+  "other_language_name": "עברית"
 }

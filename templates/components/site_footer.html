@@ -7,52 +7,51 @@
 <footer class="border-t py-6 text-center text-xs"
         style="border-color: var(--surface-border); color: var(--ink-secondary); background: var(--surface-1);">
         {%- if show_copyright %}
-        <p class="mb-2" data-en="© Sh'elah {{ current_year }}. All rights reserved." data-he="© Sh'elah {{ current_year }}. כל הזכויות שמורות.">©
-            Sh'elah {{ current_year }}. All rights reserved.</p>
+        <p class="mb-2" {{ lang_attrs('common.copyright', year=current_year) }}>{{ _('common.copyright', year=current_year) }}</p>
         {%- endif %}
         <p>
             <a href="/" class="font-semibold hover:underline" style="color: var(--ink-heading);"
-                data-en="Sh'elah Torah Encyclopedia" data-he="שאלה אנציקלופדיית תורה">Sh'elah Torah Encyclopedia</a>
+                {{ lang_attrs('site_footer.shelah_torah_encyclopedia') }}>{{ _('site_footer.shelah_torah_encyclopedia') }}</a>
             &nbsp;·&nbsp;
             {%- if current != 'about' %}
             <a href="/about" class="hover:underline" style="color: var(--ink-secondary);"
-                data-en="About" data-he="אודות">About</a>
+                {{ lang_attrs('site_footer.about') }}>{{ _('site_footer.about') }}</a>
             &nbsp;·&nbsp;
             {%- endif %}
             {%- if current != 'help' %}
             <a href="/help" class="hover:underline" style="color: var(--ink-secondary);"
-                data-en="Help" data-he="עזרה">Help</a>
+                {{ lang_attrs('site_footer.help') }}>{{ _('site_footer.help') }}</a>
             &nbsp;·&nbsp;
             {%- endif %}
             {%- if current != 'glossary' %}
             <a href="/glossary" class="hover:underline" style="color: var(--ink-secondary);"
-                data-en="Glossary" data-he="מילון מונחים">Glossary</a>
+                {{ lang_attrs('site_footer.glossary') }}>{{ _('site_footer.glossary') }}</a>
             &nbsp;·&nbsp;
             {%- endif %}
             {%- if current != 'tanakh' %}
             <a href="/tanakh" class="hover:underline" style="color: var(--ink-secondary);"
-                data-en="Tanakh" data-he="תנ״ך">Tanakh</a>
+                {{ lang_attrs('site_footer.tanakh') }}>{{ _('site_footer.tanakh') }}</a>
             &nbsp;·&nbsp;
             {%- endif %}
             <a href="/terms" class="hover:underline font-medium" style="color: var(--ink-heading);"
-                data-en="Terms of Service" data-he="תנאי שירות">Terms of Service</a>
+                {{ lang_attrs('site_footer.terms_of_service') }}>{{ _('site_footer.terms_of_service') }}</a>
             &nbsp;·&nbsp;
             <a href="/privacy" class="hover:underline" style="color: var(--ink-secondary);"
-                data-en="Privacy Policy" data-he="מדיניות פרטיות">Privacy Policy</a>
+                {{ lang_attrs('site_footer.privacy_policy') }}>{{ _('site_footer.privacy_policy') }}</a>
             &nbsp;·&nbsp;
             <a href="/ai-disclosure" class="hover:underline" style="color: var(--ink-secondary);"
-                data-en="AI Disclosure" data-he="גילוי נאות בינה מלאכותית">AI Disclosure</a>
+                {{ lang_attrs('site_footer.ai_disclosure') }}>{{ _('site_footer.ai_disclosure') }}</a>
             &nbsp;·&nbsp;
             <a href="/acceptable-use" class="hover:underline" style="color: var(--ink-secondary);"
-                data-en="Acceptable Use" data-he="שימוש מותר">Acceptable Use</a>
+                {{ lang_attrs('site_footer.acceptable_use') }}>{{ _('site_footer.acceptable_use') }}</a>
             &nbsp;·&nbsp;
             <a href="/dmca" class="hover:underline" style="color: var(--ink-secondary);"
-                data-en="DMCA" data-he="DMCA">DMCA</a>
+                {{ lang_attrs('site_footer.dmca') }}>{{ _('site_footer.dmca') }}</a>
             &nbsp;·&nbsp;
             <a href="/accessibility" class="hover:underline" style="color: var(--ink-secondary);"
-                data-en="Accessibility" data-he="נגישות">Accessibility</a>
+                {{ lang_attrs('site_footer.accessibility') }}>{{ _('site_footer.accessibility') }}</a>
             &nbsp;·&nbsp;
             <a href="/licenses" class="hover:underline" style="color: var(--ink-secondary);"
-                data-en="Licenses" data-he="רישיונות">Licenses</a>
+                {{ lang_attrs('site_footer.licenses') }}>{{ _('site_footer.licenses') }}</a>
         </p>
     </footer>

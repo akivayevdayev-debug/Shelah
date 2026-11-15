@@ -1,7 +1,9 @@
 {
   "back_to_shelah": "חזרה לשאלה",
+  "copyright": "© Sh'elah {year}. כל הזכויות שמורות.",
   "footer.accessibility": "נגישות",
   "footer.privacy": "מדיניות פרטיות",
   "footer.site_name": "שאלה אנציקלופדיית תורה",
-  "footer.terms": "תנאי שירות"
+  "footer.terms": "תנאי שירות",
+  "other_language_name": "English"
 }

@@ -67,9 +67,11 @@ def _share_in_script(text, script):
     return sum(script.upper() in unicodedata.name(ch, "") for ch in letters) / len(letters)
 
 
-# Written the same in every language, so they don't count against the
-# script check.
-KEPT_NAMES = ("Sh'elah", "Sefaria", "Claude", "Gemini")
+META = json.loads((ROOT / "locales" / "meta.json").read_text(encoding="utf-8"))
+# Written the same in every language (locales/meta.json), so they don't count
+# against the script check. Longest first, so "Google Fonts" goes before "Google".
+KEPT_NAMES = sorted(META["keep_names"], key=len, reverse=True)
+SCRIPT_EXEMPT = set(META["script_exempt"])
 
 
 def test_every_english_string_has_a_hebrew_one():
@@ -107,7 +109,8 @@ def test_every_string_is_written_in_its_languages_script():
     wrong = [
         f"{code}:{key}" for code, table in i18n.CATALOGS.strings.items()
         for key, text in table.items()
-        if _share_in_script(text, i18n.CATALOGS.locales[code].script) < 0.5
+        if key not in SCRIPT_EXEMPT
+        and _share_in_script(text, i18n.CATALOGS.locales[code].script) < 0.5
     ]
     assert wrong == []
 
