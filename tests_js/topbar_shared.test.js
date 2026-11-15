@@ -317,3 +317,65 @@ test('withThemeFade still applies the change, once, when starting the transition
     assert.equal(calls, 1);
     assert.equal(doc.attrs.has('data-vt-theme'), false);
 });
+
+// ── swapLanguageText on real markup (links, <strong>, icons kept) ─────────
+
+const { JSDOM } = require('jsdom');
+const { swapLanguageText } = require('../static/js/topbar_shared.js');
+
+function withDom(t, bodyHtml) {
+    const dom = new JSDOM(`<!doctype html><body>${bodyHtml}</body>`);
+    const saved = globalThis.document;
+    globalThis.document = dom.window.document;
+    t.after(() => { globalThis.document = saved; });
+    return dom.window.document;
+}
+
+const LEAD_IN = '<p id="p" data-en="See the " data-he="ראו את ">See the '
+    + '<a href="/ai-disclosure" data-en="AI Disclosure" data-he="גילוי נאות">AI Disclosure</a>.</p>';
+
+const FULL_LINE = '<p id="p" data-en="Part of our Terms of Service here." data-he="חלק מתנאי השירות כאן.">'
+    + 'Part of our <a href="/terms" data-en="Terms of Service" data-he="תנאי השירות">Terms of Service</a> here.</p>';
+
+const BOLD_LINE = '<span id="p" data-en="Privacy: we sell nothing." data-he="פרטיות: איננו מוכרים דבר.">'
+    + '<strong>Privacy:</strong> we sell nothing.</span>';
+
+test('swapLanguageText keeps the link after a lead-in line when switching to Hebrew', (t) => {
+    const doc = withDom(t, LEAD_IN);
+    swapLanguageText('he', doc);
+    assert.equal(doc.getElementById('p').innerHTML, 'ראו את <a href="/ai-disclosure" data-en="AI Disclosure" data-he="גילוי נאות">גילוי נאות</a>.');
+});
+
+test('swapLanguageText restores the lead-in line and its link when switching back to English', (t) => {
+    const doc = withDom(t, LEAD_IN);
+    const before = doc.getElementById('p').innerHTML;
+    swapLanguageText('he', doc);
+    swapLanguageText('en', doc);
+    assert.equal(doc.getElementById('p').innerHTML, before);
+});
+
+test('swapLanguageText puts a link back where its Hebrew text appears in a full translated line', (t) => {
+    const doc = withDom(t, FULL_LINE);
+    swapLanguageText('he', doc);
+    assert.equal(doc.querySelector('#p a').previousSibling.textContent, 'חלק מ');
+});
+
+test('swapLanguageText keeps an English <strong> in the English line', (t) => {
+    const doc = withDom(t, BOLD_LINE);
+    swapLanguageText('en', doc);
+    assert.equal(doc.getElementById('p').innerHTML, '<strong>Privacy:</strong> we sell nothing.');
+});
+
+test('swapLanguageText drops an English-only <strong> from the Hebrew line and brings it back in English', (t) => {
+    const doc = withDom(t, BOLD_LINE);
+    swapLanguageText('he', doc);
+    const hebrew = doc.getElementById('p').innerHTML;
+    swapLanguageText('en', doc);
+    assert.deepEqual([hebrew, doc.querySelector('#p strong').textContent], ['פרטיות: איננו מוכרים דבר.', 'Privacy:']);
+});
+
+test('swapLanguageText keeps a text-free icon child at the start of the line', (t) => {
+    const doc = withDom(t, '<button id="p" data-en="Save" data-he="שמור"><svg class="i"></svg>Save</button>');
+    swapLanguageText('he', doc);
+    assert.equal(doc.getElementById('p').innerHTML, '<svg class="i"></svg>שמור');
+});

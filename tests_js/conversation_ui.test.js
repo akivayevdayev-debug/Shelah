@@ -1198,6 +1198,32 @@ test('the tip never shows for someone who has used the AI or dismissed it', asyn
     }
 });
 
+test('on a first visit the tip waits while the analytics banner is up', async () => {
+    const page = await openConversationPage({ consentAnswered: false });
+    try {
+        page.$('#analyticsConsentBanner').classList.remove('hidden');
+        await page.tick(1700);
+        assert.equal(page.hidden('#aiDiscoveryTip'), true);
+    } finally {
+        page.close();
+    }
+});
+
+test('answering the analytics banner lets the waiting tip show', async () => {
+    const page = await openConversationPage({ consentAnswered: false });
+    try {
+        const banner = page.$('#analyticsConsentBanner');
+        banner.classList.remove('hidden');
+        await page.tick(1700);
+        banner.classList.add('hidden');
+        await page.flush();
+        await page.tick(1700);
+        assert.equal(page.hidden('#aiDiscoveryTip'), false);
+    } finally {
+        page.close();
+    }
+});
+
 test('the tip steps aside for an open menu and returns when it closes', async () => {
     const page = await openConversationPage();
     try {

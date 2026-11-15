@@ -99,6 +99,9 @@ const TIP_GAP_PX = 12;
 // shows over one: it waits for it to close, and steps aside if one opens
 // while the tip is up.
 const TIP_BLOCKING_MENU_IDS = ["readerSettingsPanel", "settingsPanel", "userProfileMenu"];
+// The first-visit analytics consent banner: the tip waits until it is answered,
+// so a new visitor never gets two overlays at once.
+const CONSENT_BANNER_ID = "analyticsConsentBanner";
 
 const ui = {
     installed: false,
@@ -2233,18 +2236,27 @@ function maybeShowTip() {
     }, TIP_DELAY_MS);
 }
 
+function isShowing(el) {
+    // Leaving (is-hiding) counts as closed, as index.html's isMenuClosed.
+    return Boolean(el) && !el.classList.contains("hidden") && !el.classList.contains("is-hiding");
+}
+
+function consentBannerPending() {
+    return !document.documentElement.hasAttribute("data-consent-set")
+        && isShowing(document.getElementById(CONSENT_BANNER_ID));
+}
+
 function openTipBlockingMenu() {
-    return TIP_BLOCKING_MENU_IDS.some((id) => {
-        const menu = document.getElementById(id);
-        // Leaving (is-hiding) counts as closed, as index.html's isMenuClosed.
-        return Boolean(menu) && !menu.classList.contains("hidden") && !menu.classList.contains("is-hiding");
-    });
+    return consentBannerPending()
+        || TIP_BLOCKING_MENU_IDS.some((id) => isShowing(document.getElementById(id)));
 }
 
 // A menu opening hides the tip for now (not for good: it comes back once
-// every menu is closed again, unless the tip was dismissed meanwhile).
+// every menu is closed again, unless the tip was dismissed meanwhile). The
+// consent banner is watched the same way: answering it lets the tip show.
 function watchTipBlockingMenus() {
-    const menus = TIP_BLOCKING_MENU_IDS.map((id) => document.getElementById(id)).filter(Boolean);
+    const menus = [...TIP_BLOCKING_MENU_IDS, CONSENT_BANNER_ID]
+        .map((id) => document.getElementById(id)).filter(Boolean);
     if (!menus.length) return;
     const observer = new MutationObserver(() => {
         if (openTipBlockingMenu()) {

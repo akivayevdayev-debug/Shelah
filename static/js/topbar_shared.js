@@ -40,13 +40,83 @@
     }
 
     // Swap every [data-en]/[data-he] element under `scope` to `lang`'s text,
-    // leaving any element with no text for that language alone.
+    // leaving any element with no text for that language alone. An element
+    // with child elements (a link, <strong>, <code>, an icon) keeps them; see
+    // swapTextKeepingChildren.
     function swapLanguageText(lang, scope) {
         scope.querySelectorAll('[data-en], [data-he]').forEach((el) => {
-            if (el.dataset[lang]) {
-                el.textContent = el.dataset[lang];
+            const text = el.dataset[lang];
+            if (!text) return;
+            if (el.childElementCount > 0 || originalChildren.has(el)) {
+                swapTextKeepingChildren(el, text, lang);
+            } else {
+                el.textContent = text;
             }
         });
+    }
+
+    // The child elements each mixed-content element started with, and whether
+    // its data-en text is only the lead-in before them. Kept so a child that
+    // has no place in one language's text (an English-only <strong> on a
+    // Hebrew swap) comes back on the swap back.
+    const originalChildren = new WeakMap();
+
+    function collapseSpace(value) {
+        return String(value || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function childText(child, lang, fallback) {
+        return collapseSpace((child.dataset && child.dataset[lang]) || fallback);
+    }
+
+    function rememberChildren(el) {
+        let saved = originalChildren.get(el);
+        if (!saved) {
+            const children = Array.from(el.children).map((child) => ({
+                node: child,
+                english: collapseSpace(child.textContent),
+            }));
+            const englishLine = collapseSpace(el.dataset.en);
+            // A data-en that names none of its children's text is a lead-in
+            // ("see the " before <a>AI Disclosure</a>): only the text before
+            // the first child is translated, the rest of the markup stays.
+            const leadIn = children.length > 0 && children.every(
+                (c) => !c.english || !englishLine.includes(childText(c.node, 'en', c.english)),
+            ) && children.some((c) => c.english);
+            saved = { children, leadIn };
+            originalChildren.set(el, saved);
+        }
+        return saved;
+    }
+
+    // Rebuild a mixed-content element from `text`, putting each original child
+    // element back where its own text appears in it (a child's data-<lang>, or
+    // its English text). Children that carry no text (icons) go first; children
+    // whose text isn't in this language's line are left out of this language.
+    function swapTextKeepingChildren(el, text, lang) {
+        const { children, leadIn } = rememberChildren(el);
+        if (leadIn) {
+            const first = children[0].node;
+            while (el.firstChild && el.firstChild !== first) el.firstChild.remove();
+            el.insertBefore(document.createTextNode(text), first);
+            return;
+        }
+        const nodes = [];
+        let rest = text;
+        children.forEach(({ node, english }) => {
+            const own = childText(node, lang, english);
+            if (!own) {
+                nodes.push(node);
+                return;
+            }
+            const at = rest.indexOf(own);
+            if (at < 0) return;
+            if (at > 0) nodes.push(document.createTextNode(rest.slice(0, at)));
+            nodes.push(node);
+            rest = rest.slice(at + own.length);
+        });
+        if (rest) nodes.push(document.createTextNode(rest));
+        el.replaceChildren(...nodes);
     }
 
     // index.html's head script marks a Hebrew load data-lang-pending, which
@@ -125,7 +195,7 @@
         transition.finished.then(done, done);
     }
 
-    const api = { applyLanguagePreference, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade };
+    const api = { applyLanguagePreference, swapLanguageText, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade };
 
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = api;

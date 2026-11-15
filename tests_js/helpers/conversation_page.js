@@ -122,7 +122,7 @@ const STORE_MODULE = 'static/js/conversation-store.js';
  * @param {boolean} [options.install] Install the UI (default true).
  */
 async function openConversationPage(options = {}) {
-    const { signedIn = false, clerk = false, mobile = false, lang = 'en', api: apiOverrides = {}, install = true, before = null } = options;
+    const { signedIn = false, clerk = false, mobile = false, lang = 'en', api: apiOverrides = {}, install = true, before = null, consentAnswered = true } = options;
     const clock = fakeClock();
     const page = await openShellPage({
         scripts: [],
@@ -159,6 +159,9 @@ async function openConversationPage(options = {}) {
             if (signedIn || clerk) window.APP_CLERK = { publishableKey: 'pk_test_example' };
             if (signedIn) window.Clerk = { session: { id: 'sess_1' }, user: { id: 'user_1' } };
             setDocumentLanguage(window, lang);
+            // A returning visitor has answered the analytics banner (the head
+            // script's data-consent-set); `consentAnswered: false` is a first visit.
+            if (consentAnswered) window.document.documentElement.setAttribute('data-consent-set', '');
             if (before) before(window, clock);
         },
     });
