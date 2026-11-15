@@ -135,9 +135,13 @@ h6 {
    the browser smear one on: about 40% more ink, on a face that already sets
    darker than Cardo (a Hebrew prayer heading came out half again as heavy as
    the English heading beside it). Every other face the page uses has a real
-   bold, so only Ezra SIL is affected. */
+   bold, so only Ezra SIL is affected.
+   No fake italic either: Cardo and Inter load real italic faces (fetched only
+   when italic text appears), and Hebrew has no italic tradition, so an em or
+   blockquote in Hebrew stays upright instead of being slanted by the browser. */
 html {
     font-synthesis-weight: none;
+    font-synthesis-style: none;
 }
 
 /* Emphasis in Hebrew (a commentary's opening words, a bolded term in a source)
