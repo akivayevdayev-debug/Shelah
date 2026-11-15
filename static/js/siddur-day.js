@@ -126,19 +126,19 @@ export function activeTags(day) {
 }
 
 const NAMES = Object.freeze({
-    mashiv: ["Mashiv HaRuach", "משיב הרוח"],
-    morid: ["Morid HaTal", "מוריד הטל"],
+    mashiv: "siddur_day.mashiv_haruach",
+    morid: "siddur_day.morid_hatal",
 });
 
 function gevurotText(gevurot, kind, t) {
-    const name = (key) => t(...NAMES[key]);
+    const name = (key) => t(NAMES[key]);
     if (kind) {
-        return t(`In the Amidah: ${name(gevurot[kind])}`, `בעמידה: ${name(gevurot[kind])}`);
+        return t("siddur_day.in_the_amidah", { name: name(gevurot[kind]) });
     }
     const before = gevurot.shacharit;
     const after = gevurot.musaf;
-    if (before === after) return t(`In the Amidah: ${name(before)}`, `בעמידה: ${name(before)}`);
-    return t(`${name(before)} until Musaf, then ${name(after)}`, `${name(before)} עד מוסף, ואחר כך ${name(after)}`);
+    if (before === after) return t("siddur_day.in_the_amidah", { name: name(before) });
+    return t("siddur_day.until_musaf_then", { before: name(before), after: name(after) });
 }
 
 // ─── Where today's additions live ───────────────────────────────────────────
@@ -258,56 +258,53 @@ export function extraPages(day, toc) {
 const reminder = (key, text) => ({ key, text });
 
 function tachanunText(day, active, kind, t) {
-    const says = t("Tachanun is said", "אומרים תחנון");
-    const none = t("No Tachanun today", "אין אומרים תחנון");
+    const says = t('siddur_day.tachanun_is_said');
+    const none = t('siddur_day.no_tachanun_today');
     if (active.has("shabbat")) {
         if (kind === "shacharit") return null;
-        return day.tachanun.tzidkatcha ? t("Tzidkatcha at Mincha", "צדקתך במנחה") : t("No Tzidkatcha at Mincha", "אין אומרים צדקתך במנחה");
+        return day.tachanun.tzidkatcha ? t('siddur_day.tzidkatcha_at_mincha') : t('siddur_day.no_tzidkatcha_at_mincha');
     }
     if (kind) return day.tachanun[kind] ? says : none;
     if (day.tachanun.shacharit === day.tachanun.mincha) return day.tachanun.shacharit ? says : none;
     return day.tachanun.shacharit
-        ? t("Tachanun at Shacharit, not at Mincha", "תחנון בשחרית, לא במנחה")
-        : t("No Tachanun at Shacharit; said at Mincha", "אין תחנון בשחרית; אומרים במנחה");
+        ? t('siddur_day.tachanun_at_shacharit_not_at_mincha')
+        : t('siddur_day.no_tachanun_at_shacharit_said_at');
 }
 
 // One function per reminder line: the entry, or null when the day has none.
 const REMINDER_LINES = [
     ({ day, kind, t }) => (day.aseretYemeiTeshuva && kind !== "musaf"
-        ? reminder("ayt", t(
-            "Ten Days of Repentance: HaMelech HaKadosh, Zochrenu and the other Amidah changes",
-            "עשרת ימי תשובה: המלך הקדוש, זכרנו ושאר השינויים בעמידה",
-        ))
+        ? reminder("ayt", t('siddur_day.ten_days_of_repentance_hamelech_hakadosh'))
         : null),
     ({ day, kind, t }) => {
         if (day.hallel?.kind === "none" || !(kind === null || kind === "shacharit")) return null;
         return reminder("hallel", day.hallel.kind === "full"
-            ? t("Full Hallel, with a beracha", "הלל שלם בברכה")
-            : t("Half Hallel, without a beracha (Sephardic custom)", "חצי הלל, בלא ברכה (מנהג הספרדים)"));
+            ? t('siddur_day.full_hallel_with_a_beracha')
+            : t('siddur_day.half_hallel_without_a_beracha_sephardic'));
     },
-    ({ day, t }) => (day.yaalehVeyavo ? reminder("yaaleh", t("Ya'aleh VeYavo in the Amidah and Birkat Hamazon", "יעלה ויבוא בעמידה ובברכת המזון")) : null),
-    ({ day, t }) => (day.alHanissim ? reminder("al-hanissim", t("Al HaNissim in the Amidah and Birkat Hamazon", "על הניסים בעמידה ובברכת המזון")) : null),
-    ({ day, t }) => (day.alHanissimJerusalem ? reminder("al-hanissim", t("In Jerusalem: Al HaNissim (Shushan Purim)", "בירושלים: על הניסים (שושן פורים)")) : null),
+    ({ day, t }) => (day.yaalehVeyavo ? reminder("yaaleh", t('siddur_day.yaaleh_veyavo_in_the_amidah_and')) : null),
+    ({ day, t }) => (day.alHanissim ? reminder("al-hanissim", t('siddur_day.al_hanissim_in_the_amidah_and')) : null),
+    ({ day, t }) => (day.alHanissimJerusalem ? reminder("al-hanissim", t('siddur_day.in_jerusalem_al_hanissim_shushan_purim')) : null),
     ({ day, kind, t }) => (day.gevurot ? reminder("gevurot", gevurotText(day.gevurot, kind, t)) : null),
     ({ day, kind, t, weekdayAmidah }) => {
         if (!weekdayAmidah || kind === "musaf" || !day.birkatHashanim) return null;
         return reminder("birkat-hashanim", day.birkatHashanim === "barech-alenu"
-            ? t("Barech Alenu (the winter blessing for rain)", "ברך עלינו (נוסח החורף)")
-            : t("Barechenu (the summer blessing)", "ברכנו (נוסח הקיץ)"));
+            ? t('siddur_day.barech_alenu_the_winter_blessing_for')
+            : t('siddur_day.barechenu_the_summer_blessing'));
     },
     ({ day, kind, t, active }) => {
         if (!day.tachanun || !(kind === null || kind === "shacharit" || kind === "mincha")) return null;
         const text = tachanunText(day, active, kind, t);
         return text === null ? null : reminder("tachanun", text);
     },
-    ({ day, kind, t }) => (day.aneinu && kind !== "musaf" ? reminder("aneinu", t("Fast day: Aneinu", "תענית: עננו")) : null),
-    ({ day, kind, t }) => (day.musaf && kind === null ? reminder("musaf", t("Musaf is said today", "אומרים מוסף")) : null),
+    ({ day, kind, t }) => (day.aneinu && kind !== "musaf" ? reminder("aneinu", t('siddur_day.fast_day_aneinu')) : null),
+    ({ day, kind, t }) => (day.musaf && kind === null ? reminder("musaf", t('siddur_day.musaf_is_said_today')) : null),
     ({ day, kind, t, afterSunset }) => {
         const omer = afterSunset ? day.omer?.today : day.omer?.tonight;
         if (!omer || !(kind === null || kind === "arbit")) return null;
         return reminder("omer", afterSunset
-            ? t(`Tonight: day ${omer} of the Omer`, `הלילה: יום ${omer} לעומר`)
-            : t(`Tonight after nightfall: day ${omer} of the Omer`, `הלילה אחר צאת הכוכבים: יום ${omer} לעומר`));
+            ? t("siddur_day.tonight_omer_day", { omer })
+            : t("siddur_day.tonight_after_nightfall_omer_day", { omer }));
     },
 ];
 
@@ -341,38 +338,35 @@ export function todayCardMarkup(day, { kind = null, il = false, afterSunset = nu
     const rows = items.map((item) => {
         const page = linkFor(item.key, day, toc);
         if (page) covered.add(page.value);
-        const open = page ? ` ${pageLink(page, isHebrew, escapeHtml, t("Open", "פתיחה"))}` : "";
+        const open = page ? ` ${pageLink(page, isHebrew, escapeHtml, t('siddur_day.open'))}` : "";
         return `<li data-reminder="${item.key}">${escapeHtml(item.text)}${open}</li>`;
     });
     const list = items.length
         ? `<ul class="siddur-today-list">${rows.join("")}</ul>`
-        : `<p class="siddur-today-empty">${escapeHtml(t("No seasonal changes today.", "אין שינויים מיוחדים היום."))}</p>`;
+        : `<p class="siddur-today-empty">${escapeHtml(t('siddur_day.no_seasonal_changes_today'))}</p>`;
     // Service pages (Shacharit, Mincha...) read one Amidah; the extras belong
     // on the landing page and on the full list.
     const extras = kind === null ? extraPages(day, toc).filter((page) => !covered.has(page.value)) : [];
     const extra = extras.length
-        ? `<p class="siddur-today-pages"><span class="siddur-today-pages-label">${escapeHtml(t("Also in the siddur today", "עוד בסידור היום"))}</span>${extras.map((page) => pageLink(page, isHebrew, escapeHtml)).join("")}</p>`
+        ? `<p class="siddur-today-pages"><span class="siddur-today-pages-label">${escapeHtml(t('siddur_day.also_in_the_siddur_today'))}</span>${extras.map((page) => pageLink(page, isHebrew, escapeHtml)).join("")}</p>`
         : "";
-    const evening = afterSunset ? t("After sunset", "אחרי השקיעה") : t("Before sunset", "לפני השקיעה");
+    const evening = afterSunset ? t('siddur_day.after_sunset') : t('siddur_day.before_sunset');
     return `
         <section class="siddur-today" aria-labelledby="${headingId}">
             <div class="siddur-today-head">
-                <h2 id="${headingId}" class="siddur-today-title">${escapeHtml(t("Today in the siddur", "היום בסידור"))}</h2>
+                <h2 id="${headingId}" class="siddur-today-title">${escapeHtml(t('siddur_day.today_in_the_siddur'))}</h2>
                 <p class="siddur-today-date">${escapeHtml(hebrewDateText(day, isHebrew))}</p>
             </div>
             ${list}
             ${extra}
             <div class="siddur-today-controls">
                 <button type="button" class="siddur-chip" data-siddur-action="toggle-israel" aria-pressed="${il ? "true" : "false"}">
-                    ${escapeHtml(il ? t("In Israel", "בארץ ישראל") : t("Outside Israel", "בחוץ לארץ"))}
+                    ${escapeHtml(il ? t('siddur_day.in_israel') : t('siddur_day.outside_israel'))}
                 </button>
                 <button type="button" class="siddur-chip" data-siddur-action="toggle-evening" aria-pressed="${afterSunset ? "true" : "false"}">
                     ${escapeHtml(evening)}
                 </button>
             </div>
-            ${items.some((item) => item.key === "tachanun") ? `<p class="siddur-today-note">${escapeHtml(t(
-                "Days the calendar can't know (a mourner's house, a groom, a brit) can also change Tachanun.",
-                "ימים שהלוח אינו יודע עליהם (בית אבל, חתן, ברית) משנים גם הם את התחנון.",
-            ))}</p>` : ""}
+            ${items.some((item) => item.key === "tachanun") ? `<p class="siddur-today-note">${escapeHtml(t('siddur_day.days_the_calendar_cant_know_a'))}</p>` : ""}
         </section>`;
 }

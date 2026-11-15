@@ -142,7 +142,7 @@ test('commentary with no text says so, in the page language', async () => {
                 assert.match(html, /No commentary text found for this reference/);
             }
         }
-        page.eval(`t = (en, he) => he`);
+        page.eval(`t = (key, values) => window.ShelahI18n.translate('he', key, values)`);
         assert.match(page.call('renderInlineCommentaryLines', null), /לא נמצא טקסט פירוש/);
     } finally {
         page.close();
@@ -346,7 +346,7 @@ test('a commentary that cannot be loaded offers a way back to the list', async (
         assert.equal(page.$('#selectionInsightsBody').getAttribute('aria-busy'), 'false');
         assert.equal(plain(page.eval('selectionCommentaryState.activeCommentaryRef')), '');
         assert.ok(page.$('#selectionInsightsBody [data-onclick="renderSelectionInsightsChooser"]'));
-        page.eval(`t = (en, he) => he`);
+        page.eval(`t = (key, values) => window.ShelahI18n.translate('he', key, values)`);
         await page.eval(`openCommentaryInline('Rashi on Genesis 1:1')`);
         assert.match(body(page), /לא ניתן לטעון כרגע/);
         assert.equal(hint(page), 'לא ניתן לטעון את הפירוש.');
@@ -480,7 +480,7 @@ test('a passage with no linked commentaries says so instead of drawing an empty 
     try {
         assert.match(page.call('renderCommentaryChooser', []), /No linked commentaries found for this passage/);
         assert.match(page.call('renderCommentaryChooser', null), /No linked commentaries/);
-        page.eval(`t = (en, he) => he`);
+        page.eval(`t = (key, values) => window.ShelahI18n.translate('he', key, values)`);
         assert.match(page.call('renderCommentaryChooser', []), /לא נמצאו מפרשים מקושרים/);
         assert.deepEqual(plain(page.call('groupCommentaryRefsByAuthor', null)), []);
         assert.equal(page.call('getCommentaryAuthorLabel', ''), 'פרשן לא ידוע');

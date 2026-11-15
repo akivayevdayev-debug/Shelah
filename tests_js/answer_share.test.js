@@ -12,6 +12,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { tFor } = require('./helpers/i18n');
 
 const ID = '3f2b8c1e-9a4d-4e6f-8b1a-2c3d4e5f6a7b';
 const OTHER_ID = '00000000-1111-4222-8333-444444444444';
@@ -158,7 +159,7 @@ test('default headers come from window.authHeaders, and survive it throwing or b
 test('linkFor creates the share once, then reuses the cached token', async () => {
     const m = await load();
     const api = fakeApi();
-    const share = m.createAnswerShare({ api, getOrigin: () => ORIGIN, translate: (en) => en });
+    const share = m.createAnswerShare({ api, getOrigin: () => ORIGIN, translate: tFor('en') });
     assert.equal(await share.linkFor(ID), `${ORIGIN}/a/${TOKEN}`);
     assert.equal(await share.linkFor(ID), `${ORIGIN}/a/${TOKEN}`);
     assert.deepEqual(api.calls, [['create', ID]]);
@@ -169,7 +170,7 @@ test('linkFor creates the share once, then reuses the cached token', async () =>
 test('linkFor falls back to the private /answer/<id> link with a note when sharing is unavailable', async () => {
     const m = await load();
     const api = fakeApi({ create: async (id) => { api.calls.push(['create', id]); throw new m.ShareUnavailableError(); } });
-    const share = m.createAnswerShare({ api, getOrigin: () => ORIGIN, translate: (en) => en });
+    const share = m.createAnswerShare({ api, getOrigin: () => ORIGIN, translate: tFor('en') });
     const first = await share.linkFor(ID);
     assert.equal(first.url, `${ORIGIN}/answer/${ID}`);
     assert.match(first.note, /private link/);
@@ -219,7 +220,7 @@ test('revoke clears the state and notifies subscribers; unsubscribe stops notifi
 });
 
 test('default origin and translate come from window', async () => {
-    const m = await load({ t: (_en, he) => he });
+    const m = await load({ t: tFor('he') });
     const share = m.createAnswerShare({ api: fakeApi({ create: async () => { throw new m.ShareUnavailableError(); } }) });
     const link = await share.linkFor(ID);
     assert.equal(link.url, `${ORIGIN}/answer/${ID}`);
@@ -245,7 +246,7 @@ test('show() loads the state and reveals the Shared line only for a shared answe
     const api = fakeApi({ get: async (id) => (id === ID ? { shared: true, token: TOKEN } : { shared: false }) });
     const share = m.createAnswerShare({ api, getOrigin: () => ORIGIN });
     const { root, line } = makeRoot();
-    const ctl = m.installShareState(root, share, { translate: (en) => en });
+    const ctl = m.installShareState(root, share, { translate: tFor('en') });
     ctl.show(ID);
     assert.equal(line.classList.contains('hidden'), true, 'hidden until the state is known');
     await tick();
@@ -283,7 +284,7 @@ test('Stop sharing revokes, hides the line, keeps focus in the control, and anno
     const api = fakeApi({ get: async () => ({ shared: true, token: TOKEN }) });
     const share = m.createAnswerShare({ api, getOrigin: () => ORIGIN });
     const { root, line, revoke, status, copyBtn } = makeRoot();
-    const ctl = m.installShareState(root, share, { translate: (en) => en });
+    const ctl = m.installShareState(root, share, { translate: tFor('en') });
     ctl.show(ID);
     await tick();
     const pending = revoke.fire('click');
@@ -304,7 +305,7 @@ test('a failed Stop sharing keeps the line and shows a retry message', async () 
     const api = fakeApi({ get: async () => ({ shared: true, token: TOKEN }), revoke: async () => { throw new Error('500'); } });
     const share = m.createAnswerShare({ api, getOrigin: () => ORIGIN });
     const { root, line, revoke, status } = makeRoot();
-    const ctl = m.installShareState(root, share, { translate: (en) => en });
+    const ctl = m.installShareState(root, share, { translate: tFor('en') });
     ctl.show(ID);
     await tick();
     await revoke.fire('click');
@@ -323,7 +324,7 @@ test('Stop sharing is ignored while hidden or busy, and a stale result is not an
     });
     const share = m.createAnswerShare({ api, getOrigin: () => ORIGIN });
     const { root, revoke, status } = makeRoot();
-    const ctl = m.installShareState(root, share, { translate: (en) => en });
+    const ctl = m.installShareState(root, share, { translate: tFor('en') });
     await revoke.fire('click');
     assert.equal(revokes, 0, 'nothing shown');
 
@@ -347,7 +348,7 @@ test('Stop sharing is ignored while hidden or busy, and a stale result is not an
 });
 
 test('the default translate is window.t', async () => {
-    const m = await load({ t: (_en, he) => he });
+    const m = await load({ t: tFor('he') });
     const share = m.createAnswerShare({ api: fakeApi({ get: async () => ({ shared: true, token: TOKEN }) }) });
     const { root, revoke, status } = makeRoot();
     const ctl = m.installShareState(root, share);
@@ -363,7 +364,7 @@ test('a placement without a status region still revokes', async () => {
     const { root, line, revoke } = makeRoot();
     const inner = root.querySelector;
     root.querySelector = (sel) => (sel === '.answer-link-status' || sel === '.answer-link-btn' ? null : inner(sel));
-    const ctl = m.installShareState(root, share, { translate: (en) => en });
+    const ctl = m.installShareState(root, share, { translate: tFor('en') });
     ctl.show(ID);
     await tick();
     await revoke.fire('click');

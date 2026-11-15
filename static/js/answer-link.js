@@ -108,13 +108,13 @@ function normalizeLink(value) {
 // Wires one placement: `.answer-link-btn` (with an `--idle` and a `--copied`
 // face stacked in the same grid cell, so the swap never changes its width),
 // a `.answer-link-status` live region, and a read-only `.answer-link-fallback`
-// input that shows the URL only when copying failed. `translate(en, he)`
+// input that shows the URL only when copying failed. `translate(key, values)`
 // defaults to the classic script's t(), read per call so a language switch
 // applies to the next message.
 export function installAnswerLink(root, {
     getOrigin = () => window.location.origin,
     getLinkUrl = null,
-    translate = (en, he) => (typeof window.t === "function" ? window.t(en, he) : en),
+    translate = (key, values) => (typeof window.t === "function" ? window.t(key, values) : key),
     copy = copyText,
     setTimer = (fn, ms) => setTimeout(fn, ms),
     clearTimer = (handle) => clearTimeout(handle),
@@ -180,13 +180,13 @@ export function installAnswerLink(root, {
         button.disabled = false;
         if (copied) {
             fallback.classList.add("hidden");
-            status.textContent = note || translate("Link copied", "הקישור הועתק");
+            status.textContent = note || translate('answer_link.link_copied');
             status.classList.toggle("is-visible", Boolean(note));
             setCopied(true);
             return;
         }
         if (!url) {
-            status.textContent = translate("Couldn't create a link. Try again.", "לא ניתן היה ליצור קישור. נסה/י שוב.");
+            status.textContent = translate('answer_link.couldnt_create_a_link_try_again');
             status.classList.add("is-visible");
             return;
         }
@@ -194,7 +194,7 @@ export function installAnswerLink(root, {
         fallback.classList.remove("hidden");
         fallback.focus();
         fallback.select();
-        status.textContent = translate("Couldn't copy automatically. Copy the link here.", "לא ניתן היה להעתיק אוטומטית. העתק/י את הקישור כאן.");
+        status.textContent = translate('answer_link.couldnt_copy_automatically_copy_the_link');
         status.classList.add("is-visible");
     });
 

@@ -18,6 +18,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { tFor } = require('./helpers/i18n');
 
 const DATA = path.join(__dirname, '..', 'data', 'siddur', 'edot-hamizrach');
 const TOC = JSON.parse(fs.readFileSync(path.join(DATA, 'toc.json'), 'utf8'));
@@ -149,7 +150,7 @@ async function makeSiddur({ fetch = makeFetch(), storage = memoryStorage(), deps
         doc: { visibilityState: 'visible', addEventListener() {}, removeEventListener() {} },
         win: win || { innerHeight: 900, addEventListener() {}, removeEventListener() {}, requestAnimationFrame: () => 0, cancelAnimationFrame() {} },
         deps: {
-            t: (en) => en,
+            t: tFor('en'),
             isHebrewMode: () => false,
             escapeHtml,
             applyHebrewDisplaySettings: (s) => s,

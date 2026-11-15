@@ -80,7 +80,7 @@ function buildZmanimDeps() {
 // gathered here like buildZmanimDeps.
 function buildSiddurDeps() {
     return {
-        t: (en, he) => window.t(en, he),
+        t: (key, values) => window.t(key, values),
         isHebrewMode: () => window.isHebrewMode(),
         escapeHtml: (text) => window.escapeHtml(text),
         applyHebrewDisplaySettings: (text) => window.applyHebrewDisplaySettings?.(text) ?? text,
@@ -136,7 +136,7 @@ function initModules() {
     // reloads the open text when that changes what it would fetch.
     window.ShelahTextVersions = installTextVersionPicker({
         getMinhag,
-        t: (en, he) => window.t(en, he),
+        t: (key, values) => window.t(key, values),
         onPick: () => window.ShelahReaderText?.reloadIfChanged?.(),
     });
     window.ShelahReaderText?.reloadIfChanged?.();

@@ -11,6 +11,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { tFor } = require('./helpers/i18n');
 
 let mod;
 async function day() {
@@ -18,8 +19,8 @@ async function day() {
     return mod;
 }
 
-const t = (en) => en;
-const tHe = (_en, he) => he;
+const t = tFor('en');
+const tHe = tFor('he');
 const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 function dayFixture(overrides = {}) {
@@ -231,7 +232,7 @@ test('the Today card: reminders, switches and their pressed state, escaped', asy
     const before = d.todayCardMarkup(dayFixture(), { afterSunset: false, t, escapeHtml });
     assert.match(before, /aria-pressed="false">\s*Before sunset/);
     // A day with nothing to remind still says so, and text is escaped.
-    const quiet = d.todayCardMarkup(dayFixture({ gevurot: null, birkatHashanim: null, tachanun: null }), { t: (en) => `${en} <x>`, escapeHtml });
+    const quiet = d.todayCardMarkup(dayFixture({ gevurot: null, birkatHashanim: null, tachanun: null }), { t: (key, values) => `${t(key, values)} <x>`, escapeHtml });
     assert.match(quiet, /siddur-today-empty">No seasonal changes today. &lt;x&gt;/);
     assert.doesNotMatch(quiet, /siddur-today-note/);
 });

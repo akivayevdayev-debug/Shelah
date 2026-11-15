@@ -48,8 +48,8 @@ export class NothingToShareError extends Error {
 export const ANSWER_SHARE_PATH = "/api/user/history";
 export const CONVERSATION_SHARE_PATH = "/api/conversations";
 
-function defaultTranslate(en, he) {
-    return typeof window.t === "function" ? window.t(en, he) : en;
+function defaultTranslate(key, values) {
+    return typeof window.t === "function" ? window.t(key, values) : key;
 }
 
 async function defaultHeaders() {
@@ -124,10 +124,7 @@ export function createAnswerShare({
     function privateFallback(id) {
         return {
             url: answerLinkUrl(id, getOrigin()),
-            note: translate(
-                "Copied a private link: only you can open it while signed in. Public links aren't set up yet.",
-                "הועתק קישור פרטי: רק את/ה יכול/ה לפתוח אותו כשאת/ה מחובר/ת. קישורים ציבוריים עדיין לא הוגדרו.",
-            ),
+            note: translate('answer_share.copied_a_private_link_only_you'),
         };
     }
 
@@ -216,12 +213,12 @@ export function installShareState(root, share, { translate = defaultTranslate } 
                 // The Shared line (and this button) just hid: keep keyboard
                 // focus in the control instead of dropping it to <body>.
                 copyBtn?.focus({ preventScroll: true });
-                announce(translate("Sharing stopped. The old link no longer works.", "השיתוף הופסק. הקישור הישן כבר לא עובד."), true);
+                announce(translate('answer_share.sharing_stopped_the_old_link_no'), true);
             }
         } catch {
             if (id === currentId) {
                 revokeBtn.disabled = false;
-                announce(translate("Couldn't stop sharing. Try again.", "לא ניתן היה להפסיק את השיתוף. נסה/י שוב."), true);
+                announce(translate('answer_share.couldnt_stop_sharing_try_again'), true);
             }
         } finally {
             revokeBtn.removeAttribute("aria-busy");

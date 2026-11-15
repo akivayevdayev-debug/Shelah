@@ -165,3 +165,61 @@ def test_the_404_page_carries_its_hebrew_text_for_the_switch():
 
     body = flask_app.app.test_client().get("/__no_such_page__").get_data(as_text=True)
     assert 'data-he="העמוד לא נמצא"' in body
+
+
+# ── Browser scripts (static/js/i18n.js) ──────────────────────────────────────
+
+JS_DIR = ROOT / "static" / "js"
+# A key in a script: t('ns.key'), deps.t("ns.key"), translate('ns.key'), or a
+# key stored in a table ("siddur_day.mashiv_haruach") and looked up later.
+JS_KEY = re.compile(r"""['"]([a-z_]+\.[a-z0-9_]+)['"]""")
+JS_STRING = r"""(?:'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)"""
+# The old style: t('English', 'Hebrew'), two literals and no key.
+TWO_LANGUAGE_CALL = re.compile(
+    r"(?<![\w$])(?:(?:deps|window)\.)?(?:t|translate)\(\s*" + JS_STRING + r"\s*,\s*" + JS_STRING
+)
+
+
+def _scripts():
+    return [p for p in sorted(JS_DIR.glob("*.js")) if " 2." not in p.name]
+
+
+def _client_prefixes():
+    return tuple(f"{ns}." for ns in META["client_namespaces"])
+
+
+def test_every_key_a_script_uses_is_in_a_client_namespace():
+    prefixes = _client_prefixes()
+    english = i18n.CATALOGS.strings["en"]
+    used = {
+        key for path in _scripts()
+        for key in JS_KEY.findall(path.read_text(encoding="utf-8"))
+        if key.startswith(prefixes)
+    }
+    missing = sorted(k for k in used if k not in english and f"{k}.other" not in english)
+    assert missing == []
+
+
+def test_no_script_passes_english_and_hebrew_text_to_t():
+    found = [
+        f"{path.name}:{path.read_text(encoding='utf-8').count(chr(10), 0, m.start()) + 1}"
+        for path in _scripts()
+        for m in TWO_LANGUAGE_CALL.finditer(path.read_text(encoding="utf-8"))
+    ]
+    assert found == []
+
+
+def test_the_page_catalog_holds_only_client_namespaces():
+    keys = {k for table in i18n.CATALOGS.client_catalog()["strings"].values() for k in table}
+    assert sorted(k for k in keys if not k.startswith(_client_prefixes())) == []
+
+
+def test_every_client_namespace_has_a_catalog_file():
+    assert sorted(ns for ns in META["client_namespaces"] if not (ROOT / "locales" / "en" / f"{ns}.json").exists()) == []
+
+
+def test_the_home_page_carries_the_catalog_for_the_scripts():
+    import app as flask_app
+
+    body = flask_app.app.test_client().get("/").get_data(as_text=True)
+    assert '<script type="application/json" id="i18n-catalog">' in body

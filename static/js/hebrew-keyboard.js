@@ -106,8 +106,8 @@ const SYMBOL_ROWS = {
 };
 
 const HEBREW_MARKS = [
-    { text: "׳", en: "Geresh", he: "גרש" },
-    { text: "״", en: "Gershayim", he: "גרשיים" },
+    { text: "׳", label: "keyboard.geresh" },
+    { text: "״", label: "keyboard.gershayim" },
 ];
 
 const pageLanguage = (doc) => (doc.documentElement.getAttribute("lang") === "he" ? "he" : "en");
@@ -189,6 +189,7 @@ export function installHebrewKeyboard({
     panel = doc.getElementById("hebrewKeyboard"),
     form = doc.getElementById("searchForm"),
     touchDevice = keyboardDevice({ nav: win.navigator, win }),
+    i18n = win.ShelahI18n,
 } = {}) {
     if (!input || !button || !panel) return null;
 
@@ -201,7 +202,7 @@ export function installHebrewKeyboard({
     let lastShiftAt = 0;
     let open = false;
     let resizeObserver = null;
-    const t = (en, he) => (pageLanguage(doc) === "he" ? he : en);
+    const t = (key, values) => i18n.translate(pageLanguage(doc), key, values);
     const coarsePointer = () => Boolean(win.matchMedia?.("(pointer: coarse)").matches);
 
     function currentMode() {
@@ -211,20 +212,20 @@ export function installHebrewKeyboard({
 
     function toggleKey(wide) {
         const label = layout === "he"
-            ? t("Switch to English letters", "מעבר לאותיות באנגלית")
-            : t("Switch to Hebrew letters", "מעבר לאותיות בעברית");
+            ? t('keyboard.switch_to_english_letters')
+            : t('keyboard.switch_to_hebrew_letters');
         return `<button type="button" class="${wide} kbd-toggle" data-key="toggle" aria-label="${escapeHtml(label)}"${layout === "he" ? "" : ' lang="he"'}>${layout === "he" ? "EN" : "עב"}</button>`;
     }
 
     function layerKey(wide) {
-        const label = symbols ? t("Letters", "אותיות") : t("Numbers and symbols", "מספרים וסימנים");
+        const label = symbols ? t('keyboard.letters') : t('keyboard.numbers_and_symbols');
         const lettersText = layout === "he" ? "אבג" : "ABC";
         const text = symbols ? lettersText : "?123";
         return `<button type="button" class="${wide} kbd-layer" data-key="layer" aria-label="${escapeHtml(label)}"${symbols && layout === "he" ? ' lang="he"' : ""}>${text}</button>`;
     }
 
     function moreKey(wide) {
-        const label = symbols === 2 ? t("Numbers", "מספרים") : t("More symbols", "סימנים נוספים");
+        const label = symbols === 2 ? t('keyboard.numbers') : t('keyboard.more_symbols');
         return `<button type="button" class="${wide} kbd-more" data-key="more" aria-label="${escapeHtml(label)}">${symbols === 2 ? "123" : "#+="}</button>`;
     }
 
@@ -232,9 +233,9 @@ export function installHebrewKeyboard({
         const wide = "kbd-key kbd-key-wide";
         switch (kind) {
             case "backspace":
-                return `<button type="button" class="${wide} kbd-backspace" data-key="backspace" aria-label="${escapeHtml(t("Delete", "מחיקה"))}"><span aria-hidden="true">⌫</span></button>`;
+                return `<button type="button" class="${wide} kbd-backspace" data-key="backspace" aria-label="${escapeHtml(t('keyboard.delete'))}"><span aria-hidden="true">⌫</span></button>`;
             case "enter":
-                return `<button type="button" class="${wide} kbd-enter" data-key="enter" aria-label="${escapeHtml(t("Search", "חיפוש"))}"><span aria-hidden="true">⏎</span></button>`;
+                return `<button type="button" class="${wide} kbd-enter" data-key="enter" aria-label="${escapeHtml(t('keyboard.search'))}"><span aria-hidden="true">⏎</span></button>`;
             case "shift":
                 return `<button type="button" class="${wide} kbd-shift" data-key="shift" aria-label="Shift" aria-pressed="${shift || caps ? "true" : "false"}"><span aria-hidden="true">⇧</span></button>`;
             case "caps":
@@ -246,14 +247,14 @@ export function installHebrewKeyboard({
             case "more":
                 return moreKey(wide);
             case "space":
-                return `<button type="button" class="kbd-key kbd-key-space" data-key="space" data-text=" " aria-label="${escapeHtml(t("Space", "רווח"))}"><span aria-hidden="true">${escapeHtml(t("space", "רווח"))}</span></button>`;
+                return `<button type="button" class="kbd-key kbd-key-space" data-key="space" data-text=" " aria-label="${escapeHtml(t('keyboard.space'))}"><span aria-hidden="true">${escapeHtml(t('keyboard.space_2'))}</span></button>`;
             default:
                 return "";
         }
     }
 
     function markKey(mark) {
-        return `<button type="button" class="kbd-key kbd-key-mark" data-key="char" data-text="${escapeHtml(mark.text)}" aria-label="${escapeHtml(t(mark.en, mark.he))}">${escapeHtml(mark.text)}</button>`;
+        return `<button type="button" class="kbd-key kbd-key-mark" data-key="char" data-text="${escapeHtml(mark.text)}" aria-label="${escapeHtml(t(mark.label))}">${escapeHtml(mark.text)}</button>`;
     }
 
     function rowHtml(row, keyHtml) {
@@ -302,8 +303,8 @@ export function installHebrewKeyboard({
         }
         panel.innerHTML = rows + bottomRow();
         panel.setAttribute("aria-label", layout === "he"
-            ? t("Hebrew keyboard", "מקלדת עברית")
-            : t("English keyboard", "מקלדת אנגלית"));
+            ? t('keyboard.hebrew_keyboard')
+            : t('keyboard.english_keyboard'));
         panel.dataset.layout = layout;
         panel.dataset.mode = mode;
         panel.dataset.symbols = String(symbols);
@@ -320,8 +321,8 @@ export function installHebrewKeyboard({
 
     function syncButton() {
         button.setAttribute("aria-expanded", open ? "true" : "false");
-        button.setAttribute("aria-label", t("Hebrew keyboard", "מקלדת עברית"));
-        button.title = t("On-screen keyboard", "מקלדת על המסך");
+        button.setAttribute("aria-label", t('keyboard.hebrew_keyboard'));
+        button.title = t('keyboard.on_screen_keyboard');
     }
 
     function fireInput() {

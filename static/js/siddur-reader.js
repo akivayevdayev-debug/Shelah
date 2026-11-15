@@ -135,10 +135,13 @@ export function tocMarkup(toc, { escapeHtml, isHebrew = false, current = null, c
 
 function attributionMarkup(toc, { t, escapeHtml }) {
     const { he, en } = toc.source;
-    return `<footer class="siddur-attribution">${escapeHtml(t(
-        `Text: ${toc.source.index} from Sefaria. Hebrew: ${he.title} (${he.license}). English: ${en.title} (${en.license}), where a translation exists.`,
-        `הטקסט: ${toc.source.index} מספריא. עברית: ${he.title} (${he.license}). אנגלית: ${en.title} (${en.license}), היכן שיש תרגום.`,
-    ))}</footer>`;
+    return `<footer class="siddur-attribution">${escapeHtml(t("siddur_reader.attribution", {
+        index: toc.source.index,
+        heTitle: he.title,
+        heLicense: he.license,
+        enTitle: en.title,
+        enLicense: en.license,
+    }))}</footer>`;
 }
 
 export function landingMarkup(toc, { t, escapeHtml, isHebrew = false }) {
@@ -173,13 +176,13 @@ export const MINHAG_RITES = Object.freeze({
     ashkenazi: "ashkenaz",
 });
 
-export function nusachNoticeMarkup(toc, minhag, { t, escapeHtml }) {
+export function nusachNoticeMarkup(toc, minhag, { t, escapeHtml, isHebrew = false }) {
     const wanted = MINHAG_RITES[minhag];
     if (!wanted || wanted === toc.rite.slug) return "";
     const rite = toc.rite.title;
     return `<p class="siddur-nusach-notice" role="note" data-siddur-nusach-notice>${escapeHtml(t(
-        `Nusach Ashkenaz isn't in this siddur yet. This is the ${rite.en} siddur.`,
-        `נוסח אשכנז עדיין אינו בסידור. זהו סידור ${rite.he}.`,
+        "siddur_reader.ashkenaz_not_here_yet",
+        { rite: isHebrew ? rite.he : rite.en },
     ))}</p>`;
 }
 
@@ -207,7 +210,7 @@ function lineMarkup(line, sectionSlug, { layout, applyHebrew, today, t, escapeHt
     // A passage split out of a segment shares its `n`; `part` keeps the id unique.
     const lineId = line.part ? `${line.n}-${line.part}` : `${line.n}`;
     const attrs = `id="siddur-${sectionSlug}-${lineId}" data-n="${line.n}"${whenAttr}${isToday ? " data-today" : ""}`;
-    const badge = isToday ? `<span class="siddur-today-badge">${escapeHtml(t("Today", "היום"))}</span>` : "";
+    const badge = isToday ? `<span class="siddur-today-badge">${escapeHtml(t('siddur_reader.today'))}</span>` : "";
     const label = line.label ? `<span class="siddur-label" lang="he" dir="rtl">${escapeHtml(line.label)}</span>` : "";
     switch (line.t) {
         case "heading":
@@ -231,7 +234,7 @@ export function serviceMarkup(toc, where, payload, {
     const showEnglish = layout !== "hebrew";
 
     const picker = multi ? `
-        <nav class="siddur-sections" aria-label="${escapeHtml(t("Sections", "חלקי התפילה"))}">
+        <nav class="siddur-sections" aria-label="${escapeHtml(t('siddur_reader.sections'))}">
             <ol class="siddur-sections-list">${service.sections.map((sec, i) => `
                 <li><a class="siddur-section-chip" href="${sitePath(rite, service.slug, sec.slug)}" data-siddur-section="${sec.slug}"${i === 0 ? ' aria-current="location"' : ""}>${escapeHtml(titleFor(sec, isHebrew))}</a></li>`).join("")}
             </ol>
@@ -241,7 +244,7 @@ export function serviceMarkup(toc, where, payload, {
     const sections = service.sections.map((sec) => {
         const data = sectionsBySlug.get(sec.slug) || { lines: [] };
         const noEnglish = showEnglish && !sec.english
-            ? `<p class="siddur-note">${escapeHtml(t("No English translation for this section yet.", "אין עדיין תרגום אנגלי לחלק זה."))}</p>`
+            ? `<p class="siddur-note">${escapeHtml(t('siddur_reader.no_english_translation_for_this_section'))}</p>`
             : "";
         const lines = data.lines.map((line) => lineMarkup(line, sec.slug, { layout, applyHebrew, today, t, escapeHtml })).join("");
         const title = multi ? `<h2 class="siddur-section-title" id="siddur-sec-${sec.slug}-title">
@@ -265,22 +268,22 @@ export function serviceMarkup(toc, where, payload, {
 
     return `<article class="siddur-page siddur-service" data-siddur-service="${service.slug}">
         <header class="siddur-service-head">
-            <nav class="siddur-breadcrumb" aria-label="${escapeHtml(t("Breadcrumb", "מיקום"))}">
-                <a href="${sitePath(rite)}" data-siddur-path="${rite}">${escapeHtml(t("Siddur", "סידור"))}</a>
+            <nav class="siddur-breadcrumb" aria-label="${escapeHtml(t('siddur_reader.breadcrumb'))}">
+                <a href="${sitePath(rite)}" data-siddur-path="${rite}">${escapeHtml(t('siddur_reader.siddur'))}</a>
                 ${icon("caret-right", { size: 12, className: "siddur-breadcrumb-sep" })}
                 <span>${escapeHtml(isHebrew ? occasion.title.he : occasion.title.en)}</span>
             </nav>
             <p class="siddur-service-gloss">${escapeHtml(isHebrew ? service.title.en : `${service.title.he} · ${service.gloss || ""}`)}</p>
             <div class="siddur-service-actions">
-                <button type="button" class="siddur-chip" data-siddur-action="wake" aria-pressed="false" hidden>${escapeHtml(t("Keep screen on", "השאר מסך דלוק"))}</button>
+                <button type="button" class="siddur-chip" data-siddur-action="wake" aria-pressed="false" hidden>${escapeHtml(t('siddur_reader.keep_screen_on'))}</button>
                 <a class="siddur-chip siddur-continue" data-siddur-continue hidden href="#"></a>
             </div>
         </header>
         <div class="siddur-today-slot" data-siddur-today></div>
         ${picker}
         ${sections}
-        <nav class="siddur-next" aria-label="${escapeHtml(t("Other services", "תפילות נוספות"))}">
-            ${neighbor(-1, "prev", t("Previous", "הקודם"))}${neighbor(1, "next", t("Next", "הבא"))}
+        <nav class="siddur-next" aria-label="${escapeHtml(t('siddur_reader.other_services'))}">
+            ${neighbor(-1, "prev", t('siddur_reader.previous'))}${neighbor(1, "next", t('siddur_reader.next'))}
         </nav>
         ${attributionMarkup(toc, { t, escapeHtml })}
     </article>`;

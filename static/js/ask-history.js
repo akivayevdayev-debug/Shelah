@@ -149,13 +149,13 @@ function skeletonHtml() {
 export function shellHtml({ t, escapeHtml, icons = {} }) {
     return `
         <section class="history-page not-prose" aria-labelledby="historyPageHeading">
-            <h2 id="historyPageHeading" class="sr-only">${escapeHtml(t("Your questions", "השאלות שלך"))}</h2>
+            <h2 id="historyPageHeading" class="sr-only">${escapeHtml(t('ask_history.your_questions'))}</h2>
             <form class="history-search" role="search" data-history-search>
-                <label class="sr-only" for="historySearchInput">${escapeHtml(t("Search your questions", "חיפוש בשאלות שלך"))}</label>
+                <label class="sr-only" for="historySearchInput">${escapeHtml(t('ask_history.search_your_questions'))}</label>
                 <span class="history-search-icon" aria-hidden="true"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${icons.search || ""}</svg></span>
                 <input id="historySearchInput" class="history-search-input" type="search" autocomplete="off"
                     maxlength="${MAX_QUERY_CHARS}" enterkeyhint="search"
-                    placeholder="${escapeHtml(t("Search your questions", "חיפוש בשאלות שלך"))}">
+                    placeholder="${escapeHtml(t('ask_history.search_your_questions'))}">
             </form>
             <div class="history-results" data-history-results aria-live="off"></div>
             <div class="history-more" data-history-more></div>
@@ -166,7 +166,7 @@ export function shellHtml({ t, escapeHtml, icons = {} }) {
 function rowHtml(item, state, h) {
     const { t, escapeHtml, formatDate, answerHref, icons = {} } = h;
     const id = String(item.id);
-    const question = String(item.question || "").trim() || t("Untitled question", "שאלה ללא כותרת");
+    const question = String(item.question || "").trim() || t('ask_history.untitled_question');
     const date = item.created_at ? formatDate(item.created_at) : "";
     const confirming = state.confirmId === id;
     const deleting = state.deleting.has(id);
@@ -174,15 +174,15 @@ function rowHtml(item, state, h) {
     const confirmAttrs = deleting ? 'disabled aria-busy="true"' : "";
     const cancelAttrs = deleting ? "disabled" : "";
     const actions = confirming
-        ? `<div class="history-row-confirm" role="group" aria-label="${escapeHtml(t("Delete this answer?", "למחוק תשובה זו?"))}">
-                <span class="history-row-confirm-text" aria-hidden="true">${escapeHtml(t("Delete?", "למחוק?"))}</span>
+        ? `<div class="history-row-confirm" role="group" aria-label="${escapeHtml(t('ask_history.delete_this_answer'))}">
+                <span class="history-row-confirm-text" aria-hidden="true">${escapeHtml(t('ask_history.delete'))}</span>
                 <button type="button" class="history-btn history-btn--danger" data-action="confirm-delete" data-id="${safeId}"
-                    ${confirmAttrs}>${escapeHtml(t("Delete", "מחק"))}</button>
+                    ${confirmAttrs}>${escapeHtml(t('ask_history.delete_2'))}</button>
                 <button type="button" class="history-btn" data-action="cancel-delete" data-id="${safeId}"
-                    ${cancelAttrs}>${escapeHtml(t("Cancel", "ביטול"))}</button>
+                    ${cancelAttrs}>${escapeHtml(t('ask_history.cancel'))}</button>
            </div>`
         : `<button type="button" class="history-row-del" data-action="delete" data-id="${safeId}"
-                aria-label="${escapeHtml(`${t("Delete", "מחק")}: ${question}`)}">
+                aria-label="${escapeHtml(`${t('ask_history.delete_2')}: ${question}`)}">
                 <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${icons.delete || ""}</svg>
            </button>`;
     return `
@@ -210,39 +210,37 @@ export function resultsHtml(state, h) {
         return `<ul class="history-list" aria-busy="true">${skeletonHtml()}</ul>`;
     }
     if (state.status === "unavailable") {
-        return messageHtml(t("Question history isn't available here.", "היסטוריית השאלות אינה זמינה כאן."), escapeHtml);
+        return messageHtml(t('ask_history.question_history_isnt_available_here'), escapeHtml);
     }
     if (state.status === "signed-out") {
         return messageHtml(
-            t("Sign in to see every question you've asked, and pick up any answer again.",
-                "יש להתחבר כדי לראות את כל השאלות ששאלת ולחזור לכל תשובה."),
+            t('ask_history.sign_in_to_see_every_question'),
             escapeHtml,
-            { name: "sign-in", label: t("Sign in", "התחברות") },
+            { name: "sign-in", label: t('ask_history.sign_in') },
         );
     }
     if (state.status === "error" && !state.items.length) {
-        return messageHtml(t("Couldn't load your questions.", "לא ניתן היה לטעון את השאלות שלך."), escapeHtml,
-            { name: "retry", label: t("Try again", "נסה שוב") });
+        return messageHtml(t('ask_history.couldnt_load_your_questions'), escapeHtml,
+            { name: "retry", label: t('ask_history.try_again') });
     }
     if (!state.items.length) {
         return state.q
-            ? messageHtml(t(`No questions match “${state.q}”.`, `אין שאלות שתואמות ל“${state.q}”.`), escapeHtml)
-            : messageHtml(t("No saved answers yet. Questions you ask while signed in appear here.",
-                "אין עדיין תשובות שמורות. שאלות שתשאל/י כשאת/ה מחובר/ת יופיעו כאן."), escapeHtml);
+            ? messageHtml(t("ask_history.no_questions_match", { q: state.q }), escapeHtml)
+            : messageHtml(t('ask_history.no_saved_answers_yet_questions_you'), escapeHtml);
     }
-    return `<ul class="history-list" aria-label="${escapeHtml(t("Your questions", "השאלות שלך"))}">${
+    return `<ul class="history-list" aria-label="${escapeHtml(t('ask_history.your_questions'))}">${
         state.items.map((item) => rowHtml(item, state, h)).join("")}</ul>`;
 }
 
 export function moreHtml(state, { t, escapeHtml }) {
     if (!state.items.length) return "";
     if (state.status === "error") {
-        return `<button type="button" class="history-btn" data-action="load-more">${escapeHtml(t("Couldn't load more — try again", "הטעינה נכשלה — נסה שוב"))}</button>`;
+        return `<button type="button" class="history-btn" data-action="load-more">${escapeHtml(t('ask_history.couldnt_load_more_try_again'))}</button>`;
     }
     if (!state.nextCursor) return "";
     const busy = state.loadingMore;
     return `<button type="button" class="history-btn" data-action="load-more"${busy ? ' aria-busy="true" disabled' : ""}>${
-        escapeHtml(busy ? t("Loading…", "טוען…") : t("Load more", "טען עוד"))}</button>`;
+        escapeHtml(busy ? t('ask_history.loading') : t('ask_history.load_more'))}</button>`;
 }
 
 // deps:
@@ -325,19 +323,19 @@ export function createHistoryPage(root, deps) {
             state.loadingMore = false;
             render();
             if (append) {
-                announce(deps.t(`${incoming.length} more loaded.`, `נטענו עוד ${incoming.length}.`));
+                announce(deps.t("ask_history.more_loaded", { count: incoming.length }));
             } else if (q) {
-                const count = `${state.items.length}${state.nextCursor ? "+" : ""}`;
+                const shown = `${state.items.length}${state.nextCursor ? "+" : ""}`;
                 announce(state.items.length
-                    ? deps.t(`${count} matching questions.`, `${count} שאלות תואמות.`)
-                    : deps.t("No matching questions.", "אין שאלות תואמות."));
+                    ? deps.t("ask_history.matching_questions", { count: state.items.length, shown })
+                    : deps.t('ask_history.no_matching_questions'));
             }
         } catch {
             if (seq !== requestSeq || destroyed) return;
             state.status = "error";
             state.loadingMore = false;
             render();
-            announce(deps.t("Couldn't load your questions.", "לא ניתן היה לטעון את השאלות שלך."));
+            announce(deps.t('ask_history.couldnt_load_your_questions'));
         }
     }
 
@@ -391,14 +389,14 @@ export function createHistoryPage(root, deps) {
         if (destroyed) return;
         if (!ok) {
             render();
-            announce(deps.t("Couldn't delete that answer. Try again.", "לא ניתן היה למחוק את התשובה. נסה שוב."));
+            announce(deps.t('ask_history.couldnt_delete_that_answer_try_again'));
             focusIn(`[data-action="confirm-delete"][data-id="${id}"]`);
             return;
         }
         state.items = state.items.filter((item) => item.id !== id);
         state.confirmId = null;
         render();
-        announce(deps.t("Answer deleted.", "התשובה נמחקה."));
+        announce(deps.t('ask_history.answer_deleted'));
         deps.onDeleted?.(id);
         // Keep the keyboard where the row was: the next row, else the
         // previous one, else the search box.

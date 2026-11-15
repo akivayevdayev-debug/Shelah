@@ -1,0 +1,11 @@
+{
+  "couldnt_load_zmanim_times": "לא ניתן היה לטעון את הזמנים.",
+  "in_countdown": "בעוד {countdown}",
+  "latest_shacharit_gra": "סוף זמן תפילת שחרית (גר״א)",
+  "latest_shacharit_gra_baal_hatanya": "סוף זמן תפילת שחרית (גר״א / בעל התניא)",
+  "latest_shema_gra": "סוף זמן שמע (גר״א)",
+  "latest_shema_gra_baal_hatanya": "סוף זמן שמע (גר״א / בעל התניא)",
+  "open_today_in_the_calendar": "פתח את היום בלוח השנה",
+  "retry": "נסה שוב",
+  "unavailable": "לא זמין"
+}

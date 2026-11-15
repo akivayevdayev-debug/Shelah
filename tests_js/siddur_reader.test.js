@@ -10,6 +10,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { tFor } = require('./helpers/i18n');
 
 let mod;
 async function reader() {
@@ -17,7 +18,7 @@ async function reader() {
     return mod;
 }
 
-const t = (en) => en;
+const t = tFor('en');
 const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const TOC = {

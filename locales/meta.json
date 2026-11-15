@@ -10,7 +10,9 @@
     {"code": "ar", "name": "العربية", "dir": "rtl", "script": "Arabic", "fallback": "en", "enabled": false}
   ],
   "_enabled": "A language goes live by setting enabled to true once its catalog is complete and reviewed. Portuguese is left out until Sefaria's Portuguese texts have clear licences.",
-  "_keep_names": "Names written the same in every language; the script check ignores them.",
+  "_client_namespaces": "Namespaces the browser scripts look up (static/js/i18n.js). Only these are written into the page, as the #i18n-catalog data block.",
+  "client_namespaces": ["answer_link", "answer_share", "ask_history", "keyboard", "shell", "siddur", "siddur_day", "siddur_reader", "text_versions", "zmanim"],
+  "_keep_names":"Names written the same in every language; the script check ignores them.",
   "keep_names": ["Anthropic", "Cardo", "Claude", "Clerk", "DMCA", "DOMPurify", "Gemini", "Google", "Google Fonts", "Google Translate", "Halachipedia", "Hebcal", "HebrewBooks", "Inter", "jsDelivr", "localStorage", "MIT", "MyMemory", "PDF", ".pdf", "Sefaria", "Sentry", "Sh'elah", "SIL Open Font License", "Supabase", "Upstash", "Vercel", "Wikipedia"],
   "_script_exempt": "Keys allowed to be mostly in another script: a language named in its own script, a list of software names.",
   "script_exempt": ["common.other_language_name", "licenses.permissive_mit_bsd_3_clause_apache"]

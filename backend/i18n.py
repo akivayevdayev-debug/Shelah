@@ -18,6 +18,11 @@ Templates get three helpers (see ``register``):
   existing client-side switch (static/js/topbar_shared.js) reads, so pages
   moved onto catalogs behave exactly as before.
 * ``locales``: the switched-on languages, for a language menu.
+* ``i18n_client_catalog()``: the text the browser scripts look up
+  (static/js/i18n.js), written into the page as a JSON data block.
+
+Namespaces listed under ``client_namespaces`` in meta.json belong to the
+browser scripts; only those are sent to the page.
 
 A key whose English meaning changes gets a new key, so every other language
 is forced to be looked at again; typo fixes keep the key.
@@ -61,6 +66,7 @@ class Catalogs:
     locales: Mapping[str, Locale]
     strings: Mapping[str, Mapping[str, str]]
     strict: bool = True
+    client_namespaces: tuple[str, ...] = ()
 
     @property
     def enabled(self) -> tuple[str, ...]:
@@ -100,6 +106,24 @@ class Catalogs:
             raise KeyError(f"no text for {key!r} in any language")
         logger.error("i18n_missing_key", extra={"key": key, "locale": code})
         return ""
+
+    def client_catalog(self) -> dict[str, Any]:
+        """What static/js/i18n.js needs: the switched-on languages and their
+        client-namespace strings."""
+        prefixes = tuple(f"{ns}." for ns in self.client_namespaces)
+        return {
+            "default": self.default,
+            "strict": self.strict,
+            "locales": [
+                {"code": code, "name": self.locales[code].name,
+                 "dir": self.locales[code].dir, "fallback": self.locales[code].fallback}
+                for code in self.enabled
+            ],
+            "strings": {
+                code: {k: v for k, v in self.strings.get(code, {}).items() if k.startswith(prefixes)}
+                for code in self.enabled
+            },
+        }
 
 
 def _fill(text: str, values: Mapping[str, Any]) -> str:
@@ -142,10 +166,12 @@ def load(directory: Path = LOCALES_DIR, strict: bool | None = None) -> Catalogs:
         locales=locales,
         strings=strings,
         strict=(not _is_production()) if strict is None else strict,
+        client_namespaces=tuple(meta.get("client_namespaces", ())),
     )
 
 
 CATALOGS = load()
+_CLIENT_CATALOG = CATALOGS.client_catalog()
 
 
 def translate(code: str, key: str, **values: Any) -> str:
@@ -172,5 +198,6 @@ def register(app: Any) -> None:
     app.jinja_env.globals.update(
         _=page_text,
         lang_attrs=lang_attrs,
+        i18n_client_catalog=lambda: _CLIENT_CATALOG,
         locales=[CATALOGS.locales[code] for code in CATALOGS.enabled],
     )

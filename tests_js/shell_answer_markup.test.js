@@ -153,7 +153,7 @@ test('disclaimerBannerText: one message per kind, in the page language', async (
         assert.match(texts[1], /safety or wellbeing/);
         assert.match(texts[2], /not a binding halachic ruling/);
         assert.equal(texts[3], texts[2], 'unknown kinds read as the standard note');
-        page.eval(`t = (en, he) => he`);
+        page.eval(`t = (key, values) => window.ShelahI18n.translate('he', key, values)`);
         assert.match(page.call('disclaimerBannerText', 'breaker'), /מושהות להיום/);
         assert.match(page.call('disclaimerBannerText', 'referral'), /בטיחות או לרווחה/);
         assert.match(page.call('disclaimerBannerText'), /פסיקה הלכתית מחייבת/);

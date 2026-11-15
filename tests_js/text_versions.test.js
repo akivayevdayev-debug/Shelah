@@ -11,6 +11,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { JSDOM } = require('jsdom');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { tFor } = require('./helpers/i18n');
 
 const MARKUP = `
 <fieldset id="readerVersionPicker" class="hidden">
@@ -46,7 +47,7 @@ async function setup({ minhag = 'sephardi', storage = memoryStorage() } = {}) {
     const { namespace } = await loadEsmModule('static/js/text-versions.js', {});
     const picks = [];
     const picker = namespace.installTextVersionPicker({
-        doc: dom.window.document, storage, getMinhag: () => minhag, onPick: (p) => picks.push(p),
+        doc: dom.window.document, storage, getMinhag: () => minhag, t: tFor('en'), onPick: (p) => picks.push(p),
     });
     return { dom, doc: dom.window.document, picker, picks, storage, namespace };
 }

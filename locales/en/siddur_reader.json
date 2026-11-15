@@ -1,0 +1,13 @@
+{
+  "ashkenaz_not_here_yet": "Nusach Ashkenaz isn't in this siddur yet. This is the {rite} siddur.",
+  "attribution": "Text: {index} from Sefaria. Hebrew: {heTitle} ({heLicense}). English: {enTitle} ({enLicense}), where a translation exists.",
+  "breadcrumb": "Breadcrumb",
+  "keep_screen_on": "Keep screen on",
+  "next": "Next",
+  "no_english_translation_for_this_section": "No English translation for this section yet.",
+  "other_services": "Other services",
+  "previous": "Previous",
+  "sections": "Sections",
+  "siddur": "Siddur",
+  "today": "Today"
+}

@@ -411,7 +411,7 @@ function renderCountdownBadge(badge, nextZman, row, now, deps) {
     const label = rowLabel || nextZman.name;
     const remaining = Math.max(0, nextZman.t.getTime() - now.getTime());
     const countdownLabel = formatCountdownDuration(remaining, deps);
-    const html = `<span class="text-[1.03rem] leading-snug font-semibold text-[#31597d]">${deps.escapeHtml(label)} <span class="font-medium text-[#4f7596]">${deps.t('in', 'בעוד')} ${deps.escapeHtml(countdownLabel)}</span></span>`;
+    const html = `<span class="text-[1.03rem] leading-snug font-semibold text-[#31597d]">${deps.escapeHtml(label)} <span class="font-medium text-[#4f7596]">${deps.escapeHtml(deps.t('zmanim.in_countdown', { countdown: countdownLabel }))}</span></span>`;
     if (html !== countdownBadgeHtml || !badge.innerHTML || badge.classList.contains('hidden')) {
         badge.innerHTML = html;
         badge.classList.remove('hidden');
@@ -487,8 +487,8 @@ const SHEMA_GRA_BHT_ROW = {
     graRowId: 'shemaGraRow',
     bhtRowId: 'shemaBhtRow',
     labelId: 'shemaGraLabel',
-    combinedLabel: ['Latest Shema (GRA / Baal HaTanya)', 'סוף זמן שמע (גר״א / בעל התניא)'],
-    splitLabel: ['Latest Shema (GRA)', 'סוף זמן שמע (גר״א)'],
+    combinedLabel: 'zmanim.latest_shema_gra_baal_hatanya',
+    splitLabel: 'zmanim.latest_shema_gra',
 };
 
 const SHACHARIT_GRA_BHT_ROW = {
@@ -497,8 +497,8 @@ const SHACHARIT_GRA_BHT_ROW = {
     graRowId: 'shacharitGraRow',
     bhtRowId: 'shacharitBhtRow',
     labelId: 'shacharitGraLabel',
-    combinedLabel: ['Latest Shacharit (GRA / Baal HaTanya)', 'סוף זמן תפילת שחרית (גר״א / בעל התניא)'],
-    splitLabel: ['Latest Shacharit (GRA)', 'סוף זמן תפילת שחרית (גר״א)'],
+    combinedLabel: 'zmanim.latest_shacharit_gra_baal_hatanya',
+    splitLabel: 'zmanim.latest_shacharit_gra',
 };
 
 function renderGraBhtRow(z, deps, row) {
@@ -511,7 +511,7 @@ function renderGraBhtRow(z, deps, row) {
 
     const combined = gra !== 'N/A' && gra === bht;
     bhtRow.classList.toggle('hidden', combined);
-    graLabel.innerText = combined ? deps.t(...row.combinedLabel) : deps.t(...row.splitLabel);
+    graLabel.innerText = combined ? deps.t(row.combinedLabel) : deps.t(row.splitLabel);
 }
 
 function setHebrewRtlStyle(el, enabled) {
@@ -529,7 +529,7 @@ function renderHolidayName(meta, deps) {
     if (!holidayName) return;
     const text = deps.translateHolidayName(meta.holiday || 'Regular Day');
     holidayName.innerText = text;
-    holidayName.title = deps.t('Open today in the calendar', 'פתח את היום בלוח השנה');
+    holidayName.title = deps.t('zmanim.open_today_in_the_calendar');
     setHebrewRtlStyle(holidayName, deps.isHebrewMode() && text !== 'Regular Day');
 }
 
@@ -652,13 +652,13 @@ function showZmanimLoadError(location, deps) {
 
         const msg = document.createElement('span');
         msg.textContent = deps.t
-            ? deps.t("Couldn't load zmanim times.", 'לא ניתן היה לטעון את הזמנים.')
+            ? deps.t('zmanim.couldnt_load_zmanim_times')
             : "Couldn't load zmanim times.";
 
         const retryBtn = document.createElement('button');
         retryBtn.type = 'button';
         retryBtn.className = 'underline font-semibold ms-1';
-        retryBtn.textContent = deps.t ? deps.t('Retry', 'נסה שוב') : 'Retry';
+        retryBtn.textContent = deps.t ? deps.t('zmanim.retry') : 'Retry';
         retryBtn.addEventListener('click', () => {
             clearZmanimLoadError();
             void fetchZmanimAPI(location, deps);
@@ -674,7 +674,7 @@ function showZmanimLoadError(location, deps) {
         locEl.classList.remove('sk-line');
         locEl.style.removeProperty('width');
         locEl.style.removeProperty('height');
-        locEl.innerText = deps.t ? deps.t('Unavailable', 'לא זמין') : 'Unavailable';
+        locEl.innerText = deps.t ? deps.t('zmanim.unavailable') : 'Unavailable';
     }
 }
 

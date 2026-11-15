@@ -11,6 +11,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { tFor } = require('./helpers/i18n');
 
 const ID1 = '3f2b8c1e-9a4d-4e6f-8b1a-2c3d4e5f6a7b';
 const ID2 = '00000000-1111-4222-8333-444444444444';
@@ -27,7 +28,7 @@ async function load() {
 
 const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const helpers = {
-    t: (en) => en,
+    t: tFor('en'),
     escapeHtml,
     formatDate: (iso) => `D(${iso.slice(0, 10)})`,
     answerHref: (id) => `/answer/${id}`,
@@ -384,7 +385,7 @@ test('typing searches after the debounce; a stale response never overwrites a ne
     await flush();
     assert.equal(page.state.q, 'other');
     assert.deepEqual(page.state.items.map((i) => i.id), [ID2]);
-    assert.equal(root.parts['[data-history-status]'].textContent, '1 matching questions.');
+    assert.equal(root.parts['[data-history-status]'].textContent, '1 matching question.');
 });
 
 test('an unchanged query does not refetch; no matches is announced', async () => {

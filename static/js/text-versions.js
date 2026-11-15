@@ -96,7 +96,7 @@ export function installTextVersionPicker({
     doc = document,
     storage = globalThis.localStorage,
     getMinhag = () => null,
-    t = (en) => en,
+    t = (key) => key,
     onPick = () => { },
 } = {}) {
     const root = doc.getElementById("readerVersionPicker");
@@ -119,7 +119,7 @@ export function installTextVersionPicker({
             const chosen = options.some((row) => row.title === stored) ? stored : "";
             // Without a pick the version shown is the community default, so
             // the first option can name it.
-            const defaultLabel = t("Default for my community", "ברירת המחדל של הקהילה שלי");
+            const defaultLabel = t('text_versions.default_for_my_community');
             const shownLabel = !chosen && versions?.[lang]?.label;
             fillSelect(doc, selects[lang], options, chosen,
                 shownLabel ? `${defaultLabel} (${shownLabel})` : defaultLabel);

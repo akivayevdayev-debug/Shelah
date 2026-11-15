@@ -41,6 +41,7 @@ const FIXTURE_PATH = path.join(REPO_ROOT, 'tests_js', 'fixtures', 'index_page.tx
 // Document order in templates/index.html (topbar_shared.js and hebrew-ref.js are
 // inline in the head there; the rest are deferred, shell.js before actions.js).
 const PAGE_SCRIPTS = [
+    'i18n.js',
     'topbar_shared.js',
     'hebrew-ref.js',
     'community-labels.js',

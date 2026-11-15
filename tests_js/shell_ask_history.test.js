@@ -333,7 +333,7 @@ test('the /history page takes over the reader and hands ask-history.js what it n
 test('the /history page title and intro follow the reader\'s language', async () => {
     const page = await openHistoryPage();
     try {
-        page.eval(`isHebrewMode = () => true; t = (en, he) => he;`);
+        page.eval(`isHebrewMode = () => true; t = (key, values) => window.ShelahI18n.translate('he', key, values);`);
         page.eval(`displayAskHistoryPage()`);
         assert.equal(page.eval('appState.currentView.label'), 'השאלות שלך');
         assert.match(page.$('#sourcesDynamicContent').textContent, /כל תשובה/);
@@ -392,7 +392,7 @@ test('the history page opens an entry as an answer, signs in, and links to the a
         options.signIn();
         assert.equal(page.eval('window.__signIn'), true);
         assert.equal(typeof options.escapeHtml('<'), 'string');
-        assert.equal(options.t('Yes', 'כן'), 'Yes');
+        assert.equal(options.t('ask_history.no_matching_questions'), 'No matching questions.');
         assert.deepEqual(Object.keys(options.icons).sort(), ['delete', 'search']);
         assert.match(options.formatDate('2026-10-01T10:00:00Z'), /Oct/);
     } finally {

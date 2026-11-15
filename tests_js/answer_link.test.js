@@ -12,6 +12,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { tFor } = require('./helpers/i18n');
 
 const ID = '3f2b8c1e-9a4d-4e6f-8b1a-2c3d4e5f6a7b';
 const OTHER_ID = '00000000-1111-4222-8333-444444444444';
@@ -214,7 +215,7 @@ test('click copies the /answer/<id> URL, flips the button to "Copied!", then bac
     const copied = [];
     const ctl = m.installAnswerLink(root, {
         getOrigin: () => 'https://shelah.org',
-        translate: (en) => en,
+        translate: tFor('en'),
         copy: async (url) => { copied.push(await url); return true; },
         ...timers,
     });
@@ -239,7 +240,7 @@ test('a second copy restarts the "Copied!" timer instead of stacking timers', as
     const m = await load();
     const { root, button } = makeRoot();
     const timers = fakeTimers();
-    const ctl = m.installAnswerLink(root, { getOrigin: () => 'o', translate: (en) => en, copy: async () => true, ...timers });
+    const ctl = m.installAnswerLink(root, { getOrigin: () => 'o', translate: tFor('en'), copy: async () => true, ...timers });
     ctl.show({ id: ID });
     await button.fire('click');
     await button.fire('click');
@@ -253,7 +254,7 @@ test('getLinkUrl replaces the owner link (the hook public share links plug into)
     const copied = [];
     const ctl = m.installAnswerLink(root, {
         getLinkUrl: async (id) => `https://shelah.org/a/token-for-${id.slice(0, 4)}`,
-        translate: (en) => en,
+        translate: tFor('en'),
         copy: async (url) => { copied.push(await url); return true; },
         setTimer: () => 1,
         clearTimer: () => {},
@@ -269,7 +270,7 @@ test('a getLinkUrl failure shows a visible retry message and copies nothing', as
     let copies = 0;
     const ctl = m.installAnswerLink(root, {
         getLinkUrl: async () => { throw new Error('503'); },
-        translate: (en) => en,
+        translate: tFor('en'),
         copy: async (url) => { await url; copies += 1; return true; },
     });
     ctl.show({ id: ID });
@@ -286,7 +287,7 @@ test('a failed copy shows the URL in the read-only field, selected, with a visib
     const m = await load();
     const { root, button, status, fallback } = makeRoot();
     const timers = fakeTimers();
-    const ctl = m.installAnswerLink(root, { getOrigin: () => 'https://x.test', translate: (en) => en, copy: async () => false, ...timers });
+    const ctl = m.installAnswerLink(root, { getOrigin: () => 'https://x.test', translate: tFor('en'), copy: async () => false, ...timers });
     ctl.show({ id: ID });
     await button.fire('click');
     assert.equal(fallback.value, `https://x.test/answer/${ID}`);
@@ -311,7 +312,7 @@ test('a copy that finishes after the answer changed does nothing', async () => {
     const m = await load();
     const { root, button, status } = makeRoot();
     let release;
-    const ctl = m.installAnswerLink(root, { translate: (en) => en, copy: () => new Promise((r) => { release = r; }), getOrigin: () => 'o' });
+    const ctl = m.installAnswerLink(root, { translate: tFor('en'), copy: () => new Promise((r) => { release = r; }), getOrigin: () => 'o' });
     ctl.show({ id: ID });
     const pending = button.fire('click');
     assert.equal(button.disabled, true);
@@ -327,7 +328,7 @@ test('clicks while hidden or already copying are ignored', async () => {
     const m = await load();
     const { root, button } = makeRoot();
     let calls = 0;
-    const ctl = m.installAnswerLink(root, { copy: async () => { calls += 1; return true; }, getOrigin: () => 'o', translate: (en) => en });
+    const ctl = m.installAnswerLink(root, { copy: async () => { calls += 1; return true; }, getOrigin: () => 'o', translate: tFor('en') });
     await button.fire('click');
     ctl.show({ id: ID });
     button.disabled = true;
@@ -336,7 +337,7 @@ test('clicks while hidden or already copying are ignored', async () => {
 });
 
 test('default translate uses window.t when the classic script defined it', async () => {
-    const m = await load({ window: { location: { origin: 'https://shelah.org' }, t: (_en, he) => he } });
+    const m = await load({ window: { location: { origin: 'https://shelah.org' }, t: tFor('he') } });
     const { root, button, status } = makeRoot();
     const ctl = m.installAnswerLink(root, { copy: async () => true, setTimer: () => 1, clearTimer: () => {} });
     ctl.show({ id: ID });
@@ -348,7 +349,7 @@ test('default link uses window.location.origin', async () => {
     const m = await load();
     const { root, button } = makeRoot();
     const copied = [];
-    const ctl = m.installAnswerLink(root, { copy: async (u) => { copied.push(await u); return true; }, translate: (en) => en, setTimer: () => 1, clearTimer: () => {} });
+    const ctl = m.installAnswerLink(root, { copy: async (u) => { copied.push(await u); return true; }, translate: tFor('en'), setTimer: () => 1, clearTimer: () => {} });
     ctl.show({ id: ID });
     await button.fire('click');
     assert.deepEqual(copied, [`https://shelah.org/answer/${ID}`]);
@@ -360,7 +361,7 @@ test('getLinkUrl may resolve to { url, note }: the note is shown, not just annou
     const copied = [];
     const ctl = m.installAnswerLink(root, {
         getLinkUrl: async () => ({ url: 'https://shelah.org/answer/x', note: 'Copied a private link.' }),
-        translate: (en) => en,
+        translate: tFor('en'),
         copy: async (u) => { copied.push(await u); return true; },
         setTimer: () => 1,
         clearTimer: () => {},
@@ -376,7 +377,7 @@ test('getLinkUrl may resolve to { url, note }: the note is shown, not just annou
 test('a copy() that throws falls back to the manual-copy field', async () => {
     const m = await load();
     const { root, button, fallback } = makeRoot();
-    const ctl = m.installAnswerLink(root, { getOrigin: () => 'https://x.test', translate: (en) => en, copy: async () => { throw new Error('boom'); } });
+    const ctl = m.installAnswerLink(root, { getOrigin: () => 'https://x.test', translate: tFor('en'), copy: async () => { throw new Error('boom'); } });
     ctl.show({ id: ID });
     await button.fire('click');
     assert.equal(fallback.value, `https://x.test/answer/${ID}`);

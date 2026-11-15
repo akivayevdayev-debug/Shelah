@@ -43,7 +43,7 @@ export function createSiddur({ fetchImpl = globalThis.fetch, deps, storage = glo
     let stopTracking = () => {};
     let shown = null; // { root, prepared, container }
 
-    const t = (en, he) => deps.t(en, he);
+    const t = (key, values) => deps.t(key, values);
     const isHebrew = () => Boolean(deps.isHebrewMode());
 
     async function fetchJson(url) {
@@ -82,7 +82,7 @@ export function createSiddur({ fetchImpl = globalThis.fetch, deps, storage = glo
     }
 
     function badgeText() {
-        return t("Today", "היום");
+        return t('siddur.today');
     }
 
     // Marks the rubrics that apply today; used for a late day answer and
@@ -177,7 +177,7 @@ export function createSiddur({ fetchImpl = globalThis.fetch, deps, storage = glo
         link.hidden = false;
         link.href = reader.sitePath(toc.rite.slug, where.service.slug, section.slug);
         link.dataset.siddurSection = section.slug;
-        link.textContent = t(`Continue: ${section.title.en}`, `להמשיך: ${section.title.he}`);
+        link.textContent = t("siddur.continue_section", { section: isHebrew() ? section.title.he : section.title.en });
     }
 
     // Loads what the page `value` names ("<rite>[/<service>[/<section>]]")
@@ -216,7 +216,7 @@ export function createSiddur({ fetchImpl = globalThis.fetch, deps, storage = glo
             })
             : reader.landingMarkup(toc, { t, escapeHtml, isHebrew: isHebrew() });
         // Above the Today card: the reader's nusach, when this siddur lacks it.
-        const notice = reader.nusachNoticeMarkup(toc, deps.getMinhag?.() || "sephardi", { t, escapeHtml });
+        const notice = reader.nusachNoticeMarkup(toc, deps.getMinhag?.() || "sephardi", { t, escapeHtml, isHebrew: isHebrew() });
         container.innerHTML = notice ? markup.replace('<div class="siddur-today-slot"', `${notice}<div class="siddur-today-slot"`) : markup;
         const root = container.firstElementChild;
         shown = { root, prepared, container };

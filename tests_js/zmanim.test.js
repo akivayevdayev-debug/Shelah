@@ -27,6 +27,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { tFor } = require('./helpers/i18n');
 const {
     addFakeChild,
     createFakeDocument,
@@ -63,7 +64,7 @@ function makeDeps(overrides = {}) {
         escapeHtml: (value) => value,
         ...overrides,
     };
-    deps.t = overrides.t || ((en, he) => (deps.isHebrewMode() ? he : en));
+    deps.t = overrides.t || ((key, values) => tFor(deps.isHebrewMode() ? 'he' : 'en')(key, values));
     return deps;
 }
 

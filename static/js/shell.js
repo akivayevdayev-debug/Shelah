@@ -560,21 +560,12 @@ function hasParenthetical(text) {
 
         function disclaimerBannerText(kind) {
             if (kind === 'breaker') {
-                return t(
-                    'AI answers are paused for today to stay within our usage budget — you can still browse and search the full Torah library. Please try again after midnight UTC.',
-                    'תשובות בינה מלאכותית מושהות להיום כדי להישאר בתקציב השימוש שלנו — ניתן עדיין לעיין ולחפש בספריית התורה המלאה. אנא נסה/י שוב לאחר חצות בשעון UTC.'
-                );
+                return t('shell.ai_answers_are_paused_for_today');
             }
             if (kind === 'referral') {
-                return t(
-                    'This touches on safety or wellbeing. Please see the guidance above and reach out to a qualified professional, your rabbi, or a trusted adult for next steps — this is AI-generated educational information, not a halachic ruling.',
-                    'נושא זה נוגע לבטיחות או לרווחה. אנא עיין/י בהנחיה שלמעלה ופנה/י לאיש/אשת מקצוע מוסמך/ת, לרב שלך, או למבוגר/ת אמון לצעדים הבאים — זהו מידע חינוכי שנוצר על ידי בינה מלאכותית ולא פסיקה הלכתית.'
-                );
+                return t('shell.this_touches_on_safety_or_wellbeing');
             }
-            return t(
-                'AI-generated educational information, not a binding halachic ruling — always consult your rabbi for practical guidance.',
-                'מידע חינוכי שנוצר על ידי בינה מלאכותית, לא פסיקה הלכתית מחייבת — יש להתייעץ תמיד עם הרב שלך לקבלת הנחיה מעשית.'
-            );
+            return t('shell.ai_generated_educational_information_not_a');
         }
 
         // Persistent, non-dismissible disclaimer banner --
@@ -1258,8 +1249,11 @@ function hasParenthetical(text) {
             return /[\u05D0-\u05EA]/.test(String(text || ''));
         }
 
-        function t(enText, heText) {
-            return isHebrewMode() ? heText : enText;
+        // Interface text by key (locales/<code>/shell.json and the other client
+        // namespaces), in the language on screen. static/js/i18n.js does the
+        // lookup; { count } picks the plural form.
+        function t(key, values) {
+            return window.ShelahI18n.translate(getCurrentLanguage(), key, values);
         }
 
         const THEME_PREFERENCE_OPTIONS = ['light', 'dark', 'system'];
@@ -3421,7 +3415,7 @@ function hasParenthetical(text) {
             }
             // It renders into the reader: a text still loading there stops.
             cancelReaderLoad();
-            const title = t('Your questions', 'השאלות שלך');
+            const title = t('shell.your_questions');
             setCurrentView('history', '1', title, options);
             void swapView(() => {
                 closeAskHistoryPage();
@@ -3447,9 +3441,7 @@ function hasParenthetical(text) {
                 resetSelectionInsights();
                 syncReaderSettingsVisibility();
                 document.getElementById('readerSources').innerHTML = '';
-                sidebarContent.innerHTML = `<p class="text-xs text-slate-500">${t(
-                    'Every answer you get while signed in is saved here. Open one to read it again, copy its link, or share it.',
-                    'כל תשובה שמתקבלת כשאת/ה מחובר/ת נשמרת כאן. פתח/י תשובה כדי לקרוא אותה שוב, להעתיק קישור או לשתף.')}</p>`;
+                sidebarContent.innerHTML = `<p class="text-xs text-slate-500">${t('shell.every_answer_you_get_while_signed')}</p>`;
 
                 // A child of #readerContent, so the page's listeners go away with
                 // it the moment another view renders there.
@@ -4478,14 +4470,14 @@ function hasParenthetical(text) {
             const shelf = parseShelfImportInput(raw);
             if (!shelf) {
                 appendDevtoolsLog('shelf-import-invalid');
-                window.alert(t('Could not import this shelf payload.', 'לא ניתן לייבא את מדף המקורות הזה.'));
+                window.alert(t('shell.could_not_import_this_shelf_payload'));
                 return;
             }
 
             saveShelfData(shelf);
             renderPersonalShelf();
             appendDevtoolsLog('shelf-import-success');
-            window.alert(t('Shelf imported successfully.', 'המדף יובא בהצלחה.'));
+            window.alert(t('shell.shelf_imported_successfully'));
         }
 
         function importShelfFromHashIfPresent() {
@@ -4559,7 +4551,7 @@ function hasParenthetical(text) {
         async function exportCurrentCitation() {
             const payload = buildCurrentCitationExportPayload();
             if (!payload) {
-                window.alert(t('Open a text chapter first.', 'פתח פרק טקסט לפני ייצוא.'));
+                window.alert(t('shell.open_a_text_chapter_first'));
                 return;
             }
 
@@ -4591,7 +4583,7 @@ function hasParenthetical(text) {
 
                 appendDevtoolsLog(`citation-exported-${format}`);
             } catch (error) {
-                window.alert(`${t('Could not export chapter:', 'לא ניתן לייצא את הפרק:')} ${error.message || error}`);
+                window.alert(`${t('shell.could_not_export_chapter')} ${error.message || error}`);
             }
         }
 
@@ -4699,8 +4691,8 @@ function hasParenthetical(text) {
         function verseGroupHtml(verseHtml) {
             const close = appState.verseSearch?.close;
             const heading = close
-                ? t('Close matches', 'התאמות קרובות')
-                : t('Verses', 'פסוקים');
+                ? t('shell.close_matches')
+                : t('shell.verses');
             const align = isHebrewMode() ? 'text-end' : 'text-start';
             return `
                 <div role="group" aria-labelledby="searchVerseHeading" class="suggestion-group">
@@ -4728,7 +4720,7 @@ function hasParenthetical(text) {
             const verseHtml = options.slice(verseStart, verseEnd).join('') || (verseLoading ? VERSE_SKELETON_HTML : '');
 
             searchSuggestions.setAttribute('role', 'listbox');
-            searchSuggestions.setAttribute('aria-label', t('Search suggestions', 'הצעות חיפוש'));
+            searchSuggestions.setAttribute('aria-label', t('shell.search_suggestions'));
             searchSuggestions.innerHTML = options.slice(0, verseStart).join('')
                 + (verseHtml ? verseGroupHtml(verseHtml) : '')
                 + options.slice(verseEnd).join('');
@@ -4782,9 +4774,8 @@ function hasParenthetical(text) {
         }
 
         function suggestCountLabel(n) {
-            if (!n) return t('No suggestions', 'אין הצעות');
-            if (n === 1) return t('1 suggestion', 'הצעה אחת');
-            return t(`${n} suggestions`, `${n} הצעות`);
+            if (!n) return t('shell.no_suggestions');
+            return t('shell.suggestions', { count: n });
         }
 
         // Words of a verse, not a reference or a name: two or more words, no
@@ -4877,7 +4868,7 @@ function hasParenthetical(text) {
 
             // Said only when the answer is slow, so fast typing stays quiet.
             const searchingNote = setTimeout(() => {
-                if (fetchSerial === suggestionFetchSerial) setSuggestStatus(t('Searching…', 'מחפש…'));
+                if (fetchSerial === suggestionFetchSerial) setSuggestStatus(t('shell.searching'));
             }, 400);
             const versesWanted = wantsVerseSearch(q);
             try {
@@ -4948,8 +4939,8 @@ function hasParenthetical(text) {
             let label = String((view?.type === 'text' && window.currentTextAnchorTitle) || view?.label || '').trim();
             if (label.length > maxLabel) label = `${label.slice(0, maxLabel - 1).trimEnd()}…`;
             document.title = label
-                ? `${label} · ${t("Sh'elah", 'שאלה')}`
-                : t("Sh'elah - Torah Encyclopedia", 'שאלה - אנציקלופדיית תורה');
+                ? `${label} · ${t('shell.shelah')}`
+                : t('shell.shelah_torah_encyclopedia');
         }
 
         // The views whose page Sh'elah composes itself; every other view is
@@ -5018,7 +5009,7 @@ function hasParenthetical(text) {
             updateExportControlsVisibility();
             const current = appState.currentView;
             if (!current || !bookmarkCurrentBtn) {
-                bookmarkCurrentBtn.textContent = t('Save Current', 'שמור נוכחי');
+                bookmarkCurrentBtn.textContent = t('shell.save_current');
                 return;
             }
 
@@ -5026,8 +5017,8 @@ function hasParenthetical(text) {
             const key = `${current.type}:${current.value}`;
             const exists = shelf.bookmarks.some(i => `${i.type}:${i.value}` === key);
             bookmarkCurrentBtn.textContent = exists
-                ? t('Saved', 'נשמר')
-                : t('Save Current', 'שמור נוכחי');
+                ? t('shell.saved')
+                : t('shell.save_current');
             bookmarkCurrentBtn.classList.toggle('bg-emerald-700', exists);
             bookmarkCurrentBtn.classList.toggle('bg-navy', !exists);
         }
@@ -5089,14 +5080,14 @@ function hasParenthetical(text) {
             if (!semanticBookmarkButton) return;
             semanticBookmarkButton.disabled = Boolean(isBusy);
             semanticBookmarkButton.textContent = isBusy
-                ? t('Saving Note...', 'שומר הערה...')
-                : t('Save Study Note', 'שמור הערת לימוד');
+                ? t('shell.saving_note')
+                : t('shell.save_study_note');
         }
 
         async function saveSemanticBookmark() {
             const payload = getSemanticBookmarkPayload();
             if (!payload) {
-                window.alert(t('Open a text and optionally highlight a passage first.', 'פתח טקסט ובחר קטע לפני שמירת הערת לימוד.'));
+                window.alert(t('shell.open_a_text_and_optionally_highlight'));
                 return;
             }
 
@@ -5125,7 +5116,7 @@ function hasParenthetical(text) {
 
                 const data = await response.json().catch(() => ({}));
                 if (response.status === 401) {
-                    window.alert(t('Please sign in to save study notes.', 'יש להתחבר כדי לשמור הערות לימוד.'));
+                    window.alert(t('shell.please_sign_in_to_save_study'));
                     return;
                 }
                 if (!response.ok) {
@@ -5135,14 +5126,14 @@ function hasParenthetical(text) {
                 const summary = String(data?.item?.ai_summary || '').trim();
                 const summaryError = String(data?.summary_error || '').trim();
                 if (summary) {
-                    window.alert(`${t('Study note saved. Summary:', 'הערת לימוד נשמרה. סיכום:')} ${summary.slice(0, 260)}`);
+                    window.alert(`${t('shell.study_note_saved_summary')} ${summary.slice(0, 260)}`);
                 } else if (summaryError) {
-                    window.alert(t('Study note saved, but AI summary is currently unavailable.', 'הערת הלימוד נשמרה, אך סיכום ה-AI אינו זמין כרגע.'));
+                    window.alert(t('shell.study_note_saved_but_ai_summary'));
                 } else {
-                    window.alert(t('Study note saved.', 'הערת לימוד נשמרה.'));
+                    window.alert(t('shell.study_note_saved'));
                 }
             } catch (error) {
-                window.alert(`${t('Could not save study note:', 'לא ניתן לשמור הערת לימוד:')} ${error.message || error}`);
+                window.alert(`${t('shell.could_not_save_study_note')} ${error.message || error}`);
             } finally {
                 setSemanticBookmarkBusy(false);
             }
@@ -5153,7 +5144,7 @@ function hasParenthetical(text) {
         // AA text threshold. Darkened to #6f5e46 (5.22:1), same warm-brown family.
         function renderShelfList(items, bucket = 'recent') {
             if (!items.length) {
-                return `<p class="text-xs italic text-slate-400">${t('No items yet.', 'אין פריטים עדיין.')}</p>`;
+                return `<p class="text-xs italic text-slate-400">${t('shell.no_items_yet')}</p>`;
             }
 
             const current = appState.currentView;
@@ -5187,16 +5178,16 @@ function hasParenthetical(text) {
                 <div class="space-y-4">
                     <div>
                         <div class="flex justify-between items-center mb-2">
-                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">${t('Bookmarks', 'סימניות')}</h4>
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">${t('shell.bookmarks')}</h4>
                         </div>
                         <div class="space-y-1">${renderShelfList(shelf.bookmarks.slice(0, 6), 'bookmarks')}</div>
                     </div>
                     <div>
                         <div class="flex justify-between items-center mb-2">
-                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">${t('Recent', 'אחרונים')}</h4>
-                            <button type="button" class="text-[10px] text-slate-400 hover:text-slate-700" data-action="clear-recents">${t('Clear', 'נקה')}</button>
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">${t('shell.recent')}</h4>
+                            <button type="button" class="text-[10px] text-slate-400 hover:text-slate-700" data-action="clear-recents">${t('shell.clear')}</button>
                         </div>
-                        <p class="text-[10px] text-slate-400 mb-1">${t('Right-click an item to remove it.', 'לחיצה ימנית להסרת פריט.')}</p>
+                        <p class="text-[10px] text-slate-400 mb-1">${t('shell.right_click_an_item_to_remove')}</p>
                         <div class="space-y-1">${renderShelfList(shelf.recent.slice(0, 6), 'recent')}</div>
                     </div>
                 </div>
@@ -5344,10 +5335,7 @@ function hasParenthetical(text) {
         function resetSelectionInsights(message = '') {
             if (!selectionInsightsBody || !selectionInsightsHint) return;
             selectionInsightsHint.textContent = message
-                || t(
-                    'Highlight a passage to load linked commentaries. Highlight one word to see its meaning.',
-                    'סמן קטע כדי לטעון מפרשים מקושרים. סמן מילה אחת כדי לראות את פירושה.'
-                );
+                || t('shell.highlight_a_passage_to_load_linked');
             selectionInsightsBody.innerHTML = '';
         }
 
@@ -5784,7 +5772,7 @@ function hasParenthetical(text) {
 
         function getCommentaryAuthorLabel(ref) {
             const raw = String(ref || '').trim();
-            if (!raw) return t('Unknown commentator', 'פרשן לא ידוע');
+            if (!raw) return t('shell.unknown_commentator');
             const sefariaHe = isHebrewMode() ? commentaryRefMeta.get(raw)?.he : '';
             return sefariaHe || getCommentaryAuthorDisplayName(getCommentaryAuthorBase(raw));
         }
@@ -5821,7 +5809,7 @@ function hasParenthetical(text) {
 
         function renderCommentaryChooser(groupedCommentaries) {
             if (!Array.isArray(groupedCommentaries) || !groupedCommentaries.length) {
-                return `<p class="text-xs text-slate-500 italic">${t('No linked commentaries found for this passage.', 'לא נמצאו מפרשים מקושרים לקטע זה.')}</p>`;
+                return `<p class="text-xs text-slate-500 italic">${t('shell.no_linked_commentaries_found_for_this')}</p>`;
             }
 
             // A verse can link hundreds of passages (Genesis 1:1: ~700 in ~95
@@ -5870,13 +5858,13 @@ function hasParenthetical(text) {
             const word = escapeHtml(wordInfo?.word || '');
             const card = (body) => `
                     <div class="rounded-lg border border-[#d7c8ad] bg-[#f2eadc] px-3 py-2">
-                        <p class="text-[11px] uppercase tracking-widest text-[#5d4c36] font-bold">${t('Word Meaning', 'משמעות מילה')}</p>
+                        <p class="text-[11px] uppercase tracking-widest text-[#5d4c36] font-bold">${t('shell.word_meaning')}</p>
                         ${body}
                     </div>
                 `;
             if (!wordInfo?.meaning) {
                 return wordInfo?.notFound
-                    ? card(`<p class="text-sm text-[#4f4130] mt-1"><span class="font-semibold">${word}</span>: ${t('No definition found', 'לא נמצאה הגדרה')}</p>`)
+                    ? card(`<p class="text-sm text-[#4f4130] mt-1"><span class="font-semibold">${word}</span>: ${t('shell.no_definition_found')}</p>`)
                     : '';
             }
             const primaryMeaning = String(wordInfo.meaning).trim().toLowerCase();
@@ -5923,8 +5911,8 @@ function hasParenthetical(text) {
             if (Array.isArray(groupedCommentaries) && groupedCommentaries.length) {
                 html += `
                     <div class="rounded-lg border border-slate-200 bg-white px-3 py-3">
-                        <p class="text-[11px] uppercase tracking-widest text-slate-500 font-bold mb-2">${t('Linked Commentaries', 'מפרשים מקושרים')}</p>
-                        <p class="text-xs text-slate-500 mb-2">${t('Choose a commentator to load the commentary text here in the sidebar.', 'בחר פרשן כדי לטעון כאן את הטקסט של הפירוש בסרגל הצד.')}</p>
+                        <p class="text-[11px] uppercase tracking-widest text-slate-500 font-bold mb-2">${t('shell.linked_commentaries')}</p>
+                        <p class="text-xs text-slate-500 mb-2">${t('shell.choose_a_commentator_to_load_the')}</p>
                         <div class="space-y-2">${renderCommentaryChooser(groupedCommentaries)}</div>
                     </div>
                 `;
@@ -5935,8 +5923,8 @@ function hasParenthetical(text) {
             wireCommentaryIntentPrefetch();
             showSelectionInsights();
             selectionInsightsHint.textContent = selectionCommentaryState.mode === 'reading'
-                ? t('Commentary on', 'פירושים על') + ` ${readingRefLabel(selectionCommentaryState.readingRef)}`
-                : t('Selected text:', 'הטקסט שנבחר:') + ` ${selectionCommentaryState.selectedText}`;
+                ? t('shell.commentary_on') + ` ${readingRefLabel(selectionCommentaryState.readingRef)}`
+                : t('shell.selected_text') + ` ${selectionCommentaryState.selectedText}`;
         }
 
         function readingRefLabel(ref) {
@@ -6016,7 +6004,7 @@ function hasParenthetical(text) {
             selectionCommentaryState.activeCommentaryRef = '';
             selectionCommentaryState.wordInfo = null;
             selectionCommentaryState.selectedText = '';
-            selectionInsightsHint.textContent = t('Commentary on', 'פירושים על') + ` ${readingRefLabel(ref)}`;
+            selectionInsightsHint.textContent = t('shell.commentary_on') + ` ${readingRefLabel(ref)}`;
             if (!commentaryLinksCache.has(ref)) {
                 selectionInsightsBody.setAttribute('aria-busy', 'true');
                 selectionInsightsBody.innerHTML = `
@@ -6033,7 +6021,7 @@ function hasParenthetical(text) {
             const grouped = buildGroupedCommentaries(links, ref);
             selectionCommentaryState.groupedCommentaries = grouped;
             if (!grouped.length) {
-                selectionInsightsBody.innerHTML = `<p class="text-xs text-slate-500 italic">${t('No linked commentaries found for this passage.', 'לא נמצאו מפרשים מקושרים לקטע זה.')}</p>`;
+                selectionInsightsBody.innerHTML = `<p class="text-xs text-slate-500 italic">${t('shell.no_linked_commentaries_found_for_this')}</p>`;
                 selectionInsightsBody.setAttribute('aria-busy', 'false');
                 return;
             }
@@ -6117,7 +6105,7 @@ function hasParenthetical(text) {
             const fallbackLen = Math.max(heFallbackLines.length, enFallbackLines.length);
 
             if (!fallbackLen) {
-                return `<p class="text-xs text-slate-500 italic">${t('No commentary text found for this reference.', 'לא נמצא טקסט פירוש עבור הפניה זו.')}</p>`;
+                return `<p class="text-xs text-slate-500 italic">${t('shell.no_commentary_text_found_for_this')}</p>`;
             }
 
             return Array.from({ length: fallbackLen }, (_, idx) => renderCommentaryPart(heFallbackLines[idx] || '', enFallbackLines[idx] || ''))
@@ -6161,10 +6149,10 @@ function hasParenthetical(text) {
                 selectionInsightsBody.innerHTML = `
                     <div class="rounded-lg border border-slate-200 bg-white px-3 py-3">
                         <div class="flex items-center justify-between gap-2 mb-2">
-                            <p class="text-[11px] uppercase tracking-widest text-slate-500 font-bold">${t('Commentary', 'פירוש')}</p>
+                            <p class="text-[11px] uppercase tracking-widest text-slate-500 font-bold">${t('shell.commentary')}</p>
                             <button type="button" data-onclick="renderSelectionInsightsChooser"
                                 class="text-[11px] font-semibold text-[#004e5f] hover:underline">
-                                ${t('Back to list', 'חזרה לרשימה')}
+                                ${t('shell.back_to_list')}
                             </button>
                         </div>
                         <h5 class="text-sm font-semibold text-slate-800 mb-3">${displayTitle}</h5>
@@ -6180,7 +6168,7 @@ function hasParenthetical(text) {
             });
             selectionInsightsBody.setAttribute('aria-busy', 'false');
             const commentaryHintLabel = localizeCommentaryReferenceLabel(commentaryRef);
-            selectionInsightsHint.textContent = t('Viewing commentary:', 'מציג פירוש:') + ` ${commentaryHintLabel}`;
+            selectionInsightsHint.textContent = t('shell.viewing_commentary') + ` ${commentaryHintLabel}`;
         }
 
         async function openCommentaryInline(ref) {
@@ -6233,15 +6221,15 @@ function hasParenthetical(text) {
                 selectionCommentaryState.activeCommentaryRef = '';
                 selectionInsightsBody.innerHTML = `
                     <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-3">
-                        <p class="text-sm text-red-700 mb-2">${t('Unable to load commentary text right now.', 'לא ניתן לטעון כרגע את טקסט הפירוש.')}</p>
+                        <p class="text-sm text-red-700 mb-2">${t('shell.unable_to_load_commentary_text_right')}</p>
                         <button type="button" data-onclick="renderSelectionInsightsChooser"
                             class="text-[11px] font-semibold text-[#004e5f] hover:underline">
-                            ${t('Back to linked commentaries', 'חזרה למפרשים מקושרים')}
+                            ${t('shell.back_to_linked_commentaries')}
                         </button>
                     </div>
                 `;
                 selectionInsightsBody.setAttribute('aria-busy', 'false');
-                selectionInsightsHint.textContent = t('Could not load commentary.', 'לא ניתן לטעון את הפירוש.');
+                selectionInsightsHint.textContent = t('shell.could_not_load_commentary');
             }
         }
 
@@ -6426,7 +6414,7 @@ function hasParenthetical(text) {
 
             const cleanWord = singleWordOf(selectedText);
 
-            selectionInsightsHint.textContent = t('Loading selected passage tools...', 'טוען כלים לקטע שנבחר...');
+            selectionInsightsHint.textContent = t('shell.loading_selected_passage_tools');
             if (selectionInsightsBody && !commentaryLinksCache.has(candidates[0])) showSelectionLoadingSkeleton();
 
             const commentaryPromise = fetchCommentaryLinksWithFallback(candidates);
@@ -6721,7 +6709,7 @@ function hasParenthetical(text) {
             const label = isHebrewMode()
                 ? (String(heTitle || '').trim() || localizeReferenceLabel(ref))
                 : String(ref || '').trim();
-            return `${escapeHtml(t('Haftarah', 'הפטרה'))} — <bdi>${escapeHtml(label)}</bdi>`;
+            return `${escapeHtml(t('shell.haftarah'))} — <bdi>${escapeHtml(label)}</bdi>`;
         }
 
         function infiniteReaderStatusMarkup() {
@@ -6742,7 +6730,7 @@ function hasParenthetical(text) {
                     : escapeHtml(infiniteReaderState.nextRef);
                 return `<div id="infiniteReaderStatus" class="mt-3 text-center font-serif text-sm text-slate-600"><span class="underline underline-offset-4 decoration-slate-300">${label}</span></div>`;
             }
-            return `<div id="infiniteReaderStatus" class="mt-3 text-xs text-slate-400 italic">${t('End of available sections.', 'סוף הקטעים הזמינים.')}</div>`;
+            return `<div id="infiniteReaderStatus" class="mt-3 text-xs text-slate-400 italic">${t('shell.end_of_available_sections')}</div>`;
         }
 
         async function loadNextTextChunk() {
@@ -7020,7 +7008,7 @@ function hasParenthetical(text) {
             };
 
             if (!Array.isArray(data?.lines) || !data.lines.length) {
-                return `<p class="text-slate-500 italic">${t('No text content found for this reference.', 'לא נמצא תוכן טקסט עבור הפניה זו.')}</p>`;
+                return `<p class="text-slate-500 italic">${t('shell.no_text_content_found_for_this')}</p>`;
             }
 
             return data.lines.map((line, idx) => {
@@ -7063,14 +7051,14 @@ function hasParenthetical(text) {
             if (layout === 'english') {
                 const englishLine = en
                     ? `<p>${en}</p>`
-                    : `<p class="text-slate-400 italic text-sm">${t('No translation available.', 'אין תרגום זמין.')}</p>`;
+                    : `<p class="text-slate-400 italic text-sm">${t('shell.no_translation_available')}</p>`;
                 return singleColumnTextRow(row, `<div class="source-en reader-text-en font-serif leading-relaxed py-2 text-slate-700 text-lg" dir="ltr">${englishLine}</div>`);
             }
 
             if (layout === 'hebrew') {
                 const hebrewLine = he
                     ? `<p>${he}</p>${translit}`
-                    : `<p class="text-slate-400 italic text-sm">${t('No Hebrew text in this segment.', 'אין טקסט עברי בקטע זה.')}</p>`;
+                    : `<p class="text-slate-400 italic text-sm">${t('shell.no_hebrew_text_in_this_segment')}</p>`;
                 return singleColumnTextRow(row, `<div class="source-he reader-text-he text-start font-hebrew text-2xl lg:text-3xl leading-[1.8] lg:leading-9 py-2" dir="rtl">${hebrewLine}</div>`);
             }
 
@@ -7148,7 +7136,7 @@ function hasParenthetical(text) {
 
             const ref = String(chunk?.ref || '').trim();
             if (!ref) {
-                return t('Text Section', 'קטע טקסט');
+                return t('shell.text_section');
             }
 
             return hebrew ? localizeReferenceLabel(ref) : ref;
@@ -7387,25 +7375,25 @@ function hasParenthetical(text) {
             syncReaderTopBarOffset();
             readerTopBar.classList.remove('hidden');
 
-            if (readerLibraryTopBarBtn) setControlLabel(readerLibraryTopBarBtn, t('Library', 'ספרייה'));
+            if (readerLibraryTopBarBtn) setControlLabel(readerLibraryTopBarBtn, t('shell.library'));
 
             if (readerPrevTopBarBtn) {
                 readerPrevTopBarBtn.classList.remove('hidden');
-                setControlLabel(readerPrevTopBarBtn, t('Previous Section', 'קטע קודם'));
+                setControlLabel(readerPrevTopBarBtn, t('shell.previous_section'));
             }
 
             if (readerNextTopBarBtn) {
                 readerNextTopBarBtn.classList.remove('hidden');
-                setControlLabel(readerNextTopBarBtn, t('Next Section', 'קטע הבא'));
+                setControlLabel(readerNextTopBarBtn, t('shell.next_section'));
             }
 
             if (readerCommentaryTopBarBtn) {
-                setControlLabel(readerCommentaryTopBarBtn, t('Commentary', 'מפרשים'));
+                setControlLabel(readerCommentaryTopBarBtn, t('shell.commentary_2'));
                 updateCommentaryHintVisibility();
             }
 
             if (readerSettingsBtn) {
-                const settingsLabel = t('Reader Settings', 'הגדרות קריאה');
+                const settingsLabel = t('shell.reader_settings');
                 setControlLabel(readerSettingsBtn, settingsLabel);
                 if (readerSettingsBtnLabel) {
                     readerSettingsBtnLabel.textContent = settingsLabel;
@@ -7610,7 +7598,7 @@ function hasParenthetical(text) {
         function renderHebrewParagraph(rawText = '', includeTransliteration = true) {
             const displayText = applyHebrewDisplaySettings(rawText || '');
             if (!displayText) {
-                return `<p class="text-slate-300 italic">${t('No Hebrew text in source', 'אין טקסט עברי במקור')}</p>`;
+                return `<p class="text-slate-300 italic">${t('shell.no_hebrew_text_in_source')}</p>`;
             }
             return `<p class="font-hebrew">${escapeDisplayTextPreservingEmphasis(displayText)}</p>${includeTransliteration ? transliterationMarkup(displayText) : ''}`;
         }
@@ -7618,7 +7606,7 @@ function hasParenthetical(text) {
         function renderEnglishParagraph(rawText = '') {
             const displayText = String(rawText || '').trim();
             if (!displayText) {
-                return `<p class="text-slate-300 italic">${t('No English translation in source', 'אין תרגום אנגלי במקור')}</p>`;
+                return `<p class="text-slate-300 italic">${t('shell.no_english_translation_in_source')}</p>`;
             }
             return `<p class="font-serif">${escapeDisplayTextPreservingEmphasis(displayText)}</p>`;
         }
@@ -7692,8 +7680,8 @@ function hasParenthetical(text) {
             // by renderHebrewParagraph/renderEnglishParagraph below.
             const isEmpty = !String(contentDisplay || '').trim();
             const emptyNote = lang === 'he'
-                ? t('No Hebrew text in source', 'אין טקסט עברי במקור')
-                : t('No English translation in source', 'אין תרגום אנגלי במקור');
+                ? t('shell.no_hebrew_text_in_source')
+                : t('shell.no_english_translation_in_source');
             const bodyMarkup = isEmpty
                 ? `<p class="text-slate-300 italic">${emptyNote}</p>`
                 : `<div class="${fontClass}">${contentDisplay}</div>${translit}`;
@@ -8441,7 +8429,7 @@ function hasParenthetical(text) {
                     return `
                         <details class="library-tree-node group ${depth === 0 ? 'mb-1' : ''}">
                             <summary class="library-tree-summary cursor-pointer list-none ${summaryClass}">
-                                ${escapeHtml(labels.display || labels.en || labels.he || t('Category', 'קטגוריה'))}
+                                ${escapeHtml(labels.display || labels.en || labels.he || t('shell.category'))}
                             </summary>
                             <div class="library-tree-children mt-1 space-y-1">${childrenMarkup}</div>
                         </details>
@@ -8483,7 +8471,7 @@ function hasParenthetical(text) {
             if (!libraryIndexData) return;
             const filterValue = normalizeLibraryFilterValue(libraryIndexFilterInput?.value || '');
             const renderKey = `${isHebrewMode() ? 'he' : 'en'}|${filterValue}`;
-            const empty = `<p class="text-xs italic text-slate-400">${t('No matching topics found.', 'לא נמצאו נושאים תואמים.')}</p>`;
+            const empty = `<p class="text-xs italic text-slate-400">${t('shell.no_matching_topics_found')}</p>`;
 
             if (libraryIndexSidebar && renderKey !== libraryIndexSidebarKey) {
                 libraryIndexSidebarKey = renderKey;
@@ -8517,7 +8505,7 @@ function hasParenthetical(text) {
                     libraryIndexSidebarKey = null;
                     libraryIndexModalKey = null;
                     failListRegions(modal ? [libraryIndexSidebar, libraryIndexModal] : [libraryIndexSidebar],
-                        t("Couldn't load the library index. Check your connection.", 'לא ניתן לטעון את אינדקס הספרייה. בדקו את החיבור.'),
+                        t('shell.couldnt_load_the_library_index_check'),
                         (next) => loadLibraryIndexViews(next, { modal }), attempt);
                     return;
                 }
@@ -8667,7 +8655,7 @@ function hasParenthetical(text) {
                     if (!Number.isFinite(chapterNum) || chapterNum < 1) return '';
 
                     const ref = `${normalizedBook} ${chapterNum}`;
-                    const nameEn = String(entry?.name || '').trim() || `${t('Chapter', 'פרק')} ${chapterNum}`;
+                    const nameEn = String(entry?.name || '').trim() || `${t('shell.chapter')} ${chapterNum}`;
                     const nameHe = PARASHA_HE_MAP[nameEn] || nameEn;
                     const label = isHebrewMode() ? nameHe : nameEn;
                     // Where the portion actually starts ("4:21" / "ד׳:כ״א").
@@ -8938,10 +8926,10 @@ function hasParenthetical(text) {
                 const dafStr = dafOfRemainder(remainder);
                 const dafKey = _dafToKey(dafStr);
                 if (dafKey >= 0) return _getSectionForDaf(dafKey, sectionLookup, isHebrewMode());
-                return dafStr ? dafGroupLabel(dafStr) : t('Unsorted', 'ללא מיון');
+                return dafStr ? dafGroupLabel(dafStr) : t('shell.unsorted');
             }
             const numKey = _sectionKeyFromRef(remainder);
-            return _getSectionForNumber(numKey, sectionLookup, isHebrewMode()) || t('Unsorted', 'ללא מיון');
+            return _getSectionForNumber(numKey, sectionLookup, isHebrewMode()) || t('shell.unsorted');
         }
 
         // Refs grouped under their section headings (daf ranges or siman ranges).
@@ -9108,17 +9096,17 @@ function hasParenthetical(text) {
             const progressLabel = `${context.index + 1}/${context.total}`;
 
             const prevButton = context.prev
-                ? `<button data-onclick="displayPrayer" data-onclick-arg="${encodeURIComponent(context.prev.name)}" data-onclick-encoding="uri" class="px-3 py-2 bg-slate-100 rounded-sm hover:bg-slate-200 text-slate-700 text-sm font-medium">${t('Previous', 'הקודם')}: ${escapeHtml(getPrayerDisplayName(context.prev.name))}</button>`
+                ? `<button data-onclick="displayPrayer" data-onclick-arg="${encodeURIComponent(context.prev.name)}" data-onclick-encoding="uri" class="px-3 py-2 bg-slate-100 rounded-sm hover:bg-slate-200 text-slate-700 text-sm font-medium">${t('shell.previous')}: ${escapeHtml(getPrayerDisplayName(context.prev.name))}</button>`
                 : '<span></span>';
 
             const nextButton = context.next
-                ? `<button data-onclick="displayPrayer" data-onclick-arg="${encodeURIComponent(context.next.name)}" data-onclick-encoding="uri" class="px-3 py-2 bg-slate-100 rounded-sm hover:bg-slate-200 text-slate-700 text-sm font-medium">${t('Next', 'הבא')}: ${escapeHtml(getPrayerDisplayName(context.next.name))}</button>`
+                ? `<button data-onclick="displayPrayer" data-onclick-arg="${encodeURIComponent(context.next.name)}" data-onclick-encoding="uri" class="px-3 py-2 bg-slate-100 rounded-sm hover:bg-slate-200 text-slate-700 text-sm font-medium">${t('shell.next')}: ${escapeHtml(getPrayerDisplayName(context.next.name))}</button>`
                 : '<span></span>';
 
             return `
                 <div class="mb-6 space-y-2">
                     <div class="flex items-center justify-between text-xs uppercase tracking-widest text-slate-500 font-semibold">
-                        <span>${t('Prayer Navigation', 'ניווט תפילות')}</span>
+                        <span>${t('shell.prayer_navigation')}</span>
                         <span>${escapeHtml(progressLabel)}</span>
                     </div>
                     <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 font-medium">${escapeHtml(currentLabel)}</div>
@@ -9143,7 +9131,7 @@ function hasParenthetical(text) {
                 populateCommunitiesListHTML(communities);
             } catch {
                 failListRegions([list],
-                    t("Couldn't load the communities. Check your connection.", 'לא ניתן לטעון את הקהילות. בדקו את החיבור.'),
+                    t('shell.couldnt_load_the_communities_check_your'),
                     loadCommunitiesMenu, attempt);
             }
         }
@@ -9369,8 +9357,8 @@ function hasParenthetical(text) {
 
             sidebarContent.innerHTML = `
                 <div class="text-xs space-y-2">
-                    <div><span class="font-bold text-slate-700">${t('From:', 'מקור:')}</span> <span class="text-slate-500">${prayerData.hasSefaria ? t('Sefaria Liturgy Collection', 'אוסף ליטורגיה מספריא') : t('Sefaria Prayer Book Preview', 'תצוגה מקדימה של סידור מספריא')}</span></div>
-                    <div><span class="font-bold text-slate-700">${t('Languages:', 'שפות:')}</span> <span class="text-slate-500">${t('Hebrew &amp; English', 'עברית ואנגלית')}</span></div>
+                    <div><span class="font-bold text-slate-700">${t('shell.from')}</span> <span class="text-slate-500">${prayerData.hasSefaria ? t('shell.sefaria_liturgy_collection') : t('shell.sefaria_prayer_book_preview')}</span></div>
+                    <div><span class="font-bold text-slate-700">${t('shell.languages')}</span> <span class="text-slate-500">${t('shell.hebrew_amp_english')}</span></div>
                 </div>`;
 
             if (!restoreViewScroll(options.restoreScroll, 'prayer')) scrollPrimaryToTop('smooth');
@@ -9393,10 +9381,10 @@ function hasParenthetical(text) {
             };
             regions.renderRegionError(content, {
                 message: missing
-                    ? t("This prayer isn't in the library.", 'התפילה הזו אינה בספרייה.')
-                    : t("Couldn't load this prayer. Check your connection.", 'לא ניתן היה לטעון את התפילה. בדקו את החיבור.'),
+                    ? t('shell.this_prayer_isnt_in_the_library')
+                    : t('shell.couldnt_load_this_prayer_check_your'),
                 retry: missing ? null : () => retry(0),
-                actions: missing ? [{ label: t('Back to prayers', 'חזרה לתפילות'), onClick: () => openTextsMenu() }] : [],
+                actions: missing ? [{ label: t('shell.back_to_prayers'), onClick: () => openTextsMenu() }] : [],
             });
             if (missing) {
                 if (options.fromRoute) window.ShelahRouter?.markNotFound();
@@ -9426,7 +9414,7 @@ function hasParenthetical(text) {
             appState.shownView = null;
             await swapView(() => {
                 homeGrid.style.display = 'none';
-                showReaderSkeleton(t('Siddur', 'סידור'));
+                showReaderSkeleton(t('shell.siddur'));
                 closeMobilePanels();
                 closeTextsMenu();
                 closeReaderSettingsPanel();
@@ -9462,9 +9450,9 @@ function hasParenthetical(text) {
                 const source = prepared.toc.source;
                 sidebarContent.innerHTML = `
                     <div class="text-xs space-y-2">
-                        <div><span class="font-bold text-slate-700">${t('From:', 'מקור:')}</span> <span class="text-slate-500">${escapeHtml(source.index)} · Sefaria</span></div>
-                        <div><span class="font-bold text-slate-700">${t('Hebrew:', 'עברית:')}</span> <span class="text-slate-500">${escapeHtml(`${source.he.title} (${source.he.license})`)}</span></div>
-                        <div><span class="font-bold text-slate-700">${t('English:', 'אנגלית:')}</span> <span class="text-slate-500">${escapeHtml(`${source.en.title} (${source.en.license})`)}</span></div>
+                        <div><span class="font-bold text-slate-700">${t('shell.from')}</span> <span class="text-slate-500">${escapeHtml(source.index)} · Sefaria</span></div>
+                        <div><span class="font-bold text-slate-700">${t('shell.hebrew')}</span> <span class="text-slate-500">${escapeHtml(`${source.he.title} (${source.he.license})`)}</span></div>
+                        <div><span class="font-bold text-slate-700">${t('shell.english')}</span> <span class="text-slate-500">${escapeHtml(`${source.en.title} (${source.en.license})`)}</span></div>
                     </div>`;
                 renderSiddurMenus();
                 if (!section && !restoreViewScroll(options.restoreScroll, 'siddur')) scrollPrimaryToTop('auto');
@@ -9483,7 +9471,7 @@ function hasParenthetical(text) {
             const content = document.getElementById('readerContent');
             const regions = window.ShelahLoadRegion;
             if (!content || !regions) return;
-            document.getElementById('readerTitle').textContent = t('Siddur', 'סידור');
+            document.getElementById('readerTitle').textContent = t('shell.siddur');
             readerTopBar?.classList.add('hidden');
             const missing = err?.name === 'SiddurNotFound';
             const attempt = Number(options.loadRetryAttempt) || 0;
@@ -9493,10 +9481,10 @@ function hasParenthetical(text) {
             };
             regions.renderRegionError(content, {
                 message: missing
-                    ? t("This page isn't in the siddur.", 'הדף הזה אינו בסידור.')
-                    : t("Couldn't load the siddur. Check your connection.", 'לא ניתן היה לטעון את הסידור. בדקו את החיבור.'),
+                    ? t('shell.this_page_isnt_in_the_siddur')
+                    : t('shell.couldnt_load_the_siddur_check_your'),
                 retry: missing ? null : () => retry(0),
-                actions: missing ? [{ label: t('Back to the siddur', 'חזרה לסידור'), onClick: () => void displaySiddur('edot-hamizrach') }] : [],
+                actions: missing ? [{ label: t('shell.back_to_the_siddur'), onClick: () => void displaySiddur('edot-hamizrach') }] : [],
             });
             if (missing) {
                 if (options.fromRoute) window.ShelahRouter?.markNotFound();
@@ -9532,7 +9520,7 @@ function hasParenthetical(text) {
             if (!mount || !siddur) return Promise.resolve();
             return siddur.renderToc(mount, opts).catch(() => {
                 failListRegions([mount],
-                    t("Couldn't load the siddur. Check your connection.", 'לא ניתן היה לטעון את הסידור. בדקו את החיבור.'),
+                    t('shell.couldnt_load_the_siddur_check_your'),
                     (next) => renderSiddurMount(mount, opts, next), attempt);
             });
         }
@@ -9596,10 +9584,10 @@ function hasParenthetical(text) {
                 : '';
             return `
                 <div class="text-xs space-y-2">
-                    <div><span class="font-bold text-slate-700">${t('Community:', 'קהילה:')}</span> <span class="text-slate-500">${communityLabel}</span></div>
-                    <div><span class="font-bold text-slate-700">${t('Source Base:', 'בסיס מקורות:')}</span> <span class="text-slate-500">${t('Community source registry + major poskim', 'רישום מקורות קהילתי + פוסקים מרכזיים')}</span></div>
-                    ${majorSources ? `<div><span class="font-bold text-slate-700">${t('Major Authorities:', 'סמכויות מרכזיות:')}</span> <span class="text-slate-500" dir="auto">${escapeHtml(communitySourceText(majorSources))}</span></div>` : ''}
-                    <div><span class="font-bold text-slate-700">${t('Primary Origin:', 'מוצא עיקרי:')}</span> <span class="text-slate-500" dir="auto">${communityData.primary_origin ? escapeHtml(communityLabelText(communityData.primary_origin)) : '--'}</span></div>
+                    <div><span class="font-bold text-slate-700">${t('shell.community')}</span> <span class="text-slate-500">${communityLabel}</span></div>
+                    <div><span class="font-bold text-slate-700">${t('shell.source_base')}</span> <span class="text-slate-500">${t('shell.community_source_registry_major_poskim')}</span></div>
+                    ${majorSources ? `<div><span class="font-bold text-slate-700">${t('shell.major_authorities')}</span> <span class="text-slate-500" dir="auto">${escapeHtml(communitySourceText(majorSources))}</span></div>` : ''}
+                    <div><span class="font-bold text-slate-700">${t('shell.primary_origin')}</span> <span class="text-slate-500" dir="auto">${communityData.primary_origin ? escapeHtml(communityLabelText(communityData.primary_origin)) : '--'}</span></div>
                 </div>`;
         }
 
@@ -9646,10 +9634,10 @@ function hasParenthetical(text) {
             };
             regions.renderRegionError(content, {
                 message: missing
-                    ? t("There are no customs for this community yet.", 'אין עדיין מנהגים לקהילה זו.')
-                    : t("Couldn't load these customs. Check your connection.", 'לא ניתן היה לטעון את המנהגים. בדקו את החיבור.'),
+                    ? t('shell.there_are_no_customs_for_this')
+                    : t('shell.couldnt_load_these_customs_check_your'),
                 retry: missing ? null : () => retry(0),
-                actions: missing ? [{ label: t('Back to communities', 'חזרה לקהילות'), onClick: () => openTextsMenu() }] : [],
+                actions: missing ? [{ label: t('shell.back_to_communities'), onClick: () => openTextsMenu() }] : [],
             });
             if (missing) {
                 if (options.fromRoute) window.ShelahRouter?.markNotFound();
@@ -9706,7 +9694,7 @@ function hasParenthetical(text) {
                 });
             if (!rows.length) return '';
             return `<div class="community-variants">
-                <p class="community-subhead">${t('Where communities differ', 'הבדלים בין עדות')}</p>
+                <p class="community-subhead">${t('shell.where_communities_differ')}</p>
                 <ul class="list-disc ml-5 text-slate-600 text-sm space-y-1" dir="auto">${rows.join('')}</ul>
             </div>`;
         }
@@ -9714,7 +9702,7 @@ function hasParenthetical(text) {
         function communityExternalLink(url, text) {
             const href = safeHref(url);
             if (href === '#') return escapeHtml(text);
-            return `<a class="community-link" href="${href}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}<span class="sr-only"> ${t('(opens in a new tab)', '(נפתח בלשונית חדשה)')}</span></a>`;
+            return `<a class="community-link" href="${href}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}<span class="sr-only"> ${t('shell.opens_in_a_new_tab')}</span></a>`;
         }
 
         // "Source: X" (linked when the entry names the page it came from), then
@@ -9728,10 +9716,10 @@ function hasParenthetical(text) {
             if (!source && !refs.length) return '';
             const parts = [];
             if (source) {
-                parts.push(`<span class="font-semibold">${t('Source:', 'מקור:')}</span> ${sourceUrl ? communityExternalLink(sourceUrl, source) : escapeHtml(source)}`);
+                parts.push(`<span class="font-semibold">${t('shell.source')}</span> ${sourceUrl ? communityExternalLink(sourceUrl, source) : escapeHtml(source)}`);
             }
             if (refs.length) {
-                parts.push(`<span class="font-semibold">${t('Also:', 'ראו גם:')}</span> ${refs.map((r) => communityExternalLink(r.url, r.title)).join(' · ')}`);
+                parts.push(`<span class="font-semibold">${t('shell.also')}</span> ${refs.map((r) => communityExternalLink(r.url, r.title)).join(' · ')}`);
             }
             return `<p class="text-slate-500 text-xs mt-1" dir="auto">${parts.join(' &nbsp;|&nbsp; ')}</p>`;
         }
@@ -9750,10 +9738,9 @@ function hasParenthetical(text) {
                    </details>`;
             };
             const list = (value) => (Array.isArray(value) ? value : []).map((x) => String(x || '').trim()).filter(Boolean);
-            const html = block(t('Where sources disagree', 'היכן המקורות חלוקים'), list(communityData?.disputes),
-                    t('Rabbis differ on these points. Each rabbi gives their own answer, so ask your own rabbi.',
-                      'רבנים חלוקים בנקודות אלה. כל רב משיב על פי הכרעתו, ולכן שאלו את הרב שלכם.'))
-                + block(t('Not yet documented', 'עדיין לא מתועד'), list(communityData?.gaps));
+            const html = block(t('shell.where_sources_disagree'), list(communityData?.disputes),
+                    t('shell.rabbis_differ_on_these_points_each'))
+                + block(t('shell.not_yet_documented'), list(communityData?.gaps));
             return html ? `<div class="prayer-clean-row py-2"><div class="prayer-clean-en" dir="ltr">${html}</div></div>` : '';
         }
 
@@ -9767,13 +9754,13 @@ function hasParenthetical(text) {
                         <div class="font-semibold text-slate-800" dir="auto">${escapeHtml(communityText(c, 'name'))}${communityConfidenceChip(c.confidence)}</div>
                         ${communityText(c, 'description') ? `<p class="text-slate-700 mt-1" dir="auto">${escapeHtml(communityText(c, 'description'))}</p>` : ''}
                         ${communityRabbiNote(c.confidence)}
-                        ${c.when ? `<p class="text-slate-500 text-xs mt-1" dir="auto"><span class="font-semibold">${t('When:', 'מתי:')}</span> ${escapeHtml(c.when)}</p>` : ''}
+                        ${c.when ? `<p class="text-slate-500 text-xs mt-1" dir="auto"><span class="font-semibold">${t('shell.when')}</span> ${escapeHtml(c.when)}</p>` : ''}
                         ${communitySourceHtml(c)}
                     </div>
                 </div>`).join('');
             return `
                 <div class="prayer-clean-row border-b border-slate-200 py-2">
-                    <div class="prayer-clean-en" dir="ltr"><h3 class="font-bold text-slate-800" dir="auto">${t('Distinctive customs', 'מנהגים ייחודיים')}</h3></div>
+                    <div class="prayer-clean-en" dir="ltr"><h3 class="font-bold text-slate-800" dir="auto">${t('shell.distinctive_customs')}</h3></div>
                 </div>${rows}`;
         }
 
@@ -9797,7 +9784,7 @@ function hasParenthetical(text) {
                     <div class="prayer-clean-en" dir="ltr">
                         <div class="font-bold text-slate-800" dir="auto">${escapeHtml(isHebrewMode() ? `מנהגי קהילת ${communityLabel}` : `${communityName} Community Customs`)}</div>
                         ${communityData?.primary_origin
-                    ? `<div class="text-slate-600 mt-1" dir="auto"><span class="font-semibold">${t('Primary Origin:', 'מוצא עיקרי:')}</span> ${escapeHtml(communityLabelText(communityData.primary_origin))}</div>`
+                    ? `<div class="text-slate-600 mt-1" dir="auto"><span class="font-semibold">${t('shell.primary_origin')}</span> ${escapeHtml(communityLabelText(communityData.primary_origin))}</div>`
                     : ''}
                     </div>
                 </div>
@@ -9807,7 +9794,7 @@ function hasParenthetical(text) {
                 rows += `
                     <div class="prayer-clean-row border-b border-slate-200 last:border-b-0 py-2">
                         <div class="prayer-clean-en text-slate-500 italic" dir="ltr">
-                            ${t('No structured customs are available for this community right now.', 'אין כרגע נתוני מנהגים מובנים לקהילה זו.')}
+                            ${t('shell.no_structured_customs_are_available_for')}
                         </div>
                     </div>
                 `;
@@ -9817,7 +9804,7 @@ function hasParenthetical(text) {
                     const topic = String(item.topic || '').trim();
                     const topicHe = isHebrewMode() ? String(item.topic_he || '').trim() : '';
                     const title = [category && communityLabelText(category), topicHe || (topic && communityLabelText(topic))]
-                        .filter(Boolean).join(': ') || t('Custom Entry', 'פריט מנהג');
+                        .filter(Boolean).join(': ') || t('shell.custom_entry');
                     const ruling = communityText(item, 'ruling');
                     const practices = Array.isArray(item.common_practices)
                         ? item.common_practices.map((entry) => String(entry || '').trim()).filter(Boolean)
@@ -9885,7 +9872,7 @@ function hasParenthetical(text) {
                 window.requestAnimationFrame(() => {
                     window.scrollTo({ top: 0, behavior: 'instant' });
                 });
-                sidebarContent.innerHTML = `<p class="italic text-slate-400">${t('Search a halacha to view cross-referenced Encyclopedia and Customs data...', 'חפש הלכה כדי לצפות בנתונים מקושרים מהאנציקלופדיה ומהמנהגים...')}</p>`;
+                sidebarContent.innerHTML = `<p class="italic text-slate-400">${t('shell.search_a_halacha_to_view_cross')}</p>`;
                 releaseViewScroll();
             });
             if (!options.fromRoute) {
@@ -10788,7 +10775,7 @@ function hasParenthetical(text) {
                 message,
                 retry: notFound ? null : () => retry(0),
                 actions: notFound && label ? [{
-                    label: t(`Search for “${label}”`, `חיפוש „${label}”`),
+                    label: t('shell.search_for_label', { label }),
                     onClick: () => searchForReference(label),
                 }] : [],
             });
@@ -10875,27 +10862,18 @@ function hasParenthetical(text) {
             const errStr = String(data.error || '');
             const errType = data.error_type || '';
             if (errType === 'network') {
-                return t(
-                    "Couldn't connect to load this text. Check your connection.",
-                    'לא ניתן היה להתחבר כדי לטעון את הטקסט. בדקו את החיבור.'
-                );
+                return t('shell.couldnt_connect_to_load_this_text');
             }
             if (errType === 'not_found') {
-                return t('This text could not be found.', 'הטקסט לא נמצא.');
+                return t('shell.this_text_could_not_be_found');
             }
             if (errType === 'sefaria_blocked' || errStr.includes('403') || errStr.toLowerCase().includes('blocked')) {
-                return t(
-                    '\u26a0\ufe0f Sefaria is temporarily unavailable (access blocked). Please try again later.',
-                    '\u26a0\ufe0f ספריא אינה זמינה כרגע (חסימת גישה). אנא נסה שנית מאוחר יותר.'
-                );
+                return t('shell.sefaria_is_temporarily_unavailable_access_blocke');
             }
             if (errType === 'cors_blocked') {
-                return t(
-                    '\u26a0\ufe0f Cannot connect to Sefaria from this browser (CORS policy). Try reloading the page.',
-                    '\u26a0\ufe0f לא ניתן להתחבר לספריא מדפדפן זה. נסה לרענן את הדף.'
-                );
+                return t('shell.cannot_connect_to_sefaria_from_this');
             }
-            return `${t('Could not load text:', 'לא ניתן לטעון את הטקסט:')} ${errStr}`;
+            return `${t('shell.could_not_load_text')} ${errStr}`;
         }
 
         function clearReaderAfterLoadFailure() {
@@ -10926,10 +10904,10 @@ function hasParenthetical(text) {
             const categoryPath = (isHebrewMode() ? categories.map(translateCategoryToken) : categories).join(' › ');
             return `
                 <div class="text-xs space-y-2">
-                    <div><span class="font-bold text-slate-700">${t('Reference:', 'הפניה:')}</span> <span class="text-slate-500">${escapeHtml(sidebarReference)}</span></div>
-                    ${data.heTitle ? `<div><span class="font-bold text-slate-700">${t('Hebrew:', 'עברית:')}</span> <span class="font-hebrew text-slate-600">${data.heTitle}</span></div>` : ''}
-                    ${categories.length ? `<div><span class="font-bold text-slate-700">${t('Category:', 'קטגוריה:')}</span> <span class="text-slate-500">${categoryPath}</span></div>` : ''}
-                    ${data.era ? `<div><span class="font-bold text-slate-700">${t('Era:', 'תקופה:')}</span> <span class="text-slate-500">${data.era}</span></div>` : ''}
+                    <div><span class="font-bold text-slate-700">${t('shell.reference')}</span> <span class="text-slate-500">${escapeHtml(sidebarReference)}</span></div>
+                    ${data.heTitle ? `<div><span class="font-bold text-slate-700">${t('shell.hebrew')}</span> <span class="font-hebrew text-slate-600">${data.heTitle}</span></div>` : ''}
+                    ${categories.length ? `<div><span class="font-bold text-slate-700">${t('shell.category_2')}</span> <span class="text-slate-500">${categoryPath}</span></div>` : ''}
+                    ${data.era ? `<div><span class="font-bold text-slate-700">${t('shell.era')}</span> <span class="text-slate-500">${data.era}</span></div>` : ''}
                 </div>`;
         }
 
@@ -10974,7 +10952,7 @@ function hasParenthetical(text) {
             // Badge
             const categories = data.categories || [];
             document.querySelector('#reader header .bg-slate-100').textContent =
-                (isHebrewMode() ? categories.map(translateCategoryToken).join(' › ') : categories.join(' › ')) || t("Sh'elah Library", "ספריית ש'אלה");
+                (isHebrewMode() ? categories.map(translateCategoryToken).join(' › ') : categories.join(' › ')) || t('shell.shelah_library');
 
             // Continuous reading uses per-chunk section headers; avoid duplicating old single-subtitle logic.
             setReaderSubtitle('');
@@ -11006,7 +10984,7 @@ function hasParenthetical(text) {
             hideReaderSkeleton({ loaded: false });
             reader.classList.remove('hidden');
             applySidebarVisibility();
-            const fallbackMessage = t('Error loading text.', 'שגיאה בטעינת הטקסט.');
+            const fallbackMessage = t('shell.error_loading_text');
             const runtimeMessage = String(err?.message || '').trim();
             const displayMessage = runtimeMessage ? `${fallbackMessage} ${runtimeMessage}` : fallbackMessage;
             renderReaderLoadError(displayMessage, ref, options);
@@ -11126,7 +11104,7 @@ function hasParenthetical(text) {
         }
 
         function renderDailyStudyFallback(list) {
-            list.innerHTML = `<p class="text-sm text-slate-500 italic" data-en="No active schedule fetched." data-he="לא נמצאה תוכנית לימוד יומית פעילה.">${escapeHtml(t('No active schedule fetched.', 'לא נמצאה תוכנית לימוד יומית פעילה.'))}</p>`;
+            list.innerHTML = `<p class="text-sm text-slate-500 italic" data-en="No active schedule fetched." data-he="לא נמצאה תוכנית לימוד יומית פעילה.">${escapeHtml(t('shell.no_active_schedule_fetched'))}</p>`;
         }
 
         // Fetches /api/daily-study client-side and fills in the skeleton left by
@@ -11187,7 +11165,7 @@ function hasParenthetical(text) {
                 }
             } catch {
                 failListRegions([list],
-                    t("Couldn't load today's study. Check your connection.", 'לא ניתן לטעון את הלימוד היומי. בדקו את החיבור.'),
+                    t('shell.couldnt_load_todays_study_check_your'),
                     populateDailyStudy, attempt);
             } finally {
                 list.removeAttribute('aria-busy');
@@ -11246,7 +11224,7 @@ function hasParenthetical(text) {
                 applyStaticHebrewFallbackTranslations();
             } catch {
                 failListRegions([grid],
-                    t("Couldn't load popular texts. Check your connection.", 'לא ניתן לטעון טקסטים פופולריים. בדקו את החיבור.'),
+                    t('shell.couldnt_load_popular_texts_check_your'),
                     populatePopularTexts, attempt);
             }
         }
@@ -11837,7 +11815,7 @@ function hasParenthetical(text) {
             if (!events.length) {
                 const empty = document.createElement('li');
                 empty.className = 'cal-agenda-empty';
-                empty.textContent = t('No holidays or special days.', 'אין חגים או ימים מיוחדים.');
+                empty.textContent = t('shell.no_holidays_or_special_days');
                 list.appendChild(empty);
             } else {
                 events.forEach((ev) => {
@@ -11899,12 +11877,12 @@ function hasParenthetical(text) {
             el.textContent = '';
 
             const msg = document.createElement('span');
-            msg.textContent = t("Couldn't load this month's holidays.", 'לא ניתן היה לטעון את החגים לחודש זה.');
+            msg.textContent = t('shell.couldnt_load_this_months_holidays');
 
             const retryBtn = document.createElement('button');
             retryBtn.type = 'button';
             retryBtn.className = 'underline font-semibold ms-1';
-            retryBtn.textContent = t('Retry', 'נסה שוב');
+            retryBtn.textContent = t('shell.retry');
             retryBtn.addEventListener('click', () => {
                 calendarRetryAttempted = false;
                 clearCalendarLoadError();
@@ -12298,7 +12276,7 @@ function hasParenthetical(text) {
             window.ShelahModules.setCurrentZmanimLocationLabel(shortName);
 
             statusEl.classList.remove('hidden');
-            statusEl.textContent = `${t('Using:', 'משתמש ב:')} ${shortName}`;
+            statusEl.textContent = `${t('shell.using')} ${shortName}`;
             setTimeout(closeCitySearchPopover, 1200);
         }
 
@@ -12314,7 +12292,7 @@ function hasParenthetical(text) {
 
             errorEl.classList.add('hidden');
             statusEl.classList.remove('hidden');
-            statusEl.textContent = t('Searching...', 'מחפש...');
+            statusEl.textContent = t('shell.searching_2');
             submitBtn.disabled = true;
 
             try {
@@ -12324,14 +12302,14 @@ function hasParenthetical(text) {
                 const results = payload?.results;
 
                 if (!res.ok) {
-                    errorEl.textContent = t('Search failed. Please try again shortly.', 'החיפוש נכשל. נסה שוב בקרוב.');
+                    errorEl.textContent = t('shell.search_failed_please_try_again_shortly');
                     errorEl.classList.remove('hidden');
                     statusEl.classList.add('hidden');
                     return;
                 }
 
                 if (!results || results.length === 0) {
-                    errorEl.textContent = t('City not found. Try a different spelling.', 'העיר לא נמצאה. נסה איות אחר.');
+                    errorEl.textContent = t('shell.city_not_found_try_a_different');
                     errorEl.classList.remove('hidden');
                     statusEl.classList.add('hidden');
                     return;
@@ -12344,7 +12322,7 @@ function hasParenthetical(text) {
                 applyCityLocation(location, shortName);
 
             } catch {
-                errorEl.textContent = t('Search failed. Check your connection.', 'החיפוש נכשל. בדוק את החיבור שלך.');
+                errorEl.textContent = t('shell.search_failed_check_your_connection');
                 errorEl.classList.remove('hidden');
                 statusEl.classList.add('hidden');
             } finally {
@@ -12415,12 +12393,12 @@ function hasParenthetical(text) {
             const statusEl = document.getElementById('citySuggestStatus');
             if (!list || !input) return;
             const { items, active } = citySuggest;
-            list.setAttribute('aria-label', t('Matching places', 'מקומות מתאימים'));
+            list.setAttribute('aria-label', t('shell.matching_places'));
             list.innerHTML = items.map((item, index) => {
                 const offset = zoneOffsetLabel(item.timezone);
                 const detail = [item.detail, offset].filter(Boolean).map(escapeHtml).join(' · ');
                 const yours = item.yours
-                    ? `<span class="city-suggest-badge">${escapeHtml(t('Your time zone', 'אזור הזמן שלך'))}</span>`
+                    ? `<span class="city-suggest-badge">${escapeHtml(t('shell.your_time_zone'))}</span>`
                     : '';
                 return `<li role="option" id="${cityOptionId(index)}" data-index="${index}" class="city-suggest-item"
                     aria-selected="${index === active ? 'true' : 'false'}">
@@ -12439,7 +12417,7 @@ function hasParenthetical(text) {
             }
             if (statusEl) {
                 statusEl.textContent = open
-                    ? t(`${items.length} places`, `${items.length} מקומות`)
+                    ? t('shell.places', { count: items.length })
                     : '';
             }
         }
@@ -12540,7 +12518,7 @@ function hasParenthetical(text) {
                 applyCityLocation({ lat: Number(item.lat), lon: Number(item.lon) }, cityShortName(item));
             } catch {
                 const errorEl = document.getElementById('citySearchError');
-                errorEl.textContent = t('Search failed. Check your connection.', 'החיפוש נכשל. בדוק את החיבור שלך.');
+                errorEl.textContent = t('shell.search_failed_check_your_connection');
                 errorEl.classList.remove('hidden');
             }
             return true;
@@ -12778,7 +12756,7 @@ function hasParenthetical(text) {
         function feedbackCommentButtonHtml() {
             return `<button type="button" class="answer-feedback-comment-btn" aria-expanded="false">
                 <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${_ANSWER_FEEDBACK_ICONS.comment}</svg>
-                <span>${t('Add a comment', 'הוספת הערה')}</span></button>`;
+                <span>${t('shell.add_a_comment')}</span></button>`;
         }
 
         // The two thumbs. `choice` is the pressed one ('' for none); they are
@@ -12787,9 +12765,9 @@ function hasParenthetical(text) {
             const thumb = (verdict, label, icon) => `<button type="button" class="answer-feedback-btn" data-verdict="${verdict}"
                 aria-pressed="${choice === verdict}"${disabled ? ' disabled' : ''}
                 aria-label="${label}"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${icon}</svg></button>`;
-            return `<span class="answer-feedback-prompt">${t('Was this answer helpful?', 'האם התשובה הייתה מועילה?')}</span>
-                ${thumb('helpful', t('Helpful', 'מועיל'), _ANSWER_FEEDBACK_ICONS.up)}
-                ${thumb('not_helpful', t('Not helpful', 'לא מועיל'), _ANSWER_FEEDBACK_ICONS.down)}`;
+            return `<span class="answer-feedback-prompt">${t('shell.was_this_answer_helpful')}</span>
+                ${thumb('helpful', t('shell.helpful'), _ANSWER_FEEDBACK_ICONS.up)}
+                ${thumb('not_helpful', t('shell.not_helpful'), _ANSWER_FEEDBACK_ICONS.down)}`;
         }
 
         // A reader can change what they sent: the server answers a rating with
@@ -12859,7 +12837,7 @@ function hasParenthetical(text) {
             }
 
             function editButtonHtml() {
-                return `<button type="button" class="answer-feedback-comment-btn answer-feedback-edit">${t('Edit feedback', 'עריכת המשוב')}</button>`;
+                return `<button type="button" class="answer-feedback-comment-btn answer-feedback-edit">${t('shell.edit_feedback')}</button>`;
             }
 
             function closeCommentRow({ refocus = false } = {}) {
@@ -12876,7 +12854,7 @@ function hasParenthetical(text) {
             // known (or, without one, the comment control after a thumbs-up).
             // Focus that was inside the widget moves to the control left, so it
             // never drops to the page.
-            function showThanks(withComment, message = t('Thank you for your feedback!', 'תודה על המשוב!')) {
+            function showThanks(withComment, message = t('shell.thank_you_for_your_feedback')) {
                 const hadFocus = root.contains(document.activeElement);
                 root.dataset.feedbackState = 'done';
                 const commentControl = withComment ? feedbackCommentButtonHtml() : '';
@@ -12941,11 +12919,11 @@ function hasParenthetical(text) {
             function commentRowHtml({ edit = false, skip = false } = {}) {
                 return `
                     <textarea maxlength="500" dir="auto"></textarea>
-                    <p class="answer-feedback-error" role="alert" hidden>${t('Could not send that. Please try again.', 'לא הצלחנו לשלוח. אפשר לנסות שוב.')}</p>
+                    <p class="answer-feedback-error" role="alert" hidden>${t('shell.could_not_send_that_please_try')}</p>
                     <div class="answer-feedback-actions">
                         <button type="button" class="answer-feedback-submit"></button>
-                        ${edit ? `<button type="button" class="answer-feedback-secondary answer-feedback-cancel">${t('Cancel', 'ביטול')}</button>` : ''}
-                        ${skip ? `<button type="button" class="answer-feedback-secondary answer-feedback-skip">${t('No thanks', 'לא תודה')}</button>` : ''}
+                        ${edit ? `<button type="button" class="answer-feedback-secondary answer-feedback-cancel">${t('shell.cancel')}</button>` : ''}
+                        ${skip ? `<button type="button" class="answer-feedback-secondary answer-feedback-skip">${t('shell.no_thanks')}</button>` : ''}
                     </div>
                 `;
             }
@@ -12973,18 +12951,18 @@ function hasParenthetical(text) {
                 } else if (rated === 'not_helpful' && !row.querySelector('.answer-feedback-skip')) {
                     // Thumbs-down while a comment was already open: it is now optional.
                     row.querySelector('.answer-feedback-actions').insertAdjacentHTML('beforeend',
-                        `<button type="button" class="answer-feedback-secondary answer-feedback-skip">${t('No thanks', 'לא תודה')}</button>`);
+                        `<button type="button" class="answer-feedback-secondary answer-feedback-skip">${t('shell.no_thanks')}</button>`);
                     row.querySelector('.answer-feedback-skip').addEventListener('click', () => showThanks(false));
                 }
                 const field = row.querySelector('textarea');
                 const prompt = rated === 'not_helpful'
-                    ? t('What went wrong? (optional)', 'מה השתבש? (אופציונלי)')
-                    : t('Add a comment', 'הוספת הערה');
+                    ? t('shell.what_went_wrong_optional')
+                    : t('shell.add_a_comment');
                 field.placeholder = prompt;
                 field.setAttribute('aria-label', prompt);
                 row.querySelector('.answer-feedback-submit').textContent = rated === 'not_helpful'
-                    ? t('Send feedback', 'שלח משוב')
-                    : t('Send comment', 'שליחת הערה');
+                    ? t('shell.send_feedback')
+                    : t('shell.send_comment');
                 const toggle = commentButton();
                 if (toggle) toggle.setAttribute('aria-expanded', 'true');
                 return field;
@@ -13002,11 +12980,11 @@ function hasParenthetical(text) {
                 const field = row.querySelector('textarea');
                 const save = row.querySelector('.answer-feedback-submit');
                 const problem = row.querySelector('.answer-feedback-error');
-                const label = t('Your comment (optional)', 'ההערה שלך (אופציונלי)');
+                const label = t('shell.your_comment_optional');
                 field.value = savedComment;
                 field.placeholder = label;
                 field.setAttribute('aria-label', label);
-                save.textContent = t('Save', 'שמירה');
+                save.textContent = t('shell.save');
                 const cancel = () => showThanks(false);
 
                 thumbs.forEach((thumb) => thumb.addEventListener('click', () => {
@@ -13032,7 +13010,7 @@ function hasParenthetical(text) {
                     if (await editFeedback(verdict, text)) {
                         rated = choice;
                         savedComment = text;
-                        showThanks(false, t('Your feedback was updated.', 'המשוב עודכן.'));
+                        showThanks(false, t('shell.your_feedback_was_updated'));
                         return;
                     }
                     save.disabled = false;

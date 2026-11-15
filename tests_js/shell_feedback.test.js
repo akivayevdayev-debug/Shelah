@@ -61,7 +61,7 @@ test('the widget asks the question and offers a thumbs-up and a thumbs-down', as
 test('in Hebrew the prompt, labels and thanks are Hebrew', async () => {
     const page = await openFeedbackPage();
     try {
-        page.eval(`t = (en, he) => he`);
+        page.eval(`t = (key, values) => window.ShelahI18n.translate('he', key, values)`);
         render(page, {});
         assert.equal(page.$('.answer-feedback-prompt').textContent, 'האם התשובה הייתה מועילה?');
         assert.deepEqual(page.$$('.answer-feedback-btn').map((button) => button.getAttribute('aria-label')), ['מועיל', 'לא מועיל']);

@@ -16,6 +16,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { JSDOM } = require('jsdom');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { translator } = require('./helpers/i18n');
 
 const MARKUP = `
 <form id="searchForm">
@@ -36,7 +37,7 @@ async function setup({ lang = 'en', coarse = false, width = 0, touchDevice = tru
     const doc = win.document;
     // jsdom has no layout: give the bar a width (0 = unknown -> full keyboard).
     doc.getElementById('searchForm').getBoundingClientRect = () => ({ width, height: 40, left: 0, top: 0, right: width, bottom: 40 });
-    const kbd = namespace.installHebrewKeyboard({ doc, win, touchDevice });
+    const kbd = namespace.installHebrewKeyboard({ doc, win, touchDevice, i18n: translator });
     if (touched) {
         const touch = new win.Event('pointerdown', { bubbles: true });
         touch.pointerType = 'touch';

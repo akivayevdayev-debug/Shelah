@@ -1,0 +1,13 @@
+{
+  "ashkenaz_not_here_yet": "נוסח אשכנז עדיין אינו בסידור. זהו סידור {rite}.",
+  "attribution": "הטקסט: {index} מספריא. עברית: {heTitle} ({heLicense}). אנגלית: {enTitle} ({enLicense}), היכן שיש תרגום.",
+  "breadcrumb": "מיקום",
+  "keep_screen_on": "השאר מסך דלוק",
+  "next": "הבא",
+  "no_english_translation_for_this_section": "אין עדיין תרגום אנגלי לחלק זה.",
+  "other_services": "תפילות נוספות",
+  "previous": "הקודם",
+  "sections": "חלקי התפילה",
+  "siddur": "סידור",
+  "today": "היום"
+}

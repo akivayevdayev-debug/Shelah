@@ -194,6 +194,8 @@
          call swapPendingLanguage() and window.ShelahHebrewRef while the parser is
          still reading, so an external file here would be a blocking request ahead
          of the first paint. -->
+    <script type="application/json" id="i18n-catalog">{{ i18n_client_catalog()|tojson }}</script>
+    <script>{{ inline_asset('js/i18n.js') }}</script>
     <script>{{ inline_asset('js/topbar_shared.js') }}</script>
     <script>{{ inline_asset('js/hebrew-ref.js') }}</script>
     <script defer src="{{ asset_url('js/community-labels.js') }}"></script>
