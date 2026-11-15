@@ -519,7 +519,9 @@ export async function main({ argv = process.argv, puppeteer = require("puppeteer
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
     try {
-        if (await main()) process.exit(1);
+        // Exit outright: esbuild's helper process can keep Node's event loop
+        // alive after the work is done, which hung `npm run finish`.
+        process.exit(await main() ? 1 : 0);
     } catch (err) {
         console.error(err);
         process.exit(1);

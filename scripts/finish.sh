@@ -6,8 +6,8 @@
 #   scripts/finish.sh --no-tests rebuild only (assets, critical CSS, fixture, graphify)
 #
 # What it does, each step only when the change needs it:
-#   1. npm run build:assets      static/js or static/css changed
-#   2. npm run build:critical    static/css changed
+#   1. npm run build:assets      static/js, static/css or static/style.css changed
+#   2. npm run build:critical    static/css or static/style.css changed
 #   3. page fixture              templates/ or static/js changed; rebuilt from a
 #                                clean `git archive HEAD` plus the changed files,
 #                                never from the dirty checkout
@@ -43,12 +43,12 @@ if [ -z "$CHANGED" ]; then
 fi
 
 # 1-2. Assets
-if has '^static/(js|css)/'; then
+if has '^static/((js|css)/|style\.css$)'; then
     step "build:assets"
     npm run -s build:assets >/tmp/finish_assets.$$ 2>&1 || { tail -20 /tmp/finish_assets.$$; fail "build:assets"; }
     tail -1 /tmp/finish_assets.$$; rm -f /tmp/finish_assets.$$
 fi
-if has '^static/css/'; then
+if has '^static/(css/|style\.css$)'; then
     step "build:critical"
     npm run -s build:critical >/dev/null 2>&1 || fail "build:critical"
 fi
