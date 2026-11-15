@@ -8030,7 +8030,7 @@ function hasParenthetical(text) {
         }
         if (mobileLangToggle) {
             mobileLangToggle.addEventListener('click', () => {
-                toggleLanguage(getCurrentLanguage() === 'he' ? 'en' : 'he');
+                chooseLanguage(getCurrentLanguage() === 'he' ? 'en' : 'he');
             });
         }
         if (closeLeftSidebarBtn) {

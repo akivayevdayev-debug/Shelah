@@ -14,7 +14,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { applyLanguagePreference, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade } = require('../static/js/topbar_shared.js');
+const { applyLanguagePreference, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade, chooseLanguage } = require('../static/js/topbar_shared.js');
 
 function createFakeLocalStorage() {
     const store = new Map();
@@ -250,6 +250,7 @@ function fakeThemeDocument({ api = true, hidden = false, routeTransition = false
         started: [],
         documentElement: {
             hasAttribute: (name) => attrs.has(name),
+            getAttribute: (name) => (attrs.has(name) ? attrs.get(name) : null),
             setAttribute: (name, value) => attrs.set(name, String(value)),
             removeAttribute: (name) => attrs.delete(name),
         },
@@ -316,6 +317,34 @@ test('withThemeFade still applies the change, once, when starting the transition
     withThemeFade(() => { calls += 1; });
     assert.equal(calls, 1);
     assert.equal(doc.attrs.has('data-vt-theme'), false);
+});
+
+// ── chooseLanguage ──────────────────────────────────────────────────────
+
+function withToggle(t, fn) {
+    const saved = globalThis.toggleLanguage;
+    globalThis.toggleLanguage = fn;
+    t.after(() => { globalThis.toggleLanguage = saved; });
+}
+
+test('chooseLanguage switches the language inside a crossfade', (t) => {
+    const doc = fakeThemeDocument();
+    doc.attrs.set('lang', 'en');
+    withThemeDocument(t, doc);
+    const seen = [];
+    withToggle(t, (lang) => seen.push(lang));
+    chooseLanguage('he');
+    doc.started[0].update();
+    assert.deepEqual(seen, ['he']);
+});
+
+test('chooseLanguage starts no crossfade for the language already shown', (t) => {
+    const doc = fakeThemeDocument();
+    doc.attrs.set('lang', 'he');
+    withThemeDocument(t, doc);
+    withToggle(t, () => {});
+    chooseLanguage('he');
+    assert.equal(doc.started.length, 0);
 });
 
 // ── swapLanguageText on real markup (links, <strong>, icons kept) ─────────

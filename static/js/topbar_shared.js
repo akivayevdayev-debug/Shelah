@@ -195,7 +195,22 @@
         transition.finished.then(done, done);
     }
 
-    const api = { applyLanguagePreference, swapLanguageText, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade };
+    // A language the visitor picks crosses over like a theme change instead
+    // of the text and the page direction jumping at once. The page's own
+    // toggleLanguage() does the work; picking the language already shown
+    // just runs it, with nothing to fade.
+    function chooseLanguage(lang) {
+        const toggle = root.toggleLanguage;
+        if (typeof toggle !== 'function') return;
+        const doc = typeof document !== 'undefined' ? document : null;
+        if (!doc || doc.documentElement.getAttribute('lang') === lang) {
+            toggle(lang);
+            return;
+        }
+        withThemeFade(() => toggle(lang));
+    }
+
+    const api = { applyLanguagePreference, swapLanguageText, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade, chooseLanguage };
 
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = api;
@@ -204,5 +219,6 @@
         root.swapPendingLanguage = swapPendingLanguage;
         root.computeFloatingMenuPosition = computeFloatingMenuPosition;
         root.withThemeFade = withThemeFade;
+        root.chooseLanguage = chooseLanguage;
     }
 })(typeof window !== 'undefined' ? window : globalThis);

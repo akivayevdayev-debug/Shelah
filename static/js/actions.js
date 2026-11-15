@@ -47,6 +47,7 @@
     // (tests/test_inline_handlers.py fails the build on it).
     const ACTIONS = Object.freeze([
         'acceptCityInput',
+        'chooseLanguage',
         'closeCalendarModal',
         'closePrivacyDataModal',
         'closeTextsMenu',
@@ -65,7 +66,6 @@
         'openTodayInCalendar',
         'readText',
         'renderSelectionInsightsChooser',
-        'toggleLanguage',
     ]);
 
     const ATTRIBUTES = Object.freeze([

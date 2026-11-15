@@ -54,7 +54,7 @@
   "js": {
     "classic": {
       "actions.js": {
-        "source": "sha256:ee044ab5226a3d67a6d1425bba9ae731917c0708b28a258516e0037c768f34d2"
+        "source": "sha256:c004d5816b18d90b086efcec00025a2a780855d832f6d23590b0cd035c85478d"
       },
       "admin-feedback.js": {
         "source": "sha256:3d36bef570f2709b3b6846db2393298e67cdaa2e94cfb8726c30eb4d64a76045"
@@ -78,10 +78,10 @@
         "source": "sha256:968aced3c444af8bc1de8da0954ad3704ee3acf4a2df7812da324e62c3890547"
       },
       "shell.js": {
-        "source": "sha256:56b5bb6f46aa54dfe28debf66ca3d0a5e4db748174961f3bc60b5691b4a56c4a"
+        "source": "sha256:9437e20afa33251053db7560fa7194fa8409de2bcb4b67c39a2262c2f0e2d823"
       },
       "topbar_shared.js": {
-        "source": "sha256:75c06c59a0d0753cfd1dcfa98768aacc737b2b82b65df585e0df8644a4c5d3f8"
+        "source": "sha256:c4d190af2d314c460f2819b56f55bfa2b4990e02bd1030bf3333a9c52e78d825"
       }
     },
     "modules": {
@@ -125,7 +125,7 @@
         "zmanim.js": "sha256:a61d9a1cacef9117aaeb40799d5507c4f5b4c0294a36bccc8ea97a462954d2f8"
       },
       "outputs": {
-        "js/actions.js": "12695443e6e5",
+        "js/actions.js": "0a36da624da2",
         "js/admin-feedback.js": "ce94acb7a44b",
         "js/calendar-detail.js": "42d77c653d87",
         "js/chunks/chunk-53BJF4LM.js": "2905904ee1e6",
@@ -138,8 +138,8 @@
         "js/motion.js": "78836d5f6141",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
-        "js/shell.js": "58f6a8e37ea7",
-        "js/topbar_shared.js": "787e1a0a3888"
+        "js/shell.js": "07070ebcbc9a",
+        "js/topbar_shared.js": "ad81f1230a16"
       },
       "unreached": []
     }
