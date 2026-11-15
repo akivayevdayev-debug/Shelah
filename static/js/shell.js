@@ -10663,11 +10663,78 @@ function hasParenthetical(text) {
             return { payload: lastErrorPayload, resolvedRef: requestedRef };
         }
 
+        // ─── Intent prefetch ───────────────────────────────────────────────
+        // A text link starts loading when the visitor shows they mean it: a
+        // mouse resting on it for TEXT_INTENT_DWELL_MS, or a finger pressing it
+        // (~100 ms before the click fires). Only the server's first spelling
+        // is asked for, and a failure is dropped silently: the click's own
+        // load does the fallbacks and the error UI. The click waits for a
+        // prefetch already on its way rather than fetching again.
+        const TEXT_INTENT_DWELL_MS = 80;
+        const TEXT_INTENT_SELECTOR = '.chapter-grid-item[data-ref], .chapter-grid-parasha-link[data-ref], [data-daily-ref], .library-node-open[data-ref]';
+        const textPrefetches = new Map();
+
+        function textPrefetchKey(ref) {
+            return `${ref}|${currentTextQuery(ref) || ''}`;
+        }
+
+        function prefetchText(ref) {
+            const requestedRef = String(ref || '').replace(/\s+/g, ' ').trim();
+            if (!requestedRef || textPayloadCache.has(requestedRef)) return;
+            if (navigator.connection?.saveData) return;
+            const key = textPrefetchKey(requestedRef);
+            if (textPrefetches.has(key)) return;
+            const pending = tryTextCandidates(requestedRef, [requestedRef])
+                .catch(() => null)
+                .finally(() => textPrefetches.delete(key));
+            textPrefetches.set(key, pending);
+        }
+
+        // The ref a text link would open, or '' when it opens a picker
+        // (a book's chapter grid, a tractate's daf grid) rather than a text.
+        // The chapter grid's own buttons always open the text itself.
+        function intentTextRef(el) {
+            if (el.matches('.chapter-grid-item, .chapter-grid-parasha-link')) return el.dataset.ref;
+            let ref = el.dataset.dailyRef;
+            if (ref === undefined) {
+                try { ref = decodeURIComponent(el.dataset.ref || ''); } catch { return ''; }
+            }
+            ref = ref.replace(/\s+/g, ' ').trim();
+            if (!ref || shouldOpenChapterGrid(ref) || shouldOpenReferenceGrid(ref)) return '';
+            return ref;
+        }
+
+        (function wireTextIntentPrefetch() {
+            let dwellTimer = null;
+            let dwellTarget = null;
+            const cancelDwell = () => {
+                clearTimeout(dwellTimer);
+                dwellTimer = null;
+                dwellTarget = null;
+            };
+            document.addEventListener('pointerover', (e) => {
+                if (e.pointerType !== 'mouse') return;
+                const el = e.target.closest?.(TEXT_INTENT_SELECTOR);
+                if (el === dwellTarget) return;
+                cancelDwell();
+                if (!el) return;
+                dwellTarget = el;
+                dwellTimer = setTimeout(() => prefetchText(intentTextRef(el)), TEXT_INTENT_DWELL_MS);
+            }, { passive: true });
+            document.addEventListener('pointerdown', (e) => {
+                const el = e.target.closest?.(TEXT_INTENT_SELECTOR);
+                if (el) prefetchText(intentTextRef(el));
+            }, { passive: true });
+        })();
+
         async function fetchTextPayloadWithFallback(ref, recoveryRetry = false) {
             const requestedRef = String(ref || '').trim();
             if (!requestedRef) {
                 return { payload: { error: 'Text not found' }, resolvedRef: '' };
             }
+
+            const prefetching = textPrefetches.get(textPrefetchKey(requestedRef));
+            if (prefetching) await prefetching;
 
             if (textPayloadCache.has(requestedRef)) {
                 return { payload: textPayloadCache.get(requestedRef), resolvedRef: requestedRef };

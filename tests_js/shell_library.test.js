@@ -132,6 +132,75 @@ test('a chapter button opens that chapter', async () => {
     }
 });
 
+// --- intent prefetch -------------------------------------------------------
+
+function pointer(page, type, target, pointerType) {
+    const event = new page.window.MouseEvent(type, { bubbles: true });
+    Object.defineProperty(event, 'pointerType', { value: pointerType });
+    page.el(target).dispatchEvent(event);
+}
+
+const textCalls = (page, ref) => page.takeCalls().filter((c) => c.url.startsWith(`/api/text/${ref}`)).length;
+
+test('a mouse resting on a chapter button loads that chapter before the click', async () => {
+    const page = await open();
+    try {
+        page.eval(`openChapterGrid('Genesis', 3)`);
+        page.takeCalls();
+        pointer(page, 'pointerover', '#chapterGridItems .chapter-grid-item', 'mouse');
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        await page.settle();
+        assert.equal(textCalls(page, 'Genesis%201'), 1);
+    } finally {
+        page.close();
+    }
+});
+
+test('the click after a prefetch uses it instead of fetching again', async () => {
+    const page = await open();
+    try {
+        page.eval(`openChapterGrid('Genesis', 3)`);
+        page.takeCalls();
+        pointer(page, 'pointerdown', '#chapterGridItems .chapter-grid-item', 'touch');
+        page.click('#chapterGridItems .chapter-grid-item');
+        await page.settle(16);
+        assert.equal(textCalls(page, 'Genesis%201'), 1);
+    } finally {
+        page.close();
+    }
+});
+
+test('a mouse passing over a chapter button without stopping loads nothing', async () => {
+    const page = await open();
+    try {
+        page.eval(`openChapterGrid('Genesis', 3)`);
+        page.takeCalls();
+        pointer(page, 'pointerover', '#chapterGridItems .chapter-grid-item', 'mouse');
+        pointer(page, 'pointerover', '#chapterGridModal', 'mouse');
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        await page.settle();
+        assert.equal(textCalls(page, 'Genesis%201'), 0);
+    } finally {
+        page.close();
+    }
+});
+
+test('a link that opens a picker rather than a text is not prefetched', async () => {
+    const page = await open();
+    try {
+        const node = page.window.document.createElement('button');
+        node.className = 'library-node-open';
+        node.dataset.ref = encodeURIComponent('Genesis 1');
+        page.$('body').append(node);
+        page.takeCalls();
+        pointer(page, 'pointerdown', node, 'touch');
+        await page.settle();
+        assert.equal(textCalls(page, 'Genesis%201'), 0);
+    } finally {
+        page.close();
+    }
+});
+
 test('book and section references are parsed into the right picker', async () => {
     const page = await open();
     try {
