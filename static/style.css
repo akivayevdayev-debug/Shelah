@@ -1669,11 +1669,19 @@ html[dir="rtl"] .search-kbd-btn {
     flex: 0 1 auto;
 }
 
-.chapter-grid-parasha-link:hover,
 .chapter-grid-parasha-link:focus-visible {
     background: #f0eadc;
     border-color: #bba888;
     color: #17324f;
+}
+
+/* Hover only where there is a real pointer: on touch it sticks after a tap. */
+@media (hover: hover) and (pointer: fine) {
+    .chapter-grid-parasha-link:hover {
+        background: #f0eadc;
+        border-color: #bba888;
+        color: #17324f;
+    }
 }
 
 .chapter-grid-parasha-name {
@@ -2704,11 +2712,19 @@ html.rtl #readerTopBar .reader-topbar-settings-label {
     transition: none;
 }
 
-.reader-topbar-icon-btn:hover,
 .reader-topbar-icon-btn:focus-visible {
     background: transparent;
     border-color: transparent;
     color: var(--control-text-strong);
+}
+
+/* Hover only where there is a real pointer: on touch it sticks after a tap. */
+@media (hover: hover) and (pointer: fine) {
+    .reader-topbar-icon-btn:hover {
+        background: transparent;
+        border-color: transparent;
+        color: var(--control-text-strong);
+    }
 }
 
 .reader-topbar-icon-btn:active {
@@ -4704,11 +4720,19 @@ html.theme-dark,
     color: var(--accent-cream);
 }
 
-:is([data-theme="dark"], body.theme-dark) .chapter-grid-item:hover,
 :is([data-theme="dark"], body.theme-dark) .chapter-grid-item:focus-visible {
     background: var(--surface-pill);
     border-color: var(--control-border);
     color: var(--control-text-strong);
+}
+
+/* Hover only where there is a real pointer: on touch it sticks after a tap. */
+@media (hover: hover) and (pointer: fine) {
+    :is([data-theme="dark"], body.theme-dark) .chapter-grid-item:hover {
+        background: var(--surface-pill);
+        border-color: var(--control-border);
+        color: var(--control-text-strong);
+    }
 }
 
 :is([data-theme="dark"], body.theme-dark) .chapter-grid-item-number {
@@ -6032,5 +6056,12 @@ body.theme-dark #analyticsConsentAccept {
     html.rtl #chapterGridModal #closeChapterGridModalBtn {
         right: auto;
         left: var(--sp-3);
+    }
+}
+
+/* The holiday name in the top bar is tappable: full 44px height on touch. */
+@media (pointer: coarse) {
+    #holidayName {
+        min-height: var(--hit-min);
     }
 }

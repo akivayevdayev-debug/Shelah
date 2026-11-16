@@ -4,7 +4,7 @@
   "css": {
     "sources": {
       "css/tokens.css": "sha256:cdf6f2daba074f71eec9a8d2737547f3dcbc4edd8a76cd78c04d07013d246feb",
-      "style.css": "sha256:903b112ed2deebd49ea98a24ddd06508d141c47fcc86751f459cc5e5bdd7912f",
+      "style.css": "sha256:baaccce921be6ab503363b295709dbf6d7f7f4e75df27517d27e73f9e5aaa904",
       "css/typography.css": "sha256:8cc5129450f6f17c2825dc900a5ab184de1b6900bcb9175d4c92ee2eadbdb772",
       "css/reader.css": "sha256:a7680571f7b451f26c9a35c5f76690ce05909c712aa8d1c07acbe01d5f150ac8",
       "css/sidebar.css": "sha256:fc261c75dc4ba0abded264ec89ed57923c9db7264a21fc24b62a0186fe24a699",
@@ -19,19 +19,19 @@
       "css/loading.css": "sha256:a77745f67cd45511d26a3d55fe58b68b77270a49eb29147210986078585cac4f",
       "css/tailwind.css": "sha256:7e003ddf0bb1216222651038416f47937c183c2e5e6d041eb3e2fa43fcaaaa4e"
     },
-    "sourcesHash": "079c17bf4998095b6823d134cf18224a68cbdb0330352e36eb60bcfc8c366789",
+    "sourcesHash": "6898676c3dfe9c4aae3e2594ef4c64ea36895cf9ff8890a48e5afbf631561fed",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "079c17bf4998095b6823d134cf18224a68cbdb0330352e36eb60bcfc8c366789",
+        "sourcesHash": "6898676c3dfe9c4aae3e2594ef4c64ea36895cf9ff8890a48e5afbf631561fed",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "079c17bf4998095b6823d134cf18224a68cbdb0330352e36eb60bcfc8c366789",
+        "sourcesHash": "6898676c3dfe9c4aae3e2594ef4c64ea36895cf9ff8890a48e5afbf631561fed",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "079c17bf4998095b6823d134cf18224a68cbdb0330352e36eb60bcfc8c366789",
+        "sourcesHash": "6898676c3dfe9c4aae3e2594ef4c64ea36895cf9ff8890a48e5afbf631561fed",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
