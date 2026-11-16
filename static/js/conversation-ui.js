@@ -159,11 +159,13 @@ function lang() {
     try {
         if (typeof window.getCurrentLanguage === "function") return window.getCurrentLanguage();
     } catch { /* fall through */ }
-    return document.documentElement.lang === "he" ? "he" : "en";
+    return document.documentElement.lang || "en";
 }
 
-function tr(en, he) {
-    return lang() === "he" ? he : en;
+// Interface text by key (locales/<code>/conversation.json) in the language
+// on screen, through static/js/i18n.js.
+function t(key, values) {
+    return window.ShelahI18n.translate(lang(), key, values);
 }
 
 function motion() {
@@ -388,21 +390,11 @@ function scheduleRender() {
 // What the panel says about a public (/answer/<id>) link that did not open,
 // by `ui.publicState`.
 const PUBLIC_STATE_NOTICES = {
-    "saved-signin": () => ({ tone: "info", text: tr(
-        "Sign in to see this saved answer, or open the link on the device that saved it.",
-        "התחבר כדי לראות את התשובה השמורה, או פתח את הקישור במכשיר שבו נשמרה."), action: "sign-in" }),
-    "saved-gone": () => ({ tone: "info", text: tr(
-        "This saved answer isn't available. It may have been deleted, or saved under another account or device.",
-        "התשובה השמורה אינה זמינה. ייתכן שנמחקה, או שנשמרה בחשבון או במכשיר אחר.") }),
-    "saved-error": () => ({ tone: "warn", text: tr(
-        "Couldn't load this saved answer. Check your connection and reload the page to try again.",
-        "לא ניתן היה לטעון את התשובה השמורה. בדוק/י את החיבור וטען/י מחדש את הדף.") }),
-    gone: () => ({ tone: "info", text: tr(
-        "This shared answer isn't available. The link may have been turned off, or the answer was deleted. You can still ask your own question.",
-        "התשובה המשותפת אינה זמינה. ייתכן שהקישור בוטל או שהתשובה נמחקה. עדיין אפשר לשאול שאלה משלך.") }),
-    error: () => ({ tone: "warn", text: tr(
-        "Couldn't load this shared answer. Check your connection and reload the page to try again.",
-        "לא ניתן היה לטעון את התשובה המשותפת. בדוק/י את החיבור וטען/י מחדש את הדף.") }),
+    "saved-signin": () => ({ tone: "info", text: t("conversation.sign_in_to_see_this_saved"), action: "sign-in" }),
+    "saved-gone": () => ({ tone: "info", text: t("conversation.this_saved_answer_isnt_available_it") }),
+    "saved-error": () => ({ tone: "warn", text: t("conversation.couldnt_load_this_saved_answer_check") }),
+    gone: () => ({ tone: "info", text: t("conversation.this_shared_answer_isnt_available_the") }),
+    error: () => ({ tone: "warn", text: t("conversation.couldnt_load_this_shared_answer_check") }),
 };
 
 // Notice: load error > send error > awaiting sign-in > a public link that
@@ -416,7 +408,7 @@ function currentNotice(state, l) {
     }
     if (state.lastError) return noticeFor(state.lastError, l);
     if (ui.awaitingOpenId && ui.authResolved && !ui.signedIn && clerkConfigured()) {
-        return { tone: "info", text: tr("Sign in to open this conversation.", "התחבר כדי לפתוח את השיחה הזו."), action: "sign-in" };
+        return { tone: "info", text: t("conversation.sign_in_to_open_this_conversation"), action: "sign-in" };
     }
     return Object.hasOwn(PUBLIC_STATE_NOTICES, ui.publicState) ? PUBLIC_STATE_NOTICES[ui.publicState]() : null;
 }
@@ -431,12 +423,12 @@ function panelTitle(state, answerView, hasMessages) {
         // account's token, or the device cookie when signed out -- then, if
         // neither holds the answer, a prompt to sign in in its place (audit L-5).
         const savedLink = String(ui.publicState).startsWith("saved");
-        publicTitle = savedLink ? tr("Saved answer", "תשובה שמורה") : tr("Shared answer", "תשובה משותפת");
+        publicTitle = savedLink ? t("conversation.saved_answer") : t("conversation.shared_answer");
     }
     return state.conversation?.title
         || question
         || publicTitle
-        || (hasMessages ? tr("New conversation", "שיחה חדשה") : tr("Ask Sh'elah", "שאל את ש׳אלה"));
+        || (hasMessages ? t("conversation.new_conversation") : t("conversation.ask_shelah"));
 }
 
 function renderHeader(state, { l, name, title, options }) {
@@ -448,13 +440,13 @@ function renderHeader(state, { l, name, title, options }) {
     // "All communities" is already a phrase; a single community reads "<name> practice".
     const minhag = String((state.minhagLocked ? conversation?.minhag : state.draftMinhag) || "").trim();
     const isAll = !minhag || minhag.toLowerCase() === "all";
-    const subtitle = isAll ? name : tr(`${name} practice`, `מנהג ${name}`);
+    const subtitle = isAll ? name : t("conversation.community_practice", { name });
     els.subtitle.textContent = ui.layout === "mobile" ? subtitle : "";
     els.chipLabel.textContent = name;
     els.menuBtn.dataset.locked = state.minhagLocked ? "true" : "false";
     const settingsLabel = state.minhagLocked
-        ? tr(`Conversation settings. Community: ${name}, locked for this conversation`, `הגדרות שיחה. קהילה: ${name}, נעולה לשיחה זו`)
-        : tr(`Conversation settings. Community: ${name}`, `הגדרות שיחה. קהילה: ${name}`);
+        ? t("conversation.conversation_settings_community_locked_for_this", { name })
+        : t("conversation.conversation_settings_community", { name });
     els.menuBtn.setAttribute("aria-label", settingsLabel);
     els.menuBtn.title = settingsLabel;
 
@@ -466,8 +458,7 @@ function renderHeader(state, { l, name, title, options }) {
 function renderMenu(state, { l, name, options }) {
     const conversation = state.conversation;
     els.menuLocked.textContent = state.minhagLocked
-        ? tr(`${name} — locked for this conversation. Start a new conversation to change it.`,
-            `${name} — נעולה לשיחה זו. התחל שיחה חדשה כדי לשנות.`)
+        ? t("conversation.locked_for_this_conversation_start_a", { name })
         : "";
     els.menuDraft.classList.toggle("hidden", state.minhagLocked);
     if (!state.minhagLocked) syncMinhagSelect(options, state.draftMinhag, l);
@@ -476,8 +467,8 @@ function renderMenu(state, { l, name, options }) {
     });
     const webOn = webSearchOn();
     els.webSearchSwitch?.setAttribute("aria-checked", webOn ? "true" : "false");
-    if (els.webSearchState) els.webSearchState.textContent = webOn ? tr("On", "פועל") : tr("Off", "כבוי");
-    els.pinLabel.textContent = conversation?.pinnedAt ? tr("Unpin", "בטל הצמדה") : tr("Pin", "הצמד");
+    if (els.webSearchState) els.webSearchState.textContent = webOn ? t("conversation.web_search_on") : t("conversation.web_search_off");
+    els.pinLabel.textContent = conversation?.pinnedAt ? t("conversation.unpin") : t("conversation.pin");
     syncShare(conversation);
 }
 
@@ -494,8 +485,8 @@ function renderBody(state, l, hasMessages) {
 }
 
 function composerPlaceholder(hasMessages, continues) {
-    if (!hasMessages) return tr("Ask a question…", "שאל שאלה…");
-    return continues ? tr("Ask a follow-up…", "שאל שאלת המשך…") : tr("Ask a new question…", "שאל שאלה חדשה…");
+    if (!hasMessages) return t("conversation.ask_a_question");
+    return continues ? t("conversation.ask_a_follow_up") : t("conversation.ask_a_new_question");
 }
 
 function renderComposer(state, l, { answerView, hasMessages }) {
@@ -555,7 +546,7 @@ function render() {
     // Minimised bar.
     els.pipTitle.textContent = title;
     els.pipStatus.textContent = progress ? statusLine(progress, l) : "";
-    els.pipOpen.setAttribute("aria-label", tr(`Open conversation: ${title}`, `פתח שיחה: ${title}`));
+    els.pipOpen.setAttribute("aria-label", t("conversation.open_conversation", { title }));
 
     syncAskExpanded();
 
@@ -583,11 +574,11 @@ function syncSendDisabled() {
 
 function noticeActionLabel(action) {
     const labels = {
-        "sign-in": tr("Sign in", "התחברות"),
-        "retry-open": tr("Try again", "נסה שוב"),
-        new: tr("Start a new one", "התחל שיחה חדשה"),
-        undo: tr("Undo", "בטל"),
-        "stop-share": tr("Stop sharing", "הפסקת שיתוף"),
+        "sign-in": t("conversation.sign_in"),
+        "retry-open": t("conversation.try_again"),
+        new: t("conversation.start_a_new_one"),
+        undo: t("conversation.undo"),
+        "stop-share": t("conversation.stop_sharing"),
     };
     return labels[action] || "";
 }
@@ -626,7 +617,7 @@ function renderToast() {
 function syncThemeBtn() {
     if (!els.themeBtn) return;
     const dark = document.documentElement.dataset.theme === "dark";
-    const label = dark ? tr("Switch to light theme", "עבור למצב בהיר") : tr("Switch to dark theme", "עבור למצב כהה");
+    const label = dark ? t("conversation.switch_to_light_theme") : t("conversation.switch_to_dark_theme");
     els.themeBtn.setAttribute("aria-label", label);
     els.themeBtn.title = label;
 }
@@ -691,7 +682,7 @@ function markUnreadable(item) {
         link.replaceWith(plain);
         const why = document.createElement("span");
         why.className = "conv-cite__why";
-        why.textContent = tr("Can't be opened here", "לא ניתן לפתוח כאן");
+        why.textContent = t("conversation.cant_be_opened_here");
         plain.after(why);
     }
     item.querySelector(".conv-cite__preview")?.remove();
@@ -706,10 +697,7 @@ async function loadPreview(details) {
     const payload = await fetchSourceText(details.dataset.previewRef);
     const html = payload ? previewHtml(payload.lines, { lang: lang() }) : "";
     if (!body.isConnected) return;
-    body.innerHTML = html || `<div class="ai-src-box-note">${escapeText(tr(
-        "Preview unavailable for this source — use the links above to open it.",
-        "תצוגה מקדימה אינה זמינה למקור זה — השתמש בקישורים למעלה כדי לפתוח אותו.",
-    ))}</div>`;
+    body.innerHTML = html || `<div class="ai-src-box-note">${escapeText(t("conversation.preview_unavailable_for_this_source_use"))}</div>`;
     body.dataset.state = html ? "done" : "";
     body.setAttribute("aria-busy", "false");
     const M = motion();
@@ -724,10 +712,7 @@ async function loadPreview(details) {
 function webCiteHtml(citation, index, l, idPrefix) {
     const excerpt = citationExcerpt(citation, l);
     const note = excerpt ? `<p class="conv-cite__excerpt" dir="auto">${escapeText(excerpt)}</p>` : "";
-    const notice = tr(
-        "From the web, not from a Jewish text. Check it with the certifying agency or your rabbi.",
-        "מהרשת, לא מטקסט יהודי. כדאי לוודא מול הגוף המכשיר או הרב שלך.",
-    );
+    const notice = t("conversation.from_the_web_not_from_a");
     return `<li class="conv-cite conv-cite--web" id="${escapeText(idPrefix)}-${index + 1}" data-ref="" data-readable="false" tabindex="-1">`
         + `<span class="conv-cite__num" aria-hidden="true">${index + 1}</span><span class="conv-cite__head">${webSourceHeadHtml(citation, l)}</span>${note}`
         + `<p class="conv-cite__web-notice">${escapeText(notice)}</p></li>`;
@@ -744,7 +729,7 @@ function citeHtml(citation, index, l, idPrefix) {
     const links = ref ? `<span class="conv-cite__links">${externalLinksHtml(ref, l)}</span>` : "";
     const preview = ref
         ? `<details class="conv-cite__preview" data-preview-ref="${escapeText(ref)}">`
-            + `<summary>${icon("caret-down", "conv-cite__caret")}<span>${escapeText(tr("Preview the text", "הצג את הטקסט"))}</span></summary>`
+            + `<summary>${icon("caret-down", "conv-cite__caret")}<span>${escapeText(t("conversation.preview_the_text"))}</span></summary>`
             + '<div class="conv-cite__preview-body"></div></details>'
         : "";
     return `<li class="conv-cite" id="${escapeText(idPrefix)}-${index + 1}" data-ref="${escapeText(ref)}" data-readable="unknown" tabindex="-1">`
@@ -755,7 +740,7 @@ function citeHtml(citation, index, l, idPrefix) {
 // the chips in the answer lead to (each row's id is `${idPrefix}-<n>`).
 function citesHtml(citations, idPrefix, l) {
     if (!citations.length) return "";
-    return `<h3 class="conv-cites__title" id="${escapeText(idPrefix)}-title">${escapeText(tr("Sources", "מקורות"))}</h3>`
+    return `<h3 class="conv-cites__title" id="${escapeText(idPrefix)}-title">${escapeText(t("conversation.sources"))}</h3>`
         + `<ol class="conv-cites" aria-labelledby="${escapeText(idPrefix)}-title">${citations.map((c, i) => citeHtml(c, i, l, idPrefix)).join("")}</ol>`;
 }
 
@@ -772,7 +757,7 @@ function answerBodyHtml(message, idPrefix) {
     return injectMarkers(answerHtml(content), {
         citations,
         idPrefix,
-        label: (n, c) => tr(`Source ${n}: ${c.ref}`, `מקור ${n}: ${c.ref}`),
+        label: (n, c) => t("conversation.source_ref", { n, ref: c.ref }),
     });
 }
 
@@ -813,7 +798,7 @@ function statusRow({ tone = "", text, action = null, actionLabel = "", messageId
 function statusHtml() {
     return '<div class="conv-status" data-conv-status>'
         + '<details class="conv-status__box" data-status-box>'
-        + `<summary class="conv-status__head" aria-label="${escapeText(tr("Steps so far", "השלבים עד כה"))}">`
+        + `<summary class="conv-status__head" aria-label="${escapeText(t("conversation.steps_so_far"))}">`
         + '<span class="conv-status__now" data-status-now dir="auto" role="status"></span>'
         + icon("caret-down", "conv-status__caret")
         + '</summary>'
@@ -871,7 +856,7 @@ function thoughtHtml(message, l) {
     const steps = message.thinking?.steps;
     if (!Array.isArray(steps) || !steps.length) return "";
     const seconds = Math.max(1, Math.round((message.thinking.ms || 0) / 1000));
-    const title = tr(`Thought for ${seconds}s`, `חשבה ${seconds} שניות`);
+    const title = t("conversation.thought_for_seconds", { seconds });
     return '<details class="conv-status__box conv-thought">'
         + `<summary class="conv-status__head"><span class="conv-thought__title">${escapeText(title)}</span>${icon("caret-down", "conv-status__caret")}</summary>`
         + `<ol class="conv-steps" dir="auto">${stepsHtml({ done: steps, current: null }, l)}</ol>`
@@ -968,7 +953,7 @@ function turnInnerHtml(message, index, messages, l) {
     if (message.role === "user") {
         let html = `<div class="conv-bubble" dir="auto">${escapeText(message.content)}</div>`;
         if (message.status === MESSAGE_STATUS.FAILED) {
-            html += statusRow({ tone: "error", text: tr("Not sent.", "לא נשלח."), action: "retry", actionLabel: tr("Retry", "נסה שוב"), messageId: message.id });
+            html += statusRow({ tone: "error", text: t("conversation.not_sent"), action: "retry", actionLabel: t("conversation.retry"), messageId: message.id });
         }
         return html;
     }
@@ -980,17 +965,17 @@ function turnInnerHtml(message, index, messages, l) {
             const isLast = index === messages.length - 1;
             return statusRow({
                 tone: "error",
-                text: tr("Sh'elah couldn't answer this one.", "ש׳אלה לא הצליחה לענות על זה."),
+                text: t("conversation.shelah_couldnt_answer_this_one"),
                 action: isLast ? "retry" : null,
-                actionLabel: tr("Retry", "נסה שוב"),
+                actionLabel: t("conversation.retry"),
                 messageId: message.id,
             });
         }
         case MESSAGE_STATUS.INCOMPLETE:
             return statusRow({
-                text: tr("The answer is taking longer than usual.", "התשובה מתעכבת מהרגיל."),
+                text: t("conversation.the_answer_is_taking_longer_than"),
                 action: "check",
-                actionLabel: tr("Check again", "בדוק שוב"),
+                actionLabel: t("conversation.check_again"),
                 messageId: message.id,
             });
         default: {
@@ -1041,8 +1026,8 @@ function customsHtml(data, l) {
         .filter((c) => c.text);
     if (!customs.length) return "";
     const name = (community) => communityDisplayName(community, l);
-    return `<section class="conv-customs" aria-label="${escapeText(tr("Community customs", "מנהגי קהילות"))}">`
-        + `<h3 class="conv-customs__title">${escapeText(tr("Community customs", "מנהגי קהילות"))}</h3><ul>`
+    return `<section class="conv-customs" aria-label="${escapeText(t("conversation.community_customs"))}">`
+        + `<h3 class="conv-customs__title">${escapeText(t("conversation.community_customs"))}</h3><ul>`
         + customs.map((c) => `<li class="conv-custom"><span class="conv-custom__name">${escapeText(name(c.community))}</span>`
             + `<p class="conv-custom__text" dir="auto">${escapeText(c.text)}</p></li>`).join("")
         + "</ul></section>";
@@ -1280,17 +1265,17 @@ function renderLists(state, l) {
         // Signed out there is no list to show; say why, so the heading above is
         // not followed by blank space.
         html = clerkConfigured() && ui.authResolved
-            ? `<li class="conv-list__empty">${escapeText(tr("Sign in to keep a list of your conversations.", "התחברו כדי לשמור רשימת שיחות."))}</li>`
+            ? `<li class="conv-list__empty">${escapeText(t("conversation.sign_in_to_keep_a_list"))}</li>`
             : "";
     } else if (list.status !== "ready" && list.status !== "error" && list.items.length === 0) {
         // Not loaded yet (idle or loading): skeletons, never a premature
         // "No conversations yet".
         html = '<li aria-hidden="true"><div class="conv-list__skel"></div></li>'.repeat(3);
     } else if (list.status === "error" && list.items.length === 0) {
-        html = `<li class="conv-list__error">${escapeText(tr("Couldn't load conversations.", "לא ניתן לטעון שיחות."))} <button type="button" class="conv-link-btn" data-conv-action="reload-list">${escapeText(tr("Try again", "נסה שוב"))}</button></li>`;
+        html = `<li class="conv-list__error">${escapeText(t("conversation.couldnt_load_conversations"))} <button type="button" class="conv-link-btn" data-conv-action="reload-list">${escapeText(t("conversation.try_again"))}</button></li>`;
     } else if (list.items.length === 0) {
         // Only a successful load that came back empty.
-        html = `<li class="conv-list__empty">${escapeText(tr("No conversations yet.", "אין עדיין שיחות."))}</li>`;
+        html = `<li class="conv-list__empty">${escapeText(t("conversation.no_conversations_yet"))}</li>`;
     } else {
         const options = communityOptions();
         const currentId = state.conversation?.id;
@@ -1306,10 +1291,10 @@ function renderLists(state, l) {
                 : `<li class="conv-list__group" aria-hidden="true">${escapeText(conversationGroupLabel(bucket, l))}</li>`;
             group = bucket;
             const pinned = item.pinnedAt
-                ? `${icon("pin", "conv-list__pin")}<span class="sr-only">${escapeText(tr("Pinned", "מוצמד"))}</span>`
+                ? `${icon("pin", "conv-list__pin")}<span class="sr-only">${escapeText(t("conversation.pinned"))}</span>`
                 : "";
             return `${heading}<li><button type="button" class="conv-list__item" data-conv-open="${escapeText(item.id)}" aria-current="${item.id === currentId ? "true" : "false"}">`
-                + `<span class="conv-list__text"><span class="conv-list__title" dir="auto">${escapeText(item.title || tr("Untitled conversation", "שיחה ללא שם"))}</span>`
+                + `<span class="conv-list__text"><span class="conv-list__title" dir="auto">${escapeText(item.title || t("conversation.untitled_conversation"))}</span>`
                 + `<span class="conv-list__meta">${escapeText(meta)}</span></span>`
                 + `${pinned}</button></li>`;
         }).join("");
@@ -1402,7 +1387,7 @@ function applyAttributes() {
     }
     if (els.expandBtn) {
         const toFull = expandedSize(ui.size) === "full";
-        const label = toFull ? tr("Open full page", "פתח בעמוד מלא") : tr("Expand", "הרחב");
+        const label = toFull ? t("conversation.open_full_page") : t("conversation.expand");
         els.expandBtn.setAttribute("aria-label", label);
         els.expandBtn.title = label;
     }
@@ -2018,8 +2003,8 @@ function syncShare(conversation) {
     els.panel.dataset.shared = shared ? "true" : "false";
     if (els.shareBtn) {
         const label = shared
-            ? tr("Shared publicly. Copy the link or stop sharing", "משותף לציבור. העתק את הקישור או הפסק את השיתוף")
-            : tr("Share this conversation publicly", "שתף את השיחה בציבור");
+            ? t("conversation.shared_publicly_copy_the_link_or")
+            : t("conversation.share_this_conversation_publicly");
         els.shareBtn.dataset.shared = shared ? "true" : "false";
         els.shareBtn.setAttribute("aria-label", label);
         els.shareBtn.title = label;
@@ -2044,15 +2029,13 @@ async function shareConversation() {
         // would be about the wrong conversation.
         if (store.getState().conversation?.id !== conversation.id) return;
         if (result.status === "copied") {
-            showToast(tr(
-                "Public link copied. Anyone with it can read this chat as it is now.",
-                "הקישור הציבורי הועתק. כל מי שיש לו אותו יכול לקרוא את השיחה כפי שהיא עכשיו."), "stop-share");
+            showToast(t("conversation.public_link_copied_anyone_with_it"), "stop-share");
         } else if (result.status === "manual") {
-            showToast(`${tr("Couldn't copy automatically. Copy this link:", "לא ניתן היה להעתיק אוטומטית. העתק/י את הקישור:")} ${result.url}`, "stop-share", "info");
+            showToast(`${t("conversation.couldnt_copy_automatically_copy_this_link")} ${result.url}`, "stop-share", "info");
         } else if (result.status === "empty") {
-            showToast(tr("There's nothing to share yet. Ask a question first.", "אין עדיין מה לשתף. שאל/י שאלה קודם."), undefined, "info");
+            showToast(t("conversation.theres_nothing_to_share_yet_ask"), undefined, "info");
         } else {
-            showToast(tr("Couldn't create a link. Try again.", "לא ניתן היה ליצור קישור. נסה/י שוב."), undefined, "warn");
+            showToast(t("conversation.couldnt_create_a_link_try_again"), undefined, "warn");
         }
     } finally {
         ui.sharing = false;
@@ -2065,8 +2048,8 @@ async function stopSharing() {
     if (!conversation || !shareControl) return;
     const stopped = await shareControl.stop(conversation.id);
     if (store.getState().conversation?.id !== conversation.id) return;
-    if (stopped) showToast(tr("Sharing stopped. The old link no longer works.", "השיתוף הופסק. הקישור הישן כבר לא עובד."));
-    else showToast(tr("Couldn't stop sharing. Try again.", "לא ניתן היה להפסיק את השיתוף. נסה/י שוב."), undefined, "warn");
+    if (stopped) showToast(t("conversation.sharing_stopped_the_old_link_no"));
+    else showToast(t("conversation.couldnt_stop_sharing_try_again"), undefined, "warn");
 }
 
 // The header's Share button when the conversation is already public: it asks
@@ -2103,7 +2086,7 @@ function beginRename() {
     input.maxLength = 120;
     input.dir = "auto";
     input.value = conversation.title || "";
-    input.setAttribute("aria-label", tr("Conversation name", "שם השיחה"));
+    input.setAttribute("aria-label", t("conversation.conversation_name"));
     els.title.textContent = "";
     els.title.appendChild(input);
     input.focus();
@@ -2137,7 +2120,7 @@ async function deleteCurrent() {
     if (!conversation) return;
     closeMenu();
     if (await store.remove(conversation.id)) {
-        showToast(tr("Conversation deleted.", "השיחה נמחקה."), "undo");
+        showToast(t("conversation.conversation_deleted"), "undo");
     }
 }
 
@@ -2341,14 +2324,13 @@ async function submitComposer() {
 function voiceErrorText(kind) {
     switch (kind) {
         case "denied":
-            return tr("Microphone is blocked. To dictate, open the site settings by the address bar (the lock icon), allow the microphone, then try again.",
-                "המיקרופון חסום. כדי להכתיב, פתחו את הגדרות האתר ליד שורת הכתובת (סמל המנעול), אפשרו את המיקרופון ונסו שוב.");
+            return t("conversation.microphone_is_blocked_to_dictate_open");
         case "no-mic":
-            return tr("No microphone was found.", "לא נמצא מיקרופון.");
+            return t("conversation.no_microphone_was_found");
         case "network":
-            return tr("Dictation needs an internet connection.", "הכתבה דורשת חיבור לאינטרנט.");
+            return t("conversation.dictation_needs_an_internet_connection");
         default:
-            return tr("Your browser can't dictate in this language.", "הדפדפן לא תומך בהכתבה בשפה זו.");
+            return t("conversation.your_browser_cant_dictate_in_this");
     }
 }
 
@@ -2359,14 +2341,12 @@ function installVoice() {
         button: els.micBtn,
         getLang: lang,
         onState: (listening) => {
-            const label = listening ? tr("Stop dictation", "עצור הכתבה") : tr("Dictate your question", "הכתבת השאלה");
+            const label = listening ? t("conversation.stop_dictation") : t("conversation.dictate_your_question");
             els.micBtn.setAttribute("aria-label", label);
             els.micBtn.title = label;
             if (!listening || readFlag(VOICE_NOTICE_KEY)) return;
             writeFlag(VOICE_NOTICE_KEY);
-            showToast(tr(
-                "Dictation uses your browser's speech recognition. Some browsers send the audio to their provider to transcribe it.",
-                "ההכתבה משתמשת בזיהוי הדיבור של הדפדפן. בדפדפנים מסוימים האודיו נשלח לספק שלהם לצורך תמלול."), undefined, "info");
+            showToast(t("conversation.dictation_uses_your_browsers_speech_recognition"), undefined, "info");
         },
         onError: (kind) => {
             // No audio went anywhere: the first-use note is still owed.
@@ -2809,8 +2789,12 @@ function syncTray() {
 }
 
 function relocalize() {
+    // data-aria-<code>, falling back along the language's chain to English.
+    const order = window.ShelahI18n?.chain?.(lang()) || [lang(), "en"];
+    const ariaKey = (code) => `aria${code.charAt(0).toUpperCase()}${code.slice(1)}`;
     document.querySelectorAll("[data-aria-en]").forEach((el) => {
-        const label = lang() === "he" ? el.dataset.ariaHe : el.dataset.ariaEn;
+        const code = order.find((c) => el.dataset[ariaKey(c)]);
+        const label = code && el.dataset[ariaKey(code)];
         if (!label) return;
         el.setAttribute("aria-label", label);
         if (el.hasAttribute("title")) el.title = label;
@@ -2842,7 +2826,7 @@ function bindEvents() {
     els.jump.addEventListener("click", () => scrollToLatest(true));
     els.scroller.addEventListener("scroll", updateJumpButton, { passive: true });
     citePop = createCitationPopover({
-        tr,
+        tr: t,
         lang,
         fetchPayload: fetchSourceText,
         previewHtml,

@@ -22,8 +22,8 @@ function textState(row) {
 }
 
 // options:
-//   tr(en, he)           -> the string for the interface language
-//   lang()               -> "en" | "he"
+//   tr(key, values)      -> interface text by catalog key, in the language on screen
+//   lang()               -> the page language code
 //   fetchPayload(ref)    -> Promise<payload | null>: the passage (shared cache)
 //   previewHtml(lines, { lang, max }) -> the text excerpt's markup
 //   openRef(ref)         -> open the source in the reader
@@ -82,9 +82,9 @@ export function createCitationPopover({
         const note = row.querySelector(".conv-cite__excerpt")?.textContent?.trim() || "";
         const readable = row.dataset.readable !== "false";
         const open = readable
-            ? `<button type="button" class="conv-citepop__action" data-pop-action="open">${escapeAttr(tr("Open in reader", "פתח בקורא"))}</button>`
+            ? `<button type="button" class="conv-citepop__action" data-pop-action="open">${escapeAttr(tr("conversation.open_in_reader"))}</button>`
             : "";
-        const jump = `<button type="button" class="conv-citepop__action conv-citepop__action--quiet" data-pop-action="jump">${escapeAttr(tr("Show in sources", "הצג במקורות"))}</button>`;
+        const jump = `<button type="button" class="conv-citepop__action conv-citepop__action--quiet" data-pop-action="jump">${escapeAttr(tr("conversation.show_in_sources"))}</button>`;
         return `<div class="conv-citepop__head"><span class="conv-citepop__num" aria-hidden="true">${escapeAttr(number)}</span>`
             + `<span class="conv-citepop__ref" dir="auto">${escapeAttr(refText)}</span></div>`
             + (note ? `<p class="conv-citepop__note" dir="auto">${escapeAttr(note)}</p>` : "")
@@ -145,7 +145,7 @@ export function createCitationPopover({
         anchor = chip;
         row = target;
         token += 1;
-        el.setAttribute("aria-label", tr(`Source ${chip.dataset.mark}`, `מקור ${chip.dataset.mark}`));
+        el.setAttribute("aria-label", tr("conversation.source_mark", { mark: chip.dataset.mark }));
         el.innerHTML = contentHtml(chip);
         el.classList.remove("hidden");
         place();

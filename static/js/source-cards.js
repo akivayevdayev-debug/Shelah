@@ -46,14 +46,6 @@ const SITE_LABELS_HE = {
     HebrewBooks: "היברובוקס",
 };
 
-const KIND_LABELS = {
-    tanakh: { en: "Tanakh", he: "תנ״ך" },
-    talmud: { en: "Talmud", he: "תלמוד" },
-    halacha: { en: "Halacha", he: "הלכה" },
-    responsa: { en: "Responsa", he: "שו״ת" },
-    mishnah: { en: "Mishnah", he: "משנה" },
-    other: { en: "Source", he: "מקור" },
-};
 
 export function escapeHtml(value) {
     return String(value ?? "")
@@ -82,9 +74,20 @@ export function sourceKind(ref) {
     return "other";
 }
 
+// Badge text per sourceKind (locales/<code>/conversation.json), spelled out so
+// the catalog check (tests/test_i18n.py) sees every key.
+const KIND_KEYS = {
+    tanakh: "conversation.kind_tanakh",
+    talmud: "conversation.kind_talmud",
+    halacha: "conversation.kind_halacha",
+    responsa: "conversation.kind_responsa",
+    mishnah: "conversation.kind_mishnah",
+    other: "conversation.kind_other",
+};
+
 export function sourceBadgeHtml(ref, lang = "en") {
     const kind = sourceKind(ref);
-    const label = KIND_LABELS[kind][lang === "he" ? "he" : "en"];
+    const label = window.ShelahI18n.translate(lang, KIND_KEYS[kind]);
     return `<span class="ai-src-badge ai-src-badge--${kind}">${escapeHtml(label)}</span>`;
 }
 
@@ -277,7 +280,7 @@ export function webSourceUrl(value) {
 // The head of a web source's row: the "From the web" label and the page's name,
 // a link that opens a new tab when the address is safe.
 export function webSourceHeadHtml(citation, lang = "en") {
-    const label = lang === "he" ? "מהרשת" : "From the web";
+    const label = window.ShelahI18n.translate(lang, "conversation.from_the_web");
     const name = escapeHtml(webSourceName(citation?.ref) || label);
     const href = webSourceUrl(citation?.url);
     const title = href

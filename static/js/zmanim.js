@@ -254,7 +254,7 @@ export function timezoneLabel(timezone, lang = document.documentElement?.lang) {
     const tz = String(timezone || '').trim();
     if (!tz) return '';
     try {
-        const parts = new Intl.DateTimeFormat(lang === 'he' ? 'he-IL' : 'en-US', {
+        const parts = new Intl.DateTimeFormat(lang || 'en', {
             timeZone: tz,
             timeZoneName: 'longGeneric',
         }).formatToParts(new Date());
@@ -275,7 +275,7 @@ export function setZmanimLocationLabel(label, timezone) {
     labelEl.style.removeProperty('width');
     labelEl.style.removeProperty('height');
     labelEl.innerText = normalizedLabel || timezoneLabel(fallbackTimezone)
-        || (document.documentElement?.lang === 'he' ? 'מקומי' : 'Local');
+        || window.ShelahI18n.translate(document.documentElement?.lang || 'en', 'zmanim.local_time_zone');
     if (fallbackTimezone && fallbackTimezone !== normalizedLabel) {
         labelEl.setAttribute('title', fallbackTimezone);
     } else {

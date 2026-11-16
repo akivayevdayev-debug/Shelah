@@ -20,6 +20,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { translator } = require('./helpers/i18n');
 
 async function loadStore() {
     const mod = await loadEsmModule('static/js/conversation-store.js', {
@@ -30,7 +31,7 @@ async function loadStore() {
 }
 
 async function loadHelpers() {
-    return (await loadEsmModule('static/js/conversation-ui-helpers.js', { window: {} })).namespace;
+    return (await loadEsmModule('static/js/conversation-ui-helpers.js', { window: { ShelahI18n: translator } })).namespace;
 }
 
 function makeApi(overrides = {}) {

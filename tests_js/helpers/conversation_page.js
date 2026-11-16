@@ -125,7 +125,8 @@ async function openConversationPage(options = {}) {
     const { signedIn = false, clerk = false, mobile = false, lang = 'en', api: apiOverrides = {}, install = true, before = null, consentAnswered = true } = options;
     const clock = fakeClock();
     const page = await openShellPage({
-        scripts: [],
+        // The real page always has the interface-text lookup (inline in the head).
+        scripts: ['i18n.js'],
         fetch: options.fetch || {},
         url: options.url,
         storage: options.storage,

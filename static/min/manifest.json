@@ -84,7 +84,7 @@
         "source": "sha256:968aced3c444af8bc1de8da0954ad3704ee3acf4a2df7812da324e62c3890547"
       },
       "shell.js": {
-        "source": "sha256:4411ac78c36ff326ee89f32c9bb05410d5c8f8254bb8498357862327815fdcb7"
+        "source": "sha256:99456767244f78bbc1b5cc7c307e60fe9c3fe954127ef9100a3e0232b53cb9b2"
       },
       "topbar_shared.js": {
         "source": "sha256:14b49e6ce59a5b4be11a16d883641a2a9cd000c72bb631d1215ffbc9d3aea5d4"
@@ -102,9 +102,9 @@
         "answer-share.js": "sha256:f1c55874ce29ad258e7deafbb5ff0abed045a03a204884388b92a3a063724ef1",
         "ask-history.js": "sha256:21dab3eba1b10f6e9095bfb25eb84471a5366bfa3d15c14ad12221df1015b922",
         "ask-progress.js": "sha256:c9a21e8fd12338e86cba44806b67e4dd0173243d562fda2088da73d0a495e492",
-        "calendar-detail.js": "sha256:14f7eb4242d2dfde242c8d14382584dba381a79ab14fa28b7996bf6c39d1e75d",
+        "calendar-detail.js": "sha256:1d37abdeb1a02cfeeb3d48ffe8fa9ed5e9b75e1462f1287efb0760422c979f5e",
         "citation-markers.js": "sha256:4a6039289400517dfa19bb0fff4aa4971c3e1191371ecd20b814f98e90693e6e",
-        "citation-popover.js": "sha256:2452698153bb4f782f2787f88ec31a17633c5004c2a7627d8038de30491586e5",
+        "citation-popover.js": "sha256:91f47f2ef4233659b051d91ad4869adb3cd4ed6e35acd2182bcd2b30c9fe52c3",
         "commentary-preload.js": "sha256:cf65eaeb787cf274935198f04b0272ea693fef7c565c5516c3fd6bf203e706ff",
         "common-answers.js": "sha256:86fa4cd291bf9dee16748edb6ad074200f2af82f0a80d2cee05523cd1d9849de",
         "conversation-api.js": "sha256:90e204fc21e4d650d8209f53b4196d27c49a5b3abf33aefd32f550b8450d508a",
@@ -112,8 +112,8 @@
         "conversation-mini.js": "sha256:b1ed8b20567e41cab3b25d1fed8870b759ccdf561314ebbbe51f384dc97171ab",
         "conversation-share.js": "sha256:558e3e593caba8f29042c936d285ff8eb1564712f1d44255b92d651f3b0faa08",
         "conversation-store.js": "sha256:97256defebd702514d1bf26361c19b55d52bcf9cd166386ff7ca868baabac27f",
-        "conversation-ui-helpers.js": "sha256:707d151c8ebb6fe0b3d2d21f9d85d0240627683df8d17a1cd0b5de9080cb5add",
-        "conversation-ui.js": "sha256:656be0eaa65d8979b348865fd0d37140b5877f0eda3d2d6208128afbcf468bdf",
+        "conversation-ui-helpers.js": "sha256:b434561e83c765739dcf40192d22cdcc6467a90dbef7a51e5f9e92bf1a4be2ba",
+        "conversation-ui.js": "sha256:e9d550ed6620547c8fd51db975169fbe4924a1573a3e9b9fd6b61bdac400215b",
         "conversation-voice.js": "sha256:34f9ccb1fa67d5db791ff1c8bcabe61977d56a7354c4f60c35b19fdfefeedc94",
         "hebrew-keyboard.js": "sha256:46bd8efa9b55fba220ad3a3b018c937048527308130e98590d07fc1579c716db",
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
@@ -125,15 +125,15 @@
         "siddur-day.js": "sha256:90fc1ca893af55d80db83a1322b5e4c24c8c52c2fec2b10e17248032add6f3d5",
         "siddur-reader.js": "sha256:0850263bed256740e1367d889aaca2486523ef961d78c2df1f33031a179a9e62",
         "siddur.js": "sha256:fae402b07eb7502fa5c4bb6c3a4a78608d31594b6ad1dbc4ad9ff8431c8c7a0f",
-        "source-cards.js": "sha256:06e3b75b7a4849d7e9154cce0bf17317d1c547f0f0eb09114ac21d8ab955d02f",
+        "source-cards.js": "sha256:f7119b86dae14a5fd5efd600c96bb4b59e52d9b1cc9f9ff4a43f3d3455fae653",
         "state.js": "sha256:2db1919d2ba9f9ba4f0b7ede3bf9b6634e8a73dd568a02fd27013cab4eb4fd5d",
         "text-versions.js": "sha256:0e6c803c2cc5bb4b1f2186208ae978e372e989a9f9a902eaa43dfdb53db52240",
-        "zmanim.js": "sha256:d578f3436ad8e06079d82cd0027369fbffa749b68af4a82547e71460544952e9"
+        "zmanim.js": "sha256:487d8b92dffcf41310ab5fe5503d963392c9c99f6f1eb07945eb1bfa805a6dbc"
       },
       "outputs": {
         "js/actions.js": "0a36da624da2",
         "js/admin-feedback.js": "ce94acb7a44b",
-        "js/calendar-detail.js": "42d77c653d87",
+        "js/calendar-detail.js": "6a70cbe4cf07",
         "js/chunks/chunk-53BJF4LM.js": "2905904ee1e6",
         "js/chunks/chunk-GI7XZAIM.js": "7f7dabe88234",
         "js/clerk-appearance.js": "2b87f5183189",
@@ -142,11 +142,11 @@
         "js/i18n.js": "ecf7a5776dac",
         "js/language-menu.js": "a7d709230a26",
         "js/load-region.js": "cd7ccc80f956",
-        "js/main.js": "c080dcc23d47",
+        "js/main.js": "dd1b16973e60",
         "js/motion.js": "78836d5f6141",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
-        "js/shell.js": "9ac53d5815c6",
+        "js/shell.js": "1faa5365edbd",
         "js/topbar_shared.js": "605af35b4fb0"
       },
       "unreached": []

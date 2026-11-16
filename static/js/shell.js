@@ -986,8 +986,8 @@ function hasParenthetical(text) {
         }
 
         function libraryItemTypeLabel(item, isHe) {
-            if (item.chapters && item.chapters > 0) return isHe ? `${item.chapters} פרקים` : `${item.chapters} ch.`;
-            return isHe ? 'מנהגים' : 'Customs';
+            if (item.chapters && item.chapters > 0) return t('shell.library_chapter_count', { count: item.chapters });
+            return t('shell.library_customs');
         }
 
         function libraryItemButton(item, isHe) {
@@ -1043,7 +1043,7 @@ function hasParenthetical(text) {
 
             const isHe = isHebrewMode();
             titleEl.textContent = isHe ? cat.titleHe : cat.title;
-            if (subtitleEl) subtitleEl.textContent = isHe ? 'בחר טקסט לקריאה' : 'Select a text to read';
+            if (subtitleEl) subtitleEl.textContent = t('shell.select_text_to_read');
 
             bodyEl.innerHTML = '';
             cat.sections.forEach(sec => {
@@ -1302,20 +1302,14 @@ function hasParenthetical(text) {
             if (!themeToggleLabel) return;
 
             const pref = normalizeThemePreference(appState?.prefs?.theme);
-            const modeLabels = {
-                en: { light: 'Light', dark: 'Dark', system: 'System' },
-                he: { light: 'בהיר', dark: 'כהה', system: 'מערכת' },
-            };
-
-            const locale = lang === 'he' ? 'he' : 'en';
-            const prefix = locale === 'he' ? 'מראה' : 'Appearance';
-            const modeLabel = modeLabels[locale]?.[pref] || modeLabels.en[pref] || 'Light';
-
-            themeToggleLabel.textContent = `${prefix}: ${modeLabel}`;
+            const say = (key, values) => window.ShelahI18n.translate(lang, key, values);
+            const modeKeys = { light: 'shell.theme_mode_light', dark: 'shell.theme_mode_dark', system: 'shell.theme_mode_system' };
+            const mode = say(modeKeys[pref] || modeKeys.light);
+            themeToggleLabel.textContent = say('shell.theme_appearance', { mode });
 
             if (themeToggleBtn) {
                 themeToggleBtn.dataset.theme = pref;
-                themeToggleBtn.title = locale === 'he' ? 'שנה מצב תצוגה' : 'Change appearance mode';
+                themeToggleBtn.title = say('shell.theme_change_mode');
             }
         }
 
@@ -1973,7 +1967,7 @@ function hasParenthetical(text) {
             });
 
             if (settingsMenuBtn) {
-                const settingsLabel = lang === 'he' ? 'פתח תפריט הגדרות' : 'Open settings menu';
+                const settingsLabel = window.ShelahI18n.translate(lang, 'shell.open_settings_menu');
                 settingsMenuBtn.title = settingsLabel;
                 settingsMenuBtn.setAttribute('aria-label', settingsLabel);
             }
@@ -3463,7 +3457,8 @@ function hasParenthetical(text) {
                     },
                     t,
                     escapeHtml,
-                    formatDate: (iso) => new Date(iso).toLocaleDateString(isHebrewMode() ? 'he' : undefined,
+                    // English keeps the browser's own date style; other languages use theirs.
+                    formatDate: (iso) => new Date(iso).toLocaleDateString(getCurrentLanguage() === 'en' ? undefined : getCurrentLanguage(),
                         { year: 'numeric', month: 'short', day: 'numeric' }),
                     answerHref: (id) => `/answer/${encodeURIComponent(id)}`,
                     icons: _ASK_HISTORY_ICONS,
@@ -4625,9 +4620,7 @@ function hasParenthetical(text) {
         function suggestionDisplayLabel(item, typeLabels) {
             if (item.type === 'ask') {
                 const askValue = String(item.value || '').trim();
-                return isHebrewMode()
-                    ? `שאל את ש'אלה: ${askValue}`
-                    : `Ask Sh'elah: ${askValue}`;
+                return t('shell.ask_shelah_query', { query: askValue });
             }
             const baseLabel = String((isHebrewMode() ? item.label_he : item.label) || item.label || '').trim();
             const typePrefix = (item.type === 'text' || item.type === 'verse')
@@ -8667,7 +8660,7 @@ function hasParenthetical(text) {
                     const startLabel = hebrewRef
                         ? hebrewRef.parashaStartLabel(entry, startLang)
                         : String(chapterNum);
-                    const chapterLabel = isHebrewMode() ? `מתחילה ב${startLabel}` : `Starts at ${startLabel}`;
+                    const chapterLabel = t('shell.parasha_starts_at', { start: startLabel });
                     const compactChapterLabel = startLabel;
 
                     return `
@@ -8701,14 +8694,10 @@ function hasParenthetical(text) {
             if (!safeBook || !Number.isFinite(safeCount) || safeCount < 1) return;
 
             if (chapterGridTitle) {
-                chapterGridTitle.textContent = isHebrewMode()
-                    ? `בחר פרק: ${safeBook}`
-                    : `${safeBook} Sections`;
+                chapterGridTitle.textContent = t('shell.book_sections_title', { book: safeBook });
             }
             if (chapterGridSubtitle) {
-                chapterGridSubtitle.textContent = isHebrewMode()
-                    ? 'בחר פרק לפתיחה מהירה'
-                    : 'Select a chapter to open';
+                chapterGridSubtitle.textContent = t('shell.select_chapter_to_open');
             }
 
             renderChapterGridParashaStrip(safeBook);
@@ -8721,7 +8710,7 @@ function hasParenthetical(text) {
                             class="chapter-grid-item"
                             data-ref="${escapeHtml(ref)}">
                             <span class="chapter-grid-item-number">${chapterNum}</span>
-                            <span class="chapter-grid-item-label">${escapeHtml(isHebrewMode() ? 'פרק' : 'Chapter')}</span>
+                            <span class="chapter-grid-item-label">${escapeHtml(t('shell.chapter'))}</span>
                         </button>
                     `;
                 })
@@ -8734,7 +8723,7 @@ function hasParenthetical(text) {
         function getReferenceGridItemLabel(indexTitle, ref, index) {
             const safeRef = String(ref || '').replace(/\s+/g, ' ').trim();
             if (!safeRef) {
-                return `${isHebrewMode() ? 'קטע' : 'Section'} ${index + 1}`;
+                return t('shell.section_number', { n: index + 1 });
             }
 
             const safeTitle = String(indexTitle || '').replace(/\s+/g, ' ').trim();
@@ -8884,9 +8873,7 @@ function hasParenthetical(text) {
 
         function setReferenceGridHeading(safeTitle, talmudMode) {
             if (chapterGridTitle) {
-                chapterGridTitle.textContent = isHebrewMode()
-                    ? `בחר קטע: ${safeTitle}`
-                    : `${safeTitle} Sections`;
+                chapterGridTitle.textContent = t('shell.segment_sections_title', { title: safeTitle });
             }
             if (chapterGridSubtitle) {
                 let subtitle;
@@ -8910,7 +8897,7 @@ function hasParenthetical(text) {
         }
 
         function dafGroupLabel(dafStr) {
-            return isHebrewMode() ? `דף ${localizeDafToken(dafStr)}` : `Daf ${dafStr}`;
+            return t('shell.daf_label', { daf: isHebrewMode() ? localizeDafToken(dafStr) : dafStr });
         }
 
         function referenceGridItemMarkup(safeTitle, targetRef, idx) {
@@ -9603,9 +9590,8 @@ function hasParenthetical(text) {
             // the data's own name is the one to show.
             const canonicalName = String(communityData?.name || communityName).trim();
             const communityLabel = getCommunityDisplayName(canonicalName);
-            const communityTitle = isHebrewMode()
-                ? `מנהגי קהילת ${communityLabel}`
-                : `${canonicalName} Community Customs`;
+            // The community's name comes in English and Hebrew only.
+            const communityTitle = t('shell.community_customs_title', { name: isHebrewMode() ? communityLabel : canonicalName });
             document.getElementById('readerTitle').innerText = communityTitle;
             setCurrentView('community', communityName, communityTitle, options);
             document.getElementById('readerContent').innerHTML = renderCommunityContent(communityData);
@@ -9786,7 +9772,7 @@ function hasParenthetical(text) {
             rows += `
                 <div class="prayer-clean-row border-b border-slate-200 last:border-b-0 py-2">
                     <div class="prayer-clean-en" dir="ltr">
-                        <div class="font-bold text-slate-800" dir="auto">${escapeHtml(isHebrewMode() ? `מנהגי קהילת ${communityLabel}` : `${communityName} Community Customs`)}</div>
+                        <div class="font-bold text-slate-800" dir="auto">${escapeHtml(t('shell.community_customs_title', { name: isHebrewMode() ? communityLabel : communityName }))}</div>
                         ${communityData?.primary_origin
                     ? `<div class="text-slate-600 mt-1" dir="auto"><span class="font-semibold">${t('shell.primary_origin')}</span> ${escapeHtml(communityLabelText(communityData.primary_origin))}</div>`
                     : ''}
@@ -11344,10 +11330,14 @@ function hasParenthetical(text) {
         }
 
         function localizeAccountLabels(lang) {
-            if (signInBtn) signInBtn.textContent = lang === 'he' ? 'התחברות' : 'Sign In';
-            if (userProfileSignOutAction) userProfileSignOutAction.textContent = lang === 'he' ? 'התנתקות' : 'Sign Out';
-            if (userProfileMenuLabel?.textContent === 'Signed in') {
-                userProfileMenuLabel.textContent = lang === 'he' ? 'מחובר' : 'Signed in';
+            const say = (key) => window.ShelahI18n.translate(lang, key);
+            if (signInBtn) signInBtn.textContent = say('shell.sign_in');
+            if (userProfileSignOutAction) userProfileSignOutAction.textContent = say('shell.sign_out');
+            // Only the "Signed in" placeholder, in whichever language it shows;
+            // a name or email put there after sign-in stays.
+            const placeholders = window.ShelahI18n.languages.map(({ code }) => window.ShelahI18n.translate(code, 'shell.signed_in'));
+            if (userProfileMenuLabel && placeholders.includes(userProfileMenuLabel.textContent)) {
+                userProfileMenuLabel.textContent = say('shell.signed_in');
             }
         }
 
@@ -12016,9 +12006,9 @@ function hasParenthetical(text) {
                 // arg.date is a UTC-midnight marker, so formatting it in local
                 // time west of UTC names the day before: go by its UTC weekday
                 // instead (4 Jan 2026 was a Sunday).
-                dayHeaderContent: (arg) => new Intl.DateTimeFormat(isHebrewMode() ? 'he-IL' : 'en-US', { weekday: 'short', timeZone: 'UTC' })
+                dayHeaderContent: (arg) => new Intl.DateTimeFormat(getCurrentLanguage(), { weekday: 'short', timeZone: 'UTC' })
                     .format(new Date(Date.UTC(2026, 0, 4 + arg.date.getUTCDay()))),
-                titleFormat: (arg) => new Intl.DateTimeFormat(isHebrewMode() ? 'he-IL' : 'en-US', { month: 'long', year: 'numeric' })
+                titleFormat: (arg) => new Intl.DateTimeFormat(getCurrentLanguage(), { month: 'long', year: 'numeric' })
                     .format(new Date(arg.date.year, arg.date.month, 1)),
                 // Busy while a month's holidays are on their way (audit §6).
                 loading: (isLoading) => calendarEl.setAttribute('aria-busy', isLoading ? 'true' : 'false'),
@@ -13208,7 +13198,7 @@ function hasParenthetical(text) {
             const statusEl = document.getElementById('privacyDataExportStatus');
             const btn = document.getElementById('privacyDataExportBtn');
             if (btn) btn.disabled = true;
-            _setPrivacyStatus(statusEl, 'pending', isHebrewMode() ? 'מכין הורדה...' : 'Preparing your download...');
+            _setPrivacyStatus(statusEl, 'pending', t('shell.privacy_preparing_download'));
             try {
                 const headers = await authHeaders({ Accept: 'application/json' });
                 const response = await fetch('/api/user/data-export', { headers });
@@ -13230,17 +13220,13 @@ function hasParenthetical(text) {
                     ? Object.keys(payload.partial_errors)
                     : [];
                 if (failedCategories.length) {
-                    _setPrivacyStatus(statusEl, 'warning', isHebrewMode()
-                        ? `ההורדה החלה, אך קטגוריות אלו לא נכללו: ${failedCategories.join(', ')}. נסה שוב מאוחר יותר.`
-                        : `Download started, but these categories could not be included: ${failedCategories.join(', ')}. Please try again later.`);
+                    _setPrivacyStatus(statusEl, 'warning', t('shell.privacy_download_partial', { categories: failedCategories.join(', ') }));
                 } else {
-                    _setPrivacyStatus(statusEl, 'success', isHebrewMode() ? 'ההורדה החלה.' : 'Download started.');
+                    _setPrivacyStatus(statusEl, 'success', t('shell.privacy_download_started'));
                 }
             } catch (err) {
                 console.error('Data export failed:', err);
-                _setPrivacyStatus(statusEl, 'error', isHebrewMode()
-                    ? 'ההורדה נכשלה. נסה שוב מאוחר יותר.'
-                    : 'Download failed. Please try again later.');
+                _setPrivacyStatus(statusEl, 'error', t('shell.privacy_download_failed'));
             } finally {
                 if (btn) btn.disabled = false;
             }
@@ -13253,11 +13239,9 @@ function hasParenthetical(text) {
             const failedTables = body?.table_errors ? Object.keys(body.table_errors) : [];
             let detail = '';
             if (failedTables.length) {
-                detail = isHebrewMode()
-                    ? ` (קטגוריות שנכשלו: ${failedTables.join(', ')})`
-                    : ` (failed categories: ${failedTables.join(', ')})`;
+                detail = ` ${t('shell.privacy_failed_categories', { categories: failedTables.join(', ') })}`;
             } else if (body?.clerk_error) {
-                detail = isHebrewMode() ? ' (מחיקת ההתחברות נכשלה)' : ' (sign-in deletion failed)';
+                detail = ` ${t('shell.privacy_signin_deletion_failed')}`;
             }
             return body?.error || `Delete incomplete (${response.status})${detail}`;
         }
@@ -13292,7 +13276,7 @@ function hasParenthetical(text) {
             privacyDeleteInFlight = true;
             if (deleteBtn) deleteBtn.disabled = true;
             if (confirmInput) confirmInput.disabled = true;
-            _setPrivacyStatus(statusEl, 'pending', isHebrewMode() ? 'מוחק את החשבון...' : 'Deleting your account...');
+            _setPrivacyStatus(statusEl, 'pending', t('shell.privacy_deleting_account'));
 
             try {
                 await requestAccountDeletion();
@@ -13313,9 +13297,7 @@ function hasParenthetical(text) {
                 window.location.assign('/');
             } catch (err) {
                 console.error('Account deletion failed:', err);
-                _setPrivacyStatus(statusEl, 'error', isHebrewMode()
-                    ? `המחיקה לא הושלמה במלואה: ${err.message}. חלק מהנתונים עשויים עדיין להתקיים -- נסה שוב או צור קשר בדוא"ל.`
-                    : `Deletion did not fully complete: ${err.message}. Some data may still remain -- please try again or contact us by email.`);
+                _setPrivacyStatus(statusEl, 'error', t('shell.privacy_delete_incomplete', { message: err.message }));
             } finally {
                 privacyDeleteInFlight = false;
                 if (deleteBtn) deleteBtn.disabled = confirmInput?.value.trim() !== 'DELETE';

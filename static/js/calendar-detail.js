@@ -425,7 +425,7 @@ function timezoneLabel(timezone, lang) {
     const tz = String(timezone || '').trim();
     if (!tz) return '';
     try {
-        const name = new Intl.DateTimeFormat(lang === 'he' ? 'he-IL' : 'en-US', { timeZone: tz, timeZoneName: 'longGeneric' })
+        const name = new Intl.DateTimeFormat(lang || 'en', { timeZone: tz, timeZoneName: 'longGeneric' })
             .formatToParts(new Date()).find((part) => part.type === 'timeZoneName')?.value;
         if (name && !/^GMT|^UTC/.test(name)) return name;
     } catch {

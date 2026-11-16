@@ -876,7 +876,7 @@ test('a download that left some categories out says which', async () => {
             kind: 'warning',
             text: 'Download started, but these categories could not be included: history, notes. Please try again later.',
         });
-        page.eval('isHebrewMode = () => true');
+        page.eval("getCurrentLanguage = () => 'he'");
         await call(page, 'handlePrivacyDataExport');
         assert.match(page.$('#privacyDataExportStatus').textContent, /ההורדה החלה, אך קטגוריות אלו לא נכללו: history, notes/);
     } finally {
@@ -891,7 +891,7 @@ test('a failed download says so, in the reader\'s language, and the button is us
         assert.deepEqual(statusOf(page, '#privacyDataExportStatus'), { kind: 'error', text: 'Download failed. Please try again later.' });
         assert.ok(page.console.error.some((args) => /Data export failed/.test(args.join(' '))));
         assert.equal(page.$('#privacyDataExportBtn').disabled, false);
-        page.eval('isHebrewMode = () => true');
+        page.eval("getCurrentLanguage = () => 'he'");
         await call(page, 'handlePrivacyDataExport');
         assert.match(page.$('#privacyDataExportStatus').textContent, /ההורדה נכשלה/);
     } finally {
@@ -939,7 +939,7 @@ test('a failed delete reads out which part of the account is left over', async (
         assert.equal(message(207, { table_errors: { notes: 'x', history: 'y' } }), 'Delete incomplete (207) (failed categories: notes, history)');
         assert.equal(message(207, { clerk_error: 'x' }), 'Delete incomplete (207) (sign-in deletion failed)');
         assert.equal(message(200, {}), 'Delete incomplete (200)');
-        page.eval('isHebrewMode = () => true');
+        page.eval("getCurrentLanguage = () => 'he'");
         assert.match(message(207, { table_errors: { notes: 'x' } }), /קטגוריות שנכשלו: notes/);
         assert.match(message(207, { clerk_error: 'x' }), /מחיקת ההתחברות נכשלה/);
     } finally {

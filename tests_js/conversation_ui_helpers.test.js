@@ -11,9 +11,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { translator } = require('./helpers/i18n');
 
 async function load() {
-    const mod = await loadEsmModule('static/js/conversation-ui-helpers.js', { window: {} });
+    const mod = await loadEsmModule('static/js/conversation-ui-helpers.js', { window: { ShelahI18n: translator } });
     return mod.namespace;
 }
 
@@ -221,4 +222,31 @@ test('miniKeyDelta turns the arrow keys into one step in that screen direction',
     assert.deepEqual({ ...h.miniKeyDelta('ArrowUp') }, { dx: 0, dy: -24 });
     assert.deepEqual({ ...h.miniKeyDelta('ArrowDown') }, { dx: 0, dy: 24 });
     for (const key of ['Home', 'Enter', 'a', ' ']) assert.equal(h.miniKeyDelta(key), null, key);
+});
+
+// A third language: its own text where the catalog has it, English elsewhere.
+async function loadWithSpanish() {
+    const { catalog, createTranslator } = require('./helpers/i18n');
+    const withSpanish = {
+        ...catalog,
+        locales: [...catalog.locales, { code: 'es', name: 'Español', dir: 'ltr', fallback: 'en' }],
+        strings: { ...catalog.strings, es: { 'conversation.group_today': 'Hoy' } },
+    };
+    const mod = await loadEsmModule('static/js/conversation-ui-helpers.js', { window: { ShelahI18n: createTranslator(withSpanish) } });
+    return mod.namespace;
+}
+
+test('a third language shows its own text where the catalog has it', async () => {
+    const h = await loadWithSpanish();
+    assert.equal(h.conversationGroupLabel('today', 'es'), 'Hoy');
+});
+
+test('a third language shows English where it has no text yet', async () => {
+    const h = await loadWithSpanish();
+    assert.equal(h.conversationGroupLabel('week', 'es'), 'Previous 7 days');
+});
+
+test('the guest banner counts with the language\'s plural forms', async () => {
+    const h = await load();
+    assert.equal(h.guestBannerText({ remaining: 1, binding: 'daily' }, 'en'), '1 guest question left today. Sign in to keep asking.');
 });

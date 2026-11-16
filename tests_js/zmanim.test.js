@@ -27,6 +27,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { translator } = require('./helpers/i18n');
 const { tFor } = require('./helpers/i18n');
 const {
     addFakeChild,
@@ -72,6 +73,8 @@ async function loadZmanim(overrides = {}) {
     const document = overrides.document || createFakeDocument();
     const localStorage = overrides.localStorage || createFakeLocalStorage();
     const window = overrides.window || {};
+    // The page always has the interface-text lookup (static/js/i18n.js).
+    window.ShelahI18n ??= translator;
     const timer = overrides.timer || createRecordingTimer();
     const mod = await loadEsmModule(ZMANIM_PATH, {
         window,

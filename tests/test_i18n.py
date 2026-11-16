@@ -174,9 +174,10 @@ JS_DIR = ROOT / "static" / "js"
 # key stored in a table ("siddur_day.mashiv_haruach") and looked up later.
 JS_KEY = re.compile(r"""['"]([a-z_]+\.[a-z0-9_]+)['"]""")
 JS_STRING = r"""(?:'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)"""
-# The old style: t('English', 'Hebrew'), two literals and no key.
+# The old style: t('English', 'Hebrew') or tr('English', 'Hebrew'), two
+# literals and no key.
 TWO_LANGUAGE_CALL = re.compile(
-    r"(?<![\w$])(?:(?:deps|window)\.)?(?:t|translate)\(\s*" + JS_STRING + r"\s*,\s*" + JS_STRING
+    r"(?<![\w$])(?:(?:deps|window)\.)?(?:t|tr|translate)\(\s*" + JS_STRING + r"\s*,\s*" + JS_STRING
 )
 
 

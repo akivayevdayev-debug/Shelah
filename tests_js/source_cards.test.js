@@ -11,9 +11,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { loadEsmModule } = require('./helpers/esm_harness');
+const { translator } = require('./helpers/i18n');
 
 async function load() {
-    const mod = await loadEsmModule('static/js/source-cards.js', { window: {} });
+    const mod = await loadEsmModule('static/js/source-cards.js', { window: { ShelahI18n: translator } });
     return mod.namespace;
 }
 
