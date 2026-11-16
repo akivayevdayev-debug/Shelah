@@ -49,6 +49,7 @@ export function createCitationPopover({
     let hoverTimer = null;
     let leaveTimer = null;
     let token = 0;
+    let exitAnim = null;
 
     function ensure() {
         if (el) return el;
@@ -145,6 +146,7 @@ export function createCitationPopover({
         anchor = chip;
         row = target;
         token += 1;
+        exitAnim?.cancel(); // a reopen mid-fade shows the card at once
         el.setAttribute("aria-label", tr("conversation.source_mark", { mark: chip.dataset.mark }));
         el.innerHTML = contentHtml(chip);
         el.classList.remove("hidden");
@@ -166,8 +168,21 @@ export function createCitationPopover({
         hoverOpened = false;
         token += 1;
         if (el && !el.classList.contains("hidden")) {
-            el.classList.add("hidden");
-            el.classList.remove("conv-citepop--in");
+            const hide = () => {
+                el.classList.add("hidden");
+                el.classList.remove("conv-citepop--in");
+            };
+            // A short fade down, so the card leaves the way it arrived; a
+            // reopen mid-fade (token moved on) keeps it on screen.
+            if (typeof el.animate === "function" && !reducedMotion()) {
+                const closing = token;
+                exitAnim = el.animate(
+                    [{ opacity: 1, transform: "translateY(0)" }, { opacity: 0, transform: "translateY(4px)" }],
+                    { duration: 140, easing: "cubic-bezier(0.25, 0, 0.3, 1)" },
+                ).finished.then(() => { if (token === closing) hide(); }, () => {});
+            } else {
+                hide();
+            }
         }
         const chip = anchor;
         if (chip) chip.setAttribute("aria-expanded", "false");
