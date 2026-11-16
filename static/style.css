@@ -26,13 +26,14 @@ html {
     scrollbar-color: color-mix(in oklch, currentColor 60%, transparent) transparent;
 }
 
-/* A Hebrew first paint: the head script in index.html sets lang/dir (and
-   data-lang-pending) before the body script swaps the [data-he] texts in, so
+/* A first paint in a language other than English (Hebrew, or any language
+   switched on later): the head script in index.html sets lang/dir (and
+   data-lang-pending) before the body script swaps that language's texts in, so
    the English ones hold their place unseen instead of flashing (visibility,
    not display: no box changes size). toggleLanguage clears the flag. Pages
    without that head script never set it. A region swapped early
    (swapPendingLanguage, data-lang-ready) already shows its Hebrew. */
-html[data-lang-pending][lang="he"] [data-he]:not([data-lang-ready] *) {
+html[data-lang-pending]:not([lang="en"]) [data-en]:not([data-lang-ready] *) {
     visibility: hidden;
 }
 

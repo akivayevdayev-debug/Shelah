@@ -10,6 +10,11 @@
  *   translate(lang, 'ns.key', { name })  the text, {name} placeholders filled
  *   languages                            [{ code, name, dir }], for a language menu
  *   direction(lang)                      'ltr' | 'rtl'
+ *   normalize(value)                     a switched-on code for value ('he-IL' -> 'he'),
+ *                                        else the default; the one test of "is this a
+ *                                        language the site shows"
+ *   chain(lang)                          lang, then the languages that fill its gaps,
+ *                                        ending with the default
  *
  * Counted text: when 'ns.key' itself is absent and the values carry a numeric
  * `count`, the text comes from 'ns.key.one' / '.two' / '.few' / '.many' /
@@ -96,9 +101,16 @@
             return byCode.get(lang)?.dir === 'rtl' ? 'rtl' : 'ltr';
         }
 
+        function normalize(value) {
+            const code = String(value || '').trim().toLowerCase().replace('_', '-').split('-')[0];
+            return byCode.has(code) ? code : fallbackLang;
+        }
+
         return Object.freeze({
             translate,
             direction,
+            normalize,
+            chain: (lang) => chain(lang).slice(),
             languages: Object.freeze(locales.map(({ code, name, dir }) => Object.freeze({ code, name, dir }))),
         });
     }

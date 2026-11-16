@@ -22,8 +22,36 @@
     // for whatever page-specific work (RTL attributes, lang-btn styling, ...)
     // comes next. `persist: false` shows the language without saving it (a
     // link's ?lang= is that page load's language, not the visitor's choice).
+    // The switched-on languages come from static/js/i18n.js (the page's
+    // #i18n-catalog). A page without that block keeps the original pair.
+    const ORIGINAL_PAIR = Object.freeze({
+        normalize: (value) => (value === 'he' ? 'he' : 'en'),
+        chain: (lang) => (lang === 'en' ? ['en'] : [lang, 'en']),
+        direction: (lang) => (lang === 'he' ? 'rtl' : 'ltr'),
+    });
+
+    function languages() {
+        const i18n = root.ShelahI18n;
+        return i18n && i18n.languages && i18n.languages.length ? i18n : ORIGINAL_PAIR;
+    }
+
+    // A switched-on language code for `value`, else the default (English).
+    function siteLanguage(value) {
+        return languages().normalize(value);
+    }
+
+    // <html lang dir> and the .rtl class for `lang`, from the registry's
+    // direction (Hebrew and Arabic are right-to-left), not a Hebrew check.
+    function applyHtmlLanguage(lang) {
+        const html = document.documentElement;
+        const rtl = languages().direction(lang) === 'rtl';
+        html.setAttribute('lang', lang);
+        html.setAttribute('dir', rtl ? 'rtl' : 'ltr');
+        html.classList.toggle('rtl', rtl);
+    }
+
     function applyLanguagePreference(lang, options, languageManualKey) {
-        const normalized = (lang === 'en' || lang === 'he') ? lang : 'en';
+        const normalized = siteLanguage(lang);
         const autoChange = Boolean(options && options.auto);
         const persist = !(options && options.persist === false);
 
@@ -39,16 +67,20 @@
         return normalized;
     }
 
-    // Swap every [data-en]/[data-he] element under `scope` to `lang`'s text,
-    // leaving any element with no text for that language alone. An element
-    // with child elements (a link, <strong>, <code>, an icon) keeps them; see
-    // swapTextKeepingChildren.
+    // Swap every [data-en]/[data-he] element under `scope` to `lang`'s text:
+    // its data-<lang>, or, with no such attribute, the first language in
+    // lang's fallback chain that has one (in the end English). An attribute
+    // that is there but empty (data-he="" on a date with no Hebrew form)
+    // means "leave this element as it is". An element with child elements (a
+    // link, <strong>, <code>, an icon) keeps them; see swapTextKeepingChildren.
     function swapLanguageText(lang, scope) {
+        const order = languages().chain(lang);
         scope.querySelectorAll('[data-en], [data-he]').forEach((el) => {
-            const text = el.dataset[lang];
+            const code = order.find((c) => el.dataset[c] !== undefined);
+            const text = code && el.dataset[code];
             if (!text) return;
             if (el.childElementCount > 0 || originalChildren.has(el)) {
-                swapTextKeepingChildren(el, text, lang);
+                swapTextKeepingChildren(el, text, code);
             } else {
                 el.textContent = text;
             }
@@ -127,7 +159,7 @@
     function swapPendingLanguage(scope) {
         const html = document.documentElement;
         if (!scope || !html.hasAttribute('data-lang-pending')) return;
-        const lang = html.getAttribute('lang') === 'he' ? 'he' : 'en';
+        const lang = siteLanguage(html.getAttribute('lang'));
         swapLanguageText(lang, scope);
         scope.querySelectorAll(`[data-${lang}-placeholder]`).forEach((el) => {
             el.placeholder = el.dataset[`${lang}Placeholder`];
@@ -210,12 +242,14 @@
         withThemeFade(() => toggle(lang));
     }
 
-    const api = { applyLanguagePreference, swapLanguageText, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade, chooseLanguage };
+    const api = { applyLanguagePreference, applyHtmlLanguage, siteLanguage, swapLanguageText, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade, chooseLanguage };
 
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = api;
     } else {
         root.applyLanguagePreference = applyLanguagePreference;
+        root.applyHtmlLanguage = applyHtmlLanguage;
+        root.siteLanguage = siteLanguage;
         root.swapPendingLanguage = swapPendingLanguage;
         root.computeFloatingMenuPosition = computeFloatingMenuPosition;
         root.withThemeFade = withThemeFade;

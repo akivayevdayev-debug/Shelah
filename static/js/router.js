@@ -137,7 +137,10 @@ function minhagName(value) {
 
 const TOGGLE_VALUES = new Set(["0", "1"]);
 const DISPLAY_VALIDATORS = {
-    lang: (v) => ["en", "he"].includes(v),
+    // Any switched-on language (static/js/i18n.js); the original pair without it.
+    lang: (v) => (globalThis.ShelahI18n?.languages?.length
+        ? globalThis.ShelahI18n.languages.some((loc) => loc.code === v)
+        : ["en", "he"].includes(v)),
     layout: (v) => READER_LAYOUTS.includes(v),
     vowels: (v) => TOGGLE_VALUES.has(v),
     taamim: (v) => TOGGLE_VALUES.has(v),

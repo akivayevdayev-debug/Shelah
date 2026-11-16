@@ -1232,15 +1232,19 @@ function hasParenthetical(text) {
         // the user just peeked open).
         let shulModeWasEnabled = false;
 
+        // The language on screen: any switched-on code (siteLanguage,
+        // topbar_shared.js, reads locales/meta.json through the page catalog).
         function getCurrentLanguage() {
-            const raw = displayedLanguage || document.documentElement.getAttribute('lang') || 'en';
-            return raw === 'he' ? 'he' : 'en';
+            return siteLanguage(displayedLanguage || document.documentElement.getAttribute('lang'));
         }
 
         function savedLanguage() {
-            return localStorage.getItem('preferredLanguage') === 'he' ? 'he' : 'en';
+            return siteLanguage(localStorage.getItem('preferredLanguage'));
         }
 
+        // Hebrew specifically (Hebrew source text, the Hebrew calendar and
+        // keyboard), not "a right-to-left language" (that is the registry's
+        // direction) and not "not English".
         function isHebrewMode() {
             return getCurrentLanguage() === 'he';
         }
@@ -11304,16 +11308,7 @@ function hasParenthetical(text) {
         // room for it follow dir in style.css, so a Hebrew load has them
         // on the left from the head script's first paint.
         function setHtmlLanguage(lang) {
-            const html = document.documentElement;
-            if (lang === 'he') {
-                html.setAttribute('lang', 'he');
-                html.setAttribute('dir', 'rtl');
-                html.classList.add('rtl');
-            } else {
-                html.setAttribute('lang', 'en');
-                html.setAttribute('dir', 'ltr');
-                html.classList.remove('rtl');
-            }
+            applyHtmlLanguage(lang);
         }
 
         function markActiveLanguageButton(lang) {
@@ -11343,7 +11338,8 @@ function hasParenthetical(text) {
                 citySearchInput.placeholder = lang === 'he'
                     ? (citySearchInput.dataset.hePlaceholder || 'לדוגמה: ירושלים, ניו יורק')
                     : (citySearchInput.dataset.enPlaceholder || 'e.g. Jerusalem, New York...');
-                citySearchInput.dir = lang === 'he' ? 'rtl' : 'ltr';
+                // Typing direction follows the interface language (setHtmlLanguage ran first).
+                citySearchInput.dir = document.documentElement.getAttribute('dir') || 'ltr';
             }
         }
 
@@ -11510,13 +11506,13 @@ function hasParenthetical(text) {
         setThemePreference(appState.prefs.theme, { persist: false });
 
         localStorage.setItem('preferredLanguage', rawSavedLang);
-        const savedLang = (rawSavedLang === 'he' || rawSavedLang === 'en') ? rawSavedLang : 'en';
+        const savedLang = siteLanguage(rawSavedLang);
         // A link's ?lang= is this load's language (the head script painted
         // it already); hydrateRoute's display keys would only switch to it
         // after a first render in the saved one.
         // (The router module isn't loaded yet; ?lang= is a plain query key.)
         const linkLang = new URLSearchParams(window.location.search).get('lang');
-        if (linkLang === 'he' || linkLang === 'en') toggleLanguage(linkLang, { auto: true, fromRoute: true });
+        if (linkLang && siteLanguage(linkLang) === linkLang) toggleLanguage(linkLang, { auto: true, fromRoute: true });
         else toggleLanguage(savedLang, { auto: true });
 
         if (signInBtn) {

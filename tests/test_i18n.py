@@ -259,3 +259,33 @@ def test_language_menu_writes_each_language_in_its_own_direction():
 
 def test_language_menu_loads_its_script_only_when_shown():
     assert "language-menu.js" in _render_language_control(["en", "he", "es"])
+
+
+@pytest.fixture
+def russian_on(three_languages, monkeypatch):
+    """The three-language catalogs with Russian switched on, as the site's own."""
+    meta = json.loads((three_languages / "meta.json").read_text(encoding="utf-8"))
+    meta["locales"][2]["enabled"] = True
+    (three_languages / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+    catalogs = i18n.load(three_languages, strict=True)
+    monkeypatch.setattr(i18n, "CATALOGS", catalogs)
+    return catalogs
+
+
+def test_lang_attrs_writes_a_third_language_text(russian_on):
+    assert 'data-ru="Привет, Ada"' in i18n.lang_attrs("page.hello", name="Ada")
+
+
+def test_lang_attrs_leaves_out_a_language_without_its_own_text(russian_on):
+    assert "data-he" not in i18n.lang_attrs("page.only_en")
+
+
+def test_the_language_list_carries_no_interface_text(strict_catalogs):
+    assert strict_catalogs.client_catalog(with_strings=False)["strings"] == {"en": {}, "he": {}}
+
+
+def test_legal_pages_carry_the_language_list():
+    import app as flask_app
+
+    body = flask_app.app.test_client().get("/about").get_data(as_text=True)
+    assert 'id="i18n-catalog"' in body

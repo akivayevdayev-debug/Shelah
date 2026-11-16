@@ -101,12 +101,13 @@
     <!-- no-flash language: the boot code's decision (end of <body>, "Load saved
          language preference") made before first paint, so a Hebrew visit paints
          right-to-left from the first frame instead of reflowing once the body
-         script runs. A link's ?lang= wins for this load; then the regional
+         script runs. L is the switched-on languages and their directions
+         (locales/meta.json); the Hebrew font preload stays Hebrew-only. A link's ?lang= wins for this load; then the regional
          default unless the visitor chose a language; then the saved choice.
          Until toggleLanguage swaps the [data-he] texts in, style.css hides the
          English ones (data-lang-pending); the timer is a backstop should the
          body script fail. -->
-    <script>(function(){var d=document.documentElement,l='en';try{var q=new URLSearchParams(location.search).get('lang');if(q==='he'||q==='en'){l=q;}else{var il=/asia\/jerusalem/i.test(String(Intl.DateTimeFormat().resolvedOptions().timeZone||''));var r=(il&&localStorage.getItem("Sh'elahLanguageManuallySet")!=='1')?'he':(localStorage.getItem('preferredLanguage')||(il?'he':'en'));l=(r==='he'||r==='en')?r:'en';}}catch(e){}d.setAttribute('lang',l);d.setAttribute('dir',l==='he'?'rtl':'ltr');d.classList.toggle('rtl',l==='he');if(l==='he'){d.setAttribute('data-lang-pending','');setTimeout(function(){d.removeAttribute('data-lang-pending');},4000);if(!document.querySelector('link[rel="preload"][href*="SILEOT"]')){var pl=document.createElement('link');pl.rel='preload';pl.as='font';pl.type='font/woff2';pl.crossOrigin='anonymous';pl.href='/static/fonts/SILEOT.woff2';document.head.appendChild(pl);}}})()</script>
+    <script>(function(){var d=document.documentElement,L={{ i18n_head_languages()|tojson }},l='en';try{var q=new URLSearchParams(location.search).get('lang');if(L.hasOwnProperty(q)){l=q;}else{var il=/asia\/jerusalem/i.test(String(Intl.DateTimeFormat().resolvedOptions().timeZone||''));var r=(il&&localStorage.getItem("Sh'elahLanguageManuallySet")!=='1')?'he':(localStorage.getItem('preferredLanguage')||(il?'he':'en'));l=L.hasOwnProperty(r)?r:'en';}}catch(e){}d.setAttribute('lang',l);d.setAttribute('dir',L[l]==='rtl'?'rtl':'ltr');d.classList.toggle('rtl',L[l]==='rtl');if(l!=='en'){d.setAttribute('data-lang-pending','');setTimeout(function(){d.removeAttribute('data-lang-pending');},4000);}if(l==='he'){if(!document.querySelector('link[rel="preload"][href*="SILEOT"]')){var pl=document.createElement('link');pl.rel='preload';pl.as='font';pl.type='font/woff2';pl.crossOrigin='anonymous';pl.href='/static/fonts/SILEOT.woff2';document.head.appendChild(pl);}}})()</script>
     <!-- The auth slot's likely shape before Clerk loads: its __client_uat cookie
          (readable, not a credential) is a non-zero timestamp while a session
          exists, so the slot is held at the profile button's width instead of

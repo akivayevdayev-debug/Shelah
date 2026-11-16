@@ -107,10 +107,12 @@ class Catalogs:
         logger.error("i18n_missing_key", extra={"key": key, "locale": code})
         return ""
 
-    def client_catalog(self) -> dict[str, Any]:
+    def client_catalog(self, with_strings: bool = True) -> dict[str, Any]:
         """What static/js/i18n.js needs: the switched-on languages and their
-        client-namespace strings."""
-        prefixes = tuple(f"{ns}." for ns in self.client_namespaces)
+        client-namespace strings. Without strings it is just the language
+        list, for pages whose scripts only switch the language (the legal
+        pages)."""
+        prefixes = tuple(f"{ns}." for ns in self.client_namespaces) if with_strings else ()
         return {
             "default": self.default,
             "strict": self.strict,
@@ -120,7 +122,7 @@ class Catalogs:
                 for code in self.enabled
             ],
             "strings": {
-                code: {k: v for k, v in self.strings.get(code, {}).items() if k.startswith(prefixes)}
+                code: {k: v for k, v in self.strings.get(code, {}).items() if prefixes and k.startswith(prefixes)}
                 for code in self.enabled
             },
         }
@@ -172,6 +174,7 @@ def load(directory: Path = LOCALES_DIR, strict: bool | None = None) -> Catalogs:
 
 CATALOGS = load()
 _CLIENT_CATALOG = CATALOGS.client_catalog()
+_LANGUAGE_LIST = CATALOGS.client_catalog(with_strings=False)
 
 
 def translate(code: str, key: str, **values: Any) -> str:
@@ -179,11 +182,15 @@ def translate(code: str, key: str, **values: Any) -> str:
 
 
 def lang_attrs(key: str, **values: Any) -> Markup:
-    """``data-en="..." data-he="..."`` for the client-side language switch."""
+    """``data-en="..." data-he="..."`` (one per switched-on language) for
+    the client-side language switch. A language's own text only: one with
+    no text for ``key`` gets no attribute and the browser shows the language
+    that fills its gaps."""
     pair = Markup('data-{}="{}"')
     return Markup(" ").join(
-        pair.format(code, translate(code, key, **values))
-        for code in ("en", "he") if code in CATALOGS.enabled
+        pair.format(code, _fill(text, values) if code != CATALOGS.default else translate(code, key, **values))
+        for code in CATALOGS.enabled
+        if (text := CATALOGS.lookup(code, key)) is not None or code == CATALOGS.default
     )
 
 
@@ -198,6 +205,7 @@ def register(app: Any) -> None:
     app.jinja_env.globals.update(
         _=page_text,
         lang_attrs=lang_attrs,
-        i18n_client_catalog=lambda: _CLIENT_CATALOG,
+        i18n_client_catalog=lambda with_strings=True: _CLIENT_CATALOG if with_strings else _LANGUAGE_LIST,
+        i18n_head_languages=lambda: {code: CATALOGS.locales[code].dir for code in CATALOGS.enabled},
         locales=[CATALOGS.locales[code] for code in CATALOGS.enabled],
     )

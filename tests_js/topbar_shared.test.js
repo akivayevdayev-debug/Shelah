@@ -127,8 +127,18 @@ test('applyLanguagePreference with persist: false shows the language without sav
     assert.equal(localStorage.getItem('preferredLanguageManual'), null);
 });
 
-test('applyLanguagePreference leaves an element untouched when it has no text for the target language', (t) => {
+test('applyLanguagePreference shows English where an element has no text for the target language', (t) => {
     const el = createFakeElement({ dataset: { en: 'Hello' } }); // no `he`
+    el.textContent = 'placeholder';
+    withGlobals(t, { elements: [el] });
+
+    applyLanguagePreference('he', {}, 'preferredLanguageManual');
+
+    assert.equal(el.textContent, 'Hello');
+});
+
+test('applyLanguagePreference leaves an element untouched when its text for the target language is empty', (t) => {
+    const el = createFakeElement({ dataset: { en: 'Hello', he: '' } });
     el.textContent = 'placeholder';
     withGlobals(t, { elements: [el] });
 

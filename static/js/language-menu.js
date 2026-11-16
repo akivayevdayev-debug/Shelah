@@ -36,6 +36,13 @@
         const items = () => Array.from(panel.querySelectorAll('[role="menuitemradio"]'));
         let running = null;
 
+        // The topbar is its own stacking layer (z-200), so inside it the
+        // panel's z-index loses to page-level overlays such as the one-time
+        // AI tip, which then swallow the click meant for a language. The panel
+        // is fixed-positioned anyway, so it lives on <body>.
+        if (doc.body && panel.parentElement !== doc.body) doc.body.appendChild(panel);
+        const inside = (target) => container.contains(target) || panel.contains(target);
+
         const isOpen = () => button.getAttribute('aria-expanded') === 'true';
         const reducedMotion = () => Boolean(win.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 
@@ -151,7 +158,7 @@
             if (event.target.closest?.('[role="menuitemradio"]')) close({ returnFocus: true });
         });
         doc.addEventListener('pointerdown', (event) => {
-            if (isOpen() && !container.contains(event.target)) close();
+            if (isOpen() && !inside(event.target)) close();
         });
         win.addEventListener('resize', () => { if (isOpen()) place(); });
 

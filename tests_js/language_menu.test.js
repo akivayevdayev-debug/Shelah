@@ -115,6 +115,18 @@ test('a press outside the menu closes it', () => {
     assert.equal(button.getAttribute('aria-expanded'), 'false');
 });
 
+test('the panel moves to <body> so page overlays cannot cover it', () => {
+    const { doc, panel } = setup();
+    assert.equal(panel.parentElement, doc.body);
+});
+
+test('a press inside the moved panel keeps the menu open', () => {
+    const { button, item, window } = setup();
+    button.click();
+    item('es').dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+    assert.equal(button.getAttribute('aria-expanded'), 'true');
+});
+
 test('picking a language closes the menu', () => {
     const { button, item } = setup();
     button.click();
@@ -144,13 +156,9 @@ test('the button shows the page language in its own name', async () => {
 });
 
 test('ShelahMotion, when loaded, opens the menu with the popover preset', () => {
-    const { window, doc } = setup();
+    const { window, button } = setup();
     let seen = null;
     window.ShelahMotion = { present: (el, opts) => { seen = opts.preset; el.classList.remove('hidden'); } };
-    const container = doc.querySelector('[data-lang-menu]');
-    const fresh = container.cloneNode(true);
-    container.replaceWith(fresh);
-    createLanguageMenu(fresh, { win: window, doc });
-    fresh.querySelector('.lang-menu-btn').click();
+    button.click();
     assert.equal(seen, 'popover');
 });

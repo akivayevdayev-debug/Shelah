@@ -54,7 +54,8 @@
     <!-- no-flash language: the boot code's decision (end of <body>, "Load saved
          language preference") made before first paint, so a Hebrew visit paints
          right-to-left from the first frame instead of reflowing once the body
-         script runs. A link's ?lang= wins for this load; then the regional
+         script runs. L is the switched-on languages and their directions
+         (locales/meta.json); the Hebrew font preload stays Hebrew-only. A link's ?lang= wins for this load; then the regional
          default unless the visitor chose a language; then the saved choice.
          Until toggleLanguage swaps the [data-he] texts in, style.css hides the
          English ones (data-lang-pending); the timer is a backstop should the
