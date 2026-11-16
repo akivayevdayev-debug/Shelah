@@ -1207,7 +1207,7 @@
 }
 
 .admin-shell[data-enter] .admin-tile {
-    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) both;
+    animation: shelah-fade-up var(--motion-dur-enter) var(--motion-ease-decel) both;
     animation-delay: calc(var(--i, 0) * var(--motion-stagger));
 }
 
@@ -1217,13 +1217,13 @@
 
 .admin-shell[data-enter] .admin-split,
 .admin-shell[data-enter] .admin-grid {
-    animation: shelah-overlay-in var(--motion-dur-base) var(--motion-ease-out) both;
+    animation: shelah-overlay-in var(--motion-dur-enter) var(--motion-ease-out) both;
     animation-delay: calc(4 * var(--motion-stagger));
 }
 
 .admin-shell[data-enter] .admin-stack {
     transform-origin: 50% 100%;
-    animation: shelah-grow-up var(--motion-dur-base) var(--motion-ease-decel) both;
+    animation: shelah-grow-up var(--motion-dur-enter) var(--motion-ease-decel) both;
     /* 16ms a day, 20 days at most: a 30-day chart still finishes inside a third of a second. */
     animation-delay: calc(5 * var(--motion-stagger) + min(var(--i, 0), 20) * var(--motion-stagger) * 0.4);
 }

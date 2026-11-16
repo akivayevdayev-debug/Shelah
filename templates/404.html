@@ -48,22 +48,7 @@
         </article>
     </main>
 
-    <footer class="border-t py-6 text-center text-xs"
-        style="border-color: var(--surface-border); color: var(--ink-secondary); background: var(--surface-1);">
-        <p>
-            <a href="/" class="font-semibold hover:underline" style="color: var(--ink-heading);"
-                {{ lang_attrs('common.footer.site_name') }}>{{ _('common.footer.site_name') }}</a>
-            &nbsp;·&nbsp;
-            <a href="/terms" class="hover:underline" style="color: var(--ink-secondary);"
-                {{ lang_attrs('common.footer.terms') }}>{{ _('common.footer.terms') }}</a>
-            &nbsp;·&nbsp;
-            <a href="/privacy" class="hover:underline" style="color: var(--ink-secondary);"
-                {{ lang_attrs('common.footer.privacy') }}>{{ _('common.footer.privacy') }}</a>
-            &nbsp;·&nbsp;
-            <a href="/accessibility" class="hover:underline" style="color: var(--ink-secondary);"
-                {{ lang_attrs('common.footer.accessibility') }}>{{ _('common.footer.accessibility') }}</a>
-        </p>
-    </footer>
+    {% with current='' %}{% include 'components/site_footer.html' %}{% endwith %}
 
     {% include 'components/legal_scripts.html' %}
 </body>

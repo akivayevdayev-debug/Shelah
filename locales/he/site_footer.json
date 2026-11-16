@@ -1,14 +1,20 @@
 {
   "about": "אודות",
+  "about_section": "אודות",
   "acceptable_use": "שימוש מותר",
   "accessibility": "נגישות",
   "ai_disclosure": "גילוי נאות בינה מלאכותית",
+  "ask": "לשאול את שאלה",
   "dmca": "DMCA",
+  "explore": "עיון",
+  "footer_label": "האתר",
   "glossary": "מילון מונחים",
   "help": "עזרה",
+  "legal": "משפטי",
   "licenses": "רישיונות",
   "privacy_policy": "מדיניות פרטיות",
   "shelah_torah_encyclopedia": "שאלה אנציקלופדיית תורה",
+  "tagline": "אנציקלופדיה תורנית, והמקורות פתוחים לצד כל תשובה.",
   "tanakh": "תנ״ך",
   "terms_of_service": "תנאי שירות"
 }

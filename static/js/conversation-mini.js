@@ -23,9 +23,11 @@ import { clampMiniSize, dragMiniSize, miniKeyDelta, parseMiniSize } from "./conv
 
 const SIZE_KEY = "shelah.conv.miniSize";
 // --motion-dur-base and --motion-ease-decel (tokens.css), as WAAPI needs numbers.
-const REVEAL = Object.freeze({ duration: 220, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
+// The site's sheet curve (tokens.css --motion-ease-sheet): a quick start and a
+// long, soft landing, so the drawer glides in rather than snapping open.
+const REVEAL = Object.freeze({ duration: 380, easing: "cubic-bezier(0.32, 0.72, 0, 1)" });
 // How far the drawer travels in from the free edge.
-const SLIDE_PX = 16;
+const SLIDE_PX = 24;
 
 function readSize() {
     try {
@@ -95,6 +97,17 @@ export function createMiniWidget({
         ];
     }
 
+    // The panel's ::after shade (conversation.css). Browsers without pseudo-
+    // element animation simply show it while the drawer is open.
+    function fadeShade(opening) {
+        try {
+            const frames = opening ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }];
+            return panel.animate(frames, { ...REVEAL, fill: "both", pseudoElement: "::after" });
+        } catch {
+            return null;
+        }
+    }
+
     // One slide at a time. A toggle in mid-flight reverses the running one from
     // wherever it has got to, rather than finishing first.
     function slide(opening) {
@@ -108,8 +121,17 @@ export function createMiniWidget({
         const frames = slideFrames();
         if (!opening) frames.reverse();
         const animation = sidebar.animate(frames, { ...REVEAL, fill: "both" });
+        // The dimmed strip of chat beside the drawer fades with it.
+        const shade = fadeShade(opening);
         animation.opening = opening;
+        animation.shade = shade;
         reveal = animation;
+        if (shade) {
+            const reverse = animation.reverse?.bind(animation);
+            const cancel = animation.cancel?.bind(animation);
+            if (reverse) animation.reverse = () => { shade.reverse?.(); reverse(); };
+            if (cancel) animation.cancel = () => { shade.cancel?.(); cancel(); };
+        }
         animation.onfinish = () => {
             if (reveal !== animation) return;
             reveal = null;

@@ -678,8 +678,47 @@ button.topbar-user-menu-item {
     padding: var(--sp-1) var(--sp-3);
 }
 
+/* Touch screens: rows stay a comfortable thumb height, but 12px type inside
+   44px rows read as three far-apart words. Larger type in slightly shorter
+   rows (40px, still well past WCAG 2.5.8's 24px) keeps the list together. */
 @media (pointer: coarse) {
-    .topbar-user-menu-item { min-height: var(--hit-min); }
+    .topbar-user-menu-item {
+        min-height: calc(var(--sp-8) + var(--sp-2));
+    }
+
+    /* Element-qualified to outrank the rows' later text-xs / py-1.5 utilities. */
+    a.topbar-user-menu-item,
+    button.topbar-user-menu-item {
+        padding-block: 0;
+        font-size: var(--text-sm);
+        white-space: nowrap;
+    }
+}
+
+/* Phone language button: globe + the other language's name. The globe turns
+   a little on hover/press, like the theme toggle's icon. */
+.mobile-lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+}
+
+.mobile-lang-globe {
+    flex: none;
+    transition: transform var(--motion-dur-base) var(--motion-ease-out);
+}
+
+.mobile-lang-toggle:hover .mobile-lang-globe,
+.mobile-lang-toggle:focus-visible .mobile-lang-globe {
+    transform: rotate(-20deg);
+}
+
+.mobile-lang-toggle:active .mobile-lang-globe {
+    transform: rotate(-20deg) scale(0.92);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mobile-lang-globe { transition: none; }
 }
 
 .topbar-user-menu-item:hover,
@@ -1682,10 +1721,18 @@ html[dir="rtl"] .search-kbd-btn {
     min-height: 2.6rem;
 }
 
-.chapter-grid-item:hover,
+/* The hover fill is pointer-only (a tap left it stuck on); keyboard
+   focus keeps it everywhere. */
 .chapter-grid-item:focus-visible {
     border-color: #bba88a;
     background: #f0eadc;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .chapter-grid-item:hover {
+        border-color: #bba88a;
+        background: #f0eadc;
+    }
 }
 
 .chapter-grid-item-number {
@@ -3025,18 +3072,19 @@ body.mobile-panel-open {
         transform: translateX(-105%);
         /* Same quick, overshoot-free settle as the menus/calendar (was 400ms
            plus a box-shadow transition); transform only. */
-        transition: transform var(--motion-dur-base) var(--motion-ease-decel);
+        transition: transform var(--motion-dur-sheet-out) var(--motion-ease-sheet);
     }
 
     .mobile-drawer-right {
         inset-inline-end: 0;
         border-inline-start: 1px solid #e2e8f0;
         transform: translateX(105%);
-        transition: transform var(--motion-dur-base) var(--motion-ease-decel);
+        transition: transform var(--motion-dur-sheet-out) var(--motion-ease-sheet);
     }
 
     .mobile-drawer.mobile-open {
         transform: translateX(0);
+        transition-duration: var(--motion-dur-sheet-in);
         box-shadow: 0 20px 60px rgba(15, 23, 42, 0.28);
     }
 
@@ -3167,12 +3215,16 @@ html.rtl .home-main-layout #popularTextsGrid {
     color: #006d6a;
 }
 
-.home-library-link:hover .home-library-title,
-.home-topic-title:hover,
-.home-daily-link:hover,
-.home-stat-link:hover {
-    text-decoration: underline;
-    text-underline-offset: 0.18em;
+/* Pointer-only: on a phone a tap leaves :hover set, so the underline
+   stuck on after going back to the home page. */
+@media (hover: hover) and (pointer: fine) {
+    .home-library-link:hover .home-library-title,
+    .home-topic-title:hover,
+    .home-daily-link:hover,
+    .home-stat-link:hover {
+        text-decoration: underline;
+        text-underline-offset: 0.18em;
+    }
 }
 
 .home-today-section {
@@ -3646,12 +3698,13 @@ html.rtl .home-main-layout #popularTextsGrid {
         border-top: 1px solid #cbd5e1;
         border-radius: 1rem 1rem 0 0;
         transform: translateY(106%);
-        transition: transform var(--motion-dur-base) var(--motion-ease-decel);
+        transition: transform var(--motion-dur-sheet-out) var(--motion-ease-sheet);
         padding-bottom: max(1rem, env(safe-area-inset-bottom));
     }
 
     #rightSidebar.mobile-drawer-right.mobile-open {
         transform: translateY(0);
+        transition-duration: var(--motion-dur-sheet-in);
         box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.18);
     }
 
@@ -4044,6 +4097,86 @@ html.theme-dark,
 :is([data-theme="dark"], body.theme-dark) .mobile-bottom-tabs.has-indicator .mobile-tab-btn.mobile-tab-active {
     background: transparent;
     box-shadow: none;
+}
+
+/* ── Phone bars: one material, one height ───────────────────────────
+   The top bar (47px, drop shadow) and the tab bar (60px, flat) read as
+   two different objects. On phones both are now the same 56px pane of
+   the same quiet glass: a translucent fill of the page surface, a
+   hairline on the edge that meets the content, and a faint light line
+   just inside it (the "rim" that makes a pane read as material rather
+   than a flat strip). No backdrop blur: the bars are layout rows, so
+   nothing ever sits behind them to blur, and a sticky blur re-composites
+   on every scroll frame. The content pane instead fades out over its
+   last few pixels where it meets each bar (a scroll edge, not a hard
+   divider), so text slips under the glass instead of being cut off. */
+@media (max-width: 1023px) {
+    .library-shell {
+        --bar-height: 56px;
+        --bar-fill: linear-gradient(180deg,
+                color-mix(in srgb, var(--surface-base) 88%, white) 0%,
+                color-mix(in srgb, var(--surface-base) 94%, transparent) 100%);
+        --bar-edge: color-mix(in srgb, var(--surface-border) 80%, transparent);
+        --bar-rim: rgba(255, 255, 255, 0.7);
+    }
+
+    header.topbar {
+        box-sizing: border-box;
+        min-height: calc(var(--bar-height) + env(safe-area-inset-top));
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: 0;
+        background: var(--bar-fill);
+        border-bottom: 1px solid var(--bar-edge);
+        box-shadow: inset 0 -1px 0 var(--bar-rim);
+    }
+
+    .mobile-bottom-tabs {
+        box-sizing: border-box;
+        min-height: calc(var(--bar-height) + env(safe-area-inset-bottom));
+        background: var(--bar-fill);
+        border-top: 1px solid var(--bar-edge);
+        box-shadow: inset 0 1px 0 var(--bar-rim);
+    }
+
+    /* 4 + 47 + 4 + the 1px edge = 56. */
+    .mobile-tab-btn {
+        padding-block: 6px;
+    }
+
+    #mainContainer {
+        -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--sp-2), #000 calc(100% - var(--sp-2)), transparent 100%);
+        mask-image: linear-gradient(180deg, transparent 0, #000 var(--sp-2), #000 calc(100% - var(--sp-2)), transparent 100%);
+    }
+
+    :is([data-theme="dark"], body.theme-dark) .library-shell {
+        --bar-fill: linear-gradient(180deg,
+                color-mix(in srgb, var(--surface-topbar) 94%, transparent) 0%,
+                color-mix(in srgb, var(--surface-base) 94%, transparent) 100%);
+        --bar-edge: var(--surface-border);
+        --bar-rim: rgba(255, 255, 255, 0.04);
+    }
+
+    :is([data-theme="dark"], body.theme-dark) header.topbar,
+    :is([data-theme="dark"], body.theme-dark) .mobile-bottom-tabs {
+        background: var(--bar-fill);
+        border-color: var(--bar-edge);
+    }
+
+    :is([data-theme="dark"], body.theme-dark) header.topbar {
+        box-shadow: inset 0 -1px 0 var(--bar-rim);
+    }
+
+    /* The idle tabs were brighter than the active one in dark mode. */
+    :is([data-theme="dark"], body.theme-dark) .mobile-tab-btn:not(.mobile-tab-active) {
+        color: var(--text-muted);
+    }
+}
+
+@media (max-width: 1023px) and (prefers-contrast: more) {
+    #mainContainer {
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
 }
 
 :is([data-theme="dark"], body.theme-dark) .bg-white {
@@ -5560,7 +5693,7 @@ body.theme-dark #analyticsConsentAccept {
    (index.html) and removed on animationend, so no transform lingers to
    become a containing block for anything positioned inside. */
 .view-enter {
-    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel);
+    animation: shelah-fade-up var(--motion-dur-enter) var(--motion-ease-decel);
 }
 
 /* Press feedback: controls dip a little while held. The standalone
@@ -5707,4 +5840,92 @@ body.theme-dark #analyticsConsentAccept {
 @media (prefers-reduced-motion: reduce) {
     :is(.region-error__retry, .region-error__action) { transition: none; }
     :is(.region-error__retry, .region-error__action):active { transform: none; }
+}
+
+/* Phone reader bar: back arrow at the far left, forward arrow at the far
+   right, the open text's name centred between them (it opens Reader
+   Settings), commentary as a smaller icon beside the forward arrow. A
+   disabled arrow stays in place, faded, so nothing shifts. */
+.reader-topbar-ref,
+.reader-topbar-ref-caret {
+    display: none;
+}
+
+@media (max-width: 1023px) {
+    #readerTopBar {
+        background: var(--bar-fill);
+        border-top: 0;
+        border-bottom: 1px solid var(--bar-edge);
+    }
+
+    #readerTopBar .reader-topbar-track {
+        gap: var(--sp-1);
+        padding-inline: var(--sp-1);
+        min-height: var(--hit-min);
+    }
+
+    /* The empty end margin matches the commentary icon on the other side,
+       so the name sits in the true centre of the bar. */
+    #readerTopBar #readerPrevTopBarBtn { order: 1; margin-inline-end: calc(var(--hit-min) + var(--sp-1)); }
+    #readerTopBar .reader-topbar-settings-wrap { order: 2; flex: 1 1 auto; min-width: 0; display: flex; justify-content: center; }
+    #readerTopBar #readerCommentaryTopBarBtn { order: 3; }
+    #readerTopBar #readerNextTopBarBtn { order: 4; }
+
+    #readerTopBar #readerCommentaryTopBarBtn svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    #readerTopBar .reader-topbar-settings-icon,
+    #readerSettingsBtn:has(.reader-topbar-ref:not(:empty)) .reader-topbar-settings-label {
+        display: none;
+    }
+
+    .library-shell .reader-topbar-shell #readerSettingsBtn.reader-topbar-settings-btn {
+        width: auto;
+        max-width: 100%;
+        min-height: var(--hit-min);
+        padding-inline: var(--sp-3);
+        gap: var(--sp-1);
+        background: transparent;
+        border-color: transparent;
+        box-shadow: none;
+    }
+
+    #readerTopBar .reader-topbar-ref {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: var(--font-serif, Cardo, serif);
+        font-size: var(--text-base, 1rem);
+        font-weight: 700;
+        color: var(--ink-heading);
+    }
+
+    #readerTopBar .reader-topbar-ref:empty + .reader-topbar-ref-caret {
+        display: none;
+    }
+
+    #readerTopBar .reader-topbar-ref:not(:empty) + .reader-topbar-ref-caret {
+        display: block;
+        flex-shrink: 0;
+        opacity: 0.6;
+        transition: transform var(--motion-dur-fast, 160ms) var(--motion-ease-out, ease-out);
+    }
+
+    #readerSettingsBtn[aria-expanded="true"] .reader-topbar-ref-caret {
+        transform: rotate(180deg);
+    }
+
+    #readerTopBar button.reader-topbar-icon-btn:disabled {
+        opacity: 0.28;
+    }
+}
+
+@media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
+    #readerTopBar .reader-topbar-ref-caret {
+        transition: none;
+    }
 }

@@ -3,35 +3,35 @@
   "esbuild": "0.28.2",
   "css": {
     "sources": {
-      "css/tokens.css": "sha256:8317cd89b31991a9573e1e086048d861e66500a091a80f4f22e105f0b723cb4f",
-      "style.css": "sha256:69f677efe05493155e8fecebc0c3a1695a47a5787286fc5953fb78f1011304eb",
+      "css/tokens.css": "sha256:cdf6f2daba074f71eec9a8d2737547f3dcbc4edd8a76cd78c04d07013d246feb",
+      "style.css": "sha256:e2522a116a467793f4f366978619e167df81f8c9c719a6aa97696fe7ef9f721c",
       "css/typography.css": "sha256:8cc5129450f6f17c2825dc900a5ab184de1b6900bcb9175d4c92ee2eadbdb772",
       "css/reader.css": "sha256:a7680571f7b451f26c9a35c5f76690ce05909c712aa8d1c07acbe01d5f150ac8",
-      "css/sidebar.css": "sha256:818cc6cedeb746e467359505bdf979f245d865f3cb92127af64eb80cf8600980",
+      "css/sidebar.css": "sha256:fc261c75dc4ba0abded264ec89ed57923c9db7264a21fc24b62a0186fe24a699",
       "css/halacha.css": "sha256:d56991aac19afaa3175434312588862a5a63b32c46d7d07d2f70e23fd9e049bf",
       "css/prayer.css": "sha256:70cf28909030c0816176889df96729aca7618f9088de74d324f9c9a38812c78d",
       "css/siddur.css": "sha256:5026bdd17f89bc51fa2b37963ad4770c22d9b9ac1d8ab3f1a67d0b588963be72",
-      "css/ai.css": "sha256:12ea433526bbcffed5e0ac64a083d0025045afd37b5564a6b01c029203d3039c",
-      "css/conversation.css": "sha256:101e37b2df09030ac83d9c5bcab4245a41d1cf87c9a26361fd2f1e8cb7532758",
+      "css/ai.css": "sha256:a7e84d8c91eec7d591349d1df38fceb9a2ed25150da4acdf1c219f63cd45939a",
+      "css/conversation.css": "sha256:a87ba30d30411c5389f645a8458dbf876d895056a93c97c981e94fb636c6cccd",
       "css/history.css": "sha256:ff1556ed62eceadb953ed9a9b4325d70410a97e1bceff2271a07b5ebe213218c",
       "css/calendar.css": "sha256:69f52f8e6804e7d435fed88dde0b1218cb792dc9fd6cc8832b66faaa77c1346a",
       "css/calendar-detail.css": "sha256:d14b9c9ed0a63a3d7f396d41e264781bf319897b773fd2ea2e7d7189cafed9ed",
-      "css/loading.css": "sha256:10eaad855917d62df7a5d396c0bbb8a487d529d846bc3233637e7eb42e5a3211",
+      "css/loading.css": "sha256:a77745f67cd45511d26a3d55fe58b68b77270a49eb29147210986078585cac4f",
       "css/tailwind.css": "sha256:7e003ddf0bb1216222651038416f47937c183c2e5e6d041eb3e2fa43fcaaaa4e"
     },
-    "sourcesHash": "9b433317b0f47c8a8f357fc37909c4c914f814b4711a0329b484a8c32555d503",
+    "sourcesHash": "e5519e02ac39da236eb95bb453853d4401f28c76ab3d2bfc1ac78f41f4f959c7",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "9b433317b0f47c8a8f357fc37909c4c914f814b4711a0329b484a8c32555d503",
+        "sourcesHash": "e5519e02ac39da236eb95bb453853d4401f28c76ab3d2bfc1ac78f41f4f959c7",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "9b433317b0f47c8a8f357fc37909c4c914f814b4711a0329b484a8c32555d503",
+        "sourcesHash": "e5519e02ac39da236eb95bb453853d4401f28c76ab3d2bfc1ac78f41f4f959c7",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "9b433317b0f47c8a8f357fc37909c4c914f814b4711a0329b484a8c32555d503",
+        "sourcesHash": "e5519e02ac39da236eb95bb453853d4401f28c76ab3d2bfc1ac78f41f4f959c7",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
@@ -72,7 +72,7 @@
         "source": "sha256:b7ad2d3a153eafa358951bd3126d0634f557ad0659a693975506289751148007"
       },
       "language-menu.js": {
-        "source": "sha256:b949ed0366e1c6556e0b1df4f0e5e4f79d420901821c2016d20ec33f47cd797e"
+        "source": "sha256:dc4bebf3a50cbe4fb6fd49a228bc94dff4a579c5106fcafec47b59f1e375fcd2"
       },
       "load-region.js": {
         "source": "sha256:44ea4200b030cad3dd42bc4d20750b5de313fbb6827c4c2594f31be980923bc4"
@@ -84,7 +84,7 @@
         "source": "sha256:968aced3c444af8bc1de8da0954ad3704ee3acf4a2df7812da324e62c3890547"
       },
       "shell.js": {
-        "source": "sha256:aadb64e0f8c6df12f20beaedf7d6d2f3e8eece5e45bb2b675896f471166d5e2a"
+        "source": "sha256:176057107fcdcbd99e9e0d3864fdc08d158ea135d32d404befd1d85c8f799ef6"
       },
       "topbar_shared.js": {
         "source": "sha256:14b49e6ce59a5b4be11a16d883641a2a9cd000c72bb631d1215ffbc9d3aea5d4"
@@ -109,7 +109,7 @@
         "common-answers.js": "sha256:86fa4cd291bf9dee16748edb6ad074200f2af82f0a80d2cee05523cd1d9849de",
         "conversation-api.js": "sha256:90e204fc21e4d650d8209f53b4196d27c49a5b3abf33aefd32f550b8450d508a",
         "conversation-entry.js": "sha256:25f9b62da24bcf0965429fa8162bc3b9dfa348b17ce0fdfa0d898ef945d24677",
-        "conversation-mini.js": "sha256:b1ed8b20567e41cab3b25d1fed8870b759ccdf561314ebbbe51f384dc97171ab",
+        "conversation-mini.js": "sha256:1647deb441429f0027fc5da64655cc897b856714abc7a5b6ede80113e46be3ac",
         "conversation-share.js": "sha256:558e3e593caba8f29042c936d285ff8eb1564712f1d44255b92d651f3b0faa08",
         "conversation-store.js": "sha256:97256defebd702514d1bf26361c19b55d52bcf9cd166386ff7ca868baabac27f",
         "conversation-ui-helpers.js": "sha256:b434561e83c765739dcf40192d22cdcc6467a90dbef7a51e5f9e92bf1a4be2ba",
@@ -119,7 +119,7 @@
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
         "main.js": "sha256:42ce684aa5b8a6c97a708153c390c24aafb08097e6037d9240b8bfde5206a63d",
         "minhag-setting.js": "sha256:3f6723cd6b45a227b97a2fc4dab06365e1da3ae5e01b367ab6c07dd40d8f1060",
-        "motion.js": "sha256:f24ac58bc40f743106b637ce6e1cefdf4d8ad480fa2383cd598e9ce1b54aeac5",
+        "motion.js": "sha256:0a7de3ec324279b8a7b5c4bb738bf85ec18306e5a6240778b5798e8000f652bc",
         "reader-ui.js": "sha256:afb5716e6b2112361fe652cc9efd2c6a4503ad9e560b898f0b00f992a4dc4fa8",
         "router.js": "sha256:0d047c46ceafc74c94158d9e13994ff59a61db4b5a0c56d2d5f331fe73a50ff8",
         "siddur-day.js": "sha256:90fc1ca893af55d80db83a1322b5e4c24c8c52c2fec2b10e17248032add6f3d5",
@@ -140,13 +140,13 @@
         "js/community-labels.js": "87dfbcba156b",
         "js/hebrew-ref.js": "d05bbd5fe59f",
         "js/i18n.js": "ecf7a5776dac",
-        "js/language-menu.js": "a7d709230a26",
+        "js/language-menu.js": "24920c6f2bcc",
         "js/load-region.js": "cd7ccc80f956",
-        "js/main.js": "cff704d779fd",
-        "js/motion.js": "78836d5f6141",
+        "js/main.js": "c42cf0214e9e",
+        "js/motion.js": "dd92c8fa6c18",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
-        "js/shell.js": "35558785c207",
+        "js/shell.js": "51ca70fb25d2",
         "js/topbar_shared.js": "605af35b4fb0"
       },
       "unreached": []

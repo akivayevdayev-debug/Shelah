@@ -832,7 +832,7 @@ test('the reader\'s previous and next buttons step through the chapters on the p
 
         page.eval(`infiniteReaderState.nextRef = ''; updateReaderButtonsForChunk(1)`);
         assert.equal(next.disabled, true);
-        assert.equal(next.style.visibility, 'hidden');
+        assert.equal(next.style.visibility, 'visible');
         assert.equal(next.onclick, null);
     } finally {
         page.close();

@@ -11,7 +11,7 @@
 
 /* Mobile drawer: base state (hidden) */
 .mobile-drawer {
-    transition: transform var(--motion-dur-base) var(--motion-ease-out), opacity var(--motion-dur-base) var(--motion-ease-out), visibility var(--motion-dur-base) var(--motion-ease-out);
+    transition: transform var(--motion-dur-sheet-out) var(--motion-ease-sheet), opacity var(--motion-dur-base) var(--motion-ease-out), visibility var(--motion-dur-sheet-out) var(--motion-ease-out);
 }
 
 /* Left drawer slides in from the left */
@@ -54,7 +54,7 @@
 
 /* Details/summary expand animation for library sidebar items */
 details[open]>summary~* {
-    animation: shelah-slide-down-fade var(--motion-dur-fast) var(--motion-ease-out) both;
+    animation: shelah-slide-down-fade var(--motion-dur-base) var(--motion-ease-decel) both;
 }
 
 details>summary .group-open\:rotate-90 {

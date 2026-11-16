@@ -177,22 +177,23 @@ test('opening never animates or resizes the panel: the drawer slides in on trans
     try {
         const before = { w: cssVar(w, '--conv-mini-w'), h: cssVar(w, '--conv-mini-h'), style: w.panel.style.getPropertyValue('width') + w.panel.style.getPropertyValue('height') };
         w.widget.openHistory();
-        assert.equal(w.animations.filter((a) => a.target === 'panel').length, 0);
+        // The panel itself only fades its ::after shade (the strip of chat beside the drawer).
+        assert.deepEqual(w.animations.filter((a) => a.target === 'panel').map((a) => a.options.pseudoElement), ['::after']);
         const [slide] = w.animations;
         assert.equal(slide.target, 'sidebar');
         // Bottom-right widget: the free side is the left, so it comes in from the left.
         assert.deepEqual(slide.frames, [
-            { opacity: 0, transform: 'translateX(-16px)' },
+            { opacity: 0, transform: 'translateX(-24px)' },
             { opacity: 1, transform: 'translateX(0)' },
         ]);
         for (const frame of slide.frames) assert.deepEqual(Object.keys(frame).sort(), ['opacity', 'transform']);
-        assert.equal(slide.options.duration, 220);
+        assert.equal(slide.options.duration, 380);
         slide.finish();
         assert.equal(slide.cancelled, true);
         assert.equal(w.panel.dataset.history, 'open');
         // Open and close again: nothing on the panel itself changed.
         w.widget.closeHistory();
-        w.animations.at(-1).finish();
+        w.animations.filter((a) => a.target === 'sidebar').at(-1).finish();
         assert.deepEqual({ w: cssVar(w, '--conv-mini-w'), h: cssVar(w, '--conv-mini-h'), style: w.panel.style.getPropertyValue('width') + w.panel.style.getPropertyValue('height') }, before);
     } finally {
         w.page.close();
@@ -203,7 +204,7 @@ test('a widget on the left of the screen slides its drawer in from the right', a
     const w = await openWidget({ animate: true, corner: 'bl' });
     try {
         w.widget.openHistory();
-        assert.deepEqual(w.animations[0].frames[0], { opacity: 0, transform: 'translateX(16px)' });
+        assert.deepEqual(w.animations[0].frames[0], { opacity: 0, transform: 'translateX(24px)' });
     } finally {
         w.page.close();
     }
@@ -215,10 +216,10 @@ test('closing slides back, and the panel drops its history mark only when the sl
         w.widget.openHistory();
         w.animations[0].finish();
         w.widget.closeHistory();
-        const closing = w.animations.at(-1);
+        const closing = w.animations.filter((a) => a.target === 'sidebar').at(-1);
         assert.deepEqual(closing.frames, [
             { opacity: 1, transform: 'translateX(0)' },
-            { opacity: 0, transform: 'translateX(-16px)' },
+            { opacity: 0, transform: 'translateX(-24px)' },
         ]);
         assert.equal(w.panel.dataset.history, 'open');
         assert.equal(w.historyBtn.getAttribute('aria-expanded'), 'false');
@@ -238,7 +239,7 @@ test('a toggle in mid-flight reverses the running slide instead of starting over
         opening.reverse = () => { reversed += 1; };
         w.widget.closeHistory();
         assert.equal(reversed, 1);
-        assert.equal(w.animations.length, 1);
+        assert.equal(w.animations.filter((a) => a.target === 'sidebar').length, 1);
         assert.equal(opening.cancelled, false);
         // Its finish now lands closed.
         opening.finish();

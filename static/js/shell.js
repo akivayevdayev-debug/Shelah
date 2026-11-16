@@ -4187,9 +4187,12 @@ function hasParenthetical(text) {
         function positionUserProfileMenu() {
             if (!userProfileMenu || !userProfileMenuBtn) return;
 
+            // Touch screens set the rows in larger type (style.css), so the
+            // menu needs room for "Privacy & Data" on one line.
+            const touch = globalThis.matchMedia?.('(pointer: coarse)').matches;
             positionFloatingMenu(userProfileMenu, userProfileMenuBtn, {
                 minWidth: 112,
-                maxWidth: 116,
+                maxWidth: touch ? 148 : 116,
             });
         }
 
@@ -6119,7 +6122,7 @@ function hasParenthetical(text) {
             el.style.opacity = '0';
             mutate();
             const fade = window.ShelahMotion?.fadeOpacity;
-            if (fade) void fade(el, 1, { duration: 0.15 });
+            if (fade) void fade(el, 1, { duration: 0.22 });
             else el.style.opacity = '';
         }
 
@@ -6905,8 +6908,10 @@ function hasParenthetical(text) {
         function wireReaderStepButton(button, { inPageIndex, adjacentRef }) {
             if (!button) return;
             const hasStep = inPageIndex !== null || Boolean(adjacentRef());
+            // A missing step stays on screen, disabled and faded (CSS), so the
+            // bar never shifts between the first chapter and the rest.
             button.disabled = !hasStep;
-            button.style.visibility = hasStep ? 'visible' : 'hidden';
+            button.style.visibility = 'visible';
             button.onclick = hasStep ? () => {
                 if (inPageIndex !== null) {
                     const target = document.querySelector(`.reader-source-clean[data-text-chunk-index="${inPageIndex}"]`);
@@ -6917,9 +6922,18 @@ function hasParenthetical(text) {
             } : null;
         }
 
+        // Phones show the text on screen (e.g. "Genesis 1") in the middle of
+        // the reader bar; it follows the chapter scrolled into view.
+        function showReaderBarRef(chunk) {
+            const refName = document.getElementById('readerSettingsBtnRef');
+            if (!refName) return;
+            refName.textContent = String((isHebrewMode() && chunk?.heRef) || chunk?.ref || '').trim();
+        }
+
         function updateReaderButtonsForChunk(chunkIndex) {
             const chain = getCurrentTextPayloadChain();
             if (!chain.length) return;
+            showReaderBarRef(chain[chunkIndex]);
             updateReaderHeaderForVisibleChunk(chunkIndex);
             wireReaderStepButton(readerPrevTopBarBtn, {
                 inPageIndex: chunkIndex > 0 ? chunkIndex - 1 : null,
@@ -7395,6 +7409,7 @@ function hasParenthetical(text) {
                 if (readerSettingsBtnLabel) {
                     readerSettingsBtnLabel.textContent = settingsLabel;
                 }
+                showReaderBarRef(getCurrentTextPayloadChain()[infiniteReaderState.currentVisibleChunkIndex || 0]);
             }
 
             syncReaderTopBarControls();

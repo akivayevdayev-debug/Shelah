@@ -124,7 +124,7 @@ test('animateIn calls window.Motion.animate with a spring transition and the req
     assert.deepEqual(keyframes.transform, ['translateY(12px)', 'translateY(0)']);
     assert.equal(transition.type, 'SPRING_TYPE_MARKER');
     assert.equal(transition.delay, 0.1);
-    assert.equal(transition.stiffness, 320);
+    assert.equal(transition.stiffness, mod.appleSpring(0.42, 0.06).stiffness);
 });
 
 test('animateOut no-ops on a null element', async () => {
@@ -146,7 +146,7 @@ test('animateOut calls window.Motion.animate with the exit spring and offset', a
     const { keyframes, transition } = animate.calls[0];
     assert.deepEqual(keyframes.opacity, [1, 0]);
     assert.deepEqual(keyframes.transform, ['translateY(0)', 'translateY(-10px)']);
-    assert.equal(transition.stiffness, 280);
+    assert.equal(transition.stiffness, mod.appleSpring(0.32, 0).stiffness);
 });
 
 // ── staggerIn ────────────────────────────────────────────────────────────
@@ -211,7 +211,7 @@ test('springMove calls animate with the move spring', async () => {
     const el = makeEl();
     await mod.springMove(el, 'translateX(40px)', { delay: 0.2 });
     assert.deepEqual(animate.calls[0].keyframes, { transform: 'translateX(40px)' });
-    assert.equal(animate.calls[0].transition.stiffness, 260);
+    assert.equal(animate.calls[0].transition.stiffness, mod.appleSpring(0.46, 0.1).stiffness);
     assert.equal(animate.calls[0].transition.delay, 0.2);
 });
 
@@ -346,7 +346,7 @@ test('slideOut animates from resting to the exit offset using the exit spring', 
     await mod.slideOut(el, { to: 'right', distance: '30px' });
     const { keyframes, transition } = animate.calls[0];
     assert.deepEqual(keyframes.transform, ['translate(0,0)', 'translateX(30px)']);
-    assert.equal(transition.stiffness, 280);
+    assert.equal(transition.stiffness, mod.appleSpring(0.32, 0).stiffness);
 });
 
 test('slideOut falls back to setting the exit transform directly when reduced', async () => {
@@ -511,8 +511,8 @@ test('dismiss() still hides once its fade never reports finished (M-14 ceiling)'
     const done = mod.dismiss(el, { preset: 'fade', onHidden: () => { hiddenCalled = true; } });
     await timers.advance(0);
     assert.equal(el.classList.contains('is-hiding'), true, 'still leaving before the ceiling');
-    assert.deepEqual(timers.delays(), [360], "the ceiling is the fade's own 0.16 s plus 0.2 s");
-    await timers.advance(360);
+    assert.deepEqual(timers.delays(), [400], "the ceiling is the fade's own 0.2 s plus 0.2 s");
+    await timers.advance(400);
     await done;
     assert.equal(el.classList.contains('hidden'), true);
     assert.equal(el.classList.contains('is-hiding'), false);
@@ -526,8 +526,8 @@ test('dismiss() of a drawer waits for its slide, bounded by the spring ceiling',
     el.getBoundingClientRect = () => ({ height: 300 });
     const done = mod.dismiss(el, { preset: 'drawer' });
     await timers.advance(0);
-    assert.deepEqual(timers.delays(), [1200]);
-    await timers.advance(1200);
+    assert.deepEqual(timers.delays(), [1600]);
+    await timers.advance(1600);
     await done;
     assert.equal(el.classList.contains('hidden'), true);
 });
@@ -672,8 +672,20 @@ test('slideTo animates from the current computed position to a sufficiently diff
     const el = makeEl();
     el.style.transform = 'translateX(10px)'; // first paint, no prior slide entry yet
     mod.slideTo(el, 90);
-    assert.equal(animate.calls.length, 1);
-    assert.deepEqual(animate.calls[0].keyframes.transform, ['translateX(10px)', 'translateX(90px)']);
+    assert.deepEqual([animate.calls[0].target, animate.calls[0].keyframes], [10, 90]);
+});
+
+test('slideTo hands an interrupted slide its current speed', async () => {
+    const { mod, animate } = await loadMotion();
+    const el = makeEl();
+    el.style.transform = 'translateX(0px)';
+    mod.slideTo(el, 100);
+    const { onUpdate } = animate.calls[0].transition;
+    onUpdate(10);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    onUpdate(30);
+    mod.slideTo(el, 0);
+    assert.ok(animate.calls[1].transition.velocity > 0);
 });
 
 test('slideTo snaps directly to target when the computed position is already within 0.5px', async () => {

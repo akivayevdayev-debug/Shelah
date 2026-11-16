@@ -129,7 +129,7 @@ html[data-cold-view] #reader header nav[aria-label="breadcrumb"] {
    moves; the class goes on animationend (index.html hideReaderSkeleton). */
 .reader-content-enter {
     /* shelah-overlay-in: the token layer's opacity-only fade. */
-    animation: shelah-overlay-in var(--motion-dur-base) var(--motion-ease-out);
+    animation: shelah-overlay-in var(--motion-dur-enter) var(--motion-ease-out);
 }
 
 @media (prefers-reduced-motion: reduce) {

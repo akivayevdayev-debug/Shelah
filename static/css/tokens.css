@@ -209,13 +209,22 @@
        distinct from --motion-ease-spring; was repeated as a raw literal at
        5+ sites across style.css/ai.css before being named here. */
     --motion-ease-decel: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Things that arrive or travel (entrances, reveals, a bar sliding in)
+       get longer than hover/press feedback: at --motion-dur-base they read
+       as a snap rather than a movement. */
+    --motion-dur-enter:  340ms;
+    /* Sheets and drawers cover a lot of ground: up on the curve iOS uses
+       for sheets (fast start, long soft landing), down a little quicker. */
+    --motion-dur-sheet-in:  460ms;
+    --motion-dur-sheet-out: 320ms;
+    --motion-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
     /* The gap between siblings of a cascade (answer blocks, source cards,
        reveals): 30 to 80 ms reads as one gesture, and callers cap the length. */
     --motion-stagger:     40ms;
     /* Views (audit §2): the old one fades out, the new one fades in
        shifted 12px from the side the navigation goes to. */
-    --motion-dur-view-out: 120ms;
-    --motion-dur-view-in:  240ms;
+    --motion-dur-view-out: 160ms;
+    --motion-dur-view-in:  320ms;
     --motion-view-shift:   var(--sp-3);
 
     /* ── Elevation (shadow tokens) ──────────────────────────────────── */

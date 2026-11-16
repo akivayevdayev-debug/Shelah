@@ -40,6 +40,12 @@
     data-lang="en">English</button>
 <button data-onclick="chooseLanguage" data-onclick-arg="he" class="hidden lg:inline-flex topbar-flat-btn font-hebrew lang-btn"
     data-lang="he">עברית</button>
-<button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn" {{ lang_attrs('common.other_language_name') }}>{{ _('common.other_language_name') }}</button>
+{# Phones: the globe (the same mark as the three-language menu) beside the
+   other language's name. The name sits in its own span because the page's
+   language switch rewrites the text of anything carrying data-en/data-he. #}
+<button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn mobile-lang-toggle">
+    {{ phosphor('globe-simple', size=14, class='mobile-lang-globe h-3.5 w-3.5') }}
+    <span {{ lang_attrs('common.other_language_name') }}>{{ _('common.other_language_name') }}</span>
+</button>
 {% endif %}
 {% endmacro %}

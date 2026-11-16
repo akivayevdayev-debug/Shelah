@@ -416,7 +416,7 @@ test('swapContent fades replaced content in, or just replaces it without the mot
         page.window.__el = element;
         page.eval(`swapContent(window.__el, () => { window.__el.dataset.seen = window.__el.style.opacity; })`);
         assert.equal(element.dataset.seen, '0', 'hidden while it is mutated');
-        assert.deepEqual([fades[0][0] === element, fades[0][1], fades[0][2]], [true, 1, { duration: 0.15 }]);
+        assert.deepEqual([fades[0][0] === element, fades[0][1], fades[0][2]], [true, 1, { duration: 0.22 }]);
 
         page.window.ShelahMotion = undefined;
         page.eval(`swapContent(window.__el, () => { window.__el.dataset.seen = window.__el.style.opacity; })`);

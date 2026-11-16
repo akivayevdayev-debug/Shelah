@@ -1,14 +1,20 @@
 {
   "about": "About",
+  "about_section": "About",
   "acceptable_use": "Acceptable Use",
   "accessibility": "Accessibility",
   "ai_disclosure": "AI Disclosure",
+  "ask": "Ask Sh'elah",
   "dmca": "DMCA",
+  "explore": "Explore",
+  "footer_label": "Site",
   "glossary": "Glossary",
   "help": "Help",
+  "legal": "Legal",
   "licenses": "Licenses",
   "privacy_policy": "Privacy Policy",
   "shelah_torah_encyclopedia": "Sh'elah Torah Encyclopedia",
+  "tagline": "A Torah encyclopedia with its sources open beside every answer.",
   "tanakh": "Tanakh",
   "terms_of_service": "Terms of Service"
 }

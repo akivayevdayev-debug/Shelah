@@ -692,6 +692,9 @@
                         <span class="reader-topbar-settings-icon" aria-hidden="true">&#9776;</span>
                         <span id="readerSettingsBtnLabel" class="reader-topbar-settings-label"
                             {{ lang_attrs('home.reader_settings') }}>{{ _('home.reader_settings') }}</span>
+                        {# Phones show the open text's name here instead (shell.js labelReaderTopBar). #}
+                        <span id="readerSettingsBtnRef" class="reader-topbar-ref" aria-hidden="true"></span>
+                        {{ phosphor('caret-down', size=12, class='reader-topbar-ref-caret h-3 w-3') }}
                     </button>
 
                     <div id="readerSettingsPanel"
@@ -2356,7 +2359,8 @@
     <fieldset id="mobileSearchTray" class="mobile-search-tray hidden">
         <legend class="sr-only" {{ lang_attrs('home.ask_shelah') }}>{{ _('home.ask_shelah') }}</legend>
         <button type="button" id="mobileTrayAskBtn" class="mobile-search-tray__ask">
-            {{ phosphor('chat-text', size=16, class='h-4 w-4') }}
+            {# The AI star (the same sparkle as the top bar's Ask mark), in the label's colour. #}
+            {{ phosphor('sparkle', size=16, class='h-4 w-4') }}
             <span {{ lang_attrs('home.ask_shelah') }}>{{ _('home.ask_shelah') }}</span>
         </button>
         <button type="button" id="mobileTrayHistoryBtn" class="conv-icon-btn conv-history-trigger mobile-search-tray__history"

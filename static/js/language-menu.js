@@ -22,8 +22,8 @@
 (function (root) {
     'use strict';
 
-    const ENTER = { duration: 180, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' };
-    const LEAVE = { duration: 120, easing: 'cubic-bezier(0.25, 0, 0.3, 1)' };
+    const ENTER = { duration: 260, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' };
+    const LEAVE = { duration: 180, easing: 'cubic-bezier(0.25, 0, 0.3, 1)' };
     const RISE = 'translateY(8px) scale(0.98)';
     const REST = 'translateY(0) scale(1)';
 

@@ -332,15 +332,15 @@
 /* ═══════════════════════════════════════════════════════ */
 
 .animate-fade-up {
-    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) both;
+    animation: shelah-fade-up var(--motion-dur-enter) var(--motion-ease-decel) both;
 }
 
 .animate-fade-in {
-    animation: shelah-fade-in var(--motion-dur-base) var(--motion-ease-out) both;
+    animation: shelah-fade-in var(--motion-dur-enter) var(--motion-ease-out) both;
 }
 
 .animate-scale-in {
-    animation: shelah-scale-in var(--motion-dur-base) var(--motion-ease-decel) both;
+    animation: shelah-scale-in var(--motion-dur-enter) var(--motion-ease-decel) both;
 }
 
 /* Modal entrance/exit (textsMenu, chapterGrid, calendar,
@@ -349,11 +349,11 @@
 
 /* Reader topbar slide-down */
 #readerTopBar {
-    transition: opacity var(--motion-dur-base) var(--motion-ease-out), transform var(--motion-dur-base) var(--motion-ease-out);
+    transition: opacity var(--motion-dur-base) var(--motion-ease-out), transform var(--motion-dur-enter) var(--motion-ease-decel);
 }
 
 #readerTopBar:not(.hidden) {
-    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) both;
+    animation: shelah-fade-up var(--motion-dur-enter) var(--motion-ease-decel) both;
 }
 
 /* Search suggestions: entrance/exit is ShelahMotion.present()/dismiss()
@@ -361,7 +361,7 @@
 
 /* Source dual template in article */
 #readerSources>div {
-    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) both;
+    animation: shelah-fade-up var(--motion-dur-enter) var(--motion-ease-decel) both;
 }
 
 #readerSources>div:nth-child(1) {
@@ -388,12 +388,12 @@
 #popularTextsGrid>* {
     /* backwards, not both: a fill kept after the end holds transform at
        translateY(0) and cancels the cards' hover lift below. */
-    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) backwards;
+    animation: shelah-fade-up var(--motion-dur-enter) var(--motion-ease-decel) backwards;
 }
 
 /* Home grid sections */
 .home-today-section {
-    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-decel) backwards;
+    animation: shelah-fade-up var(--motion-dur-enter) var(--motion-ease-decel) backwards;
 }
 
 /* Card hover lift effect for popular texts, customs cards */
@@ -950,7 +950,7 @@ body.search-loading .search-liftoff-underlay::before {
     height: 2px;
     background: currentColor;
     border-radius: 1px;
-    animation: shelah-scale-in var(--motion-dur-base) var(--motion-ease-decel) both;
+    animation: shelah-scale-in var(--motion-dur-enter) var(--motion-ease-decel) both;
 }
 
 /* The EN / עברית switch is 28px tall on a mouse; touch screens get the

@@ -48,10 +48,10 @@ function _springTransition(config, extra = {}) {
 
 
 // ── Default spring presets ──────────────────────────────────────────────────
-const SPRING_ENTER  = { stiffness: 320, damping: 28, mass: 0.8 };
-const SPRING_EXIT   = { stiffness: 280, damping: 26, mass: 0.8 };
-const SPRING_MOVE   = { stiffness: 260, damping: 22, mass: 0.9 };
-const TWEEN_OPACITY = { duration: 0.2, ease: [0.25, 0, 0.3, 1] };
+const SPRING_ENTER  = appleSpring(0.42, 0.06);
+const SPRING_EXIT   = appleSpring(0.32, 0);
+const SPRING_MOVE   = appleSpring(0.46, 0.1);
+const TWEEN_OPACITY = { duration: 0.24, ease: [0.25, 0, 0.3, 1] };
 
 
 // ── Core primitives ─────────────────────────────────────────────────────────
@@ -328,22 +328,22 @@ function _originMorph(mover, origin, preset) {
 //
 // Anchored menus (settings, profile, reader settings, city search) are opened and
 // dismissed constantly and carry no gesture momentum, so they get the quickest
-// motion in the app: critically damped springs (no overshoot tail to wait out)
-// that read as settled in ~0.2 s going in and ~0.13 s going out, with the fade
-// finishing first.  Every other preset keeps the `_FADE` defaults and its own spring.
-const SPRING_MENU_ENTER = appleSpring(0.22, 0);
-const SPRING_MENU_LEAVE = appleSpring(0.14, 0);
-const _FADE = { in: 0.18, out: 0.16, outMorph: 0.22, outEase: [0.4, 0, 1, 1] };
+// motion in the app: near-critically damped springs (no overshoot tail to wait
+// out) that read as settled in ~0.3 s going in and ~0.2 s going out, with the
+// fade finishing first. Quicker than that reads as a snap, not a movement.  Every other preset keeps the `_FADE` defaults and its own spring.
+const SPRING_MENU_ENTER = appleSpring(0.3, 0.02);
+const SPRING_MENU_LEAVE = appleSpring(0.2, 0);
+const _FADE = { in: 0.22, out: 0.2, outMorph: 0.24, outEase: [0.4, 0, 1, 1] };
 const _PRESENCE = {
     // Anchored dropdowns: rise a few px into place (or grow out of their trigger).
     popover: {
         y: 12, scale: 0.98, exitY: 8, exitScale: 0.98,
         spring: SPRING_MENU_ENTER, morphSpring: SPRING_MENU_ENTER, leave: SPRING_MENU_LEAVE,
         // Ease-out on the way out too: the fade starts moving at once instead of lingering.
-        fade: { in: 0.12, out: 0.1, outMorph: 0.12, outEase: [0.25, 0, 0.3, 1] },
+        fade: { in: 0.16, out: 0.14, outMorph: 0.16, outEase: [0.25, 0, 0.3, 1] },
     },
     // Phone bottom sheets / modal cards: slide up from below.
-    sheet:   { y: 56, scale: 1,    exitY: 40, exitScale: 1,   spring: { stiffness: 380, damping: 34, mass: 0.8 } },
+    sheet:   { y: 56, scale: 1,    exitY: 40, exitScale: 1,   spring: appleSpring(0.46, 0.05) },
     // Centred modal cards on larger screens.
     modal:   { y: 18, scale: 0.97, exitY: 10, exitScale: 0.98, spring: SPRING_ENTER },
     // Opacity only (scrims, full-screen dialog shells).
@@ -354,8 +354,8 @@ const _PRESENCE = {
     // simply appears where it lives, on phones and desktop alike.
     window:  {
         y: 0, scale: 0.985, exitY: 0, exitScale: 0.985,
-        spring: appleSpring(0.3, 0), leave: SPRING_MENU_LEAVE,
-        fade: { in: 0.22, out: 0.16 },
+        spring: appleSpring(0.36, 0), leave: SPRING_MENU_LEAVE,
+        fade: { in: 0.24, out: 0.18 },
     },
     // Surfaces docked to the bottom edge on phones (the conversation sheet,
     // its minimised bar, the search tray): travel the element's full height
@@ -364,14 +364,14 @@ const _PRESENCE = {
     // screen until the slide has finished instead of cutting it at the fade.
     drawer:  {
         y: 'full', scale: 1, exitY: 'full', exitScale: 1,
-        spring: appleSpring(0.42, 0.08), leave: appleSpring(0.3, 0),
+        spring: appleSpring(0.48, 0.08), leave: appleSpring(0.34, 0),
         fade: { in: 0.1, out: 0.24, outEase: [0.7, 0, 1, 1] },
         awaitExit: true,
     },
 };
 // Exit springs are critically damped so the element settles without a rebound
 // while it is already leaving.
-const SPRING_LEAVE = { stiffness: 420, damping: 40, mass: 0.8 };
+const SPRING_LEAVE = appleSpring(0.3, 0);
 const _presence = new WeakMap();
 
 const _xf = (y, scale) => `translateY(${y}px) scale(${scale})`;
@@ -428,7 +428,7 @@ async function _fadeReduced(el, from, to, state, token) {
 // past the animation's expected length. Springs have no fixed length: theirs
 // is a bound on the slowest preset's settle.
 const _CEILING_MARGIN_S = 0.2;
-const _SPRING_CEILING_S = 1;
+const _SPRING_CEILING_S = 1.4;
 function _withCeiling(promise, seconds) {
     let timer;
     const ceiling = new Promise((resolve) => {
@@ -585,47 +585,65 @@ export async function dismiss(el, { preset = 'popover', card = null, onHidden } 
  * in one gesture (click handler, expand handler, focus handler); each of those
  * used to stop the spring in flight and snap the pill to its destination.
  */
-const _slides = new WeakMap(); // el -> { target, control }
+const _slides = new WeakMap(); // el -> { target, x, v, t, control }
+// A touch softer than the presence springs, with a little give at the end, so
+// the pill glides between tabs and lands instead of stopping dead.
+const SPRING_SLIDE = appleSpring(0.44, 0.14);
 
 export function slideTo(el, x, { animate: withMotion = true } = {}) {
     if (!el) return;
     const slide = _slides.get(el);
     if (slide && slide.target === x) return slide.control;
 
+    const write = (value) => { el.style.transform = `translateX(${value}px)`; };
     const place = () => {
         slide?.control?.stop?.();
-        el.style.transform = `translateX(${x}px)`;
-        _slides.set(el, { target: x, control: null });
+        write(x);
+        _slides.set(el, { target: x, x, v: 0, t: 0, control: null });
     };
 
-    const animate = _motionAnimate();
     // No prior slide and no inline transform: first paint, nothing to travel from.
     const placedBefore = Boolean(slide) || Boolean(el.style.transform);
-    if (!withMotion || !animate || isMotionReduced() || !placedBefore) {
+    if (!withMotion || !_motionAnimate() || isMotionReduced() || !placedBefore) {
         place();
         return;
     }
 
-    // Continue from where an interrupted slide currently is (or from the
+    // Continue from where an interrupted slide is right now (or from the
     // instantly-placed position if the module loaded after the first paint).
-    const m = new DOMMatrixReadOnly(getComputedStyle(el).transform);
-    const start = Number.isFinite(m.m41) ? m.m41 : x;
+    let start = slide?.x;
+    if (!Number.isFinite(start)) {
+        const m = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+        start = Number.isFinite(m.m41) ? m.m41 : x;
+    }
     if (Math.abs(start - x) < 0.5) {
         place();
         return;
     }
+    // A second tap mid-slide hands the pill's current speed to the new spring,
+    // so it bends toward the new tab instead of stopping and starting again.
+    const now = globalThis.performance?.now?.() ?? Date.now();
+    const velocity = slide?.control && now - slide.t < 100 ? slide.v : 0;
     slide?.control?.stop?.();
-    const control = animate(
-        el,
-        { transform: [`translateX(${start}px)`, `translateX(${x}px)`] },
-        _springTransition({ stiffness: 420, damping: 32, mass: 0.8 }),
-    );
-    const entry = { target: x, control };
+    const entry = { target: x, x: start, v: velocity, t: now, control: null };
     _slides.set(el, entry);
-    // Once it lands the pill is simply "resting at x"; drop the handle.
-    const done = () => { if (_slides.get(el) === entry) entry.control = null; };
-    control.then?.(done, done);
-    return control;
+    entry.control = springValue(start, x, SPRING_SLIDE, {
+        velocity,
+        onUpdate: (value) => {
+            const t = globalThis.performance?.now?.() ?? Date.now();
+            if (t > entry.t) entry.v = ((value - entry.x) * 1000) / (t - entry.t);
+            entry.x = value;
+            entry.t = t;
+            write(value);
+        },
+        // Once it lands the pill is simply "resting at x"; drop the handle.
+        onComplete: () => {
+            if (_slides.get(el) !== entry) return;
+            entry.control = null;
+            entry.v = 0;
+        },
+    });
+    return entry.control;
 }
 
 // ── View transitions (audit §2.3, M-1) ──────────────────────────────────────

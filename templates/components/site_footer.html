@@ -1,57 +1,52 @@
-{#- Shared footer for the About/Help/Glossary/Tanakh pages, which cross-link to each
-    other (skipping whichever one is the current page) before the standard
-    legal links. Set via {% with current='about' %}{% include
-    'components/site_footer.html' %}{% endwith %} (current is one of 'about',
-    'help', 'glossary', 'tanakh'). about.html additionally passes show_copyright=true
-    to render the copyright line the other two pages omit. -#}
-<footer class="border-t py-6 text-center text-xs"
-        style="border-color: var(--surface-border); color: var(--ink-secondary); background: var(--surface-1);">
-        {%- if show_copyright %}
-        <p class="mb-2" {{ lang_attrs('common.copyright', year=current_year) }}>{{ _('common.copyright', year=current_year) }}</p>
-        {%- endif %}
-        <p>
-            <a href="/" class="font-semibold hover:underline" style="color: var(--ink-heading);"
-                {{ lang_attrs('site_footer.shelah_torah_encyclopedia') }}>{{ _('site_footer.shelah_torah_encyclopedia') }}</a>
-            &nbsp;·&nbsp;
-            {%- if current != 'about' %}
-            <a href="/about" class="hover:underline" style="color: var(--ink-secondary);"
-                {{ lang_attrs('site_footer.about') }}>{{ _('site_footer.about') }}</a>
-            &nbsp;·&nbsp;
-            {%- endif %}
-            {%- if current != 'help' %}
-            <a href="/help" class="hover:underline" style="color: var(--ink-secondary);"
-                {{ lang_attrs('site_footer.help') }}>{{ _('site_footer.help') }}</a>
-            &nbsp;·&nbsp;
-            {%- endif %}
-            {%- if current != 'glossary' %}
-            <a href="/glossary" class="hover:underline" style="color: var(--ink-secondary);"
-                {{ lang_attrs('site_footer.glossary') }}>{{ _('site_footer.glossary') }}</a>
-            &nbsp;·&nbsp;
-            {%- endif %}
-            {%- if current != 'tanakh' %}
-            <a href="/tanakh" class="hover:underline" style="color: var(--ink-secondary);"
-                {{ lang_attrs('site_footer.tanakh') }}>{{ _('site_footer.tanakh') }}</a>
-            &nbsp;·&nbsp;
-            {%- endif %}
-            <a href="/terms" class="hover:underline font-medium" style="color: var(--ink-heading);"
-                {{ lang_attrs('site_footer.terms_of_service') }}>{{ _('site_footer.terms_of_service') }}</a>
-            &nbsp;·&nbsp;
-            <a href="/privacy" class="hover:underline" style="color: var(--ink-secondary);"
-                {{ lang_attrs('site_footer.privacy_policy') }}>{{ _('site_footer.privacy_policy') }}</a>
-            &nbsp;·&nbsp;
-            <a href="/ai-disclosure" class="hover:underline" style="color: var(--ink-secondary);"
-                {{ lang_attrs('site_footer.ai_disclosure') }}>{{ _('site_footer.ai_disclosure') }}</a>
-            &nbsp;·&nbsp;
-            <a href="/acceptable-use" class="hover:underline" style="color: var(--ink-secondary);"
-                {{ lang_attrs('site_footer.acceptable_use') }}>{{ _('site_footer.acceptable_use') }}</a>
-            &nbsp;·&nbsp;
-            <a href="/dmca" class="hover:underline" style="color: var(--ink-secondary);"
-                {{ lang_attrs('site_footer.dmca') }}>{{ _('site_footer.dmca') }}</a>
-            &nbsp;·&nbsp;
-            <a href="/accessibility" class="hover:underline" style="color: var(--ink-secondary);"
-                {{ lang_attrs('site_footer.accessibility') }}>{{ _('site_footer.accessibility') }}</a>
-            &nbsp;·&nbsp;
-            <a href="/licenses" class="hover:underline" style="color: var(--ink-secondary);"
-                {{ lang_attrs('site_footer.licenses') }}>{{ _('site_footer.licenses') }}</a>
-        </p>
-    </footer>
+{#- The site footer, shared by About/Help/Glossary/Tanakh, the legal pages
+    (components/legal_footer.html) and the 404 page. A brand block (mark,
+    name, one-line tagline, copyright) beside three labelled link columns:
+    Explore, About, Legal. `current` (one of the link slugs, e.g. 'about',
+    'terms') marks the page on screen with aria-current instead of hiding it,
+    so the columns never change shape between pages. Styles: .site-footer in
+    static/css/legal.css. -#}
+{%- macro footer_link(slug, key, href=None) -%}
+<li><a href="{{ href or '/' ~ slug }}" class="site-footer-link"{% if current == slug %} aria-current="page"{% endif %}
+        {{ lang_attrs(key) }}>{{ _(key) }}</a></li>
+{%- endmacro -%}
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <div class="site-footer-brand">
+            <a href="/" class="site-footer-home">
+                <span class="site-footer-mark font-hebrew" aria-hidden="true">ש</span>
+                <span class="site-footer-name font-serif" {{ lang_attrs('site_footer.shelah_torah_encyclopedia') }}>{{ _('site_footer.shelah_torah_encyclopedia') }}</span>
+            </a>
+            <p class="site-footer-tagline" {{ lang_attrs('site_footer.tagline') }}>{{ _('site_footer.tagline') }}</p>
+            <p class="site-footer-copy" {{ lang_attrs('common.copyright', year=current_year) }}>{{ _('common.copyright', year=current_year) }}</p>
+        </div>
+        <nav class="site-footer-cols" {{ aria_attrs('site_footer.footer_label') }} aria-label="{{ _('site_footer.footer_label') }}">
+            <div class="site-footer-col">
+                <h2 class="site-footer-heading" {{ lang_attrs('site_footer.explore') }}>{{ _('site_footer.explore') }}</h2>
+                <ul>
+                    {{ footer_link('tanakh', 'site_footer.tanakh') }}
+                    {{ footer_link('glossary', 'site_footer.glossary') }}
+                    {{ footer_link('ask', 'site_footer.ask', '/') }}
+                </ul>
+            </div>
+            <div class="site-footer-col">
+                <h2 class="site-footer-heading" {{ lang_attrs('site_footer.about_section') }}>{{ _('site_footer.about_section') }}</h2>
+                <ul>
+                    {{ footer_link('about', 'site_footer.about') }}
+                    {{ footer_link('help', 'site_footer.help') }}
+                    {{ footer_link('accessibility', 'site_footer.accessibility') }}
+                </ul>
+            </div>
+            <div class="site-footer-col">
+                <h2 class="site-footer-heading" {{ lang_attrs('site_footer.legal') }}>{{ _('site_footer.legal') }}</h2>
+                <ul>
+                    {{ footer_link('terms', 'site_footer.terms_of_service') }}
+                    {{ footer_link('privacy', 'site_footer.privacy_policy') }}
+                    {{ footer_link('ai-disclosure', 'site_footer.ai_disclosure') }}
+                    {{ footer_link('acceptable-use', 'site_footer.acceptable_use') }}
+                    {{ footer_link('dmca', 'site_footer.dmca') }}
+                    {{ footer_link('licenses', 'site_footer.licenses') }}
+                </ul>
+            </div>
+        </nav>
+    </div>
+</footer>

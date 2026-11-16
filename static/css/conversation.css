@@ -216,13 +216,28 @@ body.conv-modal-open {
     /* Always leaves a strip of the chat showing, so it reads as a drawer. */
     width: min(var(--conv-hist-w), calc(100% - var(--sp-12)));
     min-width: 0;
-    padding: var(--sp-3) var(--sp-2) var(--sp-2);
+    /* Room on every side for the New button's focus ring, which the
+       scrolling drawer would otherwise clip. */
+    padding: var(--sp-3);
     border-block-start: 1px solid var(--conv-hairline);
     border-inline-end: 1px solid var(--conv-hairline);
     background: var(--conv-sidebar-bg);
     box-shadow: var(--shadow-lg);
     overflow-y: auto;
     overscroll-behavior: contain;
+}
+/* The strip of chat left beside the drawer is shaded, so it reads as sitting
+   behind the drawer rather than as a chat cut off mid-word. */
+.conv-panel[data-layout="desktop"][data-size="mini"][data-history="open"]::after {
+    content: '';
+    position: absolute;
+    inset-block: var(--conv-mini-head, 0px) 0;
+    inset-inline: 0;
+    z-index: 1;
+    border-end-start-radius: inherit;
+    border-end-end-radius: inherit;
+    background: color-mix(in srgb, var(--surface-scrim) 55%, transparent);
+    pointer-events: none;
 }
 /* Anchored on the start side the widget's free side is the end, and the drawer goes there. */
 .conv-panel[data-size="mini"][data-corner$="l"] .conv-sidebar {
@@ -1286,7 +1301,7 @@ body.conv-modal-open {
 
 /* The answer's opening as it is written; one skeleton line stays for the
    sources and details still to come. */
-.conv-turn__draft { margin-block-end: var(--sp-2); animation: conv-rise 200ms var(--motion-ease-out) both; }
+.conv-turn__draft { margin-block-end: var(--sp-2); animation: conv-rise var(--motion-dur-enter) var(--motion-ease-out) both; }
 .conv-turn__draft[hidden] { display: none; }
 [data-drafting="true"] > .conv-turn__skel ~ .conv-turn__skel { display: none; }
 
@@ -1385,7 +1400,7 @@ body.conv-modal-open {
 /* An answer replacing its skeleton reveals block by block. */
 .conv-turn--reveal .conv-answer > *,
 .conv-turn--reveal :is(.conv-customs, .conv-cites__title, .conv-cites, .conv-turn__actions) {
-    animation: conv-rise var(--motion-dur-base) var(--conv-ease) both;
+    animation: conv-rise var(--motion-dur-enter) var(--conv-ease) both;
 }
 .conv-turn--reveal .conv-answer > :nth-child(2) { animation-delay: var(--motion-stagger); }
 .conv-turn--reveal .conv-answer > :nth-child(3) { animation-delay: calc(var(--motion-stagger) * 2); }
@@ -1652,7 +1667,7 @@ body.conv-modal-open {
     outline: none;
     transform-origin: var(--citepop-origin, 50% 0);
 }
-.conv-citepop--in { animation: conv-citepop-in var(--motion-dur-fast) var(--conv-ease) both; }
+.conv-citepop--in { animation: conv-citepop-in var(--motion-dur-base) var(--conv-ease) both; }
 .conv-citepop__head {
     display: flex;
     align-items: center;
@@ -1760,7 +1775,7 @@ body.conv-modal-open {
     color: var(--ink-primary);
     box-shadow: var(--shadow-md);
     cursor: pointer;
-    animation: shelah-scale-in var(--motion-dur-base) var(--motion-ease-out) both;
+    animation: shelah-scale-in var(--motion-dur-enter) var(--motion-ease-out) both;
     transition: background-color var(--motion-dur-fast) var(--motion-ease-out),
         transform var(--motion-dur-fast) var(--motion-ease-out);
 }
@@ -1783,7 +1798,7 @@ body.conv-modal-open {
     font-size: var(--text-sm);
     text-align: center;
     /* Replays each time the notice un-hides (display: none -> flex). */
-    animation: shelah-fade-up var(--motion-dur-base) var(--motion-ease-out) both;
+    animation: shelah-fade-up var(--motion-dur-enter) var(--motion-ease-out) both;
 }
 .conv-panel[data-size="full"] .conv-notice {
     /* Same column as the transcript and composer it sits between. */
@@ -2058,7 +2073,7 @@ body.conv-modal-open {
     border: 1px solid var(--ctrl-border);
     border-radius: var(--radius-full);
     background: var(--surface-1);
-    animation: conv-rise var(--motion-dur-base) var(--conv-ease) both;
+    animation: conv-rise var(--motion-dur-enter) var(--conv-ease) both;
 }
 [dir="rtl"] .conv-signin-follow { padding: var(--sp-1) var(--sp-4) var(--sp-1) var(--sp-1); }
 .conv-signin-follow.hidden { display: none; }
@@ -2102,7 +2117,7 @@ body.conv-modal-open {
     box-shadow: var(--glass-shadow);
 }
 .conv-capdialog::backdrop { background: rgba(15, 23, 42, 0.5); }
-.conv-capdialog[open] { animation: conv-rise var(--motion-dur-base) var(--conv-ease) both; }
+.conv-capdialog[open] { animation: conv-rise var(--motion-dur-enter) var(--conv-ease) both; }
 .conv-capdialog__card {
     display: grid;
     gap: var(--sp-3);
@@ -2278,6 +2293,19 @@ body.conv-modal-open {
     transition: transform var(--motion-dur-fast) var(--motion-ease-out);
 }
 .mobile-search-tray__ask:active { transform: scale(0.97); }
+/* Dark theme: --accent-primary is a mid slate blue there, and the near-black
+   label and star on it read muddy at a glance. A lighter fill of the same
+   blue keeps the label at about 8:1. */
+[data-theme="dark"] .mobile-search-tray__ask,
+html.theme-dark .mobile-search-tray__ask,
+body.theme-dark .mobile-search-tray__ask {
+    background: color-mix(in srgb, var(--accent-primary) 72%, white);
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .mobile-search-tray__ask {
+        background: color-mix(in srgb, var(--accent-primary) 72%, white);
+    }
+}
 .mobile-search-tray__history {
     border: 1px solid var(--ctrl-border);
     background: var(--ctrl-bg);
@@ -2320,14 +2348,14 @@ body.conv-modal-open {
 [data-theme="dark"] .topbar-ask-btn,
 html.theme-dark .topbar-ask-btn,
 body.theme-dark .topbar-ask-btn {
-    --ask-from: var(--accent-primary);
+    --ask-from: color-mix(in srgb, var(--accent-primary) 80%, white);
     --ask-to: color-mix(in srgb, var(--accent-gold) 82%, black);
     --ask-from-hover: var(--accent-primary-hover);
     --ask-to-hover: var(--accent-gold);
 }
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .topbar-ask-btn {
-        --ask-from: var(--accent-primary);
+        --ask-from: color-mix(in srgb, var(--accent-primary) 80%, white);
         --ask-to: color-mix(in srgb, var(--accent-gold) 82%, black);
         --ask-from-hover: var(--accent-primary-hover);
         --ask-to-hover: var(--accent-gold);
@@ -2605,7 +2633,7 @@ body.theme-dark .topbar-ask-btn {
 
 /* ── Additions: turn entrance, draft chip, inline rename ─────────── */
 .conv-turn--enter {
-    animation: conv-rise var(--motion-dur-base) var(--conv-ease) both;
+    animation: conv-rise var(--motion-dur-enter) var(--conv-ease) both;
 }
 .conv-title-input {
     width: 100%;
