@@ -5929,3 +5929,108 @@ body.theme-dark #analyticsConsentAccept {
         transition: none;
     }
 }
+
+/* Chapter picker, plain numbers (shell.js openChapterGrid): a compact sheet
+   of numerals in soft cells, no borders, no repeated "Chapter" word (kept
+   for screen readers). The chapter on screen is filled with the accent. */
+.chapter-grid-items.chapter-grid-items-numbers {
+    grid-template-columns: repeat(auto-fill, minmax(var(--hit-min), 1fr));
+    gap: var(--sp-2);
+}
+
+.chapter-grid-items-numbers .chapter-grid-item {
+    min-height: var(--hit-min);
+    aspect-ratio: 1;
+    padding: 0;
+    border-color: transparent;
+    border-radius: var(--sp-3);
+    background: color-mix(in srgb, var(--ink-heading) 5%, transparent);
+    box-shadow: none;
+    transition: background-color 180ms var(--motion-ease-out, ease-out), color 180ms var(--motion-ease-out, ease-out), transform 160ms var(--motion-ease-out, ease-out);
+}
+
+.chapter-grid-items-numbers .chapter-grid-item-number {
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.chapter-grid-items-numbers .chapter-grid-item-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .chapter-grid-items-numbers .chapter-grid-item:hover {
+        background: color-mix(in srgb, var(--ink-heading) 10%, transparent);
+    }
+}
+
+.chapter-grid-items-numbers .chapter-grid-item:active {
+    transform: scale(0.94);
+}
+
+.chapter-grid-items-numbers .chapter-grid-item.is-current {
+    background: var(--accent-primary);
+    color: var(--surface-base, #fff);
+}
+
+.chapter-grid-items-numbers .chapter-grid-item.is-current .chapter-grid-item-number {
+    color: inherit;
+}
+
+@media (min-width: 1024px) {
+    .chapter-grid-items.chapter-grid-items-numbers {
+        grid-template-columns: repeat(auto-fill, minmax(3.25rem, 1fr));
+    }
+}
+
+/* Phones: the picker is a bottom sheet with a grab handle. */
+@media (max-width: 1023px) {
+    #chapterGridModal {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    #chapterGridModal > div {
+        max-width: none;
+        border-radius: var(--sp-6) var(--sp-6) 0 0;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    #chapterGridModal > div::before {
+        content: "";
+        display: block;
+        width: 36px;
+        height: 5px;
+        margin: var(--sp-2) auto 0;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--ink-heading) 22%, transparent);
+        flex-shrink: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chapter-grid-items-numbers .chapter-grid-item {
+        transition: background-color 180ms ease-out;
+    }
+
+    .chapter-grid-items-numbers .chapter-grid-item:active {
+        transform: none;
+    }
+}
+
+@media (max-width: 1023px) {
+    #chapterGridModal #closeChapterGridModalBtn {
+        top: var(--sp-4);
+        right: var(--sp-3);
+    }
+
+    html.rtl #chapterGridModal #closeChapterGridModalBtn {
+        right: auto;
+        left: var(--sp-3);
+    }
+}

@@ -3646,6 +3646,13 @@ function hasParenthetical(text) {
             return { preset: 'window', card };
         }
 
+        // The chapter picker rises from the bottom edge as a sheet on phones
+        // (style.css docks its card there); elsewhere it opens like a window.
+        function chapterGridMotion(modal) {
+            const phone = globalThis.matchMedia?.('(max-width: 1023px)').matches;
+            return phone ? { ...modalMotion(modal), preset: 'sheet' } : modalMotion(modal);
+        }
+
         // The drawers slide by their CSS classes: the closed offset differs by
         // side, breakpoint and direction (style.css, sidebar.css own it), and a
         // CSS transition retargets from wherever an interrupted slide got to.
@@ -8618,10 +8625,10 @@ function hasParenthetical(text) {
             // out of the top layer at once). The render code re-sets the grid's
             // layout classes on every open, so clearing them can wait as well.
             dismissEl(chapterGridModal, {
-                ...modalMotion(chapterGridModal),
+                ...chapterGridMotion(chapterGridModal),
                 onHidden: () => {
                     chapterGridModal.classList.remove('flex');
-                    chapterGridItems?.classList.remove('chapter-grid-items-prayer', 'chapter-grid-items-sectioned');
+                    chapterGridItems?.classList.remove('chapter-grid-items-prayer', 'chapter-grid-items-sectioned', 'chapter-grid-items-numbers');
                     if (chapterGridModal.open) chapterGridModal.close();
                 },
             });
@@ -8644,7 +8651,7 @@ function hasParenthetical(text) {
             chapterGridModal.classList.remove('hidden');
             chapterGridModal.classList.add('flex');
             if (!chapterGridModal.open) chapterGridModal.showModal();
-            if (!wasOpen) presentEl(chapterGridModal, { ...modalMotion(chapterGridModal), replay: true });
+            if (!wasOpen) presentEl(chapterGridModal, { ...chapterGridMotion(chapterGridModal), replay: true });
         }
 
         function renderChapterGridParashaStrip(bookName) {
@@ -8717,12 +8724,18 @@ function hasParenthetical(text) {
 
             renderChapterGridParashaStrip(safeBook);
 
+            // The chapter on screen, if this book is open, is marked current.
+            const refKey = (value) => String(value || '').replace(/[._]+/g, ' ').trim().toLowerCase();
+            const view = appState.currentView;
+            const openKey = view?.type === 'text' ? refKey(view.value) : '';
             const items = Array.from({ length: safeCount }, (_, idx) => idx + 1)
                 .map((chapterNum) => {
                     const ref = `${safeBook} ${chapterNum}`;
+                    const current = openKey && refKey(ref) === openKey;
                     return `
                         <button type="button"
-                            class="chapter-grid-item"
+                            class="chapter-grid-item${current ? ' is-current' : ''}"
+                            ${current ? 'aria-current="true"' : ''}
                             data-ref="${escapeHtml(ref)}">
                             <span class="chapter-grid-item-number">${chapterNum}</span>
                             <span class="chapter-grid-item-label">${escapeHtml(t('shell.chapter'))}</span>
@@ -8731,6 +8744,9 @@ function hasParenthetical(text) {
                 })
                 .join('');
 
+            // Plain chapter numbers: a compact sheet of numerals (the word
+            // "Chapter" stays for screen readers only).
+            chapterGridItems.classList.add('chapter-grid-items-numbers');
             chapterGridItems.innerHTML = items;
             _openChapterGridDialog();
         }
@@ -8876,6 +8892,7 @@ function hasParenthetical(text) {
                 chapterGridParashaStrip.innerHTML = '';
             }
 
+            chapterGridItems.classList.remove('chapter-grid-items-numbers');
             chapterGridItems.classList.toggle('chapter-grid-items-prayer', prayerMode);
             chapterGridItems.classList.toggle('chapter-grid-items-sectioned', sectionLookup.length > 0);
             applyPrayerGridSizeClass();
