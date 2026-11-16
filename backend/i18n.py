@@ -16,7 +16,9 @@ Templates get three helpers (see ``register``):
   placeholders filled.
 * ``lang_attrs('ns.key')``: the ``data-en="..." data-he="..."`` pair the
   existing client-side switch (static/js/topbar_shared.js) reads, so pages
-  moved onto catalogs behave exactly as before.
+  moved onto catalogs behave exactly as before. ``aria_attrs`` and
+  ``placeholder_attrs`` do the same for an accessible name
+  (``data-aria-<code>``) and an input hint (``data-<code>-placeholder``).
 * ``locales``: the switched-on languages, for a language menu.
 * ``i18n_client_catalog()``: the text the browser scripts look up
   (static/js/i18n.js), written into the page as a JSON data block.
@@ -181,17 +183,35 @@ def translate(code: str, key: str, **values: Any) -> str:
     return CATALOGS.translate(code, key, **values)
 
 
+def _language_data(key: str, attr: str, values: Mapping[str, Any]) -> Markup:
+    """One ``attr``-named data attribute per switched-on language with its own
+    text for ``key`` (the default language always). ``attr`` holds ``{code}``."""
+    pair = Markup('{}="{}"')
+    return Markup(" ").join(
+        pair.format(attr.format(code=code), _fill(text, values) if code != CATALOGS.default else translate(code, key, **values))
+        for code in CATALOGS.enabled
+        if (text := CATALOGS.lookup(code, key)) is not None or code == CATALOGS.default
+    )
+
+
 def lang_attrs(key: str, **values: Any) -> Markup:
     """``data-en="..." data-he="..."`` (one per switched-on language) for
     the client-side language switch. A language's own text only: one with
     no text for ``key`` gets no attribute and the browser shows the language
     that fills its gaps."""
-    pair = Markup('data-{}="{}"')
-    return Markup(" ").join(
-        pair.format(code, _fill(text, values) if code != CATALOGS.default else translate(code, key, **values))
-        for code in CATALOGS.enabled
-        if (text := CATALOGS.lookup(code, key)) is not None or code == CATALOGS.default
-    )
+    return _language_data(key, "data-{code}", values)
+
+
+def aria_attrs(key: str, **values: Any) -> Markup:
+    """``data-aria-en="..." data-aria-he="..."``: an accessible name per
+    language, which the browser copies into aria-label on a language switch."""
+    return _language_data(key, "data-aria-{code}", values)
+
+
+def placeholder_attrs(key: str, **values: Any) -> Markup:
+    """``data-en-placeholder="..." data-he-placeholder="..."``: an input's
+    hint per language, copied into placeholder on a language switch."""
+    return _language_data(key, "data-{code}-placeholder", values)
 
 
 def register(app: Any) -> None:
@@ -205,6 +225,8 @@ def register(app: Any) -> None:
     app.jinja_env.globals.update(
         _=page_text,
         lang_attrs=lang_attrs,
+        aria_attrs=aria_attrs,
+        placeholder_attrs=placeholder_attrs,
         i18n_client_catalog=lambda with_strings=True: _CLIENT_CATALOG if with_strings else _LANGUAGE_LIST,
         i18n_head_languages=lambda: {code: CATALOGS.locales[code].dir for code in CATALOGS.enabled},
         locales=[CATALOGS.locales[code] for code in CATALOGS.enabled],

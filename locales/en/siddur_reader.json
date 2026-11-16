@@ -9,5 +9,6 @@
   "previous": "Previous",
   "sections": "Sections",
   "siddur": "Siddur",
-  "today": "Today"
+  "today": "Today",
+  "siddur_with_rite": "Siddur · {rite}"
 }

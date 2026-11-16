@@ -9,5 +9,6 @@
   "previous": "הקודם",
   "sections": "חלקי התפילה",
   "siddur": "סידור",
-  "today": "היום"
+  "today": "היום",
+  "siddur_with_rite": "סידור · {rite}"
 }

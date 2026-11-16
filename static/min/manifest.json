@@ -84,7 +84,7 @@
         "source": "sha256:968aced3c444af8bc1de8da0954ad3704ee3acf4a2df7812da324e62c3890547"
       },
       "shell.js": {
-        "source": "sha256:99456767244f78bbc1b5cc7c307e60fe9c3fe954127ef9100a3e0232b53cb9b2"
+        "source": "sha256:aadb64e0f8c6df12f20beaedf7d6d2f3e8eece5e45bb2b675896f471166d5e2a"
       },
       "topbar_shared.js": {
         "source": "sha256:14b49e6ce59a5b4be11a16d883641a2a9cd000c72bb631d1215ffbc9d3aea5d4"
@@ -123,8 +123,8 @@
         "reader-ui.js": "sha256:afb5716e6b2112361fe652cc9efd2c6a4503ad9e560b898f0b00f992a4dc4fa8",
         "router.js": "sha256:0d047c46ceafc74c94158d9e13994ff59a61db4b5a0c56d2d5f331fe73a50ff8",
         "siddur-day.js": "sha256:90fc1ca893af55d80db83a1322b5e4c24c8c52c2fec2b10e17248032add6f3d5",
-        "siddur-reader.js": "sha256:0850263bed256740e1367d889aaca2486523ef961d78c2df1f33031a179a9e62",
-        "siddur.js": "sha256:fae402b07eb7502fa5c4bb6c3a4a78608d31594b6ad1dbc4ad9ff8431c8c7a0f",
+        "siddur-reader.js": "sha256:26b77e0be26044619e63ed9937786235fd7ec0d43d744ab9fb9243176d50a62d",
+        "siddur.js": "sha256:7746a00c275469d8542c99dded357c30c06a8a16e8cc27e879bf75c91d40dcc7",
         "source-cards.js": "sha256:f7119b86dae14a5fd5efd600c96bb4b59e52d9b1cc9f9ff4a43f3d3455fae653",
         "state.js": "sha256:2db1919d2ba9f9ba4f0b7ede3bf9b6634e8a73dd568a02fd27013cab4eb4fd5d",
         "text-versions.js": "sha256:0e6c803c2cc5bb4b1f2186208ae978e372e989a9f9a902eaa43dfdb53db52240",
@@ -142,11 +142,11 @@
         "js/i18n.js": "ecf7a5776dac",
         "js/language-menu.js": "a7d709230a26",
         "js/load-region.js": "cd7ccc80f956",
-        "js/main.js": "dd1b16973e60",
+        "js/main.js": "cff704d779fd",
         "js/motion.js": "78836d5f6141",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
-        "js/shell.js": "1faa5365edbd",
+        "js/shell.js": "35558785c207",
         "js/topbar_shared.js": "605af35b4fb0"
       },
       "unreached": []

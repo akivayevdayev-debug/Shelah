@@ -236,7 +236,7 @@ export function createSiddur({ fetchImpl = globalThis.fetch, deps, storage = glo
         }
         jump();
         if (where.service && !section) showContinue(root, toc, where);
-        return { label: reader.viewLabel(toc, where, isHebrew()), section };
+        return { label: reader.viewLabel(toc, where, { t, isHebrew: isHebrew() }), section };
     }
 
     async function open(value, { container }) {
@@ -278,7 +278,7 @@ export function createSiddur({ fetchImpl = globalThis.fetch, deps, storage = glo
         mount.setAttribute("aria-busy", "true");
         try {
             const toc = await loadToc();
-            mount.innerHTML = reader.tocMarkup(toc, { escapeHtml: deps.escapeHtml, isHebrew: isHebrew(), compact, current });
+            mount.innerHTML = reader.tocMarkup(toc, { t, escapeHtml: deps.escapeHtml, isHebrew: isHebrew(), compact, current });
         } finally {
             mount.setAttribute("aria-busy", "false");
         }

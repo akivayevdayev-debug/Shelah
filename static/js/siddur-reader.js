@@ -96,9 +96,9 @@ export function findPage(toc, query) {
 }
 
 // The label a view gets (tab title, Recent, bookmarks).
-export function viewLabel(toc, where, isHebrew) {
+export function viewLabel(toc, where, { t, isHebrew = false }) {
     const rite = isHebrew ? toc.rite.title.he : toc.rite.title.en;
-    if (!where?.service) return isHebrew ? `סידור · ${rite}` : `Siddur · ${rite}`;
+    if (!where?.service) return t('siddur_reader.siddur_with_rite', { rite });
     const service = titleFor(where.service, isHebrew);
     if (where.section && where.service.sections.length > 1) return `${titleFor(where.section, isHebrew)} · ${service}`;
     return service;
@@ -106,7 +106,7 @@ export function viewLabel(toc, where, isHebrew) {
 
 // ─── Table of contents (menus) ──────────────────────────────────────────────
 
-export function tocMarkup(toc, { escapeHtml, isHebrew = false, current = null, compact = false }) {
+export function tocMarkup(toc, { t, escapeHtml, isHebrew = false, current = null, compact = false }) {
     const groups = toc.occasions.map((occasion, index) => {
         const links = occasion.services.map((service) => {
             const primary = titleFor(service, isHebrew);
@@ -125,7 +125,7 @@ export function tocMarkup(toc, { escapeHtml, isHebrew = false, current = null, c
         return `<section class="siddur-toc-group"><h4 class="siddur-toc-occasion">${heading}</h4><ul class="siddur-toc-list">${links}</ul></section>`;
     }).join("");
     const rite = escapeHtml(isHebrew ? toc.rite.title.he : toc.rite.title.en);
-    return `<nav class="siddur-toc${compact ? " siddur-toc-compact" : ""}" aria-label="${escapeHtml(isHebrew ? "סידור" : "Siddur")}">
+    return `<nav class="siddur-toc${compact ? " siddur-toc-compact" : ""}" aria-label="${escapeHtml(t('siddur_reader.siddur'))}">
         <a class="siddur-toc-rite" href="${sitePath(toc.rite.slug)}" data-siddur-path="${toc.rite.slug}">${rite}</a>
         ${groups}
     </nav>`;

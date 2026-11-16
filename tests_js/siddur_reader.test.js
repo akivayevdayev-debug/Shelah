@@ -95,20 +95,20 @@ test('locate: the rite page, a service, one of its sections, and misses', async 
 
 test('viewLabel in both languages', async () => {
     const r = await reader();
-    assert.equal(r.viewLabel(TOC, { service: null }, false), 'Siddur · Sephardi (Edot HaMizrach)');
-    assert.equal(r.viewLabel(TOC, { service: null }, true), 'סידור · נוסח עדות המזרח');
-    assert.equal(r.viewLabel(TOC, r.locate(TOC, { service: 'shacharit' }), false), 'Shacharit');
-    assert.equal(r.viewLabel(TOC, r.locate(TOC, { service: 'shacharit', section: 'amida' }), false), 'Amida · Shacharit');
-    assert.equal(r.viewLabel(TOC, r.locate(TOC, { service: 'mincha' }), true), 'מנחה');
+    assert.equal(r.viewLabel(TOC, { service: null }, { t: tFor('en'), isHebrew: false }), 'Siddur · Sephardi (Edot HaMizrach)');
+    assert.equal(r.viewLabel(TOC, { service: null }, { t: tFor('he'), isHebrew: true }), 'סידור · נוסח עדות המזרח');
+    assert.equal(r.viewLabel(TOC, r.locate(TOC, { service: 'shacharit' }), { t: tFor('en'), isHebrew: false }), 'Shacharit');
+    assert.equal(r.viewLabel(TOC, r.locate(TOC, { service: 'shacharit', section: 'amida' }), { t: tFor('en'), isHebrew: false }), 'Amida · Shacharit');
+    assert.equal(r.viewLabel(TOC, r.locate(TOC, { service: 'mincha' }), { t: tFor('he'), isHebrew: true }), 'מנחה');
 });
 
 test('tocMarkup: grouped links, the current service marked, compact groups', async () => {
     const r = await reader();
-    const html = r.tocMarkup(TOC, { escapeHtml, current: 'mincha' });
+    const html = r.tocMarkup(TOC, { t, escapeHtml, current: 'mincha' });
     assert.match(html, /<h4 class="siddur-toc-occasion">Weekdays<\/h4>/);
     assert.match(html, /href="\/siddur\/edot-hamizrach\/mincha" data-siddur-path="edot-hamizrach\/mincha" aria-current="page"/);
     assert.match(html, /<span class="siddur-toc-alt" lang="he" dir="rtl">מנחה<\/span>/);
-    const compact = r.tocMarkup(TOC, { escapeHtml, compact: true, current: 'birkat-hamazon', isHebrew: true });
+    const compact = r.tocMarkup(TOC, { t: tFor('he'), escapeHtml, compact: true, current: 'birkat-hamazon', isHebrew: true });
     // The first group and the one holding the current service start open.
     assert.equal((compact.match(/<details class="siddur-toc-group" open>/g) || []).length, 2);
     assert.match(compact, /<summary class="siddur-toc-occasion">ברכות<\/summary>/);

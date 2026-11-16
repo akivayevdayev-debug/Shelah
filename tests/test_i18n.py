@@ -10,7 +10,7 @@ import pytest
 from backend import i18n
 
 ROOT = Path(__file__).resolve().parent.parent
-TEMPLATE_KEY = re.compile(r"""(?:\b_|lang_attrs)\(\s*['"]([\w.]+)['"]""")
+TEMPLATE_KEY = re.compile(r"""(?:\b_|lang_attrs|aria_attrs|placeholder_attrs)\(\s*['"]([\w.]+)['"]""")
 PLACEHOLDER = re.compile(r"\{(\w+)\}")
 
 
@@ -279,6 +279,18 @@ def test_lang_attrs_writes_a_third_language_text(russian_on):
 
 def test_lang_attrs_leaves_out_a_language_without_its_own_text(russian_on):
     assert "data-he" not in i18n.lang_attrs("page.only_en")
+
+
+def test_aria_attrs_writes_a_third_language_label(russian_on):
+    assert 'data-aria-ru="Привет, Ada"' in i18n.aria_attrs("page.hello", name="Ada")
+
+
+def test_aria_attrs_leaves_out_a_language_without_its_own_text(russian_on):
+    assert "data-aria-he" not in i18n.aria_attrs("page.only_en")
+
+
+def test_placeholder_attrs_writes_a_third_language_hint(russian_on):
+    assert 'data-ru-placeholder="Привет, Ada"' in i18n.placeholder_attrs("page.hello", name="Ada")
 
 
 def test_the_language_list_carries_no_interface_text(strict_catalogs):

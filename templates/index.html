@@ -420,9 +420,8 @@
                             <input type="text" id="searchInput"
                                 role="combobox" aria-autocomplete="list" aria-controls="searchSuggestions" aria-expanded="false"
                                 aria-label="Ask Sh'elah about any topic, halachah, or custom"
-                                placeholder="Ask Sh'elah about any topic, halachah, or custom..."
-                                data-en-placeholder="Ask Sh'elah about any topic, halachah, or custom..."
-                                data-he-placeholder="שאל את ש'אלה על כל נושא, הלכה או מנהג..."
+                                placeholder="{{ _('home.placeholder_ask_shelah_about_any_topic') }}"
+                                {{ placeholder_attrs('home.placeholder_ask_shelah_about_any_topic') }}
                                 class="w-full bg-[#fbf8f1] hover:bg-[#f8f2e8] transition text-sm sm:text-base p-2 pl-4 pr-14 rounded-full border border-[#d8d0c2] focus:border-[#b8aa90] focus:ring-2 focus:ring-[#d9cdb8]/80 focus:bg-[#fffdf8] focus:outline-hidden"
                                 autocomplete="off" required>
                             <div id="searchIcon" class="absolute right-3 top-2 text-slate-400" aria-hidden="true">
@@ -473,8 +472,7 @@
                         class="topbar-ask-btn hidden lg:inline-flex shrink-0"
                         aria-controls="convPanel" aria-expanded="false"
                         title="Ask Sh'elah — AI answers that cite their sources"
-                        data-aria-en="Ask Sh'elah — AI answers that cite their sources"
-                        data-aria-he="שאל את ש׳אלה — תשובות בינה מלאכותית עם מקורות">
+                        {{ aria_attrs('home.aria_ask_shelah_ai_answers_that') }}>
                         {# Icon-only: the AI mark in a navy-to-gold gradient. The second
                            path (a deeper/brighter shade per theme) fades in on hover. #}
                         <svg class="topbar-ask-btn__mark" viewBox="0 0 256 256" width="24" height="24" aria-hidden="true" focusable="false">
@@ -609,9 +607,8 @@
                     <button id="mobileTopbarAskBtn" type="button"
                         class="topbar-ask-btn inline-flex lg:hidden shrink-0"
                         aria-controls="convPanel" aria-expanded="false"
-                        aria-label="Ask Sh'elah — AI answers that cite their sources"
-                        data-aria-en="Ask Sh'elah — AI answers that cite their sources"
-                        data-aria-he="שאל את ש׳אלה — תשובות בינה מלאכותית עם מקורות">
+                        aria-label="{{ _('home.aria_ask_shelah_ai_answers_that') }}"
+                        {{ aria_attrs('home.aria_ask_shelah_ai_answers_that') }}>
                         <svg class="topbar-ask-btn__mark" viewBox="0 0 256 256" width="24" height="24" aria-hidden="true" focusable="false">
                             <defs>
                                 <linearGradient id="askMarkGradientPhone" x1="0" y1="0" x2="1" y2="1">
@@ -1353,12 +1350,11 @@
                                 <p class="text-[11px] font-bold uppercase tracking-widest text-[#566175] mb-2"
                                     {{ lang_attrs('home.search_by_city') }}>{{ _('home.search_by_city') }}</p>
                                 <div class="flex gap-2">
-                                    <input id="citySearchInput" type="text" aria-label="Search by city" placeholder="e.g. Jerusalem, New York..."
+                                    <input id="citySearchInput" type="text" aria-label="Search by city" placeholder="{{ _('home.placeholder_e_g_jerusalem_new_york') }}"
                                         role="combobox" aria-autocomplete="both" aria-expanded="false"
                                         aria-controls="citySuggestList" autocomplete="off" spellcheck="false"
                                         class="flex-1 text-sm px-3 py-1.5 rounded-lg border border-[#d7cebc] bg-white focus:outline-hidden focus:border-[#a09060] focus:ring-2 focus:ring-[#d9cdb8]/50"
-                                        data-en-placeholder="e.g. Jerusalem, New York..."
-                                        data-he-placeholder="לדוגמה: ירושלים, ניו יורק" />
+                                        {{ placeholder_attrs('home.placeholder_e_g_jerusalem_new_york') }} />
                                     <button id="citySearchSubmit" type="button" data-onclick="acceptCityInput"
                                         aria-label="Search city"
                                         class="px-3 py-1.5 rounded-lg bg-[#1f3f63] text-white text-sm font-semibold hover:bg-[#162d4a] transition">
@@ -1950,8 +1946,7 @@
                         <input id="libraryIndexFilterInput" type="text"
                             aria-label="Filter topics or texts"
                             class="w-full px-3 py-2 rounded-sm border border-slate-200 bg-slate-50 text-sm text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-300"
-                            placeholder="Filter topics or texts..." data-en-placeholder="Filter topics or texts..."
-                            data-he-placeholder="סנן נושאים או טקסטים..." />
+                            placeholder="{{ _('home.placeholder_filter_topics_or_texts') }}" {{ placeholder_attrs('home.placeholder_filter_topics_or_texts') }} />
                         <button id="libraryIndexFilterClear" type="button"
                             class="px-3 py-2 rounded-sm border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-600 hover:bg-slate-200 transition"
                             {{ lang_attrs('home.clear') }}>{{ _('home.clear') }}</button>
@@ -2001,7 +1996,7 @@
             <!-- The homepage lockup (same classes as #brandHomeBtn in the top bar),
                  so the full page reads as part of the same site. -->
             <button type="button" class="topbar-brand conv-sidebar__brand flex items-center gap-1.5 shrink-0"
-                aria-label="Go to home" data-aria-en="Go to home" data-aria-he="חזרה לדף הבית" data-conv-action="home">
+                aria-label="{{ _('home.aria_go_to_home') }}" {{ aria_attrs('home.aria_go_to_home') }} data-conv-action="home">
                 <span class="text-navy font-hebrew topbar-brand-icon font-semibold leading-tight">
                     ש
                 </span>
@@ -2026,8 +2021,8 @@
                 <span class="conv-live-dot" aria-hidden="true"></span>
                 <button type="button" id="convHistoryBtn" class="conv-icon-btn conv-history-trigger"
                     aria-haspopup="dialog" aria-expanded="false" aria-controls="convHistoryPop"
-                    aria-label="Conversation history" title="Conversation history"
-                    data-aria-en="Conversation history" data-aria-he="היסטוריית שיחות">
+                    aria-label="{{ _('home.aria_conversation_history') }}" title="Conversation history"
+                    {{ aria_attrs('home.aria_conversation_history') }}>
                     <span class="contents" aria-hidden="true">{{ phosphor('clock-counter-clockwise', size=16, class='h-4 w-4') }}</span>
                 </button>
                 <div class="conv-heading">
@@ -2145,28 +2140,28 @@
                         <span class="conv-theme-btn__sun">{{ phosphor('sun', size=16, class='h-4 w-4') }}</span>
                     </button>
                     <button type="button" class="conv-icon-btn conv-only-overlay-desktop" data-conv-size="mini"
-                        aria-label="Pop out to floating widget" title="Pop out to floating widget"
-                        data-aria-en="Pop out to floating widget" data-aria-he="הוצא לחלון צף">
+                        aria-label="{{ _('home.aria_pop_out_to_floating_widget') }}" title="Pop out to floating widget"
+                        {{ aria_attrs('home.aria_pop_out_to_floating_widget') }}>
                         <span class="contents" aria-hidden="true">{{ phosphor('picture-in-picture', size=16, class='h-4 w-4') }}</span>
                     </button>
                     <button type="button" id="convExpandBtn" class="conv-icon-btn conv-only-expand" data-conv-size="expand"
-                        aria-label="Open full page" title="Open full page"
-                        data-aria-en="Open full page" data-aria-he="פתח בעמוד מלא">
+                        aria-label="{{ _('home.aria_open_full_page') }}" title="Open full page"
+                        {{ aria_attrs('home.aria_open_full_page') }}>
                         <span class="contents" aria-hidden="true">{{ phosphor('arrows-out-simple', size=16, class='h-4 w-4') }}</span>
                     </button>
                     <button type="button" class="conv-icon-btn conv-only-full-desktop" data-conv-size="overlay"
-                        aria-label="Collapse to overlay" title="Collapse to overlay"
-                        data-aria-en="Collapse to overlay" data-aria-he="כווץ לחלון">
+                        aria-label="{{ _('home.aria_collapse_to_overlay') }}" title="Collapse to overlay"
+                        {{ aria_attrs('home.aria_collapse_to_overlay') }}>
                         <span class="contents" aria-hidden="true">{{ phosphor('arrows-in-simple', size=16, class='h-4 w-4') }}</span>
                     </button>
                     <button type="button" class="conv-icon-btn conv-only-mobile" data-conv-size="mini"
-                        aria-label="Minimize to bar" title="Minimize"
-                        data-aria-en="Minimize to bar" data-aria-he="מזער לפס">
+                        aria-label="{{ _('home.aria_minimize_to_bar') }}" title="Minimize"
+                        {{ aria_attrs('home.aria_minimize_to_bar') }}>
                         <span class="contents" aria-hidden="true">{{ phosphor('caret-down', size=16, class='h-4 w-4') }}</span>
                     </button>
                     <button type="button" class="conv-icon-btn conv-only-close" data-conv-action="close"
-                        aria-label="Close conversation" title="Close"
-                        data-aria-en="Close conversation" data-aria-he="סגור שיחה">
+                        aria-label="{{ _('home.aria_close_conversation') }}" title="Close"
+                        {{ aria_attrs('home.aria_close_conversation') }}>
                         <span class="contents" aria-hidden="true">{{ phosphor('x', size=14, class='h-3.5 w-3.5') }}</span>
                     </button>
                 </div>
@@ -2189,7 +2184,7 @@
                         <button type="button" class="conv-link-btn" data-conv-action="sign-in" {{ lang_attrs('home.sign_in_2') }}>{{ _('home.sign_in_2') }}</button>
                     </p>
                     <!-- A few places to start; pressing one fills the question box (it does not send). -->
-                    <ul class="conv-suggest" aria-label="Questions to start with" data-aria-en="Questions to start with" data-aria-he="שאלות להתחלה">
+                    <ul class="conv-suggest" aria-label="{{ _('home.aria_questions_to_start_with') }}" {{ aria_attrs('home.aria_questions_to_start_with') }}>
                         <li><button type="button" class="conv-suggest__btn" data-conv-suggest
                             {{ lang_attrs('home.what_blessing_do_i_say_when') }}>{{ _('home.what_blessing_do_i_say_when') }}</button></li>
                         <li><button type="button" class="conv-suggest__btn" data-conv-suggest
@@ -2207,10 +2202,10 @@
                     <div class="conv-skel conv-skel--bubble"></div>
                 </div>
                 <ol id="convMessages" class="conv-messages" role="log" aria-live="polite" aria-relevant="additions text"
-                    aria-label="Conversation" data-aria-en="Conversation" data-aria-he="שיחה"></ol>
+                    aria-label="{{ _('home.aria_conversation') }}" {{ aria_attrs('home.aria_conversation') }}></ol>
                 <button type="button" id="convJumpBtn" class="conv-jump hidden"
-                    aria-label="Jump to latest answer" title="Jump to latest answer"
-                    data-aria-en="Jump to latest answer" data-aria-he="קפוץ לתשובה האחרונה">
+                    aria-label="{{ _('home.aria_jump_to_latest_answer') }}" title="Jump to latest answer"
+                    {{ aria_attrs('home.aria_jump_to_latest_answer') }}>
                     <span class="contents" aria-hidden="true">{{ phosphor('caret-double-down', size=16, class='h-4 w-4') }}</span>
                 </button>
             </div>
@@ -2229,7 +2224,7 @@
                     <span id="convToastText" class="conv-toast__text"></span>
                     <button type="button" id="convToastAction" class="conv-toast__action hidden">Undo</button>
                     <button type="button" id="convToastClose" class="conv-toast__close"
-                        aria-label="Dismiss" data-aria-en="Dismiss" data-aria-he="סגור">
+                        aria-label="{{ _('home.aria_dismiss') }}" {{ aria_attrs('home.aria_dismiss') }}>
                         <span class="contents" aria-hidden="true">{{ phosphor('x', size=12, class='h-3 w-3') }}</span>
                     </button>
                 </output>
@@ -2247,12 +2242,12 @@
                         <!-- Dictation with the device's own speech recognition
                              (conversation-voice.js). Hidden where the browser has none. -->
                         <button type="button" id="convMicBtn" class="conv-mic hidden" aria-pressed="false"
-                            aria-label="Dictate your question" title="Dictate your question"
-                            data-aria-en="Dictate your question" data-aria-he="הכתבת השאלה">
+                            aria-label="{{ _('home.aria_dictate_your_question') }}" title="Dictate your question"
+                            {{ aria_attrs('home.aria_dictate_your_question') }}>
                             <span class="contents" aria-hidden="true">{{ phosphor('microphone', size=16, class='h-4 w-4') }}</span>
                         </button>
-                        <button type="submit" id="convSendBtn" class="conv-send" aria-label="Send" title="Send"
-                            data-aria-en="Send" data-aria-he="שלח">
+                        <button type="submit" id="convSendBtn" class="conv-send" aria-label="{{ _('home.aria_send') }}" title="Send"
+                            {{ aria_attrs('home.aria_send') }}>
                             <span class="contents" aria-hidden="true">{{ phosphor('arrow-up', size=14, class='h-3.5 w-3.5') }}</span>
                         </button>
                     </div>
@@ -2282,8 +2277,8 @@
         <div id="convAnswerLinkPark" hidden>
             <div id="convAnswerLink" class="answer-link hidden">
                 <button type="button" class="answer-link-btn" data-state="idle"
-                    aria-label="Share this answer publicly" title="Share this answer publicly"
-                    data-aria-en="Share this answer publicly" data-aria-he="שתף את התשובה בציבור">
+                    aria-label="{{ _('home.aria_share_this_answer_publicly') }}" title="Share this answer publicly"
+                    {{ aria_attrs('home.aria_share_this_answer_publicly') }}>
                     <span class="answer-link-btn__face answer-link-btn__face--idle">
                         <span class="contents" aria-hidden="true">{{ phosphor('share-network', size=16) }}</span>
                         <span {{ lang_attrs('home.share') }}>{{ _('home.share') }}</span>
@@ -2303,7 +2298,7 @@
                     <button type="button" class="answer-share-revoke" {{ lang_attrs('home.stop_sharing_2') }}>{{ _('home.stop_sharing_2') }}</button>
                 </p>
                 <input type="text" class="answer-link-fallback hidden" readonly
-                    aria-label="Link to this answer" data-aria-en="Link to this answer" data-aria-he="קישור לתשובה זו">
+                    aria-label="{{ _('home.aria_link_to_this_answer') }}" {{ aria_attrs('home.aria_link_to_this_answer') }}>
                 <output class="answer-link-status" aria-live="polite"></output>
             </div>
         </div>
@@ -2313,9 +2308,9 @@
         <span class="conv-resize conv-resize--x" data-resize-axis="x" aria-hidden="true"></span>
         <span class="conv-resize conv-resize--y" data-resize-axis="y" aria-hidden="true"></span>
         <button type="button" id="convResizeBtn" class="conv-resize conv-resize--corner"
-            aria-label="Resize the floating chat" title="Resize the floating chat"
+            aria-label="{{ _('home.aria_resize_the_floating_chat') }}" title="Resize the floating chat"
             aria-describedby="convResizeHint"
-            data-aria-en="Resize the floating chat" data-aria-he="שינוי גודל החלון הצף">
+            {{ aria_attrs('home.aria_resize_the_floating_chat') }}>
             <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false">
                 <path d="M1.5 10.5 10.5 1.5M1.5 6 6 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
             </svg>
@@ -2335,8 +2330,8 @@
             <span class="conv-pip__icon" aria-hidden="true">{{ phosphor('caret-up', size=14, class='h-3.5 w-3.5') }}</span>
         </button>
         <button type="button" class="conv-icon-btn" data-conv-action="close"
-            aria-label="Dismiss conversation" title="Dismiss"
-            data-aria-en="Dismiss conversation" data-aria-he="סגור שיחה">
+            aria-label="{{ _('home.aria_dismiss_conversation') }}" title="Dismiss"
+            {{ aria_attrs('home.aria_dismiss_conversation') }}>
             <span class="contents" aria-hidden="true">{{ phosphor('x', size=14, class='h-3.5 w-3.5') }}</span>
         </button>
     </div>
@@ -2366,8 +2361,8 @@
         </button>
         <button type="button" id="mobileTrayHistoryBtn" class="conv-icon-btn conv-history-trigger mobile-search-tray__history"
             aria-haspopup="dialog" aria-expanded="false" aria-controls="convHistoryPop"
-            aria-label="Conversation history" title="Conversation history"
-            data-aria-en="Conversation history" data-aria-he="היסטוריית שיחות">
+            aria-label="{{ _('home.aria_conversation_history') }}" title="Conversation history"
+            {{ aria_attrs('home.aria_conversation_history') }}>
             <span class="contents" aria-hidden="true">{{ phosphor('clock-counter-clockwise', size=18, class='h-[18px] w-[18px]') }}</span>
         </button>
     </fieldset>

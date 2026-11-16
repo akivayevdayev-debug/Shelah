@@ -11306,24 +11306,28 @@ function hasParenthetical(text) {
             });
         }
 
+        // An input's hint for `lang`: its data-<code>-placeholder (the template's
+        // placeholder_attrs), else the one of the language that fills its gaps,
+        // ending with English.
+        function placeholderFor(input, lang) {
+            const code = window.ShelahI18n.chain(lang).find((c) => input.dataset[`${c}Placeholder`]);
+            return code ? input.dataset[`${code}Placeholder`] : input.placeholder;
+        }
+
         function localizePlaceholders(lang) {
             const searchInput = document.getElementById('searchInput');
             if (searchInput) {
-                searchInput.placeholder = lang === 'he' ? searchInput.dataset.hePlaceholder : searchInput.dataset.enPlaceholder;
+                searchInput.placeholder = placeholderFor(searchInput, lang);
                 // The accessible name follows the visible prompt, minus its trailing dots.
                 searchInput.setAttribute('aria-label', searchInput.placeholder.replace(/[.…]+$/, ''));
             }
 
             if (libraryIndexFilterInput) {
-                libraryIndexFilterInput.placeholder = lang === 'he'
-                    ? (libraryIndexFilterInput.dataset.hePlaceholder || 'סנן נושאים או טקסטים...')
-                    : (libraryIndexFilterInput.dataset.enPlaceholder || 'Filter topics or texts...');
+                libraryIndexFilterInput.placeholder = placeholderFor(libraryIndexFilterInput, lang);
             }
             const citySearchInput = document.getElementById('citySearchInput');
             if (citySearchInput) {
-                citySearchInput.placeholder = lang === 'he'
-                    ? (citySearchInput.dataset.hePlaceholder || 'לדוגמה: ירושלים, ניו יורק')
-                    : (citySearchInput.dataset.enPlaceholder || 'e.g. Jerusalem, New York...');
+                citySearchInput.placeholder = placeholderFor(citySearchInput, lang);
                 // Typing direction follows the interface language (setHtmlLanguage ran first).
                 citySearchInput.dir = document.documentElement.getAttribute('dir') || 'ltr';
             }
