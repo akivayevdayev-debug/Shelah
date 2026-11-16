@@ -156,19 +156,15 @@ html.rtl .prose ol {
 ═══════════════════════════════════════════════════════════════════ */
 
 .info-box {
-    background: var(--surface-pill);
-    border: 1px solid var(--accent-gold);
-    border-left: 3px solid var(--accent-gold);
+    /* An even hairline all round and a faint gold wash, not a thick side stripe. */
+    border: 1px solid color-mix(in srgb, var(--accent-gold) 55%, transparent);
+    background: color-mix(in srgb, var(--accent-gold) 7%, var(--surface-pill));
     border-radius: var(--radius-md);
     padding: var(--sp-4) var(--sp-6);
     margin: var(--sp-6) 0;
     color: var(--ink-primary);
 }
 
-html.rtl .info-box {
-    border-left: 1px solid var(--accent-gold);
-    border-right: 3px solid var(--accent-gold);
-}
 
 /* Inline icon standing in for an emoji that used to lead a line of body
    text (e.g. the AI-disclosure / privacy info boxes, the licenses
