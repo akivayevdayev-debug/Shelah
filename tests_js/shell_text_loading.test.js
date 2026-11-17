@@ -658,6 +658,43 @@ test('scrolling up near the top prepends the previous chapter and keeps the read
     }
 });
 
+test('the previous chapter is spliced in only after the finger lifts and scrolling settles', async () => {
+    const page = await readFrom('Genesis 2', {
+        [textUrl('Genesis 2')]: chapter(2, { prev: 'Genesis 1', next: '' }),
+        [textUrl('Genesis 1')]: chapter(1, { prev: '', next: 'Genesis 2' }),
+    });
+    try {
+        page.eval('readerScrollActivity.touching = true');
+        const pending = call(page, 'loadPreviousTextChunk');
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        assert.deepEqual(stateOf(page).chain, ['Genesis 2'], 'nothing moves under a finger');
+        assert.equal(page.eval('infiniteReaderState.loadingPrev'), true, 'and no second fetch starts');
+        page.eval('readerScrollActivity.touching = false; readerScrollActivity.lastScrollAt = performance.now()');
+        await pending;
+        assert.deepEqual(stateOf(page).chain, ['Genesis 1', 'Genesis 2']);
+        assert.equal(page.eval('infiniteReaderState.loadingPrev'), false);
+    } finally {
+        page.close();
+    }
+});
+
+test('a previous chapter fetched for one text is not spliced into the next one', async () => {
+    const page = await readFrom('Genesis 2', {
+        [textUrl('Genesis 2')]: chapter(2, { prev: 'Genesis 1', next: '' }),
+        [textUrl('Genesis 1')]: chapter(1, { prev: '', next: 'Genesis 2' }),
+    });
+    try {
+        page.eval('readerScrollActivity.touching = true');
+        const pending = call(page, 'loadPreviousTextChunk');
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        page.eval('resetInfiniteReaderState(window.currentTextPayload); readerScrollActivity.touching = false');
+        await pending;
+        assert.deepEqual(stateOf(page).chain, ['Genesis 2']);
+    } finally {
+        page.close();
+    }
+});
+
 test('a previous chapter that is already on the page, fails, or throws is dropped quietly', async () => {
     const seen = await readFrom('Genesis 2', { [textUrl('Genesis 2')]: chapter(2, { prev: 'Genesis 1', next: '' }) });
     try {
@@ -708,18 +745,20 @@ test('only an upward scroll near the top asks for the previous chapter', async (
     const page = await readFrom('Genesis 2', { [textUrl('Genesis 2')]: chapter(2, { prev: 'Genesis 1', next: '' }) });
     try {
         page.eval(`window.__prevLoads = 0; loadPreviousTextChunk = () => { window.__prevLoads += 1; return Promise.resolve(); }`);
-        page.eval(`window.__scroll = 800; Object.defineProperty(window, 'pageYOffset', { configurable: true, get: () => window.__scroll })`);
+        page.eval(`window.__scroll = 3000; Object.defineProperty(window, 'pageYOffset', { configurable: true, get: () => window.__scroll })`);
         page.eval('setupScrollUpListener()');
         const scrollTo = (value) => {
             page.window.__scroll = value;
             page.window.readerScrollUpListenerEl.dispatchEvent(new page.window.Event('scroll'));
         };
-        scrollTo(900); // down
-        scrollTo(700); // up, but far from the top
-        scrollTo(300); // up and near the top
+        // It asks about two and a half screens ahead (at least 1500px), so
+        // the chapter is ready before a fling reaches the top.
+        scrollTo(3200); // down
+        scrollTo(2600); // up, but far from the top
+        scrollTo(1200); // up and within reach of the top
         assert.equal(page.eval('window.__prevLoads'), 1);
-        scrollTo(300); // not moving
-        scrollTo(350); // down
+        scrollTo(1200); // not moving
+        scrollTo(1250); // down
         assert.equal(page.eval('window.__prevLoads'), 1);
         scrollTo(100); // up again
         assert.equal(page.eval('window.__prevLoads'), 2);

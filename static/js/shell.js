@@ -372,7 +372,16 @@ function hasParenthetical(text) {
             seenRefs: new Set(),
             currentVisibleChunkIndex: 0,
             sectionObserver: null,
+            // Bumped on every reset, so a previous chapter fetched for one
+            // text is never spliced into the next one opened meanwhile.
+            generation: 0,
         };
+
+        // When the reader last scrolled and whether a finger is down on it.
+        // The previous chapter is spliced in only once both have settled:
+        // WebKit drops a scrollTop correction written during a momentum
+        // fling, which on phones left the view several verses off.
+        const readerScrollActivity = { lastScrollAt: 0, touching: false };
         window.currentTextPayloadChain = [];
         let suggestionFetchSerial = 0;
         let suppressSuggestionMenu = false;
@@ -6563,6 +6572,7 @@ function hasParenthetical(text) {
         }
 
         function resetInfiniteReaderState(seedPayload = null) {
+            infiniteReaderState.generation += 1;
             infiniteReaderState.loading = false;
             infiniteReaderState.loadingPrev = false;
             infiniteReaderState.nextRef = String(seedPayload?.next || '').trim();
@@ -6821,7 +6831,27 @@ function hasParenthetical(text) {
                 ? (window.pageYOffset || 0)
                 : scrollEl.scrollTop;
 
+            if (window.readerTouchListenerEl !== scrollEl) {
+                const onTouchStart = () => { readerScrollActivity.touching = true; };
+                const onTouchEnd = (event) => {
+                    if (!event.touches?.length) readerScrollActivity.touching = false;
+                    readerScrollActivity.lastScrollAt = performance.now();
+                };
+                if (window.readerTouchListenerEl && window.readerTouchHandlers) {
+                    const [start, end] = window.readerTouchHandlers;
+                    window.readerTouchListenerEl.removeEventListener('touchstart', start);
+                    window.readerTouchListenerEl.removeEventListener('touchend', end);
+                    window.readerTouchListenerEl.removeEventListener('touchcancel', end);
+                }
+                scrollEl.addEventListener('touchstart', onTouchStart, { passive: true });
+                scrollEl.addEventListener('touchend', onTouchEnd, { passive: true });
+                scrollEl.addEventListener('touchcancel', onTouchEnd, { passive: true });
+                window.readerTouchListenerEl = scrollEl;
+                window.readerTouchHandlers = [onTouchStart, onTouchEnd];
+            }
+
             window.readerScrollUpHandler = function () {
+                readerScrollActivity.lastScrollAt = performance.now();
                 if (appState.currentView?.type !== 'text') return;
                 const scrollPos = (scrollEl === document.documentElement || scrollEl === document.body)
                     ? (window.pageYOffset || 0)
@@ -6832,7 +6862,11 @@ function hasParenthetical(text) {
                 // can't itself trigger an unrequested previous-chunk load.
                 const scrolledUp = scrollPos < lastScrollPos;
                 lastScrollPos = scrollPos;
-                if (scrolledUp && scrollPos <= 350 && infiniteReaderState.prevRef && !infiniteReaderState.loadingPrev && !infiniteReaderState.loading) {
+                // Fetch a good way ahead (about two and a half screens), so the
+                // chapter above is ready before a fling reaches the top.
+                const viewport = scrollEl.clientHeight || window.innerHeight || 800;
+                const prefetchAt = Math.max(1500, viewport * 2.5);
+                if (scrolledUp && scrollPos <= prefetchAt && infiniteReaderState.prevRef && !infiniteReaderState.loadingPrev && !infiniteReaderState.loading) {
                     void loadPreviousTextChunk();
                 }
             };
@@ -6953,6 +6987,22 @@ function hasParenthetical(text) {
         }
 
         // ─── Load Previous Text Chunk ─────────────────────────────────────────────
+        // Resolves once no finger is on the reader and it hasn't scrolled for
+        // a moment (a momentum fling fires scroll events until it stops).
+        function waitForReaderScrollIdle(quietMs = 140) {
+            return new Promise((resolve) => {
+                const check = () => {
+                    const quietFor = performance.now() - readerScrollActivity.lastScrollAt;
+                    if (!readerScrollActivity.touching && quietFor >= quietMs) {
+                        resolve();
+                        return;
+                    }
+                    setTimeout(check, Math.max(16, quietMs - quietFor));
+                };
+                check();
+            });
+        }
+
         async function loadPreviousTextChunk() {
             if (infiniteReaderState.loadingPrev) return;
             const requestedPrevRef = String(infiniteReaderState.prevRef || '').trim();
@@ -6964,55 +7014,65 @@ function hasParenthetical(text) {
                 return;
             }
 
+            const generation = infiniteReaderState.generation;
             infiniteReaderState.loadingPrev = true;
+            let prevData = null;
 
             try {
-                const { payload: prevData, resolvedRef } = await fetchTextPayloadWithFallback(requestedPrevRef);
+                const fetched = await fetchTextPayloadWithFallback(requestedPrevRef);
+                prevData = fetched.payload;
                 if (!prevData || prevData.error) {
                     logReliability('text-prev-load-error', {
                         requested: requestedPrevRef,
                         error: prevData?.error || 'unknown',
                     });
-                    infiniteReaderState.prevRef = '';
-                    return;
-                }
-
-                await ensurePayloadAdjacentRefs(prevData);
-
-                const resolved = String(prevData.ref || resolvedRef || requestedPrevRef).trim();
-                const resolvedKey = getRefTrackingKey(resolved);
-
-                if (!Array.isArray(window.currentTextPayloadChain)) {
-                    window.currentTextPayloadChain = window.currentTextPayload ? [window.currentTextPayload] : [];
-                }
-
-                if (!resolvedKey || !infiniteReaderState.seenRefs.has(resolvedKey)) {
-                    window.currentTextPayloadChain.unshift(prevData); // prepend
-                    if (resolvedKey) infiniteReaderState.seenRefs.add(resolvedKey);
-                    // Shift visible index forward since we prepended
-                    infiniteReaderState.currentVisibleChunkIndex += 1;
-                }
-
-                infiniteReaderState.prevRef = String(prevData.prev || '').trim();
-                const newPrevKey = getRefTrackingKey(infiniteReaderState.prevRef);
-                if (newPrevKey && infiniteReaderState.seenRefs.has(newPrevKey)) {
-                    infiniteReaderState.prevRef = '';
+                    prevData = null;
+                } else {
+                    await ensurePayloadAdjacentRefs(prevData);
+                    prevData.__resolvedRef = String(prevData.ref || fetched.resolvedRef || requestedPrevRef).trim();
                 }
             } catch (error) {
                 logReliability('text-prev-load-network-error', {
                     requested: requestedPrevRef,
                     message: error.message,
                 });
-                infiniteReaderState.prevRef = '';
-            } finally {
-                infiniteReaderState.loadingPrev = false;
-                // Anchor on the section the reader was looking at, not the
-                // absolute scrollTop: restoring the same scrollTop after a
-                // prepend left the view inside the *new* section near the
-                // top, so the next momentum scroll event immediately loaded
-                // another one — chaining several sections back in one swipe.
-                renderCurrentTextByLayout({ anchorToVisibleChunk: true });
+                prevData = null;
             }
+
+            // Splice it in only while nothing is moving, so the scroll
+            // correction below lands instead of being overridden by a fling.
+            if (prevData) await waitForReaderScrollIdle();
+            if (generation !== infiniteReaderState.generation) return;
+
+            if (!prevData) {
+                infiniteReaderState.prevRef = '';
+                infiniteReaderState.loadingPrev = false;
+                return;
+            }
+
+            const resolvedKey = getRefTrackingKey(prevData.__resolvedRef);
+            delete prevData.__resolvedRef;
+
+            if (!Array.isArray(window.currentTextPayloadChain)) {
+                window.currentTextPayloadChain = window.currentTextPayload ? [window.currentTextPayload] : [];
+            }
+
+            if (!resolvedKey || !infiniteReaderState.seenRefs.has(resolvedKey)) {
+                window.currentTextPayloadChain.unshift(prevData); // prepend
+                if (resolvedKey) infiniteReaderState.seenRefs.add(resolvedKey);
+                // Shift visible index forward since we prepended
+                infiniteReaderState.currentVisibleChunkIndex += 1;
+            }
+
+            infiniteReaderState.prevRef = String(prevData.prev || '').trim();
+            const newPrevKey = getRefTrackingKey(infiniteReaderState.prevRef);
+            if (newPrevKey && infiniteReaderState.seenRefs.has(newPrevKey)) {
+                infiniteReaderState.prevRef = '';
+            }
+            infiniteReaderState.loadingPrev = false;
+            // Anchor on the verse the reader was looking at, not the absolute
+            // scrollTop, so the same verse stays put under the prepended chapter.
+            renderCurrentTextByLayout({ anchorToVisibleChunk: true });
         }
 
         function renderTextRowsForPayload(data, layout) {
