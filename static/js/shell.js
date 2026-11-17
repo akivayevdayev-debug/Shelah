@@ -8686,13 +8686,111 @@ function hasParenthetical(text) {
             // layout classes on every open, so clearing them can wait as well.
             dismissEl(chapterGridModal, {
                 ...chapterGridMotion(chapterGridModal),
-                onHidden: () => {
-                    chapterGridModal.classList.remove('flex');
-                    chapterGridItems?.classList.remove('chapter-grid-items-prayer', 'chapter-grid-items-sectioned', 'chapter-grid-items-numbers');
-                    if (chapterGridModal.open) chapterGridModal.close();
-                },
+                onHidden: afterChapterGridHidden,
             });
         }
+
+        function afterChapterGridHidden() {
+            chapterGridModal.classList.remove('flex');
+            chapterGridItems?.classList.remove('chapter-grid-items-prayer', 'chapter-grid-items-sectioned', 'chapter-grid-items-numbers');
+            if (chapterGridModal.open) chapterGridModal.close();
+        }
+
+        // Phones: the chapter sheet follows a drag on its header (handle, title
+        // and subtitle alike) and a pull-down from the top of its list. Let go
+        // far or fast enough and it leaves the way it came, at the finger's
+        // speed; otherwise it springs back. Same feel as the calendar sheet
+        // (calendar-detail.js).
+        (function wireChapterSheetDrag() {
+            const card = chapterGridModal?.querySelector(':scope > div');
+            const grip = card?.querySelector('.chapter-grid-header');
+            const list = card?.querySelector('.overflow-y-auto');
+            if (!card || !grip || !list) return;
+            const HYSTERESIS = 6;
+            const DECELERATION = 0.998;
+            const spring = (d, b = 0) => window.ShelahMotion?.appleSpring?.(d, b) ?? { stiffness: 300, damping: 34, mass: 1 };
+            const isPhone = () => Boolean(globalThis.matchMedia?.('(max-width: 1023px)').matches);
+            let y = 0;
+            let drag = null;
+            let motion = null;
+            let scrim = '';
+
+            const setY = (value) => {
+                y = value;
+                card.style.transform = value ? `translateY(${value}px)` : '';
+                const shown = Math.round(100 * Math.min(Math.max(1 - Math.max(value, 0) / (card.offsetHeight || 1), 0), 1));
+                chapterGridModal.style.backgroundColor = value > 0 && scrim ? `color-mix(in srgb, ${scrim} ${shown}%, transparent)` : '';
+            };
+            const stop = () => { motion?.stop?.(); motion = null; };
+
+            const begin = (pointY) => {
+                if (!isPhone() || !chapterGridModal.open || chapterGridModal.classList.contains('is-hiding')) return false;
+                stop();
+                if (!y) scrim = getComputedStyle(chapterGridModal).backgroundColor;
+                drag = { y0: pointY, base: y, active: false, samples: [{ t: performance.now(), y: pointY }] };
+                return true;
+            };
+            const move = (pointY) => {
+                if (!drag) return false;
+                if (!drag.active) {
+                    if (Math.abs(pointY - drag.y0) < HYSTERESIS) return false;
+                    drag.active = true;
+                    drag.y0 = pointY; // engage without a jump
+                }
+                let target = drag.base + (pointY - drag.y0);
+                if (target < 0) target = -((-target * 300 * 0.55) / (300 + 0.55 * -target)); // soft ceiling
+                setY(target);
+                const now = performance.now();
+                drag.samples.push({ t: now, y: pointY });
+                while (drag.samples.length > 2 && now - drag.samples[0].t > 120) drag.samples.shift();
+                return true;
+            };
+            const end = () => {
+                const d = drag;
+                drag = null;
+                if (!d?.active) return;
+                const first = d.samples[0];
+                const last = d.samples[d.samples.length - 1];
+                const velocity = ((last.y - first.y) / Math.max(last.t - first.t, 1)) * 1000; // px/s, + is down
+                const height = card.offsetHeight || 1;
+                const projected = y + (velocity / 1000) * DECELERATION / (1 - DECELERATION);
+                const leave = projected > height * 0.4;
+                const done = () => {
+                    motion = null;
+                    if (!leave) { setY(0); return; }
+                    chapterGridModal.classList.add('hidden');
+                    afterChapterGridHidden();
+                    setY(0);
+                };
+                motion = window.ShelahMotion?.springValue?.(y, leave ? height : 0, leave ? spring(0.34) : spring(0.4, 0.12), {
+                    velocity, onUpdate: setY, onComplete: done,
+                }) ?? null;
+                if (!motion) done();
+            };
+
+            grip.addEventListener('pointerdown', (e) => {
+                if (e.button > 0 || e.target.closest('button') || !begin(e.clientY)) return;
+                try { grip.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+            });
+            grip.addEventListener('pointermove', (e) => { if (drag) move(e.clientY); });
+            grip.addEventListener('pointerup', end);
+            grip.addEventListener('pointercancel', end);
+
+            // A pull-down from the top of the list also dismisses, like iOS
+            // sheets; the browser would claim it as scroll, so touch events.
+            list.addEventListener('touchstart', (e) => {
+                if (list.scrollTop > 0 || e.touches.length !== 1) return;
+                begin(e.touches[0].clientY);
+            }, { passive: true });
+            list.addEventListener('touchmove', (e) => {
+                if (!drag) return;
+                const pointY = e.touches[0].clientY;
+                if (!drag.active && (list.scrollTop > 0 || pointY - drag.y0 < -HYSTERESIS)) { drag = null; return; }
+                if (move(pointY) && e.cancelable) e.preventDefault();
+            }, { passive: false });
+            list.addEventListener('touchend', end);
+            list.addEventListener('touchcancel', end);
+        })();
 
         // <dialog> closes on Escape natively; keep that path routed through
         // closeChapterGrid() (not the raw native close) so the class cleanup

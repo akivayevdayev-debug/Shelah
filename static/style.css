@@ -6031,15 +6031,26 @@ body.theme-dark #analyticsConsentAccept {
         padding-bottom: env(safe-area-inset-bottom);
     }
 
-    #chapterGridModal > div::before {
+    /* The header is the grab area (shell.js wireChapterSheetDrag): the
+       handle sits inside its tinted band, and the whole band drags. */
+    #chapterGridModal .chapter-grid-header {
+        position: relative;
+        padding-top: var(--sp-6);
+        touch-action: none;
+        cursor: grab;
+        user-select: none;
+    }
+
+    #chapterGridModal .chapter-grid-header::before {
         content: "";
-        display: block;
+        position: absolute;
+        top: var(--sp-2);
+        left: 50%;
         width: 36px;
         height: 5px;
-        margin: var(--sp-2) auto 0;
         border-radius: 999px;
-        background: color-mix(in srgb, var(--ink-heading) 22%, transparent);
-        flex-shrink: 0;
+        transform: translateX(-50%);
+        background: color-mix(in srgb, var(--ink-heading) 24%, transparent);
     }
 }
 
@@ -6054,14 +6065,20 @@ body.theme-dark #analyticsConsentAccept {
 }
 
 @media (max-width: 1023px) {
+    /* Centred on the title line (header padding 24px + half its 28px line). */
     #chapterGridModal #closeChapterGridModalBtn {
-        top: var(--sp-4);
-        right: var(--sp-3);
+        top: calc(var(--sp-6) + 14px - var(--hit-min) / 2);
+        right: var(--sp-2);
+        display: grid;
+        place-items: center;
+        inline-size: var(--hit-min);
+        block-size: var(--hit-min);
+        border-radius: 999px;
     }
 
     html.rtl #chapterGridModal #closeChapterGridModalBtn {
         right: auto;
-        left: var(--sp-3);
+        left: var(--sp-2);
     }
 }
 
