@@ -3773,6 +3773,22 @@ function hasParenthetical(text) {
             return mainCanScroll ? mainContainer : pageScroller;
         }
 
+        // The visible band of a scroll pane in viewport coordinates. On
+        // phones the bars float over #mainContainer, which reserves their
+        // height as scroll-padding, so the band starts below the top bars
+        // and ends above the tab bar.
+        function scrollViewportBand(scrollEl) {
+            const isPage = scrollEl === document.documentElement || scrollEl === document.body;
+            if (isPage) return { top: 0, height: window.innerHeight };
+            const style = getComputedStyle(scrollEl);
+            const padTop = Number.parseFloat(style.scrollPaddingTop) || 0;
+            const padBottom = Number.parseFloat(style.scrollPaddingBottom) || 0;
+            return {
+                top: scrollEl.getBoundingClientRect().top + padTop,
+                height: scrollEl.clientHeight - padTop - padBottom,
+            };
+        }
+
         function getPrimaryScrollTop() {
             const target = getPrimaryScrollElement();
             if (target === document.documentElement || target === document.body) {
@@ -6928,10 +6944,8 @@ function hasParenthetical(text) {
             if (!chunks.length) return;
 
             const scrollEl = getPrimaryScrollElement();
-            const isPageTarget = scrollEl === document.documentElement || scrollEl === document.body;
-            const viewportTop = isPageTarget ? 0 : scrollEl.getBoundingClientRect().top;
-            const viewportHeight = isPageTarget ? window.innerHeight : scrollEl.clientHeight;
-            const readingLine = viewportTop + viewportHeight * 0.08;
+            const band = scrollViewportBand(scrollEl);
+            const readingLine = band.top + band.height * 0.08;
 
             const current = chunks.find((c) => c.rect.bottom > readingLine) || chunks.at(-1);
             const resolvedIndex = current.idx;
@@ -7337,8 +7351,7 @@ function hasParenthetical(text) {
 
         function captureReaderChunkAnchor() {
             const target = getPrimaryScrollElement();
-            const pageTarget = target === document.documentElement || target === document.body;
-            const viewTop = pageTarget ? 0 : target.getBoundingClientRect().top;
+            const viewTop = scrollViewportBand(target).top;
             for (const chunk of readerAnchorElements()) {
                 const rect = chunk.getBoundingClientRect();
                 if (rect.bottom <= viewTop) continue;
@@ -7362,7 +7375,7 @@ function hasParenthetical(text) {
                 : null;
             const target = getPrimaryScrollElement();
             const pageTarget = target === document.documentElement || target === document.body;
-            const viewTop = pageTarget ? 0 : target.getBoundingClientRect().top;
+            const viewTop = scrollViewportBand(target).top;
             const delta = (restingViewportTop(row || chunk) - viewTop) - anchor.offset;
             if (Math.abs(delta) < 1) return true;
             // 'instant' — html has scroll-behavior:smooth, so 'auto' would

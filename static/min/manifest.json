@@ -4,7 +4,7 @@
   "css": {
     "sources": {
       "css/tokens.css": "sha256:15b9291910cab990c043c25107fb85e0baaf3f996a7c110b41380ec926d77871",
-      "style.css": "sha256:ef4ed29adf9db50b704c1ed13cf5252ec4c892fcdbf8f0079e2dcef56deabfed",
+      "style.css": "sha256:6f90c1dbc1d86eb119447e39a527f8aece2cd27ecc964dfdc6b4e95d83fe8d6e",
       "css/typography.css": "sha256:000d5096d5c7322aff99d2fd1ef679d209f50c963a21f37fa38b28ed03ded543",
       "css/reader.css": "sha256:32c409022b110fa248fb1150d1ebd2a5759e1ac9ea261253bac40add901ab7f8",
       "css/sidebar.css": "sha256:fc261c75dc4ba0abded264ec89ed57923c9db7264a21fc24b62a0186fe24a699",
@@ -19,19 +19,19 @@
       "css/loading.css": "sha256:a77745f67cd45511d26a3d55fe58b68b77270a49eb29147210986078585cac4f",
       "css/tailwind.css": "sha256:7e003ddf0bb1216222651038416f47937c183c2e5e6d041eb3e2fa43fcaaaa4e"
     },
-    "sourcesHash": "301a99f14d04e774b5f04b1c30ca4286d6a35152af13b6edfe10549ed3202c1b",
+    "sourcesHash": "4f6d1bb9a3016e2519e81f7ea9985b52c15aa0aa7ffa893ffdb1c58bd76e6bf4",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "301a99f14d04e774b5f04b1c30ca4286d6a35152af13b6edfe10549ed3202c1b",
+        "sourcesHash": "4f6d1bb9a3016e2519e81f7ea9985b52c15aa0aa7ffa893ffdb1c58bd76e6bf4",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "301a99f14d04e774b5f04b1c30ca4286d6a35152af13b6edfe10549ed3202c1b",
+        "sourcesHash": "4f6d1bb9a3016e2519e81f7ea9985b52c15aa0aa7ffa893ffdb1c58bd76e6bf4",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "301a99f14d04e774b5f04b1c30ca4286d6a35152af13b6edfe10549ed3202c1b",
+        "sourcesHash": "4f6d1bb9a3016e2519e81f7ea9985b52c15aa0aa7ffa893ffdb1c58bd76e6bf4",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
@@ -84,7 +84,7 @@
         "source": "sha256:968aced3c444af8bc1de8da0954ad3704ee3acf4a2df7812da324e62c3890547"
       },
       "shell.js": {
-        "source": "sha256:dccc99e3ca957ffa90cd78237978c16d2abf92bef40de5408993527f2e6f37c1"
+        "source": "sha256:493249c4cd7b1c95a4accf61553676bc6146803a4f8c43279fef78251e94388a"
       },
       "topbar_shared.js": {
         "source": "sha256:14b49e6ce59a5b4be11a16d883641a2a9cd000c72bb631d1215ffbc9d3aea5d4"
@@ -105,7 +105,7 @@
         "calendar-detail.js": "sha256:1d37abdeb1a02cfeeb3d48ffe8fa9ed5e9b75e1462f1287efb0760422c979f5e",
         "citation-markers.js": "sha256:4a6039289400517dfa19bb0fff4aa4971c3e1191371ecd20b814f98e90693e6e",
         "citation-popover.js": "sha256:f75664f4b3a90721d426f3bbc4324eaf7abfcc6a9d0be5491719e9bec2791174",
-        "commentary-preload.js": "sha256:cf65eaeb787cf274935198f04b0272ea693fef7c565c5516c3fd6bf203e706ff",
+        "commentary-preload.js": "sha256:3ebd68ac512e625f55f5522dd5cc283873b631d2794cee78cd60bf489a09442c",
         "common-answers.js": "sha256:86fa4cd291bf9dee16748edb6ad074200f2af82f0a80d2cee05523cd1d9849de",
         "conversation-api.js": "sha256:90e204fc21e4d650d8209f53b4196d27c49a5b3abf33aefd32f550b8450d508a",
         "conversation-entry.js": "sha256:25f9b62da24bcf0965429fa8162bc3b9dfa348b17ce0fdfa0d898ef945d24677",
@@ -142,11 +142,11 @@
         "js/i18n.js": "ecf7a5776dac",
         "js/language-menu.js": "24920c6f2bcc",
         "js/load-region.js": "cd7ccc80f956",
-        "js/main.js": "fec5a3906079",
+        "js/main.js": "4a26b9784808",
         "js/motion.js": "dd92c8fa6c18",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
-        "js/shell.js": "be35ec04e60e",
+        "js/shell.js": "654f48adab59",
         "js/topbar_shared.js": "605af35b4fb0"
       },
       "unreached": []

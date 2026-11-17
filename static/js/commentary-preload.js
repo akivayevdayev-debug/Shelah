@@ -50,8 +50,14 @@ export function readingLineY(scrollEl, doc, win, ratio = READING_LINE_RATIO) {
         || scrollEl === doc.documentElement
         || scrollEl === doc.body
         || scrollEl === doc.scrollingElement;
-    const top = isPage ? 0 : scrollEl.getBoundingClientRect().top;
-    const height = isPage ? win.innerHeight : scrollEl.clientHeight;
+    // On phones the bars float over the scroll pane, which reserves their
+    // height as scroll-padding; the reading line is measured from the part
+    // of the pane that is actually visible between them.
+    const pad = isPage ? null : win.getComputedStyle?.(scrollEl);
+    const padTop = Number.parseFloat(pad?.scrollPaddingTop) || 0;
+    const padBottom = Number.parseFloat(pad?.scrollPaddingBottom) || 0;
+    const top = (isPage ? 0 : scrollEl.getBoundingClientRect().top) + padTop;
+    const height = (isPage ? win.innerHeight : scrollEl.clientHeight) - padTop - padBottom;
     return top + height * ratio;
 }
 

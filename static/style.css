@@ -4115,39 +4115,69 @@ html.theme-dark,
 }
 
 /* ── Phone bars: one material, one height ───────────────────────────
-   The top bar (47px, drop shadow) and the tab bar (60px, flat) read as
-   two different objects. On phones both are now the same 56px pane of
-   the same quiet glass: a translucent fill of the page surface, a
-   hairline on the edge that meets the content, and a faint light line
-   just inside it (the "rim" that makes a pane read as material rather
-   than a flat strip). No backdrop blur: the bars are layout rows, so
-   nothing ever sits behind them to blur, and a sticky blur re-composites
-   on every scroll frame. The content pane instead fades out over its
-   last few pixels where it meets each bar (a scroll edge, not a hard
-   divider), so text slips under the glass instead of being cut off. */
+   The top bar, the reader's bar and the tab bar are one 56px pane of
+   frosted glass each, and the content scrolls UNDER them: the content row
+   (.app-row) is pulled up and down beneath the bars by their heights, and
+   #mainContainer pads its content back by the same amount, so nothing is
+   hidden at rest but text slides behind the glass as it scrolls. The pane:
+   a translucent fill of the page surface, a backdrop blur with a little
+   saturation so colour behind it still reads, a hairline where it meets
+   the content and a faint light line just inside it. Without
+   backdrop-filter (or with reduced transparency) the fill goes near-solid.
+   The blur is light on purpose (7px): at the 16-20px usual for glass,
+   body text behind a bar dissolves into the page colour and the pane
+   reads as an opaque strip; 7px keeps a soft frost you can see.
+   --right-sidebar-top-offset is the measured height of everything above
+   the content (top bar, plus the reader bar when it shows); shell.js
+   syncReaderTopBarOffset() keeps it current. */
 @media (max-width: 1023px) {
     .library-shell {
         --bar-height: 56px;
-        --bar-fill: linear-gradient(180deg,
-                color-mix(in srgb, var(--surface-base) 88%, white) 0%,
-                color-mix(in srgb, var(--surface-base) 94%, transparent) 100%);
+        --bar-top-total: var(--right-sidebar-top-offset, calc(var(--bar-height) + env(safe-area-inset-top)));
+        --bar-bottom-total: calc(var(--bar-height) + env(safe-area-inset-bottom));
+        --bar-fill: color-mix(in srgb, var(--surface-base) 94%, transparent);
         --bar-edge: color-mix(in srgb, var(--surface-border) 80%, transparent);
         --bar-rim: rgba(255, 255, 255, 0.7);
+        --bar-blur: blur(7px) saturate(1.8);
     }
 
-    header.topbar {
+    @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+        .library-shell {
+            --bar-fill: color-mix(in srgb, var(--surface-base) 66%, transparent);
+        }
+
+        header.topbar,
+        .library-shell #readerTopBar,
+        .mobile-bottom-tabs {
+            -webkit-backdrop-filter: var(--bar-blur);
+            backdrop-filter: var(--bar-blur);
+        }
+    }
+
+    /* !important only to out-rank `.library-shell .bg-white` (forced
+       solid, !important) — the header carries that utility class. */
+    .library-shell header.topbar {
         box-sizing: border-box;
         min-height: calc(var(--bar-height) + env(safe-area-inset-top));
         padding-top: env(safe-area-inset-top);
         padding-bottom: 0;
-        background: var(--bar-fill);
+        background: var(--bar-fill) !important;
         border-bottom: 1px solid var(--bar-edge);
         box-shadow: inset 0 -1px 0 var(--bar-rim);
     }
 
+    .library-shell #readerTopBar {
+        z-index: 40;
+        background: var(--bar-fill);
+        border-top: 0;
+        border-bottom: 1px solid var(--bar-edge);
+    }
+
     .mobile-bottom-tabs {
+        position: relative;
+        z-index: 40;
         box-sizing: border-box;
-        min-height: calc(var(--bar-height) + env(safe-area-inset-bottom));
+        min-height: var(--bar-bottom-total);
         background: var(--bar-fill);
         border-top: 1px solid var(--bar-edge);
         box-shadow: inset 0 1px 0 var(--bar-rim);
@@ -4158,20 +4188,41 @@ html.theme-dark,
         padding-block: 6px;
     }
 
-    #mainContainer {
-        -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--sp-2), #000 calc(100% - var(--sp-2)), transparent 100%);
-        mask-image: linear-gradient(180deg, transparent 0, #000 var(--sp-2), #000 calc(100% - var(--sp-2)), transparent 100%);
+    /* The content row runs under the bars... */
+    .library-shell > .app-row {
+        z-index: 0;
+        margin-top: calc(-1 * var(--bar-top-total));
+        margin-bottom: calc(-1 * var(--bar-bottom-total));
+    }
+
+    /* ...and its scroll pane pads the content back out from under them, so
+       at rest nothing is covered; scroll-padding keeps anchor jumps and
+       scrollIntoView landing below the glass rather than behind it. */
+    .library-shell #mainContainer {
+        padding-top: var(--bar-top-total);
+        padding-bottom: var(--bar-bottom-total);
+        scroll-padding-top: var(--bar-top-total);
+        scroll-padding-bottom: var(--bar-bottom-total);
     }
 
     :is([data-theme="dark"], body.theme-dark) .library-shell {
-        --bar-fill: linear-gradient(180deg,
-                color-mix(in srgb, var(--surface-topbar) 94%, transparent) 0%,
-                color-mix(in srgb, var(--surface-base) 94%, transparent) 100%);
+        --bar-fill: color-mix(in srgb, var(--surface-topbar) 95%, transparent);
         --bar-edge: var(--surface-border);
-        --bar-rim: rgba(255, 255, 255, 0.04);
+        --bar-rim: rgba(255, 255, 255, 0.05);
+    }
+
+    @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+        :is([data-theme="dark"], body.theme-dark) .library-shell {
+            --bar-fill: color-mix(in srgb, var(--surface-topbar) 70%, transparent);
+        }
+    }
+
+    :is([data-theme="dark"], body.theme-dark) header.topbar {
+        background: var(--bar-fill) !important;
     }
 
     :is([data-theme="dark"], body.theme-dark) header.topbar,
+    :is([data-theme="dark"], body.theme-dark) .library-shell #readerTopBar,
     :is([data-theme="dark"], body.theme-dark) .mobile-bottom-tabs {
         background: var(--bar-fill);
         border-color: var(--bar-edge);
@@ -4187,10 +4238,18 @@ html.theme-dark,
     }
 }
 
-@media (max-width: 1023px) and (prefers-contrast: more) {
-    #mainContainer {
-        -webkit-mask-image: none;
-        mask-image: none;
+@media (max-width: 1023px) and (prefers-reduced-transparency: reduce),
+       (max-width: 1023px) and (prefers-contrast: more) {
+    .library-shell,
+    :is([data-theme="dark"], body.theme-dark) .library-shell {
+        --bar-fill: var(--surface-base);
+    }
+
+    header.topbar,
+    .library-shell #readerTopBar,
+    .mobile-bottom-tabs {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
     }
 }
 
