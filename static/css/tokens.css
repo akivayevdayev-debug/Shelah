@@ -29,7 +29,7 @@
 /* ═══════════════════════════════════════════════════════════════════
    FALLBACK FACES (audit L-12)
    Local fonts resized to the web fonts' metrics and named right after them
-   in the font stacks, so text drawn before Cardo or Ezra SIL arrive takes
+   in the font stacks, so text drawn before the web fonts or Ezra SIL arrive takes
    the space it will keep, and nothing reflows when they swap in (both
    stay font-display: swap). Measured in Chrome on a paragraph at 1000px:
    size-adjust matches the width; ascent/descent-override are the web
@@ -37,28 +37,150 @@
    missing (no Georgia on Android, say) the face is skipped and the stack
    carries on as before.
    ═══════════════════════════════════════════════════════════════════ */
+/* Sh'elah's own type, served from /static/fonts (all SIL Open Font License):
+   Newsreader for headings, the wordmark and English reading; Hanken Grotesk for
+   the interface; Frank Ruhl Libre for Hebrew headings and the ש mark. Ezra SIL
+   (style.css) stays for pointed verse text. Each face is split by script, so a
+   page only downloads the subsets its text uses. */
 @font-face {
-    font-family: 'Cardo Fallback';
-    src: local('Georgia'), local('Georgia Regular');
-    font-weight: 400;
-    size-adjust: 96.57%;
-    ascent-override: 102.52%;
-    descent-override: 37.69%;
-    line-gap-override: 0%;
+    font-family: 'Hanken Grotesk';
+    src: url('/static/fonts/hanken-grotesk-italic-latin-ext.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: italic;
+    font-display: swap;
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
 @font-face {
-    font-family: 'Cardo Fallback';
+    font-family: 'Hanken Grotesk';
+    src: url('/static/fonts/hanken-grotesk-italic-latin.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: italic;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Hanken Grotesk';
+    src: url('/static/fonts/hanken-grotesk-normal-latin-ext.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Hanken Grotesk';
+    src: url('/static/fonts/hanken-grotesk-normal-latin.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Frank Ruhl Libre';
+    src: url('/static/fonts/frank-ruhl-libre-normal-hebrew.woff2') format('woff2');
+    font-weight: 300 900;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+
+@font-face {
+    font-family: 'Frank Ruhl Libre';
+    src: url('/static/fonts/frank-ruhl-libre-normal-latin-ext.woff2') format('woff2');
+    font-weight: 300 900;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Frank Ruhl Libre';
+    src: url('/static/fonts/frank-ruhl-libre-normal-latin.woff2') format('woff2');
+    font-weight: 300 900;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Newsreader';
+    src: url('/static/fonts/newsreader-italic-latin-ext.woff2') format('woff2');
+    font-weight: 200 800;
+    font-style: italic;
+    font-display: swap;
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Newsreader';
+    src: url('/static/fonts/newsreader-italic-latin.woff2') format('woff2');
+    font-weight: 200 800;
+    font-style: italic;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Newsreader';
+    src: url('/static/fonts/newsreader-normal-latin-ext.woff2') format('woff2');
+    font-weight: 200 800;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Newsreader';
+    src: url('/static/fonts/newsreader-normal-latin.woff2') format('woff2');
+    font-weight: 200 800;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Newsreader Fallback';
+    src: local('Georgia'), local('Georgia Regular');
+    font-weight: 400;
+    size-adjust: 97.24%;
+    ascent-override: 75.59%;
+    descent-override: 27.25%;
+    line-gap-override: 0.00%;
+}
+
+@font-face {
+    font-family: 'Newsreader Fallback';
     src: local('Georgia Bold'), local('Georgia-Bold');
     font-weight: 700;
-    size-adjust: 89.67%;
-    ascent-override: 110.4%;
-    descent-override: 40.59%;
-    line-gap-override: 0%;
+    size-adjust: 90.29%;
+    ascent-override: 81.40%;
+    descent-override: 29.35%;
+    line-gap-override: 0.00%;
+}
+
+@font-face {
+    font-family: 'Hanken Grotesk Fallback';
+    src: local('Arial'), local('ArialMT');
+    size-adjust: 102.68%;
+    ascent-override: 97.39%;
+    descent-override: 29.51%;
+    line-gap-override: 0.00%;
+}
+
+@font-face {
+    font-family: 'Frank Ruhl Libre Fallback';
+    src: local('Times New Roman'), local('TimesNewRomanPSMT');
+    size-adjust: 111.34%;
+    ascent-override: 85.96%;
+    descent-override: 30.00%;
+    line-gap-override: 0.00%;
 }
 
 /* Hebrew letters and points only: Latin in a Hebrew run falls through to
-   Cardo, as it did before. */
+   the serif stack. */
 @font-face {
     font-family: 'Ezra SIL Fallback';
     src: local('Times New Roman'), local('TimesNewRomanPSMT');
@@ -256,12 +378,13 @@
     --control-strong-bg-hover: var(--ctrl-filled-hover);
 
     /* ── Typography ─────────────────────────────────────────────────── */
-    --font-serif:  'Cardo', 'Cardo Fallback', Georgia, serif;
-    --font-sans:   'Inter', system-ui, sans-serif;
-    --font-hebrew: 'Ezra SIL', 'Ezra SIL Fallback', 'Cardo', 'Cardo Fallback', serif;
+    --font-serif:  'Newsreader', 'Frank Ruhl Libre', 'Newsreader Fallback', 'Frank Ruhl Libre Fallback', Georgia, serif;
+    --font-sans:   'Hanken Grotesk', 'Hanken Grotesk Fallback', system-ui, sans-serif;
+    --font-hebrew-display: 'Frank Ruhl Libre', 'Frank Ruhl Libre Fallback', 'Times New Roman', serif;
+    --font-hebrew: 'Ezra SIL', 'Ezra SIL Fallback', 'Frank Ruhl Libre', 'Newsreader', serif;
     /* Emphasis in Hebrew is a thin stroke on the regular face (see style.css):
        English bold puts about 35% more ink on a line than regular, and this
-       does the same for Ezra SIL and for Cardo's Hebrew. */
+       does the same for Ezra SIL's single weight. */
     --he-emphasis-stroke: 0.025em;
 
     /* ── Calendar event colors (by Hebcal category — must match
@@ -700,16 +823,18 @@ body.theme-dark {
     --tw-dark-focus-border:     #504840;
     --tw-dark-checkbox-accent:  #807050;
 
-    /* ── Corpus accent tokens ───────────────────────────────────────── */
+    /* ── Corpus accent tokens: a lighter tint of each light-mode corpus
+       colour, so every library keeps its own hue in dark mode (all ≥ 7:1). */
     --accent-menu:              #b8b2a8;
     --accent-zmanim:            #b0ada4;
-    --accent-tanakh:            #a8b4b0;
-    --accent-mishnah:           #acaab8;
-    --accent-talmud:            #b8b0a0;
-    --accent-talmud-hover:      #a8906a;
-    --accent-halakhah:          #b0a8a8;
-    --accent-customs:           #aca6b8;
-    --accent-thought:           #a8ada8;
+    --accent-tanakh:            #6db8c8;
+    --accent-mishnah:           #82b4e3;
+    --accent-talmud:            #d6b26a;
+    --accent-talmud-hover:      #e6c584;
+    --accent-halakhah:          #e8909e;
+    --accent-customs:           #c0a2e8;
+    --accent-thought:           #72c9b4;
+    --accent-siddur:            #a9b6f5;
 
     /* ── Reader ─────────────────────────────────────────────────────── */
     --range-complete:           #8b6f47;   /* keep — non-grey slider accent */
@@ -776,7 +901,7 @@ body.theme-dark {
     --home-label-color:         #989080;
     --fc-day-number-color:      #b8b0a8;
     --prose-text-dark:          #c4bcb0;
-    --icon-muted:               #787068;
+    --icon-muted:               #8a8279;
     --tooltip-text:             #e0d8cc;
     --search-hover-border:      #484038;
 
@@ -911,13 +1036,14 @@ body.theme-dark {
         /* ── Corpus accent tokens ─────────────────────────────────── */
         --accent-menu:              #b8b2a8;
         --accent-zmanim:            #b0ada4;
-        --accent-tanakh:            #a8b4b0;
-        --accent-mishnah:           #acaab8;
-        --accent-talmud:            #b8b0a0;
-        --accent-talmud-hover:      #a8906a;
-        --accent-halakhah:          #b0a8a8;
-        --accent-customs:           #aca6b8;
-        --accent-thought:           #a8ada8;
+        --accent-tanakh:            #6db8c8;
+        --accent-mishnah:           #82b4e3;
+        --accent-talmud:            #d6b26a;
+        --accent-talmud-hover:      #e6c584;
+        --accent-halakhah:          #e8909e;
+        --accent-customs:           #c0a2e8;
+        --accent-thought:           #72c9b4;
+        --accent-siddur:            #a9b6f5;
 
         /* ── Reader ───────────────────────────────────────────────── */
         --range-complete:           #8b6f47;
@@ -974,7 +1100,7 @@ body.theme-dark {
         --home-label-color:         #989080;
         --fc-day-number-color:      #b8b0a8;
         --prose-text-dark:          #c4bcb0;
-        --icon-muted:               #787068;
+        --icon-muted:               #8a8279;
         --tooltip-text:             #e0d8cc;
         --search-hover-border:      #484038;
 

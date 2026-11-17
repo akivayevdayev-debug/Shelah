@@ -37,9 +37,9 @@
 @custom-variant hover (&:hover);
 
 @theme reference inline {
-  --font-sans: Inter, sans-serif;
+  --font-sans: "Hanken Grotesk", "Hanken Grotesk Fallback", system-ui, sans-serif;
   /* The fallback faces are defined in static/css/tokens.css (audit L-12). */
-  --font-serif: Cardo, "Cardo Fallback", serif;
+  --font-serif: Newsreader, "Frank Ruhl Libre", "Newsreader Fallback", Georgia, serif;
   --font-hebrew: "Ezra SIL", "Ezra SIL Fallback", serif;
   --color-navy: #002147;
   --color-gold: #D4AF37;

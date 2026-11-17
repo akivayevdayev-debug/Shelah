@@ -116,7 +116,7 @@ body.theme-dark #readerTopBar {
 }
 
 #readerTitle {
-    font-family: var(--font-serif, 'Cardo', serif);
+    font-family: var(--font-serif);
     font-size: clamp(1.75rem, 3.55vw, 2.7rem);
     line-height: 1.12;
     font-weight: 700;

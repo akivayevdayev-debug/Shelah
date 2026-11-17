@@ -287,7 +287,7 @@
 }
 
 .ai-src-box-en {
-    font-family: var(--font-serif, 'Cardo', Georgia, serif);
+    font-family: var(--font-serif);
     font-size: 0.85rem;
     line-height: 1.65;
     padding: var(--sp-2) 0;

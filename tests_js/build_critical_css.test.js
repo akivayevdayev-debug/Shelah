@@ -639,6 +639,7 @@ function signatureBrowser(sigFor) {
         requests: [`${BASE}/static/min/css/app.css`],
         onEvaluate: (fn, args, page) => {
             assert.equal(fn, mod.pageSignature);
+
             assert.equal(args[0], mod.COMPARED);
             return sigFor(page.viewport.width, !page.bundleBlocked);
         },
@@ -680,6 +681,18 @@ test('verifyKind reports each cell whose elements differ, with the properties th
     assert.ok(errors.some((line) => line.includes('color: red -> blue')), errors.join('\n'));
     assert.ok(errors.some((line) => line.includes('extra:1') && line.includes('display:  -> x')));
     assert.ok(errors.some((line) => /1100px light\/en:/.test(line)));
+});
+
+test('verifyKind measures a differing cell again and drops a one-off difference', async () => {
+    const seen = new Map();
+    const browser = signatureBrowser((width, bundle) => {
+        const key = `${width}/${bundle}`;
+        seen.set(key, (seen.get(key) || 0) + 1);
+        // The first 1100px full render misreports a margin; every later one is right.
+        return { 'body:1': width === 1100 && bundle && seen.get(key) === 1 ? 'margin 0' : 'margin 258' };
+    });
+    const result = await mod.verifyKind(browser, BASE, 'text');
+    assert.equal(result.bad, 0);
 });
 
 test('verifyKind marks the signed-in cells in its report', async () => {

@@ -448,6 +448,15 @@ export async function verifyKind(browser, base, kind) {
     };
     const full = await pool(cells.map((cell) => () => signature(cell, true)), 4);
     const crit = await pool(cells.map((cell) => () => signature(cell, false)), 4);
+    // Under load Chrome now and then reports a flex item's auto margins as 0px
+    // even though the box sits in the same place (seen on #reader, about 1
+    // load in 40). A real gap in the critical CSS shows up every time, so a
+    // differing cell is measured again, both ways, before it counts.
+    for (const [i, cell] of cells.entries()) {
+        if (Object.keys({ ...full[i], ...crit[i] }).every((k) => full[i][k] === crit[i][k])) continue;
+        full[i] = await signature(cell, true);
+        crit[i] = await signature(cell, false);
+    }
     let bad = 0;
     cells.forEach((cell, i) => {
         const keys = new Set([...Object.keys(full[i]), ...Object.keys(crit[i])]);

@@ -74,8 +74,6 @@
     <link rel="icon" href="/static/favicon-512.png" type="image/png" sizes="512x512">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" sizes="180x180">
     <link rel="manifest" href="/manifest.webmanifest">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     {# Ezra SIL (the Hebrew text face) is on the first screen of a chapter, prayer or
        siddur page and of any Hebrew-interface visit (the language script below adds
@@ -203,13 +201,11 @@
     <script defer src="{{ asset_url('js/community-labels.js') }}"></script>
     <!-- window.ShelahLoadRegion: how async regions load, fail and retry (audit L-8). -->
     <script defer src="{{ asset_url('js/load-region.js') }}"></script>
-    <!-- Scholarly Typography. Swapped in after it loads (display=swap, so text is
-         never held for it); the metric-matched fallbacks in tokens.css keep that
-         swap from moving the page. -->
-    <link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap"
-        rel="stylesheet" media="print" data-async-css>
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap"
-        rel="stylesheet"></noscript>
+    <!-- Sh'elah's own type (tokens.css). The two Latin faces every page draws
+         first are preloaded; the metric-matched fallbacks keep the swap from
+         moving the page. -->
+    <link rel="preload" href="/static/fonts/newsreader-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/static/fonts/hanken-grotesk-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
     <script defer src="https://cdn.jsdelivr.net/npm/marked@18.1.3/lib/marked.umd.js"
             integrity="sha384-tp/syYhgK+FeVVrz2SPmgKX5atVZ8P8hReAvOPUn58M265VNy1IbdmZAY7Jmd0gF"
             crossorigin="anonymous"></script>

@@ -3,35 +3,35 @@
   "esbuild": "0.28.2",
   "css": {
     "sources": {
-      "css/tokens.css": "sha256:cdf6f2daba074f71eec9a8d2737547f3dcbc4edd8a76cd78c04d07013d246feb",
-      "style.css": "sha256:baaccce921be6ab503363b295709dbf6d7f7f4e75df27517d27e73f9e5aaa904",
-      "css/typography.css": "sha256:8cc5129450f6f17c2825dc900a5ab184de1b6900bcb9175d4c92ee2eadbdb772",
-      "css/reader.css": "sha256:a7680571f7b451f26c9a35c5f76690ce05909c712aa8d1c07acbe01d5f150ac8",
+      "css/tokens.css": "sha256:15b9291910cab990c043c25107fb85e0baaf3f996a7c110b41380ec926d77871",
+      "style.css": "sha256:1309b846c551a16a18be66b48310da66098625cb30b34b8556787a676a97d3e2",
+      "css/typography.css": "sha256:000d5096d5c7322aff99d2fd1ef679d209f50c963a21f37fa38b28ed03ded543",
+      "css/reader.css": "sha256:32c409022b110fa248fb1150d1ebd2a5759e1ac9ea261253bac40add901ab7f8",
       "css/sidebar.css": "sha256:fc261c75dc4ba0abded264ec89ed57923c9db7264a21fc24b62a0186fe24a699",
       "css/halacha.css": "sha256:d56991aac19afaa3175434312588862a5a63b32c46d7d07d2f70e23fd9e049bf",
       "css/prayer.css": "sha256:70cf28909030c0816176889df96729aca7618f9088de74d324f9c9a38812c78d",
-      "css/siddur.css": "sha256:5026bdd17f89bc51fa2b37963ad4770c22d9b9ac1d8ab3f1a67d0b588963be72",
-      "css/ai.css": "sha256:a7e84d8c91eec7d591349d1df38fceb9a2ed25150da4acdf1c219f63cd45939a",
-      "css/conversation.css": "sha256:a87ba30d30411c5389f645a8458dbf876d895056a93c97c981e94fb636c6cccd",
+      "css/siddur.css": "sha256:4fb9a2a606f984356311a25be22d7e25c806885d68606a61157c5ef414422af9",
+      "css/ai.css": "sha256:e0791f50f398cdac104a94beb7cb4a95f0fc66ca043f9e2474dd5a75e819fa3f",
+      "css/conversation.css": "sha256:bda172ce9d63989f2505f6dd9a08fecd76005c400a484fb2582ed080904d5367",
       "css/history.css": "sha256:ff1556ed62eceadb953ed9a9b4325d70410a97e1bceff2271a07b5ebe213218c",
-      "css/calendar.css": "sha256:69f52f8e6804e7d435fed88dde0b1218cb792dc9fd6cc8832b66faaa77c1346a",
-      "css/calendar-detail.css": "sha256:d14b9c9ed0a63a3d7f396d41e264781bf319897b773fd2ea2e7d7189cafed9ed",
+      "css/calendar.css": "sha256:b811a93e2a2887b109155a86b650a97088260a8896935bac99a66a14fc9e2634",
+      "css/calendar-detail.css": "sha256:bc1e8366430da81a76e4df08841b9150706b61c5086cb149805b72d36c96f2cb",
       "css/loading.css": "sha256:a77745f67cd45511d26a3d55fe58b68b77270a49eb29147210986078585cac4f",
       "css/tailwind.css": "sha256:7e003ddf0bb1216222651038416f47937c183c2e5e6d041eb3e2fa43fcaaaa4e"
     },
-    "sourcesHash": "6898676c3dfe9c4aae3e2594ef4c64ea36895cf9ff8890a48e5afbf631561fed",
+    "sourcesHash": "583c00ec214a5c0f38fac87869f47e47de9c58b9fa6a4fc5e71a4d98895fee2d",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "6898676c3dfe9c4aae3e2594ef4c64ea36895cf9ff8890a48e5afbf631561fed",
+        "sourcesHash": "583c00ec214a5c0f38fac87869f47e47de9c58b9fa6a4fc5e71a4d98895fee2d",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "6898676c3dfe9c4aae3e2594ef4c64ea36895cf9ff8890a48e5afbf631561fed",
+        "sourcesHash": "583c00ec214a5c0f38fac87869f47e47de9c58b9fa6a4fc5e71a4d98895fee2d",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -39,7 +39,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "6898676c3dfe9c4aae3e2594ef4c64ea36895cf9ff8890a48e5afbf631561fed",
+        "sourcesHash": "583c00ec214a5c0f38fac87869f47e47de9c58b9fa6a4fc5e71a4d98895fee2d",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",

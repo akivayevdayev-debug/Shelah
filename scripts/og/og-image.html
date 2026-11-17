@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- Source for static/og-image.png (1200x630). Rendered by
+     scripts/build_og_image.mjs with Sh'elah's own fonts from static/fonts. -->
+<style>
+@font-face { font-family: 'Newsreader'; src: url('../../static/fonts/newsreader-normal-latin.woff2') format('woff2'); font-weight: 200 800; }
+@font-face { font-family: 'Newsreader'; src: url('../../static/fonts/newsreader-italic-latin.woff2') format('woff2'); font-weight: 200 800; font-style: italic; }
+@font-face { font-family: 'Hanken Grotesk'; src: url('../../static/fonts/hanken-grotesk-normal-latin.woff2') format('woff2'); font-weight: 100 900; }
+@font-face { font-family: 'Frank Ruhl Libre'; src: url('../../static/fonts/frank-ruhl-libre-normal-hebrew.woff2') format('woff2'); font-weight: 300 900; unicode-range: U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+:root {
+  --navy: #002147; --teal: #0f5a63; --mishnah: #2a6f97; --talmud: #8a6d2f; --halakhah: #7a2235;
+  --ink2: #525c70; --rule: #e8e0cf; --gold: #b8963a; --paper: #f8f4ea;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1200px; height: 630px; overflow: hidden; }
+body {
+  position: relative; font-family: 'Hanken Grotesk', sans-serif; color: var(--navy);
+  background:
+    radial-gradient(900px 520px at 100% 0%, rgba(212, 175, 55, 0.16), transparent 60%),
+    radial-gradient(700px 500px at 0% 100%, rgba(15, 90, 99, 0.08), transparent 65%),
+    var(--paper);
+}
+/* Gold rule down the left edge: the one flourish. */
+body::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 10px; background: linear-gradient(var(--gold), #d9bd6a 50%, var(--gold)); }
+.watermark {
+  position: absolute; right: -40px; bottom: -300px; font: 800 640px/1 'Frank Ruhl Libre', serif;
+  color: var(--navy); opacity: 0.045; pointer-events: none;
+}
+.wrap { position: relative; display: grid; grid-template-columns: 1fr 392px; gap: 56px; height: 100%; padding: 58px 72px 52px 82px; }
+.left { display: flex; flex-direction: column; }
+.brand { display: flex; align-items: center; gap: 16px; }
+.mark {
+  width: 68px; height: 68px; border-radius: 18px; display: grid; place-items: center;
+  background: var(--navy); color: #f6efdc; font: 700 46px/1 'Frank Ruhl Libre', serif; padding-top: 4px;
+  box-shadow: 0 6px 18px rgba(0, 33, 71, 0.22), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.name { font: 600 38px/1 'Newsreader', serif; letter-spacing: -0.015em; font-variation-settings: 'opsz' 48; }
+.sub { font: italic 400 18px/1 'Newsreader', serif; color: var(--ink2); margin-top: 7px; }
+h1 { font: 600 82px/0.98 'Newsreader', serif; letter-spacing: -0.03em; margin-top: 74px; font-variation-settings: 'opsz' 72; }
+h1 span { display: block; color: var(--teal); font-style: italic; font-weight: 500; margin-top: 8px; }
+p { font-size: 24px; line-height: 1.45; color: var(--ink2); margin-top: 28px; max-width: 560px; text-wrap: balance; }
+.url { margin-top: auto; display: flex; align-items: center; gap: 12px; font: 600 19px/1 'Hanken Grotesk'; letter-spacing: 0.02em; color: var(--navy); }
+.url::before { content: ''; width: 28px; height: 2px; background: var(--gold); }
+.card {
+  align-self: center; background: rgba(255, 253, 248, 0.86); border: 1px solid var(--rule); border-radius: 26px;
+  padding: 30px 32px 18px; box-shadow: 0 24px 60px -24px rgba(0, 33, 71, 0.28), 0 2px 6px rgba(0, 33, 71, 0.05);
+}
+.eyebrow { font: 700 13px/1 'Hanken Grotesk'; letter-spacing: 0.16em; color: var(--ink2); text-transform: uppercase; }
+ul { list-style: none; padding: 0; margin-top: 10px; }
+li { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 16px; height: 66px; border-bottom: 1px solid var(--rule); }
+li:last-child { border-bottom: 0; }
+li i { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+li b { font: 600 34px/1 'Newsreader', serif; letter-spacing: -0.015em; font-variation-settings: 'opsz' 36; }
+li span { font: 500 30px/1 'Frank Ruhl Libre', serif; color: #8c877c; direction: rtl; }
+</style>
+</head>
+<body>
+<div class="watermark" aria-hidden="true">ש</div>
+<div class="wrap">
+  <section class="left">
+    <div class="brand">
+      <div class="mark">ש</div>
+      <div><div class="name">Sh'elah</div><div class="sub">Torah Encyclopedia</div></div>
+    </div>
+    <h1>Ask a question.<span>Read the sources.</span></h1>
+    <p>Answers grounded in halacha, Talmud and Tanakh, with every source cited and one click away.</p>
+    <div class="url">shelah.org</div>
+  </section>
+  <section class="card">
+    <div class="eyebrow">The library</div>
+    <ul>
+      <li style="color:var(--teal)"><i></i><b>Tanakh</b><span>תנ״ך</span></li>
+      <li style="color:var(--mishnah)"><i></i><b>Mishnah</b><span>משנה</span></li>
+      <li style="color:var(--talmud)"><i></i><b>Talmud</b><span>תלמוד</span></li>
+      <li style="color:var(--halakhah)"><i></i><b>Halakhah</b><span>הלכה</span></li>
+      <li style="color:var(--navy)"><i></i><b>Siddur</b><span>סידור</span></li>
+    </ul>
+  </section>
+</div>
+</body>
+</html>

@@ -112,8 +112,8 @@ def build_content_security_policy(script_hashes: Iterable[str] = ()) -> str:
         # directive containing "script-src".
         "script-src-attr 'none'",
         "worker-src 'self' blob:",
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
-        "font-src 'self' data: https://fonts.gstatic.com",
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+        "font-src 'self' data:",
         "img-src 'self' data: https:",
         # clerk.shelah.org: this project's custom Clerk Frontend API domain
         # (Clerk Dashboard -> Domains). Without this, every ClerkJS

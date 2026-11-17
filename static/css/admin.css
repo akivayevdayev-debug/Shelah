@@ -40,7 +40,7 @@
 
 .admin-shell h2,
 .admin-shell h3 {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-sans);
     color: var(--ink-heading);
     text-wrap: balance;
 }
@@ -91,7 +91,7 @@
     min-height: var(--hit-min);
     min-width: var(--hit-min);
     padding: 0 var(--sp-4);
-    font: 600 var(--text-sm) / 1.2 'Inter', system-ui, sans-serif;
+    font: 600 var(--text-sm) / 1.2 var(--font-sans);
     color: var(--ink-primary);
     background: var(--surface-1);
     border: 1px solid var(--surface-border);
@@ -155,7 +155,7 @@
     min-height: var(--hit-min);
     margin-inline-start: calc(-1 * var(--sp-2));
     padding: 0 var(--sp-2);
-    font: 600 var(--text-meta) / 1.2 'Inter', system-ui, sans-serif;
+    font: 600 var(--text-meta) / 1.2 var(--font-sans);
     color: var(--ink-heading);
     background: none;
     border: 0;
@@ -172,7 +172,7 @@
 .admin-field {
     min-height: var(--hit-min);
     padding: 0 var(--sp-3);
-    font: 400 var(--text-body-sm) / 1.2 'Inter', system-ui, sans-serif;
+    font: 400 var(--text-body-sm) / 1.2 var(--font-sans);
     color: var(--ink-primary);
     background-color: var(--surface-0);
     border: 1px solid var(--ctrl-border);
@@ -263,7 +263,7 @@
     min-height: var(--hit-min);
     min-width: var(--hit-min);
     padding: 0 var(--sp-3);
-    font: 600 var(--text-sm) / 1.2 'Inter', system-ui, sans-serif;
+    font: 600 var(--text-sm) / 1.2 var(--font-sans);
     color: var(--ink-primary);
     background: var(--surface-pill);
     border: 1px solid var(--surface-border);

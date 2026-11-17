@@ -58,7 +58,7 @@ html.auth-likely-in #authControls[aria-busy="true"] #userProfileMenuContainer {
 }
 
 /* The language buttons keep one width whether or not their web font
-   (Cardo / the Hebrew face) has arrived. */
+   (the serif / the Hebrew face) has arrived. */
 .lang-btn {
     min-inline-size: 3.5rem;
     justify-content: center;
@@ -129,17 +129,17 @@ h6 {
 /* Hebrew text support */
 [lang="he"],
 .font-hebrew {
-    font-family: 'Ezra SIL', 'Ezra SIL Fallback', 'Cardo', 'Cardo Fallback', serif;
+    font-family: 'Ezra SIL', 'Ezra SIL Fallback', var(--font-serif);
     direction: rtl;
     text-align: right;
 }
 
 /* No fake bold. Ezra SIL ships a single weight, so a bold request on it made
    the browser smear one on: about 40% more ink, on a face that already sets
-   darker than Cardo (a Hebrew prayer heading came out half again as heavy as
+   darker than the serif (a Hebrew prayer heading came out half again as heavy as
    the English heading beside it). Every other face the page uses has a real
    bold, so only Ezra SIL is affected.
-   No fake italic either: Cardo and Inter load real italic faces (fetched only
+   No fake italic either: Newsreader and Hanken Grotesk load real italic faces (fetched only
    when italic text appears), and Hebrew has no italic tradition, so an em or
    blockquote in Hebrew stays upright instead of being slanted by the browser. */
 html {
@@ -157,13 +157,8 @@ html {
     -webkit-text-stroke: var(--he-emphasis-stroke, 0.025em) currentColor;
 }
 
-/* Hebrew titles set in Cardo. Its bold carries only part of the Hebrew block,
-   so a title came out with a few heavy letters among regular ones. The regular
-   face with a thin stroke gives every letter the same weight. */
-html.rtl :is(.home-topic-title, .home-library-title, .ai-tip__title, .conv-empty__title, .prose h1, .prose h2) {
-    font-weight: 400;
-    -webkit-text-stroke: var(--he-emphasis-stroke, 0.025em) currentColor;
-}
+/* Hebrew titles fall through to Frank Ruhl Libre, which has a real bold
+   across the whole Hebrew block, so no stroke trick is needed. */
 
 /* Proper line height for Hebrew */
 [dir="rtl"] {
@@ -437,6 +432,10 @@ html.rtl :is(.home-topic-title, .home-library-title, .ai-tip__title, .conv-empty
    cramped on mobile for that reason; keeping mobile at the smaller size
    restores the breathing room without shrinking the desktop version. */
 .topbar-brand-icon {
+    /* The ש mark is Frank Ruhl Libre bold: Sh'elah's own Hebrew face, not
+       the verse face, so the mark reads as a logo rather than a letter. */
+    font-family: var(--font-hebrew-display);
+    font-weight: 700;
     font-size: 1.7rem;
 }
 
@@ -1471,7 +1470,7 @@ html[dir="rtl"] .search-kbd-btn {
     border-radius: 0;
     padding: 0;
     margin-bottom: 0;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
     font-weight: 600;
 }
 
@@ -1656,7 +1655,7 @@ html[dir="rtl"] .search-kbd-btn {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.14rem;
-    font-family: 'Cardo', 'Cardo Fallback', serif;
+    font-family: var(--font-serif);
     font-size: 0.91rem;
     font-weight: 700;
     line-height: 1.22;
@@ -1744,7 +1743,7 @@ html[dir="rtl"] .search-kbd-btn {
 }
 
 .chapter-grid-item-number {
-    font-family: 'Cardo', 'Cardo Fallback', serif;
+    font-family: var(--font-serif);
     font-size: 1rem;
     font-weight: 700;
     line-height: 1;
@@ -1888,7 +1887,7 @@ html[dir="rtl"] .search-kbd-btn {
 }
 
 .segment-translit {
-    font-family: 'Cardo', 'Cardo Fallback', serif;
+    font-family: var(--font-serif);
     letter-spacing: 0.02em;
     /* Was a hardcoded slate-500 (#64748b): 4.07-4.45:1 against 4 of the 5
        light surfaces (fails 4.5:1 AA text threshold on all but surface-2).
@@ -2008,7 +2007,7 @@ html.theme-dark::-webkit-scrollbar-thumb:hover,
 /* ═══════════════════════════════════════════════════════════════════ */
 
 .fc {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
 }
 
 .fc .fc-toolbar-title {
@@ -2821,7 +2820,7 @@ html.rtl #readerTopBar .reader-topbar-settings-label {
 }
 
 .reader-topbar-settings-label {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
     font-size: 0.78rem;
     font-weight: 600;
     white-space: nowrap;
@@ -3165,7 +3164,7 @@ body.mobile-panel-open {
 }
 
 .home-topic-title {
-    font-family: 'Cardo', 'Cardo Fallback', serif;
+    font-family: var(--font-serif);
     font-weight: 700;
 }
 
@@ -3191,7 +3190,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 
 .home-library-title {
     display: block;
-    font-family: 'Cardo', 'Cardo Fallback', serif;
+    font-family: var(--font-serif);
     font-size: clamp(1.6rem, 2.2vw, 2.1rem);
     line-height: 1.1;
     font-weight: 700;
@@ -3346,7 +3345,7 @@ html.rtl .home-main-layout #popularTextsGrid {
     padding: 0;
     color: #1e293b;
     font-size: 1.05rem;
-    font-family: 'Cardo', 'Cardo Fallback', serif;
+    font-family: var(--font-serif);
     font-weight: 700;
     text-align: left;
 }
@@ -4642,6 +4641,13 @@ html.theme-dark,
     color: var(--icon-muted) !important;
 }
 
+/* The calendar button's label is gold; a grey icon beside it read as
+   disabled. The icon takes the label's colour (7.7:1 on the button). */
+:is([data-theme="dark"], body.theme-dark) .home-calendar-btn svg.home-calendar-btn__icon {
+    color: currentColor !important;
+    opacity: 1;
+}
+
 :is([data-theme="dark"], body.theme-dark) #reader .reader-source-lines,
 :is([data-theme="dark"], body.theme-dark) #reader .reader-text-row,
 :is([data-theme="dark"], body.theme-dark) #reader .source-grid.layout-reverse .source-he:not(.reader-text-he) {
@@ -5922,7 +5928,7 @@ body.theme-dark #analyticsConsentAccept {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-family: var(--font-serif, Cardo, serif);
+        font-family: var(--font-serif);
         font-size: var(--text-base, 1rem);
         font-weight: 700;
         color: var(--ink-heading);

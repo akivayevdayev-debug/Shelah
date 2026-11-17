@@ -242,7 +242,7 @@
 }
 .cal-detail__hebrew {
     margin: var(--sp-1) 0 0;
-    font-family: var(--font-hebrew, 'Ezra SIL', 'Cardo', serif);
+    font-family: var(--font-hebrew);
     font-size: 1.125rem;
     line-height: 1.4;
     color: var(--ink-secondary);

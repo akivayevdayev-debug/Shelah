@@ -48,9 +48,9 @@ test('every Hebrew emphasis stroke reads the token', () => {
     assert.deepEqual(literal.map((b) => b.selector), []);
 });
 
-test('the stroke rules cover the reader, the AI sources, the conversation and the Hebrew titles', () => {
+test('the stroke rules cover the reader, the AI sources and the conversation', () => {
     const selectors = [...withStroke(STYLE), ...withStroke(CONVERSATION)].map((b) => b.selector).join('\n');
-    for (const part of ['.reader-text-he', '.ai-src-box-he', '.conv-answer[data-script="he"]', '.conv-title[data-script="he"]', '.home-topic-title']) {
+    for (const part of ['.reader-text-he', '.ai-src-box-he', '.conv-answer[data-script="he"]', '.conv-title[data-script="he"]']) {
         assert.ok(selectors.includes(part), part);
     }
 });
@@ -60,7 +60,8 @@ test('a stroked Hebrew rule never asks for a bold on top of the stroke', () => {
     assert.deepEqual(bold.map((b) => b.selector), []);
 });
 
-test('the Hebrew UI titles in Cardo use the regular face, because its Hebrew bold is partial', () => {
+test('the Hebrew UI titles use Frank Ruhl Libre\'s real bold, not a stroke over the regular face', () => {
     const titles = withStroke(STYLE).find((b) => b.selector.startsWith('html.rtl :is(.home-topic-title'));
-    assert.match(titles.body, /font-weight:\s*400/);
+    assert.equal(titles, undefined);
+    assert.match(TOKENS, /--font-serif:[^;]*'Frank Ruhl Libre'/);
 });

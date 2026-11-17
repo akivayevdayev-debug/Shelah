@@ -56,7 +56,7 @@ body.theme-dark {
     --fc-classic-faint-foreground: var(--cal-number-color);
     --fc-classic-primary: var(--cal-toolbar-btn-color);
     --fc-classic-highlight: color-mix(in srgb, var(--cal-today-border) 18%, transparent);
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-sans);
 }
 
 /* The theme spaces the toolbar from the grid with a 20px gap; the toolbar's
@@ -117,7 +117,7 @@ body.theme-dark {
 
 .fc .fc-toolbar-title {
     color: var(--cal-header-color);
-    font-family: 'Cardo', 'Cardo Fallback', Georgia, serif;
+    font-family: var(--font-serif);
     font-size: 1.25rem;
     font-weight: 700;
     letter-spacing: -0.01em;
@@ -548,7 +548,7 @@ html.rtl .fc-daygrid-event {
 
 .cal-agenda-hebrew {
     margin: var(--sp-1) 0 0;
-    font-family: var(--font-hebrew, 'Ezra SIL', 'Cardo', serif);
+    font-family: var(--font-hebrew);
     font-size: var(--text-body-sm);
     color: var(--ink-secondary);
 }
@@ -612,7 +612,7 @@ html.rtl .fc-daygrid-event {
 /* ═══════════════════════════════════════════════════════ */
 
 .cal-hebrew-date {
-    font-family: var(--font-hebrew, 'Ezra SIL', 'Cardo', serif);
+    font-family: var(--font-hebrew);
     font-size: 0.7rem;
     color: var(--text-muted);
     direction: rtl;

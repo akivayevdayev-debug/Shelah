@@ -455,7 +455,7 @@ body.conv-modal-open {
     color: var(--ink-heading);
 }
 .conv-panel[data-size="mini"] .conv-title { font-size: var(--text-base); }
-/* Cardo's Hebrew bold is partial (see .conv-answer[data-script]). */
+/* Hebrew titles get the stroke emphasis too (see .conv-answer[data-script]). */
 .conv-title[data-script="he"] {
     font-weight: 400;
     -webkit-text-stroke: var(--he-emphasis-stroke, 0.025em) currentColor;
@@ -1154,9 +1154,9 @@ body.conv-modal-open {
     letter-spacing: -0.005em;
     color: var(--ink-heading);
 }
-/* Cardo's Hebrew bold covers only a few letters (ב and ו came out heavy, the
-   rest regular), so a Hebrew answer keeps the regular face and gets a thin
-   stroke for weight, as style.css does for Ezra SIL. */
+/* Hebrew emphasis in an answer is the regular face plus a thin stroke, the
+   same treatment style.css gives Ezra SIL, so quoted pointed text and the
+   prose around it carry emphasis at one weight. */
 .conv-answer[data-script="he"] :is(h1, h2, h3, h4, strong, b) {
     font-weight: 400;
     -webkit-text-stroke: var(--he-emphasis-stroke, 0.025em) currentColor;

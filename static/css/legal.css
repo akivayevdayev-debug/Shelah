@@ -27,7 +27,7 @@ html {
 }
 
 body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-sans);
     background: var(--surface-0);
     color: var(--ink-primary);
 }
@@ -60,14 +60,14 @@ html.rtl body .prose {
 }
 
 .prose h1 {
-    font-family: 'Cardo', Georgia, serif;
+    font-family: var(--font-serif);
     font-weight: 700;
     color: var(--ink-heading);
     font-size: var(--text-2xl);
 }
 
 .prose h2 {
-    font-family: 'Cardo', Georgia, serif;
+    font-family: var(--font-serif);
     font-size: var(--text-lg);
     font-weight: 700;
     margin-top: var(--sp-8);
@@ -223,7 +223,7 @@ html.rtl .prose ol {
 }
 
 .legal-hero h1 {
-    font-family: 'Cardo', Georgia, serif;
+    font-family: var(--font-serif);
     font-size: var(--text-3xl);
     font-weight: 700;
     color: var(--ink-heading);
@@ -344,7 +344,7 @@ html.rtl .prose ol {
     color: var(--ink-heading);
     font-size: var(--text-sm);
     font-weight: 700;
-    font-family: 'Cardo', Georgia, serif;
+    font-family: var(--font-serif);
     cursor: pointer;
     padding: var(--sp-1) 0;
     min-height: 44px;

@@ -742,3 +742,7 @@
 .home-link-siddur .home-library-title {
     color: var(--ink-heading);
 }
+
+:is([data-theme="dark"], body.theme-dark) .home-link-siddur .home-library-title {
+    color: var(--accent-siddur, var(--ink-heading));
+}

@@ -35,8 +35,6 @@
     
     
     
-    
-    
     <!-- no-flash theme: read the real persisted prefs blob (Sh'elahPrefs.theme —
          see APP_PREFS_KEY/setThemePreference below) before first paint. Falls back
          to the OS preference for 'system'/unset, matching applyThemePreferenceClass(). -->
@@ -96,9 +94,9 @@
     
     <!-- window.ShelahLoadRegion: how async regions load, fail and retry (audit L-8). -->
     
-    <!-- Scholarly Typography. Swapped in after it loads (display=swap, so text is
-         never held for it); the metric-matched fallbacks in tokens.css keep that
-         swap from moving the page. -->
+    <!-- Sh'elah's own type (tokens.css). The two Latin faces every page draws
+         first are preloaded; the metric-matched fallbacks keep the swap from
+         moving the page. -->
     
     
     

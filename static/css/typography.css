@@ -10,7 +10,7 @@
 
 /* Display headline (hero/section titles) */
 .type-display {
-    font-family: var(--font-serif, 'Cardo', serif);
+    font-family: var(--font-serif);
     font-size: clamp(1.8rem, 3vw, 2.8rem);
     font-weight: 700;
     line-height: 1.15;
@@ -19,7 +19,7 @@
 
 /* Section heading */
 .type-heading {
-    font-family: var(--font-serif, 'Cardo', serif);
+    font-family: var(--font-serif);
     font-size: clamp(1.2rem, 2vw, 1.6rem);
     font-weight: 700;
     line-height: 1.3;
@@ -27,7 +27,7 @@
 
 /* Sub-heading / card title */
 .type-subheading {
-    font-family: var(--font-serif, 'Cardo', serif);
+    font-family: var(--font-serif);
     font-size: clamp(1rem, 1.3vw, 1.2rem);
     font-weight: 600;
     line-height: 1.4;
@@ -35,7 +35,7 @@
 
 /* Standard body text */
 .type-body {
-    font-family: var(--font-sans, 'Inter', sans-serif);
+    font-family: var(--font-sans);
     font-size: var(--text-body-sm);
     /* 15px */
     line-height: 1.7;
@@ -64,7 +64,7 @@
 
 /* Large Hebrew display text */
 .heb-display {
-    font-family: var(--font-hebrew, 'Ezra SIL', 'Cardo', serif);
+    font-family: var(--font-hebrew);
     font-size: clamp(1.5rem, 2.5vw, 2.2rem);
     line-height: 1.65;
     direction: rtl;
@@ -74,7 +74,7 @@
 
 /* Standard Hebrew body text */
 .heb-body {
-    font-family: var(--font-hebrew, 'Ezra SIL', 'Cardo', serif);
+    font-family: var(--font-hebrew);
     font-size: 1.05rem;
     line-height: 1.9;
     direction: rtl;
@@ -84,7 +84,7 @@
 
 /* Small Hebrew text (annotations) */
 .heb-small {
-    font-family: var(--font-hebrew, 'Ezra SIL', 'Cardo', serif);
+    font-family: var(--font-hebrew);
     font-size: 0.9rem;
     line-height: 1.8;
     direction: rtl;
