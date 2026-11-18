@@ -112,12 +112,6 @@ class TestTanakhHub:
         assert "<loc>https://shelah.org/tanakh</loc>" in test_client.get("/sitemap.xml").get_data(as_text=True)
         assert "(https://shelah.org/tanakh)" in test_client.get("/llms.txt").get_data(as_text=True)
 
-    def test_is_linked_from_home_and_the_site_pages(self, test_client):
-        """Reachable by following links alone: the app shell's footer and the
-        footer shared by the About/Help/Glossary pages both point at it."""
-        for page in ("/", "/about", "/help", "/glossary"):
-            assert 'href="/tanakh"' in test_client.get(page).get_data(as_text=True), page
-
     def test_text_pages_breadcrumb_points_at_it(self, test_client):
         """The BreadcrumbList on a chapter page names this hub as a step."""
         html = test_client.get("/text/Genesis.1").get_data(as_text=True)

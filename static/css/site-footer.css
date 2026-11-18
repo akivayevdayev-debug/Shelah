@@ -1,0 +1,251 @@
+/* ── Site footer (templates/components/site_footer.html) ─────────────────
+   One footer for the home page, About/Help/Glossary/Tanakh, the legal pages
+   and the 404 page. A deep navy band (warm near-black in dark mode) closes
+   every page: the brand lockup from the top bar, a tagline, three labelled
+   link columns and a copyright row under a gold hairline. Gold is used for
+   rules, the mark's frame and the column headings only, all of which clear
+   AA on the band. Its own tokens so both themes change in one place. */
+.site-footer {
+    --footer-bg: var(--ink-heading, #002147);
+    --footer-ink: color-mix(in srgb, #f5efe5 78%, var(--footer-bg));
+    --footer-ink-strong: #faf7f0;
+    --footer-heading: var(--accent-gold-light, #f0d980);
+    --footer-rule: color-mix(in srgb, var(--accent-gold, #d4af37) 38%, transparent);
+    --footer-mark-bg: color-mix(in srgb, #ffffff 6%, transparent);
+
+    position: relative;
+    background: var(--footer-bg);
+    color: var(--footer-ink);
+    border-top: 1px solid var(--footer-rule);
+    padding-block: var(--sp-12) var(--sp-6);
+    padding-bottom: calc(var(--sp-6) + env(safe-area-inset-bottom));
+}
+
+:is([data-theme="dark"], body.theme-dark) .site-footer {
+    --footer-bg: var(--surface-3, #161410);
+    --footer-ink: var(--ink-secondary, #999188);
+    --footer-ink-strong: var(--ink-heading, #d4cec4);
+    --footer-heading: var(--accent-gold, #c9ac5e);
+    --footer-rule: color-mix(in srgb, var(--accent-gold, #c9ac5e) 24%, transparent);
+    --footer-mark-bg: color-mix(in srgb, #ffffff 3%, transparent);
+}
+
+.site-footer-inner {
+    max-width: 62rem;
+    margin-inline: auto;
+    padding-inline: var(--sp-4);
+    display: grid;
+    gap: var(--sp-8);
+    grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+    .site-footer-inner {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+        gap: var(--sp-12);
+        padding-inline: var(--sp-6);
+    }
+}
+
+/* Brand lockup: the top bar's ש mark beside "Sh'elah" over an italic
+   "Torah Encyclopedia". */
+.site-footer-home {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-3);
+    min-height: var(--hit-min, 44px);
+    color: var(--footer-ink-strong);
+    text-decoration: none;
+    border-radius: var(--sp-2);
+}
+
+.site-footer-mark {
+    display: inline-grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--sp-2);
+    border: 1px solid var(--footer-rule);
+    background: var(--footer-mark-bg);
+    color: var(--footer-ink-strong);
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1;
+    transition: border-color 200ms var(--motion-ease-out, ease-out);
+}
+
+.site-footer-wordmark {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    text-align: start;
+}
+
+.site-footer-name {
+    font-size: 1.375rem;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    white-space: nowrap;
+}
+
+.site-footer-subtitle {
+    font-size: 0.8125rem;
+    font-style: italic;
+    line-height: 1.2;
+    color: var(--footer-ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .site-footer-home:hover .site-footer-mark {
+        border-color: var(--footer-heading);
+    }
+}
+
+.site-footer-tagline {
+    margin-top: var(--sp-4);
+    max-width: 32ch;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+}
+
+.site-footer-cols {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-6) var(--sp-4);
+}
+
+@media (min-width: 480px) {
+    .site-footer-cols {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.site-footer-heading {
+    margin: 0 0 var(--sp-2);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--footer-heading);
+}
+
+.site-footer-col ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.site-footer-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--hit-min, 44px);
+    font-size: 0.9375rem;
+    color: var(--footer-ink);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.25em;
+    transition: color 180ms var(--motion-ease-out, ease-out), text-decoration-color 180ms var(--motion-ease-out, ease-out);
+}
+
+@media (pointer: fine) {
+    .site-footer-link {
+        min-height: var(--sp-8);
+    }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .site-footer-link:hover {
+        color: var(--footer-ink-strong);
+        text-decoration-color: var(--footer-heading);
+    }
+}
+
+.site-footer-link:active {
+    color: var(--footer-ink-strong);
+}
+
+.site-footer-link:focus-visible,
+.site-footer-home:focus-visible {
+    outline: 2px solid var(--footer-heading);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.site-footer-link[aria-current="page"] {
+    color: var(--footer-ink-strong);
+    font-weight: 600;
+    text-decoration-color: var(--footer-heading);
+}
+
+/* Copyright row under a gold hairline, full width under both blocks. */
+.site-footer-base {
+    grid-column: 1 / -1;
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--footer-rule);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .site-footer-link,
+    .site-footer-mark {
+        transition: none;
+    }
+}
+
+@media (prefers-contrast: more) {
+    .site-footer {
+        --footer-ink: var(--footer-ink-strong);
+    }
+}
+
+/* Phones: the six legal links share two columns under the other two. */
+@media (max-width: 479px) {
+    .site-footer-col:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .site-footer-col:last-child ul {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: var(--sp-4);
+    }
+}
+
+/* Disclaimer (home only, show_disclaimer) above the copyright line. */
+.site-footer-disclaimer {
+    max-width: 68ch;
+    margin: 0 0 var(--sp-3);
+    line-height: 1.6;
+}
+
+/* Main app: the footer is the last child of #mainContainer, the pane every
+   view scrolls in. A short view leaves the pane taller than its content, so
+   it rides the bottom edge. While one view swaps for another the column above
+   is empty: it is held unseen (visibility keeps its box, nothing moves). */
+#mainContainer > .site-footer {
+    --footer-pad-bottom: var(--sp-6);
+    margin-top: auto;
+    padding-bottom: calc(var(--footer-pad-bottom) + var(--footer-under-bar, 0px));
+    margin-bottom: calc(-1 * var(--footer-under-bar, 0px));
+}
+
+#mainContainer.is-swapping-view > .site-footer,
+html[data-cold-view] #mainContainer > .site-footer {
+    visibility: hidden;
+}
+
+/* Phones: the pane's bottom padding is the glass tab bar's height; the band
+   runs on under the bar (and owns no safe-area inset, the bar does). */
+@media (max-width: 1023px) {
+    .library-shell #mainContainer > .site-footer {
+        --footer-under-bar: var(--bar-bottom-total, 0px);
+    }
+}
+
+/* Until a visitor answers the analytics banner it is fixed over the bottom of
+   the screen: the footer grows by its height (--consent-banner-h, measured in
+   shell.js initAnalyticsConsent) so the links scroll clear of it. */
+html:not([data-consent-set]) body:has(#analyticsConsentBanner:not(.hidden)) #mainContainer > .site-footer {
+    --footer-pad-bottom: calc(var(--sp-6) + var(--consent-banner-h, 10rem) + var(--sp-4));
+}

@@ -243,6 +243,7 @@
     <link rel="stylesheet" href="{{ asset_url('css/calendar.css') }}">
     <link rel="stylesheet" href="{{ asset_url('css/calendar-detail.css') }}">
     <link rel="stylesheet" href="{{ asset_url('css/loading.css') }}">
+    <link rel="stylesheet" href="{{ asset_url('css/site-footer.css') }}">
     <link rel="stylesheet" href="{{ asset_url('css/tailwind.css') }}">
     {% endif %}
 
@@ -1623,118 +1624,13 @@
 
             </article>
 
-            <!-- ═══════════════════════════════════════════════════════ -->
-            <!-- SITE FOOTER — legal notice                               -->
-            <!-- Last child of #mainContainer (the same overflow-y-auto   -->
-            <!-- pane the home grid / reader / library views scroll in),  -->
-            <!-- not a sibling of the topbar -- so it's reached by         -->
-            <!-- scrolling to the very bottom of the main screen behind   -->
-            <!-- whichever view is active, instead of being squeezed into -->
-            <!-- the app shell as an always-visible hovering strip, and   -->
-            <!-- without disturbing the topbar's position:sticky, which   -->
-            <!-- only works relative to this same scrolling ancestor.     -->
-            <!-- Purely informational — browsewrap notice, no             -->
-            <!-- accept/decline gate. Theme-aware via tokens.css.         -->
-            <!-- ═══════════════════════════════════════════════════════ -->
-            <style>
-                .site-footer {
-                    /* A short view (history signed out, an empty list) leaves the
-                       pane taller than its content: the footer rides the bottom
-                       edge instead of floating mid-screen. */
-                    margin-top: auto;
-                    background: var(--surface-2);
-                    border-top: 1px solid var(--surface-border);
-                    padding: var(--sp-2) var(--sp-4);
-                    padding-bottom: calc(var(--sp-2) + env(safe-area-inset-bottom, 0px));
-                }
-
-                /* While one view is swapped for another the column above is
-                   empty: the footer would rise to just under the topbar and
-                   drop again once the text arrives. Held unseen instead
-                   (visibility: its box stays put and nothing else moves). */
-                #mainContainer.is-swapping-view > .site-footer,
-                html[data-cold-view] #mainContainer > .site-footer {
-                    visibility: hidden;
-                }
-
-
-                /* Below 1024px, .mobile-bottom-tabs (static/style.css) is an
-                   in-flow row of the body's flex column, not an overlay, so
-                   this scroll pane already ends above it and the footer needs
-                   no extra bottom padding to clear it. The tab bar also
-                   owns the bottom safe-area inset there, so the footer must
-                   not add it a second time. */
-                @media (max-width: 1023px) {
-                    .site-footer {
-                        padding-bottom: var(--sp-2);
-                    }
-                }
-
-                /* Until a visitor answers the analytics banner it is fixed over
-                   the bottom of the screen, where it covered the footer's links
-                   on a phone. The footer grows by the banner's height so they
-                   scroll clear of it (--consent-banner-h, measured in shell.js
-                   initAnalyticsConsent). */
-                html:not([data-consent-set]) body:has(#analyticsConsentBanner:not(.hidden)) .site-footer {
-                    padding-bottom: calc(var(--sp-2) + var(--consent-banner-h, 10rem) + var(--sp-4));
-                }
-
-                .site-footer-inner {
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    font-size: var(--text-xs);
-                    line-height: 1.6;
-                    color: var(--ink-secondary);
-                    text-align: center;
-                }
-
-                .site-footer-inner a {
-                    color: var(--accent-primary);
-                    text-decoration: underline;
-                    text-underline-offset: 2px;
-                    transition: color var(--motion-dur-fast) var(--motion-ease-out);
-                }
-
-                .site-footer-inner a:hover {
-                    color: var(--accent-primary-hover);
-                }
-
-                .site-footer-inner a:focus-visible {
-                    outline: 2px solid var(--accent-primary);
-                    outline-offset: 2px;
-                    border-radius: var(--radius-xs);
-                }
-
-                .site-footer-links {
-                    margin-top: var(--sp-1);
-                }
-
-                .site-footer-links .sep {
-                    color: var(--surface-border);
-                    padding: 0 var(--sp-1);
-                }
-            </style>
-            <div class="site-footer">
-                <p class="site-footer-inner">
-                    <span class="site-footer-copyright" style="display: block; margin-bottom: 0.35rem;" {{ lang_attrs('common.copyright', year=current_year) }}>{{ _('common.copyright', year=current_year) }}</span>
-                    <span
-                        {{ lang_attrs('home.shelah_provides_educational_halachic_information') }}>{{ _('home.shelah_provides_educational_halachic_information') }}</span>
-                    <span class="site-footer-links">
-                        <a href="/about" target="_blank" rel="noopener" {{ lang_attrs('home.about') }}>{{ _('home.about') }}</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/help" target="_blank" rel="noopener" {{ lang_attrs('home.help') }}>{{ _('home.help') }}</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/glossary" target="_blank" rel="noopener" {{ lang_attrs('home.glossary') }}>{{ _('home.glossary') }}</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/tanakh" target="_blank" rel="noopener" {{ lang_attrs('home.tanakh') }}>{{ _('home.tanakh') }}</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/terms" target="_blank" rel="noopener" {{ lang_attrs('home.terms_of_service') }}>{{ _('home.terms_of_service') }}</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/privacy" target="_blank" rel="noopener" {{ lang_attrs('home.privacy_policy') }}>{{ _('home.privacy_policy') }}</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/ai-disclosure" target="_blank" rel="noopener" {{ lang_attrs('home.ai_disclosure') }}>{{ _('home.ai_disclosure') }}</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/acceptable-use" target="_blank" rel="noopener" {{ lang_attrs('home.acceptable_use') }}>{{ _('home.acceptable_use') }}</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/dmca" target="_blank" rel="noopener" {{ lang_attrs('home.dmca') }}>{{ _('home.dmca') }}</a><span
-                            class="sep" aria-hidden="true">·</span>
-                        <a href="/accessibility" target="_blank" rel="noopener" {{ lang_attrs('home.accessibility') }}>{{ _('home.accessibility') }}</a><span class="sep" aria-hidden="true">·</span>
-                        <a href="/licenses" target="_blank" rel="noopener" {{ lang_attrs('home.licenses') }}>{{ _('home.licenses') }}</a>
-                    </span>
-                </p>
-            </div>
+            {#- The shared site footer (components/site_footer.html), last child of
+                #mainContainer: reached by scrolling to the very bottom of whichever
+                view is active, with the educational-not-p'sak notice. Placement
+                rules (bottom edge on short views, hidden during a view swap, room
+                for the consent banner, under the phone tab bar) are the
+                #mainContainer > .site-footer rules in static/css/site-footer.css. -#}
+            {% with current='', show_disclaimer=true %}{% include 'components/site_footer.html' %}{% endwith %}
 
         </main>
 

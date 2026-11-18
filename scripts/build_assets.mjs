@@ -60,6 +60,7 @@ export const CSS_ORDER = [
     "css/calendar.css",
     "css/calendar-detail.css",
     "css/loading.css",
+    "css/site-footer.css",
     "css/tailwind.css",
 ];
 export const MODULE_ENTRIES = ["main.js", "motion.js", "calendar-detail.js"];

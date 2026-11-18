@@ -1,10 +1,10 @@
 {#- The site footer, shared by About/Help/Glossary/Tanakh, the legal pages
     (components/legal_footer.html) and the 404 page. A brand block (mark,
-    name, one-line tagline, copyright) beside three labelled link columns:
+    lockup from the top bar, one-line tagline) beside three labelled link columns:
     Explore, About, Legal. `current` (one of the link slugs, e.g. 'about',
     'terms') marks the page on screen with aria-current instead of hiding it,
-    so the columns never change shape between pages. Styles: .site-footer in
-    static/css/legal.css. -#}
+    so the columns never change shape between pages. The home page includes
+    it as the last child of #homeGrid. Styles: static/css/site-footer.css. -#}
 {%- macro footer_link(slug, key, href=None) -%}
 <li><a href="{{ href or '/' ~ slug }}" class="site-footer-link"{% if current == slug %} aria-current="page"{% endif %}
         {{ lang_attrs(key) }}>{{ _(key) }}</a></li>
@@ -12,20 +12,21 @@
 <footer class="site-footer">
     <div class="site-footer-inner">
         <div class="site-footer-brand">
-            <a href="/" class="site-footer-home">
+            <a href="/" class="site-footer-home" {{ aria_attrs('site_footer.shelah_torah_encyclopedia') }} aria-label="{{ _('site_footer.shelah_torah_encyclopedia') }}">
                 <span class="site-footer-mark font-hebrew" aria-hidden="true">ש</span>
-                <span class="site-footer-name font-serif" {{ lang_attrs('site_footer.shelah_torah_encyclopedia') }}>{{ _('site_footer.shelah_torah_encyclopedia') }}</span>
+                <span class="site-footer-wordmark font-serif" aria-hidden="true">
+                    <span class="site-footer-name" {{ lang_attrs('home.shelah') }}>{{ _('home.shelah') }}</span>
+                    <span class="site-footer-subtitle" {{ lang_attrs('home.torah_encyclopedia') }}>{{ _('home.torah_encyclopedia') }}</span>
+                </span>
             </a>
             <p class="site-footer-tagline" {{ lang_attrs('site_footer.tagline') }}>{{ _('site_footer.tagline') }}</p>
-            <p class="site-footer-copy" {{ lang_attrs('common.copyright', year=current_year) }}>{{ _('common.copyright', year=current_year) }}</p>
         </div>
         <nav class="site-footer-cols" {{ aria_attrs('site_footer.footer_label') }} aria-label="{{ _('site_footer.footer_label') }}">
             <div class="site-footer-col">
                 <h2 class="site-footer-heading" {{ lang_attrs('site_footer.explore') }}>{{ _('site_footer.explore') }}</h2>
                 <ul>
-                    {{ footer_link('tanakh', 'site_footer.tanakh') }}
+                    {{ footer_link('siddur', 'site_footer.siddur') }}
                     {{ footer_link('glossary', 'site_footer.glossary') }}
-                    {{ footer_link('ask', 'site_footer.ask', '/') }}
                 </ul>
             </div>
             <div class="site-footer-col">
@@ -48,5 +49,11 @@
                 </ul>
             </div>
         </nav>
+        <div class="site-footer-base">
+            {%- if show_disclaimer %}
+            <p class="site-footer-disclaimer" {{ lang_attrs('site_footer.disclaimer') }}>{{ _('site_footer.disclaimer') }}</p>
+            {%- endif %}
+            <p class="site-footer-copy" {{ lang_attrs('common.copyright', year=current_year) }}>{{ _('common.copyright', year=current_year) }}</p>
+        </div>
     </div>
 </footer>

@@ -1,5 +1,5 @@
-"""templates/components/site_footer.html is the one footer of the About,
-Help, Glossary and Tanakh pages, the seven legal pages
+"""templates/components/site_footer.html is the one footer of the home page,
+the About, Help, Glossary and Tanakh pages, the seven legal pages
 (components/legal_footer.html includes it) and the 404 page.
 
 Each page sets `current` via {% with current='<page>' %}. Jinja treats an
@@ -15,15 +15,14 @@ import re
 
 import pytest
 
-SIBLING_PAGES = ["about", "help", "glossary", "tanakh"]
+SIBLING_PAGES = ["about", "help", "glossary"]
 LEGAL_PAGES = ["terms", "privacy", "ai-disclosure", "acceptable-use", "dmca", "accessibility", "licenses"]
 FOOTER_PAGES = SIBLING_PAGES + LEGAL_PAGES
 
 EVERY_LINK = [
     "/",
-    "/tanakh",
+    "/siddur",
     "/glossary",
-    "/",
     "/about",
     "/help",
     "/accessibility",
@@ -72,3 +71,24 @@ def test_the_404_page_uses_the_site_footer(test_client):
 
 def test_the_404_footer_marks_no_page(test_client):
     assert 'aria-current="page"' not in _footer(test_client, "/no-such-page-for-the-footer-test")
+
+
+@pytest.mark.parametrize("path", ["/tanakh", "/"])
+def test_pages_without_a_footer_link_carry_it_unmarked(test_client, path):
+    """The Tanakh hub and the home page have no link of their own in the
+    footer (the brand mark already goes home), so nothing is marked."""
+    footer = _footer(test_client, path)
+    assert [href for href, _ in _links(footer)] == EVERY_LINK
+    assert 'aria-current="page"' not in footer
+    assert "All rights reserved" in footer
+
+
+def test_the_home_footer_closes_the_main_pane_with_the_notice(test_client):
+    """Last child of #mainContainer, behind every view, with the
+    educational-not-p'sak notice the other pages do not carry."""
+    html = test_client.get("/").get_data(as_text=True)
+    footer = html.index('<footer class="site-footer">')
+    assert html.index('id="reader"') < footer < html.index("</main>")
+    assert html.count('<footer class="site-footer">') == 1
+    assert "not a binding halachic ruling" in _footer(test_client, "/")
+    assert "not a binding halachic ruling" not in _footer(test_client, "/about")
