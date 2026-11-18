@@ -1312,6 +1312,15 @@ function hasParenthetical(text) {
         function applyThemePreferenceClass() {
             const resolvedTheme = getResolvedThemePreference();
             const darkMode = resolvedTheme === 'dark';
+            // Transitions off for the flip (style.css .theme-switching): forcing
+            // a style pass while the class is on makes the new colours the
+            // starting values, so nothing eases across when it comes off.
+            const html = document.documentElement;
+            html.classList.add('theme-switching');
+            const settle = () => {
+                void getComputedStyle(document.body).color;
+                setTimeout(() => html.classList.remove('theme-switching'), 1);
+            };
 
             // data-theme drives tokens.css [data-theme="dark"] token overrides (FOUC-safe)
             document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
@@ -1319,6 +1328,7 @@ function hasParenthetical(text) {
             document.body.classList.toggle('theme-dark', darkMode);
             document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light';
             document.body.style.colorScheme = darkMode ? 'dark' : 'light';
+            settle();
             // Dual theme-color <meta media="..."> tags in <head> handle PWA chrome natively.
         }
 

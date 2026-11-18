@@ -6361,3 +6361,47 @@ html.lite-device :is(
 ) {
     background: var(--surface-2) !important;
 }
+
+
+/* ── <details> expand: the content grows to its height instead of popping
+   open (needs :root interpolate-size, tokens.css). content-visibility is
+   discrete, so it waits for the height to finish closing. */
+details::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition:
+        block-size var(--motion-dur-base) var(--motion-ease-out),
+        content-visibility var(--motion-dur-base) allow-discrete;
+}
+
+details[open]::details-content {
+    block-size: auto;
+}
+
+/* ── Theme switch: no transitions while the theme flips (shell.js
+   applyThemePreferenceClass), so every colour changes in the same frame
+   instead of each control easing over at its own speed. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+    transition: none !important;
+}
+
+/* ── Sign-in: Clerk marks a rejected field aria-invalid (and turns it red);
+   it also shakes once, the way a wrong password does in an app. */
+.cl-formFieldInput[aria-invalid="true"],
+.cl-otpCodeFieldInput[aria-invalid="true"] {
+    animation: shelah-shake 360ms var(--motion-ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    details::details-content {
+        transition: none;
+    }
+
+    .cl-formFieldInput[aria-invalid="true"],
+    .cl-otpCodeFieldInput[aria-invalid="true"] {
+        animation: none;
+    }
+}

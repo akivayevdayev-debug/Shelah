@@ -196,6 +196,9 @@
 ═══════════════════════════════════════════════════════════════════ */
 
 :root {
+    /* Lets height/width transition to and from auto (Chrome 129+; others
+       just snap, as before). The <details> expand in style.css relies on it. */
+    interpolate-size: allow-keywords;
     /* Phosphor (bold) glyphs for CSS-drawn marks: painted with mask-image so
        they take currentColor and follow the theme. Use as
        `mask: var(--icon-check) center / contain no-repeat`. */
@@ -489,6 +492,17 @@
 @keyframes shelah-slide-in-right {
     from { opacity: 0; transform: translateX(16px); }
     to   { opacity: 1; transform: translateX(0); }
+}
+
+/* A rejected entry (a wrong sign-in code or password): a quick sideways
+   shake, as well as the field's red error state. 360ms, settling smaller. */
+@keyframes shelah-shake {
+    0%, 100% { transform: translateX(0); }
+    17% { transform: translateX(-10px); }
+    33% { transform: translateX(10px); }
+    50% { transform: translateX(-6px); }
+    67% { transform: translateX(6px); }
+    83% { transform: translateX(-3px); }
 }
 
 @keyframes shelah-slide-down-fade {
