@@ -4311,6 +4311,27 @@ html.theme-dark,
         margin-bottom: calc(-1 * var(--bar-bottom-total));
     }
 
+    /* z-index 0 makes the row its own stacking layer, which held the
+       library and commentary drawers (z 95, inside the row) under the
+       page-level backdrop (z 85, on <body>): the open drawer came out
+       dimmed and, in dark mode, nearly unreadable. While a drawer is open
+       the row stops being a layer, so the drawer rises above its backdrop. */
+    .library-shell.mobile-panel-open > .app-row {
+        z-index: auto;
+    }
+
+    /* The row is pulled under both bars, so a drawer bounded by it would
+       too: it starts below the top bar and ends above the tab bar, and the
+       tab bar stays lit and tappable above the backdrop while it is open. */
+    .library-shell .mobile-drawer {
+        top: var(--bar-top-total);
+        bottom: var(--bar-bottom-total);
+    }
+
+    .library-shell.mobile-panel-open .mobile-bottom-tabs {
+        z-index: 96;
+    }
+
     /* ...and its scroll pane pads the content back out from under them, so
        at rest nothing is covered; scroll-padding keeps anchor jumps and
        scrollIntoView landing below the glass rather than behind it. */
