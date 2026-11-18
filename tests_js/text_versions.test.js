@@ -75,6 +75,15 @@ test('the query leaves out the default community and carries the picks', async (
     );
 });
 
+test('the query carries the page language only when a text may have a translation in it', async () => {
+    const { namespace } = await setup();
+    assert.equal(namespace.textQuery('Genesis 1', { minhag: 'sephardi', picks: {}, language: 'fr' }), 'tlang=fr');
+    assert.equal(namespace.textQuery('Genesis 1', { minhag: 'sephardi', picks: {}, language: 'de' }), 'tlang=de');
+    for (const language of ['en', 'he', 'ar', undefined]) {
+        assert.equal(namespace.textQuery('Genesis 1', { minhag: 'sephardi', picks: {}, language }), '');
+    }
+});
+
 test('the picker lists the allowed versions and names the community default', async () => {
     const { doc, picker } = await setup();
     picker.render(GENESIS);

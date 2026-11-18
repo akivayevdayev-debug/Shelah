@@ -554,11 +554,20 @@ def _build_v3_text_url(ref):
     return f"{SEFARIA_V3_API}/texts/{encoded_ref}?version=source&version=translation"
 
 
+def _v3_family(lang, version):
+    """Sefaria v3 names a version by its language family ("french|Bible du
+    Rabbinat 1899 [fr]"); a translation in the page language is not "english"."""
+    if lang == "he":
+        return "hebrew"
+    family = str(version.get("languageFamilyName") or "").strip().lower()
+    return family if family.isalpha() else "english"
+
+
 def _build_v3_named_url(ref, chosen):
     """The v3 URL for the exact versions text_trust chose
     (`version=hebrew|<title>&version=english|<title>`); "" when it chose none."""
     params = [
-        ("version", f"{'hebrew' if lang == 'he' else 'english'}|{version.get('versionTitle')}")
+        ("version", f"{_v3_family(lang, version)}|{version.get('versionTitle')}")
         for lang, version in (chosen or {}).items() if version
     ]
     if not params:

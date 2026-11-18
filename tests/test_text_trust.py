@@ -314,3 +314,52 @@ def test_source_denied_leaves_classical_refs_alone(citation):
 
 def test_short_generic_title_is_not_denied_on_its_own():
     assert not text_trust.is_work_denied("The Torah")
+
+
+# ── Page-language translations (?tlang=) ─────────────────────────────────────
+
+@pytest.mark.parametrize("language, title", [
+    ("fr", "Bible du Rabbinat 1899 [fr]"),
+    ("de", "Die fünf Bücher Moses, trans. Dr. J. Wohlgemuth, Rödelheim 1899 [de]"),
+])
+def test_a_reviewed_translation_in_the_page_language_takes_the_translation_slot(language, title):
+    with text_trust.use_translation_language(language):
+        assert chosen_titles("Genesis")["en"] == title
+
+
+@pytest.mark.parametrize("language", ["es", "ru"])
+def test_a_page_language_with_no_reviewed_translation_keeps_english(language):
+    # Sefaria's Spanish and Russian Torahs are non-commercial or unlicensed: unmapped.
+    with text_trust.use_translation_language(language):
+        assert chosen_titles("Genesis")["en"] == "The Koren Jerusalem Bible"
+
+
+def test_unreviewed_translations_in_the_page_language_stay_hidden():
+    with text_trust.use_translation_language("fr"):
+        titles = {row["title"] for row in text_trust.picker_versions(versions_of("Genesis"))}
+    assert "Bible du Rabbinat 1899 [fr]" in titles
+    assert "La bible d'André Chouraqui [fr]" not in titles
+
+
+def test_without_a_page_language_translations_in_other_languages_are_denied():
+    french = next(v for v in versions_of("Genesis") if v["versionTitle"] == "Bible du Rabbinat 1899 [fr]")
+    assert text_trust.assess_version(french)["trust"] == text_trust.DENIED
+    assert chosen_titles("Genesis")["en"] == "The Koren Jerusalem Bible"
+
+
+def test_a_reader_pick_of_english_wins_over_the_page_language():
+    with text_trust.use_translation_language("de"):
+        chosen = text_trust.choose_versions(versions_of("Genesis"), "sephardi",
+                                            {"en": "The Koren Jerusalem Bible"})
+    assert chosen["en"]["versionTitle"] == "The Koren Jerusalem Bible"
+
+
+@pytest.mark.parametrize("raw, code", [("fr", "fr"), ("de-AT", "de"), ("he", "en"), ("", "en"), (None, "en"), ("xx", "en")])
+def test_the_translation_language_accepts_only_supported_codes(raw, code):
+    assert text_trust.normalize_translation_language(raw) == code
+
+
+def test_the_translation_language_resets_after_its_block():
+    with text_trust.use_translation_language("fr"):
+        assert text_trust.current_translation_language() == "fr"
+    assert text_trust.current_translation_language() == "en"

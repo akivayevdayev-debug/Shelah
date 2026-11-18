@@ -118,6 +118,13 @@
     {"title": "Italian", "lang": "en", "label": "", "community": "", "trust": "denied", "rank": 99, "reason": "Mislabelled; not an English translation."},
     {"title": "Shona version (Zimbabwe)", "lang": "en", "label": "", "community": "", "trust": "denied", "rank": 99, "reason": "Not English; mislabelled."},
     {"title": "test", "lang": "he", "label": "", "community": "", "trust": "denied", "rank": 99, "reason": "Test upload."},
-    {"title": "Version Title 1", "lang": "en", "label": "", "community": "", "trust": "denied", "rank": 99, "reason": "Placeholder upload."}
+    {"title": "Version Title 1", "lang": "en", "label": "", "community": "", "trust": "denied", "rank": 99, "reason": "Placeholder upload."},
+
+    {"title": "Bible du Rabbinat 1899 [fr]", "lang": "en", "language": "fr", "label": "Bible du Rabbinat (1899)", "community": "general", "trust": "preferred", "rank": 1, "reason": "French Rabbinate translation under Grand Rabbin Zadoc Kahn; the standard Jewish French Bible. Public domain."},
+    {"title": "Die fünf Bücher Moses, trans. Dr. J. Wohlgemuth, Rödelheim 1899 [de]", "lang": "en", "language": "de", "label": "Wohlgemuth, Rödelheim (1899)", "community": "general", "trust": "preferred", "rank": 1, "reason": "Torah translation by Rabbi Joseph Wohlgemuth of the Orthodox Rabbinerseminar, Berlin. Public domain."},
+    {"title": "Der Pentateuch, übersetzt und erläutert von Samson Raphael Hirsch. Frankfurt am Main, 1867-1878 [de]", "lang": "en", "language": "de", "label": "Samson Raphael Hirsch (1867–1878)", "community": "general", "trust": "preferred", "rank": 2, "reason": "Rabbi Samson Raphael Hirsch's own German Torah translation, the classic of German Orthodoxy. Public domain."},
+    {"title": "Die vier und zwanzig Bücher der Heiligen Schrift. Unter der Redaction von Dr. Zunz übersetzt von H. Arnheim, Dr. Julius Fürst, Dr. M. Sachs. Berlin 1838 [de]", "lang": "en", "language": "de", "label": "Zunz Bible (1838)", "community": "general", "trust": "listed", "rank": 5, "reason": "Classic 19th-century Jewish German Tanakh (Zunz, Sachs); used widely in traditional homes, gives Prophets and Writings a German text. Public domain."},
+    {"title": "Kizzur Schulchan Aruch. Ins Deutsche übertragen von Rabbiner Dr. Selig Bamberger. Frankfurt 1925. [de]", "lang": "en", "language": "de", "label": "Kizzur Schulchan Aruch, Rabbiner Selig Bamberger (1925)", "community": "general", "trust": "preferred", "rank": 1, "reason": "German Kitzur by Rabbi Selig Bamberger, Orthodox. Public domain."},
+    {"title": "Mischnajot mit deutscher Übersetzung und Erklärung. Berlin 1887-1933 [de]", "lang": "en", "language": "de", "label": "Mischnajot, Berlin (1887–1933)", "community": "general", "trust": "preferred", "rank": 1, "reason": "The Berlin Orthodox Mishnah edition (Baneth, Hoffmann and others). Public domain."}
   ]
 }

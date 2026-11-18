@@ -437,10 +437,14 @@ def get_text_missing_ref():
 @routes_library.route("/api/text/<path:ref>")
 def get_text_inline(ref):
     """Fetches a Sefaria text inline — Hebrew + English + metadata."""
+    from backend import text_trust
     from backend.sefaria_library import get_text
     decoded_ref = _decode_route_ref(ref)
-    data = get_text(decoded_ref, community=_requested_minhag(),
-                    versions=_requested_versions())
+    # ?tlang= is the page language: a reviewed translation in it (French,
+    # German ...) takes the translation column; without one it stays English.
+    with text_trust.use_translation_language(request.args.get("tlang")):
+        data = get_text(decoded_ref, community=_requested_minhag(),
+                        versions=_requested_versions())
 
     if isinstance(data, dict) and data.get("error"):
         error_type = data.get("error_type", "")

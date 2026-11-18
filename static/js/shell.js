@@ -11529,6 +11529,8 @@ function hasParenthetical(text) {
         // on the left from the head script's first paint.
         function setHtmlLanguage(lang) {
             applyHtmlLanguage(lang);
+            // A text open in the reader picks up a translation in the new language.
+            window.ShelahReaderText?.reloadIfChanged?.();
         }
 
         function markActiveLanguageButton(lang) {

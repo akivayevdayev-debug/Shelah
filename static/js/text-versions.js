@@ -49,12 +49,18 @@ export function pickForRef(ref, picks) {
     return best;
 }
 
+// Page languages a text may have its own translation in (backend/text_trust.py
+// TRANSLATION_LANGUAGES); English and Hebrew need no parameter.
+const TRANSLATION_LANGUAGES = new Set(["es", "ru", "fr", "de"]);
+
 // The query string (no leading "&") /api/text gets for `ref`.
 // The default community is left out, so its requests share one cached URL
 // with the server-rendered page and the reader's first load.
-export function textQuery(ref, { minhag, picks, defaultMinhag = "sephardi" } = {}) {
+export function textQuery(ref, { minhag, picks, language, defaultMinhag = "sephardi" } = {}) {
     const params = new URLSearchParams();
     if (minhag && minhag !== defaultMinhag) params.set("minhag", minhag);
+    // The page language, when the server may have a translation in it.
+    if (TRANSLATION_LANGUAGES.has(language)) params.set("tlang", language);
     const pick = pickForRef(ref, picks);
     for (const lang of LANGS) {
         const title = pick?.[lang];
@@ -141,6 +147,6 @@ export function installTextVersionPicker({
 
     return {
         render,
-        query: (ref) => textQuery(ref, { minhag: getMinhag(), picks }),
+        query: (ref) => textQuery(ref, { minhag: getMinhag(), picks, language: doc.documentElement?.lang }),
     };
 }

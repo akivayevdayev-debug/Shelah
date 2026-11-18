@@ -60,6 +60,11 @@ _COMMUNITY_ORDER = {
 # `actualLanguage` says what the text really is.
 _SHOWN_LANGUAGES = {"he": {"he", "arc", ""}, "en": {"en", ""}}
 
+# Page languages whose own translation may take the translation ("en") slot,
+# when a reader route sets it with use_translation_language(). Only versions
+# the reviewed mapping lists are ever shown; without one the slot stays English.
+TRANSLATION_LANGUAGES = frozenset({"es", "ru", "fr", "de"})
+
 _BIALIK_COMMENTARY = "Commentary on Bialik's secular essay above."
 _RECONSTRUCTIONIST = "Reconstructionist movement."
 
@@ -229,7 +234,7 @@ def assess_version(version) -> dict:
     if entry and entry["trust"] == DENIED:
         return _verdict(DENIED, entry=entry)
     actual = str(version.get("actualLanguage") or "").lower()
-    if actual not in _SHOWN_LANGUAGES[lang]:
+    if actual not in _shown_languages(lang):
         return _verdict(DENIED, reason=f"Written in {actual}, not {'Hebrew' if lang == 'he' else 'English'}.")
     domain_reason = _denied_domain_reason(version.get("versionSource"))
     if domain_reason:
@@ -262,13 +267,17 @@ def is_version_shown(version) -> bool:
 
 def _sort_key(version, community):
     verdict = assess_version(version)
+    page_language = current_translation_language()
+    in_page_language = (page_language != "en"
+                        and str(version.get("actualLanguage") or "").lower() == page_language)
     order = _COMMUNITY_ORDER[resolve_minhag(community)]
     place = order.index(verdict["community"]) if verdict["community"] in order else len(order)
     try:
         priority = -float(version.get("priority") or 0)
     except (TypeError, ValueError):
         priority = 0.0
-    return (0 if verdict["trust"] == PREFERRED else 1, place, verdict["rank"], priority)
+    return (0 if in_page_language else 1, 0 if verdict["trust"] == PREFERRED else 1,
+            place, verdict["rank"], priority)
 
 
 def choose_versions(available, community=None, requested=None) -> dict:
@@ -347,6 +356,39 @@ def is_work_denied(title) -> bool:
 # say: the reader routes pass ?minhag=, the /ask pipelines set this from the
 # answer's community lens, and everything else gets the default (Sephardi).
 _current_community: ContextVar[str | None] = ContextVar("text_trust_community", default=None)
+
+
+# The page language a reader route asked for (?tlang=). Unset everywhere else, so
+# the AI, search and links keep reading English translations.
+_translation_language: ContextVar[str] = ContextVar("text_trust_translation_language", default="en")
+
+
+def normalize_translation_language(code) -> str:
+    code = str(code or "").strip().lower()[:2]
+    return code if code in TRANSLATION_LANGUAGES else "en"
+
+
+def current_translation_language() -> str:
+    return _translation_language.get()
+
+
+@contextmanager
+def use_translation_language(code):
+    """Let the translation slot prefer reviewed versions in `code` (es/ru/fr/de)
+    for the duration of the block."""
+    token = _translation_language.set(normalize_translation_language(code))
+    try:
+        yield
+    finally:
+        _translation_language.reset(token)
+
+
+def _shown_languages(lang) -> set:
+    shown = _SHOWN_LANGUAGES[lang]
+    page_language = current_translation_language()
+    if lang == "en" and page_language != "en":
+        return shown | {page_language}
+    return shown
 
 
 def current_community() -> str:
