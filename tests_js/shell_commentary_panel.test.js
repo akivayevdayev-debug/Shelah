@@ -116,6 +116,23 @@ test('without DOMPurify, commentary markup is stripped and what is left is escap
     }
 });
 
+test('without DOMPurify, Sefaria entities become spaces, not visible "&nbsp;" text', async () => {
+    const page = await readGenesis();
+    try {
+        page.window.DOMPurify = undefined;
+        const box = page.document.createElement('div');
+        box.innerHTML = page.call('renderInlineCommentaryLines', {
+            lines: [{ segment: '1', he: 'אֱלֹהִ֤ים&thinsp;<small>׀</small>&thinsp;לָאוֹר אֶחָֽד׃&nbsp;<span class="mam-spi-pe">{פ}</span>', en: '&lt;script&gt;bad()&lt;/script&gt; one' }],
+        });
+        assert.doesNotMatch(box.textContent, /nbsp|thinsp|&amp;/);
+        assert.match(box.querySelector('[dir=rtl]').textContent, /אֶחָֽד׃ \{פ\}/);
+        assert.equal(box.querySelector('script'), null, 'a decoded "<script>" stays text');
+        assert.match(box.querySelector('[dir=ltr]').textContent, /<script>bad\(\)<\/script> one/);
+    } finally {
+        page.close();
+    }
+});
+
 test('commentary that comes as parallel he/en lists pairs them by position', async () => {
     const page = await readGenesis();
     try {

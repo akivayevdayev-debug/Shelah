@@ -2281,7 +2281,11 @@ function hasParenthetical(text) {
 
             const sanitized = (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function')
                 ? DOMPurify.sanitize(withBreaksAsNewlines, { ALLOWED_TAGS: DISPLAY_SAFE_TAGS, ALLOWED_ATTR: [] })
-                : escapeHtml(withBreaksAsNewlines.replace(/<[^<>]*>/g, ' '));
+                // Without DOMPurify (it loads lazily, so the first reader
+                // render often runs before it), decode entities before
+                // escaping: escaping first turned Sefaria's "&nbsp;" and
+                // "&thinsp;" into visible "&amp;nbsp;" text.
+                : escapeHtml(decodeHtmlEntities(withBreaksAsNewlines.replace(/<[^<>]*>/g, ' ')));
 
             return sanitized
                 .replaceAll('\u00A0', ' ')

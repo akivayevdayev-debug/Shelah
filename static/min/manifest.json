@@ -85,7 +85,7 @@
         "source": "sha256:968aced3c444af8bc1de8da0954ad3704ee3acf4a2df7812da324e62c3890547"
       },
       "shell.js": {
-        "source": "sha256:dac0ff151e283af29b9ae94d05f154b2867d69e6ed7501bf677704d555fa796a"
+        "source": "sha256:928713166eed4ff33542468a5fb3865e7af93c3decf5a8cfb70545ee64c4a4fa"
       },
       "topbar_shared.js": {
         "source": "sha256:14b49e6ce59a5b4be11a16d883641a2a9cd000c72bb631d1215ffbc9d3aea5d4"
@@ -147,7 +147,7 @@
         "js/motion.js": "dd92c8fa6c18",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
-        "js/shell.js": "c9969c750595",
+        "js/shell.js": "2ec432f531e6",
         "js/topbar_shared.js": "605af35b4fb0"
       },
       "unreached": []
