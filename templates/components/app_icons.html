@@ -1,0 +1,18 @@
+{# Icons, the web-app manifest and the iOS home-screen tags, shared by every public page
+   so the site can be installed from any of them. The launch images come from
+   static/splash/ (one per device size, light and dark); iOS picks the one whose media
+   query matches and shows it while the installed app opens. #}
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/static/favicon-192.png" type="image/png" sizes="192x192">
+<link rel="icon" href="/static/favicon-512.png" type="image/png" sizes="512x512">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png" sizes="180x180">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sh'elah">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+{%- for w, h, r in [(375,667,2),(414,896,2),(375,812,3),(414,896,3),(390,844,3),(428,926,3),(393,852,3),(430,932,3),(402,874,3),(440,956,3),(820,1180,2),(834,1194,2),(1024,1366,2)] %}
+{%- for scheme in ['light', 'dark'] %}
+<link rel="apple-touch-startup-image" href="/static/splash/launch-{{ w * r }}x{{ h * r }}-{{ scheme }}.png" media="(device-width: {{ w }}px) and (device-height: {{ h }}px) and (-webkit-device-pixel-ratio: {{ r }}) and (orientation: portrait) and (prefers-color-scheme: {{ scheme }})">
+{%- endfor %}
+{%- endfor %}

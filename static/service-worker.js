@@ -8,7 +8,7 @@
     - The siddur, whole, for offline use once a reader opens it.
 */
 
-const CACHE_VERSION = "v24-20261013";
+const CACHE_VERSION = "v25-20261118";
 const SHELL_CACHE = `shelah-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `shelah-runtime-${CACHE_VERSION}`;
 const API_CACHE = `shelah-api-${CACHE_VERSION}`;

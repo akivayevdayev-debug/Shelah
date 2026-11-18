@@ -1,25 +1,24 @@
 {
+    "id": "/",
     "name": "Sh'elah Torah Encyclopedia",
     "short_name": "Sh'elah",
+    "description": "Jewish text study, customs comparison, and source-driven halachic guidance.",
+    "lang": "en",
+    "dir": "auto",
     "start_url": "/",
     "scope": "/",
     "display": "standalone",
-    "background_color": "#f8fafc",
-    "theme_color": "#002147",
+    "background_color": "#f3ede0",
+    "theme_color": "#f3ede0",
+    "categories": ["education", "books", "reference"],
     "icons": [
-        {
-            "src": "/static/favicon-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/static/favicon-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any maskable"
-        }
+        { "src": "/static/favicon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+        { "src": "/static/favicon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+        { "src": "/static/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+        { "src": "/static/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
     ],
-    "description": "Jewish text study, customs comparison, and source-driven halachic guidance.",
-    "lang": "en"
+    "shortcuts": [
+        { "name": "Tanakh", "url": "/tanakh", "icons": [{ "src": "/static/favicon-192.png", "sizes": "192x192" }] },
+        { "name": "Siddur", "url": "/siddur/edot-hamizrach", "icons": [{ "src": "/static/favicon-192.png", "sizes": "192x192" }] }
+    ]
 }
