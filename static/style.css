@@ -5876,18 +5876,18 @@ html[data-consent-set] #analyticsConsentBanner {
    only 3.12:1 -- below WCAG AA's 4.5:1, caught by the pa11y-ci dark-theme scan
    (npm run test:a11y:dark). Darkened for this one button rather than the shared
    token, since --accent-primary is used broadly and a global dark-theme retune
-   needs its own reviewed pass. #4e667e clears 4.5:1 with margin (~5.0:1). */
+   needs its own reviewed pass. #3d5470 clears 4.5:1 with room (~6.5:1); the earlier #4e667e passed at 5.0:1 but read as a pale, weak button. */
 [data-theme="dark"] #analyticsConsentAccept,
 html.theme-dark #analyticsConsentAccept,
 body.theme-dark #analyticsConsentAccept {
-    background: #4e667e;
-    border-color: #4e667e;
+    background: #3d5470;
+    border-color: #3d5470;
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) #analyticsConsentAccept {
-        background: #4e667e;
-        border-color: #4e667e;
+        background: #3d5470;
+        border-color: #3d5470;
     }
 }
 
@@ -5975,21 +5975,21 @@ body.theme-dark #analyticsConsentAccept {
 /* The consent banner's Accept fill is set by an #id rule, so the shared
    .analytics-consent-actions hover never showed on it. Light: the
    accent's hover shade. Dark: deepen the AA-tuned fill (its text is
-   light, so darker only widens the 5.0:1 margin). */
+   light, so darker only widens the 6.5:1 margin). */
 #analyticsConsentAccept:hover {
     background: var(--accent-primary-hover);
     border-color: var(--accent-primary-hover);
 }
 
 :is([data-theme="dark"], html.theme-dark, body.theme-dark) #analyticsConsentAccept:hover {
-    background: color-mix(in srgb, #4e667e 82%, black);
-    border-color: color-mix(in srgb, #4e667e 82%, black);
+    background: color-mix(in srgb, #3d5470 82%, black);
+    border-color: color-mix(in srgb, #3d5470 82%, black);
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) #analyticsConsentAccept:hover {
-        background: color-mix(in srgb, #4e667e 82%, black);
-        border-color: color-mix(in srgb, #4e667e 82%, black);
+        background: color-mix(in srgb, #3d5470 82%, black);
+        border-color: color-mix(in srgb, #3d5470 82%, black);
     }
 }
 
