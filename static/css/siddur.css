@@ -493,7 +493,7 @@
     font-size: var(--text-sm);
     white-space: nowrap;
     text-decoration: none;
-    transition: background-color var(--motion-dur-fast) var(--motion-ease-out);
+    transition: background-color var(--motion-dur-fast) var(--motion-ease-out), transform var(--motion-dur-fast) var(--motion-ease-out);
 }
 
 .siddur-section-chip:hover {
@@ -704,6 +704,47 @@
 
 .siddur-next-name {
     font-weight: 600;
+}
+
+/* ── Phone and tablet ─────────────────────────────────────────────────── */
+
+@media (max-width: 1023px) {
+    /* The title and the breadcrumb under it read as one heading block. */
+    #reader[data-view="siddur"] > header {
+        margin-bottom: var(--space-xs);
+    }
+
+    #reader[data-view="siddur"] #readerTitle {
+        margin-bottom: 0;
+    }
+
+    /* Fade the chip row out at its end so a chip cut by the counter reads as
+       "scroll for more", not as two things overlapping. */
+    .siddur-sections-list {
+        scrollbar-width: none;
+        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--sp-6)), transparent);
+        mask-image: linear-gradient(to right, #000 calc(100% - var(--sp-6)), transparent);
+        scroll-padding-inline: var(--sp-4);
+    }
+
+    .siddur-sections-list:dir(rtl) {
+        -webkit-mask-image: linear-gradient(to left, #000 calc(100% - var(--sp-6)), transparent);
+        mask-image: linear-gradient(to left, #000 calc(100% - var(--sp-6)), transparent);
+    }
+
+    .siddur-sections-list::-webkit-scrollbar {
+        display: none;
+    }
+
+    .siddur-section-chip:active {
+        transform: scale(0.97);
+    }
+
+    /* Vowel and cantillation marks sit past the glyph box; give them room
+       inside the reader's own padding so they are not cut at the edge. */
+    .siddur-lines {
+        padding-inline: var(--sp-1);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
