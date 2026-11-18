@@ -398,6 +398,61 @@ html.rtl .prose ol {
     .legal-toc.is-collapsed .legal-toc-list {
         display: none;
     }
+
+    /* Phone and tablet: the contents box is a sibling of .main-container,
+       so it used to run edge to edge with its rounded corners against the
+       screen sides. It sits in the same gutter and column as the text now,
+       with the toolbar close under it instead of a 56px gap. */
+    .legal-toc {
+        max-width: calc(860px - 2 * var(--sp-4));
+        margin: var(--sp-4) var(--sp-4) 0;
+        padding: 0 var(--sp-3);
+    }
+
+    .legal-toc:not(.is-collapsed) .legal-toc-list {
+        padding-bottom: var(--sp-2);
+        animation: shelah-slide-down-fade var(--motion-dur-fast) var(--motion-ease-out);
+    }
+
+    .legal-toc-toggle::after {
+        transition: transform var(--motion-dur-fast) var(--motion-ease-out);
+    }
+
+    .legal-toc-toggle:active::after {
+        transform: scale(0.85);
+    }
+
+    .legal-toc + .main-container {
+        padding-top: var(--sp-4);
+    }
+
+    .legal-hero {
+        padding: var(--sp-6) var(--sp-4) var(--sp-4);
+    }
+
+    .info-box {
+        padding: var(--sp-4);
+    }
+
+    .info-box > :first-child {
+        margin-top: 0;
+    }
+
+    .info-box > :last-child {
+        margin-bottom: 0;
+    }
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+    .legal-toc {
+        margin-inline: max(var(--sp-4), calc((100% - 860px) / 2 + var(--sp-4)));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .legal-toc:not(.is-collapsed) .legal-toc-list {
+        animation-name: shelah-overlay-in;
+    }
 }
 
 @media (min-width: 900px) {
@@ -491,8 +546,12 @@ body:not(.library-shell) #themeToggleBtn:hover {
 
 .skip-to-content {
     position: absolute;
-    top: -40px;
-    left: 0;
+    /* Hidden by its own height, not a fixed -40px: in Hebrew the link is
+       taller than 40px and a sliver used to show at the top of the page. */
+    top: 0;
+    inset-inline-start: 0;
+    transform: translateY(calc(-100% - var(--sp-2)));
+    transition: transform var(--motion-dur-fast) var(--motion-ease-out);
     background: var(--ink-heading);
     color: var(--surface-0);
     padding: var(--sp-2);
@@ -502,7 +561,7 @@ body:not(.library-shell) #themeToggleBtn:hover {
 }
 
 .skip-to-content:focus {
-    top: 0;
+    transform: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

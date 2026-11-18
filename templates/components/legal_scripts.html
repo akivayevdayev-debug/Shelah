@@ -384,7 +384,7 @@
         toggle.setAttribute('aria-expanded', 'true');
         toggle.setAttribute('data-en', 'Contents');
         toggle.setAttribute('data-he', 'תוכן עניינים');
-        toggle.textContent = 'Contents';
+        toggle.textContent = getCurrentLanguage() === 'he' ? 'תוכן עניינים' : 'Contents';
 
         const list = document.createElement('ol');
         list.className = 'legal-toc-list';
