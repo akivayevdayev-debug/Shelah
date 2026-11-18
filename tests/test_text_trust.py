@@ -321,17 +321,28 @@ def test_short_generic_title_is_not_denied_on_its_own():
 @pytest.mark.parametrize("language, title", [
     ("fr", "Bible du Rabbinat 1899 [fr]"),
     ("de", "Die fünf Bücher Moses, trans. Dr. J. Wohlgemuth, Rödelheim 1899 [de]"),
+    ("es", "Tanaj Español, trans. Rav Yehuda Ribco, 2026 [es]"),
+    ("ru", "Russian Torah translation, by Dmitri Slivniak, Ph.D., edited by Dr. Itzhak Streshinsky. Da Project, 2011 [ru]"),
 ])
 def test_a_reviewed_translation_in_the_page_language_takes_the_translation_slot(language, title):
     with text_trust.use_translation_language(language):
         assert chosen_titles("Genesis")["en"] == title
 
 
-@pytest.mark.parametrize("language", ["es", "ru"])
-def test_a_page_language_with_no_reviewed_translation_keeps_english(language):
-    # Sefaria's Spanish and Russian Torahs are non-commercial or unlicensed: unmapped.
-    with text_trust.use_translation_language(language):
-        assert chosen_titles("Genesis")["en"] == "The Koren Jerusalem Bible"
+def test_a_page_language_with_no_reviewed_translation_for_a_book_keeps_english():
+    # Slivniak's Russian covers the Torah only; Isaiah has no Russian version mapped.
+    with text_trust.use_translation_language("ru"):
+        assert chosen_titles("Isaiah")["en"] == "The Koren Jerusalem Bible"
+
+
+def test_unlicensed_spanish_and_russian_versions_stay_hidden():
+    with text_trust.use_translation_language("es"):
+        es = {r["title"] for r in text_trust.picker_versions(versions_of("Genesis"))}
+    with text_trust.use_translation_language("ru"):
+        ru = {r["title"] for r in text_trust.picker_versions(versions_of("Genesis"))}
+    assert "Sefaria Community Translation [es]" not in es
+    assert "El Pentateuco Con El Comentario de Rabí Shelomó Itzjakí (Rashí) [es]" not in es
+    assert "Перевод с иврита Давида Сафронова под редакцией Андрея Графова [ru]" not in ru
 
 
 def test_unreviewed_translations_in_the_page_language_stay_hidden():

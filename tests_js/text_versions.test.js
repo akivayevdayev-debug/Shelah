@@ -79,6 +79,8 @@ test('the query carries the page language only when a text may have a translatio
     const { namespace } = await setup();
     assert.equal(namespace.textQuery('Genesis 1', { minhag: 'sephardi', picks: {}, language: 'fr' }), 'tlang=fr');
     assert.equal(namespace.textQuery('Genesis 1', { minhag: 'sephardi', picks: {}, language: 'de' }), 'tlang=de');
+    assert.equal(namespace.textQuery('Genesis 1', { minhag: 'sephardi', picks: {}, language: 'es' }), 'tlang=es');
+    assert.equal(namespace.textQuery('Genesis 1', { minhag: 'sephardi', picks: {}, language: 'ru' }), 'tlang=ru');
     for (const language of ['en', 'he', 'ar', undefined]) {
         assert.equal(namespace.textQuery('Genesis 1', { minhag: 'sephardi', picks: {}, language }), '');
     }
