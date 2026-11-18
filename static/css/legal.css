@@ -89,6 +89,10 @@ html.rtl body .prose {
 }
 
 .prose p {
+    /* style.css's shared `.prose p { font-size: 0.95rem }` would otherwise
+       shrink paragraphs below the 16px+ body size set on .prose above, and
+       below the list items beside them. */
+    font-size: inherit;
     margin-bottom: var(--sp-4);
     line-height: 1.75;
     color: var(--ink-primary);
@@ -243,22 +247,31 @@ html.rtl .prose ol {
 @media (min-width: 900px) {
     #mainContent:has(> .legal-toc) {
         display: grid;
-        grid-template-columns: 230px minmax(0, 1fr);
+        grid-template-columns: 230px minmax(0, 46rem);
+        justify-content: center;
         align-items: start;
         gap: var(--sp-8);
-        max-width: 1180px;
         margin: 0 auto;
         padding: 0 var(--sp-4);
     }
 
+    /* 46rem keeps a line near 75 characters at the 18px body size. */
     #mainContent:has(> .legal-toc) > .main-container {
         margin: 0;
         max-width: none;
     }
+
+    /* Starts level with the article's first line instead of touching the
+       header band. */
+    #mainContent:has(> .legal-toc) > .legal-toc {
+        margin-top: var(--sp-8);
+    }
 }
 
 .main-container {
-    max-width: 860px;
+    /* A 46rem text column (near 75 characters at the 18px body size) plus
+       the side padding. */
+    max-width: calc(46rem + 2 * var(--sp-4));
     margin: 0 auto;
     padding: var(--sp-8) var(--sp-4) var(--sp-12);
 }
@@ -404,7 +417,7 @@ html.rtl .prose ol {
        screen sides. It sits in the same gutter and column as the text now,
        with the toolbar close under it instead of a 56px gap. */
     .legal-toc {
-        max-width: calc(860px - 2 * var(--sp-4));
+        max-width: 46rem;
         margin: var(--sp-4) var(--sp-4) 0;
         padding: 0 var(--sp-3);
     }
@@ -445,7 +458,7 @@ html.rtl .prose ol {
 
 @media (min-width: 600px) and (max-width: 899px) {
     .legal-toc {
-        margin-inline: max(var(--sp-4), calc((100% - 860px) / 2 + var(--sp-4)));
+        margin-inline: max(var(--sp-4), calc((100% - 46rem) / 2));
     }
 }
 
