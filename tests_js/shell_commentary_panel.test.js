@@ -125,6 +125,11 @@ test('without DOMPurify, Sefaria entities become spaces, not visible "&nbsp;" te
             lines: [{ segment: '1', he: 'אֱלֹהִ֤ים&thinsp;<small>׀</small>&thinsp;לָאוֹר אֶחָֽד׃&nbsp;<span class="mam-spi-pe">{פ}</span>', en: '&lt;script&gt;bad()&lt;/script&gt; one' }],
         });
         assert.doesNotMatch(box.textContent, /nbsp|thinsp|&amp;/);
+        box.innerHTML = page.call('renderInlineCommentaryLines', { lines: [{ segment: '1', he: '<big>בְּ</big>רֵאשִׁ֖ית', en: 'one' }] });
+        assert.match(box.querySelector('[dir=rtl]').textContent, /בְּרֵאשִׁ֖ית/, 'the big first letter stays joined to its word');
+        box.innerHTML = page.call('renderInlineCommentaryLines', {
+            lines: [{ segment: '1', he: 'אֱלֹהִ֤ים&thinsp;<small>׀</small>&thinsp;לָאוֹר אֶחָֽד׃&nbsp;<span class="mam-spi-pe">{פ}</span>', en: '&lt;script&gt;bad()&lt;/script&gt; one' }],
+        });
         assert.match(box.querySelector('[dir=rtl]').textContent, /אֶחָֽד׃ \{פ\}/);
         assert.equal(box.querySelector('script'), null, 'a decoded "<script>" stays text');
         assert.match(box.querySelector('[dir=ltr]').textContent, /<script>bad\(\)<\/script> one/);

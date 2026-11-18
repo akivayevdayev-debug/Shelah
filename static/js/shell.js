@@ -2270,6 +2270,7 @@ function hasParenthetical(text) {
         // to insert via innerHTML, matching how renderAnswerMarkdown() already
         // uses DOMPurify for the AI-answer pipeline.
         const DISPLAY_SAFE_TAGS = ['b', 'strong', 'i', 'em', 'small'];
+        const INLINE_TAG_RE = /<\/?(?:b|big|small|strong|i|em|u|span|sub|sup|a)(?:\s[^<>]*)?>/gi;
 
         function escapeDisplayTextPreservingEmphasis(text = '') {
             const withoutFootnotes = String(text || '')
@@ -2285,7 +2286,11 @@ function hasParenthetical(text) {
                 // render often runs before it), decode entities before
                 // escaping: escaping first turned Sefaria's "&nbsp;" and
                 // "&thinsp;" into visible "&amp;nbsp;" text.
-                : escapeHtml(decodeHtmlEntities(withBreaksAsNewlines.replace(/<[^<>]*>/g, ' ')));
+                // Inline tags go with no space (Sefaria's <big> first letter
+                // is part of its word); any other tag still parts words.
+                : escapeHtml(decodeHtmlEntities(withBreaksAsNewlines
+                    .replace(INLINE_TAG_RE, '')
+                    .replace(/<[^<>]*>/g, ' ')));
 
             return sanitized
                 .replaceAll('\u00A0', ' ')
@@ -3748,7 +3753,7 @@ function hasParenthetical(text) {
             // The Library tab lit up because its drawer was open; with the drawer
             // gone the screen underneath is what is current again.
             if (mobileBottomTabs?.querySelector('.mobile-tab-active')?.dataset.mobileTab === 'library') {
-                setActiveMobileTab('home');
+                setActiveMobileTab(screenMobileTab());
             }
         }
 
@@ -3883,6 +3888,16 @@ function hasParenthetical(text) {
             scrollElementToTop(dailySection, 'smooth', 8);
         }
 
+        // Which bottom tab names the screen underneath: a text, the siddur
+        // or a prayer came from the Library; every other page is Home's.
+        function activeTab() {
+            return mobileBottomTabs?.querySelector('.mobile-tab-active')?.dataset.mobileTab;
+        }
+
+        function screenMobileTab() {
+            return ['text', 'siddur', 'prayer'].includes(appState.shownView?.type) ? 'library' : 'home';
+        }
+
         function setActiveMobileTab(tab) {
             if (!mobileBottomTabs) return;
             mobileBottomTabs.querySelectorAll('[data-mobile-tab]').forEach((btn) => {
@@ -3935,7 +3950,6 @@ function hasParenthetical(text) {
         function setMobileSearchExpanded(expanded) {
             const shouldExpand = Boolean(expanded) && isMobileViewport();
             const wasOpen = document.body.classList.contains('mobile-search-open');
-            const activeTab = () => mobileBottomTabs?.querySelector('.mobile-tab-active')?.dataset.mobileTab;
             // Closed by the reader while their question was still loading in it:
             // nothing on the page shows the wait any more, so the panel does.
             if (wasOpen && !shouldExpand && barAskLoading) window.ShelahConversationUI?.showPendingAnswer?.();
@@ -3950,7 +3964,7 @@ function hasParenthetical(text) {
                 // Search closed without picking another tab: the Search highlight
                 // has nothing left to point at, so hand it back to Home.
                 if (activeTab() === 'search') {
-                    setActiveMobileTab('home');
+                    setActiveMobileTab(screenMobileTab());
                 }
             }
         }
@@ -5021,6 +5035,7 @@ function hasParenthetical(text) {
             if (type !== 'ask') {
                 leaveViewScroll();
                 appState.shownView = { type, value, view: appState.currentView };
+                setActiveMobileTab(screenMobileTab());
             }
             // state.js subscribers see every view change, not only the ones
             // made through setState() (appState is state.js's store object).
@@ -10051,6 +10066,8 @@ function hasParenthetical(text) {
             appState.currentView = null;
             appState.shownView = { type: 'home', value: null, view: null };
             window.ShelahState?.setState({ currentView: null });
+            // The Daily tab also goes home (to its section): leave it lit.
+            if (activeTab() !== 'daily') setActiveMobileTab('home');
             syncDocumentTitle();
             const swapped = swapView(() => {
                 closeMobilePanels();

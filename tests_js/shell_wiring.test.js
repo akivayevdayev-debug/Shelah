@@ -55,6 +55,27 @@ test('the phone library tab opens the library drawer; on a wide screen it shows 
     }
 });
 
+test('the lit bottom tab follows the screen: Library for a text or the siddur, Home otherwise', async () => {
+    const page = await openShellPage();
+    try {
+        const lit = () => page.$('#mobileBottomTabs .mobile-tab-active')?.dataset.mobileTab;
+        assert.equal(lit(), 'home');
+        page.call('setCurrentView', 'text', 'Genesis 1', 'Genesis 1');
+        assert.equal(lit(), 'library');
+        page.call('setCurrentView', 'ask', 'q1', 'A question');
+        assert.equal(lit(), 'library', 'an answer panel over the text leaves the text\'s tab lit');
+        page.call('setCurrentView', 'history', 'h', 'History');
+        assert.equal(lit(), 'home');
+        page.call('setCurrentView', 'siddur', 'shacharit', 'Shacharit');
+        assert.equal(lit(), 'library');
+        page.call('setActiveMobileTab', 'daily');
+        page.call('goHome');
+        assert.equal(lit(), 'daily', 'the Daily tab stays lit on its way to the home section');
+    } finally {
+        page.close();
+    }
+});
+
 // ─── Window events ───────────────────────────────────────────────────────────
 
 test('a resize re-lays-out the bars and sidebars, and what depends on the width', async () => {
