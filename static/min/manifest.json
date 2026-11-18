@@ -3,7 +3,7 @@
   "esbuild": "0.28.2",
   "css": {
     "sources": {
-      "css/tokens.css": "sha256:56a5da23feb2bc37aadd376ef8c8bd32d188d9d650090df8272692e058d5eff7",
+      "css/tokens.css": "sha256:16ebfdb4ab728026e945a1bea12f347c8a788aa2c130c2a4987131865f7b31eb",
       "style.css": "sha256:21d663cfeb5ebeccad9f93d377fc31525d9bc11cc72e3be999b8143513059d9f",
       "css/typography.css": "sha256:000d5096d5c7322aff99d2fd1ef679d209f50c963a21f37fa38b28ed03ded543",
       "css/reader.css": "sha256:caafa2917b7adec185830051727222599176d43437f5637f614fe088cffd7fc9",
@@ -17,22 +17,22 @@
       "css/calendar.css": "sha256:b811a93e2a2887b109155a86b650a97088260a8896935bac99a66a14fc9e2634",
       "css/calendar-detail.css": "sha256:bc1e8366430da81a76e4df08841b9150706b61c5086cb149805b72d36c96f2cb",
       "css/loading.css": "sha256:a77745f67cd45511d26a3d55fe58b68b77270a49eb29147210986078585cac4f",
-      "css/site-footer.css": "sha256:349509bd7824e7578b74500f1924810259b19e1b5335d756c9a8e910f5a2f83d",
+      "css/site-footer.css": "sha256:1dde9eb5e9e5ba1aa51e1aabcf82be66a39fdaddffd9282f505c532c070c2ba1",
       "css/tailwind.css": "sha256:04f7fe53c84b67f798e7891a7abd99476dc4d2040ad1fdae3be4e5b253b3b951"
     },
-    "sourcesHash": "45b89dfb6ab623dda6da4256e07d9435d25aaf2ded4e37e91605579b78b9d71b",
+    "sourcesHash": "1199661266f4c6404f51fd2b349b70aad6d95c23601450b207a818b70ea0f200",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "45b89dfb6ab623dda6da4256e07d9435d25aaf2ded4e37e91605579b78b9d71b",
+        "sourcesHash": "1199661266f4c6404f51fd2b349b70aad6d95c23601450b207a818b70ea0f200",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "45b89dfb6ab623dda6da4256e07d9435d25aaf2ded4e37e91605579b78b9d71b",
+        "sourcesHash": "1199661266f4c6404f51fd2b349b70aad6d95c23601450b207a818b70ea0f200",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -40,7 +40,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "45b89dfb6ab623dda6da4256e07d9435d25aaf2ded4e37e91605579b78b9d71b",
+        "sourcesHash": "1199661266f4c6404f51fd2b349b70aad6d95c23601450b207a818b70ea0f200",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",

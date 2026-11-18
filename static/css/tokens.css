@@ -824,17 +824,20 @@ body.theme-dark {
     --tw-dark-checkbox-accent:  #807050;
 
     /* ── Corpus accent tokens: a lighter tint of each light-mode corpus
-       colour, so every library keeps its own hue in dark mode (all ≥ 7:1). */
+       colour, so every library keeps its own hue in dark mode (all ≥ 9:1).
+       Kept low in chroma (OKLCH L 0.77, C ≤ 0.062) so they read as muted
+       inks beside --accent-cream, the way the light-mode inks sit on paper;
+       the earlier pastels (C ~0.1) looked neon on the near-black page. */
     --accent-menu:              #b8b2a8;
     --accent-zmanim:            #b0ada4;
-    --accent-tanakh:            #6db8c8;
-    --accent-mishnah:           #82b4e3;
-    --accent-talmud:            #d6b26a;
-    --accent-talmud-hover:      #e6c584;
-    --accent-halakhah:          #e8909e;
-    --accent-customs:           #c0a2e8;
-    --accent-thought:           #72c9b4;
-    --accent-siddur:            #a9b6f5;
+    --accent-tanakh:            #91bdc7;
+    --accent-mishnah:           #9ab8d5;
+    --accent-talmud:            #c7b187;
+    --accent-talmud-hover:      #dcc8a1;
+    --accent-halakhah:          #d8a4ab;
+    --accent-customs:           #bcabd5;
+    --accent-thought:           #8ec0b3;
+    --accent-siddur:            #a9b2d9;
 
     /* ── Reader ─────────────────────────────────────────────────────── */
     --range-complete:           #8b6f47;   /* keep — non-grey slider accent */
@@ -1036,14 +1039,14 @@ body.theme-dark {
         /* ── Corpus accent tokens ─────────────────────────────────── */
         --accent-menu:              #b8b2a8;
         --accent-zmanim:            #b0ada4;
-        --accent-tanakh:            #6db8c8;
-        --accent-mishnah:           #82b4e3;
-        --accent-talmud:            #d6b26a;
-        --accent-talmud-hover:      #e6c584;
-        --accent-halakhah:          #e8909e;
-        --accent-customs:           #c0a2e8;
-        --accent-thought:           #72c9b4;
-        --accent-siddur:            #a9b6f5;
+        --accent-tanakh:            #91bdc7;
+        --accent-mishnah:           #9ab8d5;
+        --accent-talmud:            #c7b187;
+        --accent-talmud-hover:      #dcc8a1;
+        --accent-halakhah:          #d8a4ab;
+        --accent-customs:           #bcabd5;
+        --accent-thought:           #8ec0b3;
+        --accent-siddur:            #a9b2d9;
 
         /* ── Reader ───────────────────────────────────────────────── */
         --range-complete:           #8b6f47;
