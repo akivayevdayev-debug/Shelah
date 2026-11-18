@@ -114,7 +114,6 @@ function hasParenthetical(text) {
         const userProfileLink = document.getElementById('userProfileLink');
         const signInBtn = document.getElementById('signInBtn');
         const mobileBottomTabs = document.getElementById('mobileBottomTabs');
-        const mobileLangToggle = document.getElementById('mobileLangToggle');
         const closeLeftSidebarBtn = document.getElementById('closeLeftSidebarBtn');
         const closeRightSidebarBtn = document.getElementById('closeRightSidebarBtn');
         const hideLeftSidebarBtn = document.getElementById('hideLeftSidebarBtn');
@@ -8107,11 +8106,6 @@ function hasParenthetical(text) {
             // installSemanticBookmarking() guard — do not
             // remove until the inline copy above is deleted.
             window.__shelahLegacyBookmarkBound = true;
-        }
-        if (mobileLangToggle) {
-            mobileLangToggle.addEventListener('click', () => {
-                chooseLanguage(getCurrentLanguage() === 'he' ? 'en' : 'he');
-            });
         }
         if (closeLeftSidebarBtn) {
             closeLeftSidebarBtn.addEventListener('click', closeMobilePanels);

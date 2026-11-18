@@ -1,10 +1,17 @@
 {
   "back_to_shelah": "חזרה לשאלה",
+  "choose_language": "בחירת שפה",
   "copyright": "© Sh'elah {year}. כל הזכויות שמורות.",
   "footer.accessibility": "נגישות",
   "footer.privacy": "מדיניות פרטיות",
   "footer.site_name": "שאלה אנציקלופדיית תורה",
   "footer.terms": "תנאי שירות",
   "language": "שפה",
-  "other_language_name": "English"
+  "language_name.ar": "ערבית",
+  "language_name.de": "גרמנית",
+  "language_name.en": "אנגלית",
+  "language_name.es": "ספרדית",
+  "language_name.fr": "צרפתית",
+  "language_name.he": "עברית",
+  "language_name.ru": "רוסית"
 }

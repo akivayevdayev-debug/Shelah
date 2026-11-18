@@ -249,7 +249,7 @@
     --ctrl-bg-hover:      #ece5d8;
     --ctrl-border:        #d6d2c7;
     /* Was #2f4a67 / #223e5a -- a cool navy that read as a stray "blue"
-       tint on icon-only controls like #settingsMenuBtn/#mobileLangToggle
+       tint on icon-only controls like #settingsMenuBtn/#langMenuBtn
        (design pass, 2026-09-13). The dark-theme block's own
        --ctrl-text (#999181/#b8b0a0, see below) is already a warm neutral,
        not navy -- this brings light mode's generic control-text color into

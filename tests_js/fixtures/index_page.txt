@@ -462,15 +462,43 @@
                     <!-- Language control (components/language_menu.html) -->
                     
 
-<button data-onclick="chooseLanguage" data-onclick-arg="en" class="hidden lg:inline-flex topbar-flat-btn font-serif lang-btn"
-    data-lang="en">English</button>
-<button data-onclick="chooseLanguage" data-onclick-arg="he" class="hidden lg:inline-flex topbar-flat-btn font-hebrew lang-btn"
-    data-lang="he">עברית</button>
 
-<button id="mobileLangToggle" type="button" class="lg:hidden topbar-flat-btn mobile-lang-toggle">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="14" height="14" fill="currentColor" class="mobile-lang-globe h-3.5 w-3.5" aria-hidden="true"><path d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm83.13,96H179.56a144.3,144.3,0,0,0-21.35-66.36A84.22,84.22,0,0,1,211.13,116ZM128,207c-9.36-10.81-24.46-33.13-27.45-67h54.94a119.74,119.74,0,0,1-17.11,52.77A108.61,108.61,0,0,1,128,207Zm-27.45-91a119.74,119.74,0,0,1,17.11-52.77A108.61,108.61,0,0,1,128,49c9.36,10.81,24.46,33.13,27.45,67ZM97.79,49.64A144.3,144.3,0,0,0,76.44,116H44.87A84.22,84.22,0,0,1,97.79,49.64ZM44.87,140H76.44a144.3,144.3,0,0,0,21.35,66.36A84.22,84.22,0,0,1,44.87,140Zm113.34,66.36A144.3,144.3,0,0,0,179.56,140h31.57A84.22,84.22,0,0,1,158.21,206.36Z"/></svg>
-    <span data-en="עברית" data-he="English">עברית</span>
-</button>
+
+<div class="lang-menu" data-lang-menu>
+    <button type="button" id="langMenuBtn" class="topbar-flat-btn lang-menu-btn"
+        aria-haspopup="menu" aria-expanded="false" aria-controls="langMenu"
+        data-aria-en="Choose a language" data-aria-he="בחירת שפה" aria-label="Choose a language">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="16" height="16" fill="currentColor" class="lang-menu-globe h-4 w-4" aria-hidden="true"><path d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm83.13,96H179.56a144.3,144.3,0,0,0-21.35-66.36A84.22,84.22,0,0,1,211.13,116ZM128,207c-9.36-10.81-24.46-33.13-27.45-67h54.94a119.74,119.74,0,0,1-17.11,52.77A108.61,108.61,0,0,1,128,207Zm-27.45-91a119.74,119.74,0,0,1,17.11-52.77A108.61,108.61,0,0,1,128,49c9.36,10.81,24.46,33.13,27.45,67ZM97.79,49.64A144.3,144.3,0,0,0,76.44,116H44.87A84.22,84.22,0,0,1,97.79,49.64ZM44.87,140H76.44a144.3,144.3,0,0,0,21.35,66.36A84.22,84.22,0,0,1,44.87,140Zm113.34,66.36A144.3,144.3,0,0,0,179.56,140h31.57A84.22,84.22,0,0,1,158.21,206.36Z"/></svg>
+        <span class="lang-menu-current" data-lang-menu-current aria-hidden="true">English</span>
+        <span class="lang-menu-code" data-lang-menu-code aria-hidden="true">EN</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="12" height="12" fill="currentColor" class="lang-menu-caret h-3 w-3" aria-hidden="true"><path d="M216.49,104.49l-80,80a12,12,0,0,1-17,0l-80-80a12,12,0,0,1,17-17L128,159l71.51-71.52a12,12,0,0,1,17,17Z"/></svg>
+    </button>
+    <div id="langMenu" class="lang-menu-panel hidden" role="menu" aria-labelledby="langMenuBtn">
+        <p class="lang-menu-label" aria-hidden="true" data-en="Language" data-he="שפה">Language</p>
+        
+        <button type="button" role="menuitemradio" tabindex="-1"
+            class="lang-menu-item" aria-checked="true"
+            data-lang="en" data-onclick="chooseLanguage" data-onclick-arg="en">
+            <span class="lang-menu-text">
+                <span class="lang-menu-name" lang="en" dir="ltr">English</span>
+                <span class="lang-menu-gloss" data-lang-menu-gloss data-en="English" data-he="אנגלית">English</span>
+            </span>
+            <span class="lang-menu-tick" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="14" height="14" fill="currentColor" class="lang-menu-check h-3.5 w-3.5" aria-hidden="true"><path d="M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z"/></svg></span>
+        </button>
+        
+        <button type="button" role="menuitemradio" tabindex="-1"
+            class="lang-menu-item" aria-checked="false"
+            data-lang="he" data-onclick="chooseLanguage" data-onclick-arg="he">
+            <span class="lang-menu-text">
+                <span class="lang-menu-name font-hebrew" lang="he" dir="rtl">עברית</span>
+                <span class="lang-menu-gloss" data-lang-menu-gloss data-en="Hebrew" data-he="עברית">Hebrew</span>
+            </span>
+            <span class="lang-menu-tick" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="14" height="14" fill="currentColor" class="lang-menu-check h-3.5 w-3.5" aria-hidden="true"><path d="M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z"/></svg></span>
+        </button>
+        
+    </div>
+</div>
+
 
 
                 </div>

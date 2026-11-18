@@ -55,18 +55,6 @@ test('the phone library tab opens the library drawer; on a wide screen it shows 
     }
 });
 
-test('the phone language button switches to the other language', async () => {
-    const page = await openPage(['toggleLanguage']);
-    try {
-        page.click('#mobileLangToggle');
-        page.eval(`displayedLanguage = 'he'`);
-        page.click('#mobileLangToggle');
-        assert.deepEqual(logOf(page), [['toggleLanguage', 'he'], ['toggleLanguage', 'en']]);
-    } finally {
-        page.close();
-    }
-});
-
 // ─── Window events ───────────────────────────────────────────────────────────
 
 test('a resize re-lays-out the bars and sidebars, and what depends on the width', async () => {

@@ -15,5 +15,5 @@
   "_keep_names":"Names written the same in every language; the script check ignores them.",
   "keep_names": ["Anthropic", "Cardo", "Claude", "Clerk", "DMCA", "DOMPurify", "Gemini", "Google", "Google Fonts", "Google Translate", "Halachipedia", "Hebcal", "HebrewBooks", "Inter", "jsDelivr", "localStorage", "MIT", "MyMemory", "PDF", ".pdf", "Sefaria", "Sentry", "Sh'elah", "SIL Open Font License", "Supabase", "Upstash", "Vercel", "Wikipedia"],
   "_script_exempt": "Keys allowed to be mostly in another script: a language named in its own script, a list of software names.",
-  "script_exempt": ["common.other_language_name", "licenses.permissive_mit_bsd_3_clause_apache"]
+  "script_exempt": ["licenses.permissive_mit_bsd_3_clause_apache"]
 }

@@ -1,10 +1,17 @@
 {
   "back_to_shelah": "Back to Sh'elah",
+  "choose_language": "Choose a language",
   "copyright": "© Sh'elah {year}. All rights reserved.",
   "footer.accessibility": "Accessibility",
   "footer.privacy": "Privacy Policy",
   "footer.site_name": "Sh'elah Torah Encyclopedia",
   "footer.terms": "Terms of Service",
   "language": "Language",
-  "other_language_name": "עברית"
+  "language_name.ar": "Arabic",
+  "language_name.de": "German",
+  "language_name.en": "English",
+  "language_name.es": "Spanish",
+  "language_name.fr": "French",
+  "language_name.he": "Hebrew",
+  "language_name.ru": "Russian"
 }

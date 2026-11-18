@@ -1,6 +1,6 @@
 /*
  * The topbar language menu (templates/components/language_menu.html), shown
- * once three or more languages are switched on.
+ * whenever two or more languages are switched on.
  *
  *   - Opens and closes with the site's anchored-menu motion: ShelahMotion's
  *     'popover' preset where motion.js is loaded (the app page), growing out
@@ -33,6 +33,7 @@
         const button = container.querySelector('.lang-menu-btn');
         const panel = container.querySelector('.lang-menu-panel');
         const current = container.querySelector('[data-lang-menu-current]');
+        const code = container.querySelector('[data-lang-menu-code]');
         const items = () => Array.from(panel.querySelectorAll('[role="menuitemradio"]'));
         let running = null;
 
@@ -52,8 +53,18 @@
             for (const item of items()) {
                 const on = item.dataset.lang === lang;
                 item.setAttribute('aria-checked', String(on));
+                // "עברית / Hebrew" under the other languages; the one in use
+                // needs no gloss (it would only repeat its own name).
+                const gloss = item.querySelector('[data-lang-menu-gloss]');
+                if (gloss) gloss.hidden = on;
                 if (on) chosen = item;
             }
+            if (code && chosen) code.textContent = chosen.dataset.lang.toUpperCase();
+            // The button's accessible name, in the page's language
+            // (data-aria-<code>; the legal pages have no other script that
+            // copies it).
+            const label = lang && (button.dataset[`aria${lang[0].toUpperCase()}${lang.slice(1)}`] || button.dataset.ariaEn);
+            if (label) button.setAttribute('aria-label', label);
             if (current && chosen) {
                 const name = chosen.querySelector('.lang-menu-name');
                 current.textContent = name?.textContent || chosen.dataset.lang;
@@ -103,7 +114,9 @@
             });
         }
 
-        function focusItem(which) {
+        // A tap or click opens the list without a focus ring on the ticked
+        // row (it would read as a second selection); the keyboard keeps it.
+        function focusItem(which, quiet) {
             const list = items();
             if (!list.length) return;
             const at = list.indexOf(doc.activeElement);
@@ -115,16 +128,16 @@
                 prev: (at - 1 + list.length) % list.length,
                 checked: Math.max(0, checked),
             }[which];
-            list[index].focus();
+            list[index].focus(quiet ? { focusVisible: false } : undefined);
         }
 
-        function open(focusOn) {
+        function open(focusOn, quiet) {
             if (isOpen()) return;
             sync();
             button.setAttribute('aria-expanded', 'true');
             place();
             show();
-            focusItem(focusOn || 'checked');
+            focusItem(focusOn || 'checked', quiet);
         }
 
         function close(options) {
@@ -136,7 +149,7 @@
 
         const MOVES = { ArrowDown: 'next', ArrowUp: 'prev', Home: 'first', End: 'last' };
 
-        button.addEventListener('click', () => (isOpen() ? close() : open()));
+        button.addEventListener('click', (event) => (isOpen() ? close() : open(null, event.detail > 0)));
         button.addEventListener('keydown', (event) => {
             if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
             event.preventDefault();

@@ -241,12 +241,20 @@ def _render_language_control(codes):
         return template.render(locales=locales, asset_url=lambda name: f"/static/{name}")
 
 
-def test_two_languages_keep_the_english_hebrew_buttons():
-    assert 'id="mobileLangToggle"' in _render_language_control(["en", "he"])
+def test_two_languages_get_the_language_menu():
+    html = _render_language_control(["en", "he"])
+    assert html.count('role="menuitemradio"') == 2
+    assert 'id="mobileLangToggle"' not in html
 
 
-def test_two_languages_render_no_language_menu():
-    assert 'role="menu"' not in _render_language_control(["en", "he"])
+def test_one_language_renders_no_language_control():
+    assert "langMenuBtn" not in _render_language_control(["en"])
+
+
+def test_each_language_carries_its_name_in_the_page_language():
+    html = _render_language_control(["en", "he"])
+    assert 'data-en="Hebrew"' in html
+    assert 'data-he="אנגלית"' in html
 
 
 def test_three_languages_list_each_one_in_the_menu():

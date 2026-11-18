@@ -513,7 +513,7 @@ html {
    transparent even there because the unguarded
    `.library-shell #settingsMenuBtn:hover` rule further down would
    otherwise win that property (extra class selector outranks us at equal
-   id count). Keep #settingsMenuBtn and #mobileLangToggle in sync (mirrored
+   id count). Keep #settingsMenuBtn and #langMenuBtn in sync (mirrored
    rules right below). See docs/ACCESSIBILITY_AUDIT.md for the chip
    rationale this supersedes. */
 :is([data-theme="dark"], body.theme-dark) #settingsMenuBtn {
@@ -529,17 +529,17 @@ html {
     color: var(--control-text-strong) !important;
 }
 
-/* Mobile language toggle: mirrors #settingsMenuBtn exactly (see the long
+/* Language menu button: mirrors #settingsMenuBtn exactly (see the long
    comment above) -- transparent at rest, a subtle --control-bg tint on
    hover/focus only, no border at any state. Keep both in sync. */
-:is([data-theme="dark"], body.theme-dark) #mobileLangToggle {
+:is([data-theme="dark"], body.theme-dark) #langMenuBtn {
     background: transparent !important;
     border-color: transparent !important;
     color: var(--accent-cream) !important;
 }
 
-:is([data-theme="dark"], body.theme-dark) #mobileLangToggle:hover,
-:is([data-theme="dark"], body.theme-dark) #mobileLangToggle:focus-visible {
+:is([data-theme="dark"], body.theme-dark) #langMenuBtn:hover,
+:is([data-theme="dark"], body.theme-dark) #langMenuBtn:focus-visible {
     background: var(--control-bg) !important;
     border-color: transparent !important;
     color: var(--control-text-strong) !important;
@@ -694,32 +694,6 @@ button.topbar-user-menu-item {
     }
 }
 
-/* Phone language button: globe + the other language's name. The globe turns
-   a little on hover/press, like the theme toggle's icon. */
-.mobile-lang-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--sp-1);
-}
-
-.mobile-lang-globe {
-    flex: none;
-    transition: transform var(--motion-dur-base) var(--motion-ease-out);
-}
-
-.mobile-lang-toggle:hover .mobile-lang-globe,
-.mobile-lang-toggle:focus-visible .mobile-lang-globe {
-    transform: rotate(-20deg);
-}
-
-.mobile-lang-toggle:active .mobile-lang-globe {
-    transform: rotate(-20deg) scale(0.92);
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .mobile-lang-globe { transition: none; }
-}
-
 .topbar-user-menu-item:hover,
 .topbar-user-menu-item:focus-visible {
     color: #223e5a;
@@ -748,11 +722,14 @@ button.topbar-user-menu-item:focus-visible {
 }
 
 /* ─── TOPBAR LANGUAGE MENU ──────────────────────────────────────
-   components/language_menu.html + static/js/language-menu.js, shown once
-   three or more languages are switched on. The button is a .topbar-flat-btn
-   (same hover / focus / press as its neighbours); the panel matches the
-   profile menu's surface. Open / close motion is JS (the 'popover' preset),
-   so only colours, the caret and the press scale transition here. */
+   components/language_menu.html + static/js/language-menu.js, on every
+   screen size once two languages are switched on. The button says which
+   language is on screen (its name on wide screens, a two-letter code on
+   phones) and its caret says it opens a list. The button is a
+   .topbar-flat-btn (same hover / focus / press as its neighbours); the
+   panel matches the profile menu's surface. Open / close motion is JS (the
+   'popover' preset, growing out of the button), so only colours, the caret,
+   the tick and the press scale transition here. */
 .lang-menu {
     position: relative;
     display: inline-flex;
@@ -760,6 +737,9 @@ button.topbar-user-menu-item:focus-visible {
 }
 
 .lang-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
     transition: background var(--motion-dur-fast) var(--motion-ease-out),
         color var(--motion-dur-fast) var(--motion-ease-out),
         scale var(--motion-dur-fast) var(--motion-ease-out);
@@ -775,7 +755,25 @@ button.topbar-user-menu-item:focus-visible {
     outline-offset: 1px;
 }
 
+/* The globe turns a little on hover and while the list is open. */
+.lang-menu-globe {
+    flex: none;
+    transition: rotate var(--motion-dur-base) var(--motion-ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .lang-menu-btn:hover .lang-menu-globe {
+        rotate: -20deg;
+    }
+}
+
+.lang-menu-btn[aria-expanded="true"] .lang-menu-globe {
+    rotate: -20deg;
+}
+
 .lang-menu-caret {
+    flex: none;
+    opacity: 0.75;
     transition: rotate var(--motion-dur-base) var(--motion-ease-decel);
 }
 
@@ -783,7 +781,17 @@ button.topbar-user-menu-item:focus-visible {
     rotate: 180deg;
 }
 
-/* Phones: the globe and caret only; the language list says the rest. */
+/* Phones: "EN" / "HE" beside the globe; wide screens: the language's own
+   name. Both are hidden from screen readers (the button's label says
+   "Choose a language" and the list says which one is ticked). */
+.lang-menu-code {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
 .lang-menu-current {
     display: none;
 }
@@ -792,84 +800,123 @@ button.topbar-user-menu-item:focus-visible {
     .lang-menu-current {
         display: inline;
     }
+
+    .lang-menu-code {
+        display: none;
+    }
 }
 
+/* The panel and its rows copy the quick settings menu (#settingsPanel and
+   its #openAiSettingsBtn row): same surface, corners, padding, label and
+   bordered rows, so the two topbar menus read as one family. */
 .lang-menu-panel {
     position: fixed;
     z-index: 999;
     display: flex;
     flex-direction: column;
-    gap: 1px;
-    padding: var(--sp-1);
+    gap: 0.625rem;
+    padding: 0.625rem;
     background: var(--surface-2);
     border: 1px solid var(--surface-border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
 .lang-menu-panel.hidden {
     display: none;
 }
 
+.lang-menu-label {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.5;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-secondary);
+}
+
 .lang-menu-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--sp-3);
+    gap: var(--sp-2);
     width: 100%;
-    min-height: 2.25rem;
-    padding: var(--sp-1) var(--sp-3);
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
+    padding: 0.42rem 0.62rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.6rem;
+    background: #f1f5f9;
     color: #334155;
-    font-size: 0.875rem;
-    line-height: 1.25;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
     text-align: start;
     cursor: pointer;
     transition: background-color var(--motion-dur-fast) var(--motion-ease-out),
-        color var(--motion-dur-fast) var(--motion-ease-out),
+        border-color var(--motion-dur-fast) var(--motion-ease-out),
         scale var(--motion-dur-fast) var(--motion-ease-out);
 }
 
+.lang-menu-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.lang-menu-gloss {
+    font-size: 11px;
+    font-weight: 400;
+    color: #475569;
+}
+
+.lang-menu-gloss[hidden] {
+    display: none;
+}
+
 @media (pointer: coarse) {
-    .lang-menu-btn,
+    .lang-menu-btn {
+        min-height: var(--hit-min);
+        min-width: var(--hit-min);
+        padding-inline: var(--sp-2);
+    }
+
     .lang-menu-item {
         min-height: var(--hit-min);
     }
+}
 
-    .lang-menu-btn {
-        min-width: var(--hit-min);
+@media (hover: hover) and (pointer: fine) {
+    .lang-menu-item:hover {
+        background: #e2e8f0;
     }
 }
 
-.lang-menu-item:hover,
 .lang-menu-item:focus-visible {
-    background: #f4eee2;
-    color: #223e5a;
+    background: #e2e8f0;
 }
 
 .lang-menu-item:active {
     scale: 0.98;
 }
 
-/* The tick marks the language on screen; aria-checked says it to screen
-   readers, and the chosen row is also bolder, so colour is never the only cue. */
-/* Qualified by the row's state so it outranks .library-shell button svg. */
-.lang-menu-check {
-    flex-shrink: 0;
-    color: #223e5a;
+/* The language on screen: an accent border and a tick (aria-checked says
+   it to screen readers), so colour is never the only cue. */
+.lang-menu-item[aria-checked="true"] {
+    border-color: var(--control-accent);
 }
 
+.lang-menu-tick {
+    display: inline-flex;
+    flex: none;
+}
+
+/* Qualified by the row's state so it outranks .library-shell button svg. */
 .lang-menu-item[aria-checked] .lang-menu-check {
+    color: var(--control-accent);
     opacity: 0;
     scale: 0.6;
     transition: opacity var(--motion-dur-fast) var(--motion-ease-out),
         scale var(--motion-dur-base) var(--motion-ease-decel);
-}
-
-.lang-menu-item[aria-checked="true"] {
-    font-weight: 600;
 }
 
 .lang-menu-item[aria-checked="true"] .lang-menu-check {
@@ -881,21 +928,48 @@ button.topbar-user-menu-item:focus-visible {
     background: var(--surface-elevated);
 }
 
-:is([data-theme="dark"], body.theme-dark) .lang-menu-item,
-:is([data-theme="dark"], body.theme-dark) .lang-menu-check {
+:is([data-theme="dark"], body.theme-dark) .lang-menu-item {
+    background: rgb(168 162 158 / 0.16);
+    border-color: rgb(168 162 158 / 0.6);
     color: var(--accent-cream);
 }
 
-:is([data-theme="dark"], body.theme-dark) .lang-menu-item:hover,
+:is([data-theme="dark"], body.theme-dark) .lang-menu-gloss {
+    color: var(--accent-cream);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    :is([data-theme="dark"], body.theme-dark) .lang-menu-item:hover {
+        background: var(--control-bg-hover);
+    }
+}
+
 :is([data-theme="dark"], body.theme-dark) .lang-menu-item:focus-visible {
     background: var(--control-bg-hover);
-    color: var(--control-text-strong);
+}
+
+:is([data-theme="dark"], body.theme-dark) .lang-menu-item[aria-checked="true"] {
+    border-color: var(--accent-gold);
+}
+
+/* !important: the dark theme greys every button icon with !important
+   (--icon-muted, further down); the tick keeps the accent. */
+:is([data-theme="dark"], body.theme-dark) .lang-menu-item[aria-checked] .lang-menu-check {
+    color: var(--accent-gold) !important;
+}
+
+@media (prefers-contrast: more) {
+    .lang-menu-item[aria-checked="true"] {
+        outline: 1px solid currentColor;
+        outline-offset: -1px;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
     .lang-menu-btn,
     .lang-menu-item,
     .lang-menu-caret,
+    .lang-menu-globe,
     .lang-menu-check {
         transition-duration: 0.01ms;
     }
@@ -903,6 +977,10 @@ button.topbar-user-menu-item:focus-visible {
     .lang-menu-btn:active,
     .lang-menu-item:active {
         scale: none;
+    }
+
+    .lang-menu-btn[aria-expanded="true"] .lang-menu-globe {
+        rotate: none;
     }
 }
 
@@ -3128,7 +3206,7 @@ body.mobile-panel-open {
     }
 
     #mobileNavBtn,
-    #mobileLangToggle,
+    #langMenuBtn,
     #settingsMenuBtn,
     #userProfileMenuBtn {
         min-height: 2rem;
@@ -3462,7 +3540,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 
     #settingsMenuBtn,
     #authControls button:not(.topbar-user-menu-item),
-    #mobileLangToggle {
+    #langMenuBtn {
         font-size: 11px;
         line-height: 1.2;
         padding: 0.24rem 0.5rem;
@@ -3553,12 +3631,12 @@ html.rtl .home-main-layout #popularTextsGrid {
        button). .reader-topbar-icon-btn is excluded: its own box is already
        44x44 (min-height/min-width: var(--hit-min)), so it needs no slop. */
     #signInBtn,
-    #mobileLangToggle {
+    #langMenuBtn {
         position: relative;
     }
 
     #signInBtn::after,
-    #mobileLangToggle::after {
+    #langMenuBtn::after {
         content: "";
         position: absolute;
         top: 50%;
@@ -3846,7 +3924,7 @@ html.rtl .home-main-layout #popularTextsGrid {
    silently cancelled: .topbar-flat-btn:hover's color has no !important,
    so it always lost to this rule's always-on `color: ... !important`
    above at equal (0,2,0) specificity by losing the source-order tie
-   (this rule comes later in the file). #settingsMenuBtn/#mobileLangToggle
+   (this rule comes later in the file). #settingsMenuBtn/#langMenuBtn
    don't have this problem -- they get a dedicated, higher-specificity
    :hover override further down (search ".library-shell #settingsMenuBtn:hover")
    that .lang-btn never had. Mirrors that same pattern instead of just
@@ -3894,7 +3972,7 @@ html.rtl .home-main-layout #popularTextsGrid {
 }
 
 .library-shell #settingsMenuBtn,
-.library-shell #mobileLangToggle,
+.library-shell #langMenuBtn,
 .library-shell #readerSettingsBtn,
 .library-shell #bookmarkCurrentBtn,
 .library-shell #openReaderSettingsFromMenu,
@@ -3918,8 +3996,8 @@ html.rtl .home-main-layout #popularTextsGrid {
 
 .library-shell #settingsMenuBtn:hover,
 .library-shell #settingsMenuBtn:focus-visible,
-.library-shell #mobileLangToggle:hover,
-.library-shell #mobileLangToggle:focus-visible,
+.library-shell #langMenuBtn:hover,
+.library-shell #langMenuBtn:focus-visible,
 .library-shell #readerSettingsBtn:hover,
 .library-shell #openReaderSettingsFromMenu:hover,
 .library-shell #importShelfBtn:hover,
@@ -3974,7 +4052,7 @@ html.rtl .library-shell #searchSuggestions .suggestion-item[aria-selected="true"
 @media (max-width: 768px) {
 
     .library-shell #settingsMenuBtn,
-    .library-shell #mobileLangToggle,
+    .library-shell #langMenuBtn,
     .library-shell #readerSettingsBtn,
     .library-shell #themeToggleBtn,
     .library-shell .lang-btn {
@@ -4547,7 +4625,7 @@ html.theme-dark,
 }
 
 :is([data-theme="dark"], body.theme-dark) .lang-btn:active,
-:is([data-theme="dark"], body.theme-dark) #mobileLangToggle:active {
+:is([data-theme="dark"], body.theme-dark) #langMenuBtn:active {
     background-color: var(--control-bg-hover) !important;
     border-color: var(--control-border) !important;
 }
@@ -5618,7 +5696,7 @@ html.rtl #readerTopBar #readerLibraryTopBarBtn {
    earlier copy near the light-theme #settingsPanel rules was removed: this
    one always won the cascade, and duplicate selectors trip SonarCloud
    css:S4666). Warm stone-chip treatment matches #settingsMenuBtn /
-   #mobileLangToggle so all Quick Settings controls read consistently in
+   #langMenuBtn so all Quick Settings controls read consistently in
    dark mode instead of the near-invisible flat --surface-pill fill (and
    without the cool blue-gray tint slate-400 carried). */
 :is([data-theme="dark"], body.theme-dark) #settingsPanel button:not(#bookmarkCurrentBtn) {
