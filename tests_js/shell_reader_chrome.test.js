@@ -120,6 +120,10 @@ test('on a phone the library and sources drawers open and close from their butto
 
         page.eval(`toggleMobilePanel('left')`);
         assert.equal(open('#leftSidebar'), false);
+        // The drawer stays lifted above the backdrop until it has slid away
+        // (dropping it mid-slide made the screen blink), then the flag goes.
+        assert.equal(page.document.body.classList.contains('mobile-panel-open'), true);
+        await new Promise((resolve) => setTimeout(resolve, 600));
         assert.equal(page.document.body.classList.contains('mobile-panel-open'), false);
 
         // Opening one drawer closes the other.

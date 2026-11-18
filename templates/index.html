@@ -85,6 +85,12 @@
     <!-- View transitions between views (static/js/motion.js transitionView) are
          behind a flag: VIEW_TRANSITIONS=true on the server (app.py), or this
          browser's localStorage "shelah.viewTransitions" = "on" / "off". -->
+    {#- Weak or battery-saving devices get solid bars and panels instead of live
+        backdrop blur (style.css "lite-device"): Data Saver, Chrome's deviceMemory
+        or core count at 4 or less, and Samsung Internet, whose blur is known to
+        stutter while content scrolls under it. Motion itself stays; it only
+        animates transform and opacity, which the GPU handles on any phone. #}
+    <script>(function(){try{var n=navigator,c=n.connection||{};if(c.saveData||(n.deviceMemory&&n.deviceMemory<=4)||(n.hardwareConcurrency&&n.hardwareConcurrency<=4)||/SamsungBrowser/.test(n.userAgent))document.documentElement.classList.add('lite-device');}catch(e){}})()</script>
     <script>try{var v=localStorage.getItem('shelah.viewTransitions'),r=document.documentElement;if(v==='on')r.setAttribute('data-view-transitions','');else if(v==='off')r.removeAttribute('data-view-transitions');}catch(e){}</script>
     <!-- The analytics consent banner is in the HTML and painted with the first
          frame (it is the page's largest text block, so it is also what LCP
@@ -368,7 +374,7 @@
     <!-- Mobile drawer backdrop — starts below the topbar -->
     <div id="mobileDrawerBackdrop" aria-hidden="true"
         class="hidden fixed left-0 right-0 bottom-0 bg-slate-900/45 backdrop-blur-[1px] z-85 lg:hidden"
-        style="top: var(--topbar-height, 3.4rem); transition: opacity var(--motion-dur-base) var(--motion-ease-out);">
+        style="top: var(--topbar-height, 3.4rem);">
     </div>
 
 

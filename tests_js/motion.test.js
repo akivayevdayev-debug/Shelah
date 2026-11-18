@@ -586,9 +586,9 @@ test('dismiss() animates the mover to the exit offset and finishes hidden with o
     const { mod, animate } = await loadMotion();
     const el = makeEl();
     let hiddenCalled = false;
-    await mod.dismiss(el, { preset: 'sheet', onHidden: () => { hiddenCalled = true; } });
+    await mod.dismiss(el, { preset: 'modal', onHidden: () => { hiddenCalled = true; } });
     assert.equal(animate.calls.length, 2);
-    assert.deepEqual(animate.calls[1].keyframes.transform, ['translateY(0px) scale(1)', 'translateY(40px) scale(1)']);
+    assert.deepEqual(animate.calls[1].keyframes.transform, ['translateY(0px) scale(1)', 'translateY(10px) scale(0.98)']);
     assert.equal(el.classList.contains('hidden'), true);
     assert.equal(hiddenCalled, true);
 });
@@ -860,4 +860,28 @@ test('transitionView marks the direction while it runs and clears it when done',
     await Promise.resolve();
     assert.equal(root.hasAttribute('data-vt-active'), false);
     assert.equal(root.hasAttribute('data-vt-direction'), false);
+});
+
+// ── present()/dismiss() before Motion has loaded ─────────────────────────
+
+test('present() fades with the Web Animations API while the Motion library is still loading', async () => {
+    const window = { matchMedia: () => ({ matches: false }) };
+    class Element {}
+    Element.prototype.animate = () => {};
+    const mod = (await loadEsmModule(MOTION_PATH, {
+        window, Element, getComputedStyle: fakeGetComputedStyle, DOMMatrixReadOnly: FakeDOMMatrixReadOnly, setTimeout,
+    })).namespace;
+    const el = makeEl(['hidden']);
+    const calls = [];
+    el.animate = (frames, opts) => {
+        const anim = { finished: Promise.resolve(), commitStyles() { anim.committed = true; }, cancel() { anim.cancelled = true; } };
+        calls.push({ frames, opts, anim });
+        return anim;
+    };
+    await mod.present(el, { preset: 'fade' });
+    assert.equal(el.classList.contains('hidden'), false);
+    assert.equal(calls.length, 1);
+    assert.deepEqual(calls[0].frames, [{ opacity: 0 }, { opacity: 1 }]);
+    assert.ok(calls[0].opts.duration > 0, 'a real fade, not a snap');
+    assert.equal(calls[0].anim.cancelled, true, 'no fill is left holding the value');
 });

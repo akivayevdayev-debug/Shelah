@@ -4,14 +4,14 @@
   "css": {
     "sources": {
       "css/tokens.css": "sha256:56a5da23feb2bc37aadd376ef8c8bd32d188d9d650090df8272692e058d5eff7",
-      "style.css": "sha256:8e6e6d9be0d497d257a90b6ba46cd2cd2d6cc0639f873ae54fc7c02c1ac69012",
+      "style.css": "sha256:21d663cfeb5ebeccad9f93d377fc31525d9bc11cc72e3be999b8143513059d9f",
       "css/typography.css": "sha256:000d5096d5c7322aff99d2fd1ef679d209f50c963a21f37fa38b28ed03ded543",
       "css/reader.css": "sha256:caafa2917b7adec185830051727222599176d43437f5637f614fe088cffd7fc9",
       "css/sidebar.css": "sha256:fc261c75dc4ba0abded264ec89ed57923c9db7264a21fc24b62a0186fe24a699",
       "css/halacha.css": "sha256:d56991aac19afaa3175434312588862a5a63b32c46d7d07d2f70e23fd9e049bf",
       "css/prayer.css": "sha256:70cf28909030c0816176889df96729aca7618f9088de74d324f9c9a38812c78d",
       "css/siddur.css": "sha256:c15cc96ceed2413d8518ae3f1812bad3edc00075a776e69055bbc0dfcf11e587",
-      "css/ai.css": "sha256:e0791f50f398cdac104a94beb7cb4a95f0fc66ca043f9e2474dd5a75e819fa3f",
+      "css/ai.css": "sha256:0220b4c120c82e033af2fb23a9bd749517269a39565f31a2407d128333ae9c7d",
       "css/conversation.css": "sha256:bda172ce9d63989f2505f6dd9a08fecd76005c400a484fb2582ed080904d5367",
       "css/history.css": "sha256:ff1556ed62eceadb953ed9a9b4325d70410a97e1bceff2271a07b5ebe213218c",
       "css/calendar.css": "sha256:b811a93e2a2887b109155a86b650a97088260a8896935bac99a66a14fc9e2634",
@@ -20,19 +20,19 @@
       "css/site-footer.css": "sha256:349509bd7824e7578b74500f1924810259b19e1b5335d756c9a8e910f5a2f83d",
       "css/tailwind.css": "sha256:04f7fe53c84b67f798e7891a7abd99476dc4d2040ad1fdae3be4e5b253b3b951"
     },
-    "sourcesHash": "b4f0176859039596e5eca4ed5823c86b9519dbb4ece6be7f69559a032b6ddd52",
+    "sourcesHash": "45b89dfb6ab623dda6da4256e07d9435d25aaf2ded4e37e91605579b78b9d71b",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "b4f0176859039596e5eca4ed5823c86b9519dbb4ece6be7f69559a032b6ddd52",
+        "sourcesHash": "45b89dfb6ab623dda6da4256e07d9435d25aaf2ded4e37e91605579b78b9d71b",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "b4f0176859039596e5eca4ed5823c86b9519dbb4ece6be7f69559a032b6ddd52",
+        "sourcesHash": "45b89dfb6ab623dda6da4256e07d9435d25aaf2ded4e37e91605579b78b9d71b",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -40,7 +40,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "b4f0176859039596e5eca4ed5823c86b9519dbb4ece6be7f69559a032b6ddd52",
+        "sourcesHash": "45b89dfb6ab623dda6da4256e07d9435d25aaf2ded4e37e91605579b78b9d71b",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
@@ -85,7 +85,7 @@
         "source": "sha256:968aced3c444af8bc1de8da0954ad3704ee3acf4a2df7812da324e62c3890547"
       },
       "shell.js": {
-        "source": "sha256:d693da5fd83a01f0fc91cd5e807a782ab92bf6fa8eeb5feae1887913dfe84f7a"
+        "source": "sha256:b0035b93eecd72f1eb033c63ef0de407fa99a5ff40e20629d8a3925685a2a8e0"
       },
       "topbar_shared.js": {
         "source": "sha256:14b49e6ce59a5b4be11a16d883641a2a9cd000c72bb631d1215ffbc9d3aea5d4"
@@ -120,7 +120,7 @@
         "icons.js": "sha256:849e07bad74ea893eb2c8e5cfe1a5e211d64820d342ce52163c879517d2dca28",
         "main.js": "sha256:42ce684aa5b8a6c97a708153c390c24aafb08097e6037d9240b8bfde5206a63d",
         "minhag-setting.js": "sha256:3f6723cd6b45a227b97a2fc4dab06365e1da3ae5e01b367ab6c07dd40d8f1060",
-        "motion.js": "sha256:0a7de3ec324279b8a7b5c4bb738bf85ec18306e5a6240778b5798e8000f652bc",
+        "motion.js": "sha256:b86f09d23abd2171e9b85c2c9ce753b00e2be71e18b608e9ab885c6257679280",
         "reader-ui.js": "sha256:afb5716e6b2112361fe652cc9efd2c6a4503ad9e560b898f0b00f992a4dc4fa8",
         "router.js": "sha256:0d047c46ceafc74c94158d9e13994ff59a61db4b5a0c56d2d5f331fe73a50ff8",
         "siddur-day.js": "sha256:90fc1ca893af55d80db83a1322b5e4c24c8c52c2fec2b10e17248032add6f3d5",
@@ -144,10 +144,10 @@
         "js/language-menu.js": "daf666490723",
         "js/load-region.js": "cd7ccc80f956",
         "js/main.js": "05eae3caf905",
-        "js/motion.js": "dd92c8fa6c18",
+        "js/motion.js": "98dd294f0471",
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
-        "js/shell.js": "a362f3e12c48",
+        "js/shell.js": "b676bbe77465",
         "js/topbar_shared.js": "605af35b4fb0"
       },
       "unreached": []

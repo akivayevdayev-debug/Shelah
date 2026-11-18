@@ -74,6 +74,7 @@
          behind a flag: VIEW_TRANSITIONS=true on the server (app.py), or this
          browser's localStorage "shelah.viewTransitions" = "on" / "off". -->
     
+    
     <!-- The analytics consent banner is in the HTML and painted with the first
          frame (it is the page's largest text block, so it is also what LCP
          measures); a recorded choice hides it here, before that frame, rather
@@ -206,7 +207,7 @@
     <!-- Mobile drawer backdrop — starts below the topbar -->
     <div id="mobileDrawerBackdrop" aria-hidden="true"
         class="hidden fixed left-0 right-0 bottom-0 bg-slate-900/45 backdrop-blur-[1px] z-85 lg:hidden"
-        style="top: var(--topbar-height, 3.4rem); transition: opacity var(--motion-dur-base) var(--motion-ease-out);">
+        style="top: var(--topbar-height, 3.4rem);">
     </div>
 
 

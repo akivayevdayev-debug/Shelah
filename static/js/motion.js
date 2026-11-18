@@ -29,6 +29,40 @@ function _motionAnimate() {
     return window.Motion?.animate ?? null;
 }
 
+// present()/dismiss() before the Motion library has arrived. index.html loads
+// it lazily (first touch, scroll or key, else 3 s after load), so a drawer
+// opened in that window used to pop its scrim in and out with no fade at all.
+// This covers the subset present()/dismiss() use with the browser's own Web
+// Animations API: an opacity or transform tween, springs approximated by
+// their natural period on the iOS sheet curve. It returns the shape Motion's
+// controls have (thenable, stop()) and, like Motion, leaves the final value
+// in the inline style rather than holding it with a fill.
+const _EASE_SHEET = 'cubic-bezier(0.32, 0.72, 0, 1)';
+function _nativeAnimate(el, keyframes, options = {}) {
+    const prop = Object.keys(keyframes)[0];
+    let values = keyframes[prop];
+    if (!Array.isArray(values)) values = [getComputedStyle(el)[prop], values];
+    let duration = options.duration ?? 0.22;
+    let easing = Array.isArray(options.ease) ? `cubic-bezier(${options.ease.join(', ')})` : 'ease-out';
+    if (options.stiffness) {
+        duration = Math.min(0.6, (2 * Math.PI) / Math.sqrt(options.stiffness) * 1.15);
+        easing = _EASE_SHEET;
+    }
+    const anim = el.animate(values.map((v) => ({ [prop]: v })), { duration: duration * 1000, easing, fill: 'both' });
+    const keep = () => {
+        try { anim.commitStyles(); } catch { /* element left the DOM */ }
+        anim.cancel();
+    };
+    const done = anim.finished.then(keep, () => {});
+    return { then: (ok, fail) => done.then(ok, fail), stop: keep };
+}
+
+function _presenceAnimate() {
+    const animate = _motionAnimate();
+    if (animate) return animate;
+    return typeof Element !== 'undefined' && typeof Element.prototype.animate === 'function' ? _nativeAnimate : null;
+}
+
 function _motionStagger() {
     return window.Motion?.stagger ?? null;
 }
@@ -41,7 +75,8 @@ function _motionStagger() {
 function _springTransition(config, extra = {}) {
     const spring = window.Motion?.spring ?? null;
     if (!spring) {
-        return { duration: config.duration ?? 0.22, ...extra };
+        // stiffness lets _nativeAnimate() pick a spring-like length.
+        return { duration: config.duration ?? 0.22, stiffness: config.stiffness, ...extra };
     }
     return { type: spring, ...config, ...extra };
 }
@@ -342,8 +377,16 @@ const _PRESENCE = {
         // Ease-out on the way out too: the fade starts moving at once instead of lingering.
         fade: { in: 0.16, out: 0.14, outMorph: 0.16, outEase: [0.25, 0, 0.3, 1] },
     },
-    // Phone bottom sheets / modal cards: slide up from below.
-    sheet:   { y: 56, scale: 1,    exitY: 40, exitScale: 1,   spring: appleSpring(0.46, 0.05) },
+    // Phone bottom sheets (the chapter picker): the card travels its full
+    // height up from the bottom edge and back down, the way the drawers do.
+    // The scrim fades in quickly while the card is still off-screen and fades
+    // out late, so the sheet reads as sliding rather than as a cross-fade.
+    sheet:   {
+        y: 'full', scale: 1, exitY: 'full', exitScale: 1,
+        spring: appleSpring(0.46, 0.05), leave: appleSpring(0.32, 0),
+        fade: { in: 0.12, out: 0.26, outEase: [0.7, 0, 1, 1] },
+        awaitExit: true,
+    },
     // Centred modal cards on larger screens.
     modal:   { y: 18, scale: 0.97, exitY: 10, exitScale: 0.98, spring: SPRING_ENTER },
     // Opacity only (scrims, full-screen dialog shells).
@@ -409,7 +452,7 @@ const _EASE_DECEL = 'cubic-bezier(0.22, 1, 0.36, 1)'; // tokens.css --motion-eas
 // still the latest one, so the caller knows it may finish the hand-over.
 async function _fadeReduced(el, from, to, state, token) {
     if (from !== null) el.style.opacity = String(from);
-    const fade = _motionAnimate()(
+    const fade = _presenceAnimate()(
         el,
         { opacity: from === null ? to : [from, to] },
         { duration: _REDUCED_FADE_S, ease: [0.25, 0, 0.3, 1] },
@@ -495,7 +538,7 @@ export async function present(el, { preset = 'popover', card = null, replay = fa
     state.origin = origin; // dismiss() folds back into it; never carry a stale trigger over
     el.classList.remove('hidden', 'is-hiding');
 
-    const animate = _motionAnimate();
+    const animate = _presenceAnimate();
     const p = _PRESENCE[preset] ?? _PRESENCE.popover;
     if (!animate) {
         _clearMotionStyles(el, card);
@@ -536,7 +579,7 @@ export async function dismiss(el, { preset = 'popover', card = null, onHidden } 
         onHidden?.();
     };
 
-    const animate = _motionAnimate();
+    const animate = _presenceAnimate();
     const p = _PRESENCE[preset] ?? _PRESENCE.popover;
     if (!animate) {
         finish();

@@ -639,10 +639,9 @@
 }
 
 /* ── Mobile drawer backdrop ──────────────────────────────── */
-#mobileDrawerBackdrop {
-    transition: opacity var(--motion-dur-base) var(--motion-ease-out) !important;
-}
-
+/* motion.js fades the backdrop in and out (present/dismiss 'fade'); a CSS
+   opacity transition here used to run on top of that and replay the fade when
+   the inline styles were cleared, so the scrim blinked. */
 #mobileDrawerBackdrop.hidden {
     opacity: 0;
     pointer-events: none;

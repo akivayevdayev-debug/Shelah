@@ -4042,6 +4042,27 @@ html.rtl .home-main-layout #popularTextsGrid {
     color: var(--control-text) !important;
 }
 
+/* The settings and language buttons sit in the top bar beside plain
+   .topbar-flat-btn icons, so they blend into it the same way in light mode
+   too: no fill and no border at rest (the --control-bg fill read as a
+   slightly different shade from the bar, more so on the translucent phone
+   bar), and the same faint tint as the other bar icons on hover/focus.
+   Dark mode already does this (the :is([data-theme="dark"]) rules near the
+   top of this file). */
+.library-shell #settingsMenuBtn,
+.library-shell #langMenuBtn {
+    background-color: transparent !important;
+    border-color: transparent !important;
+}
+
+.library-shell #settingsMenuBtn:hover,
+.library-shell #settingsMenuBtn:focus-visible,
+.library-shell #langMenuBtn:hover,
+.library-shell #langMenuBtn:focus-visible {
+    background-color: rgba(0, 0, 0, 0.06) !important;
+    border-color: transparent !important;
+}
+
 .library-shell #bookmarkCurrentBtn {
     background-color: var(--control-strong-bg) !important;
     border-color: var(--control-strong-bg) !important;
@@ -4052,10 +4073,6 @@ html.rtl .home-main-layout #popularTextsGrid {
     background-color: var(--control-strong-bg-hover) !important;
 }
 
-.library-shell #settingsMenuBtn:hover,
-.library-shell #settingsMenuBtn:focus-visible,
-.library-shell #langMenuBtn:hover,
-.library-shell #langMenuBtn:focus-visible,
 .library-shell #readerSettingsBtn:hover,
 .library-shell #openReaderSettingsFromMenu:hover,
 .library-shell #importShelfBtn:hover,
@@ -6289,4 +6306,58 @@ body.theme-dark #analyticsConsentAccept {
     #holidayName {
         min-height: var(--hit-min);
     }
+}
+
+
+/* ── Lite devices (html.lite-device, set in index.html's head) ─────────
+   Data Saver, low-memory or low-core phones and Samsung Internet: every
+   backdrop blur is swapped for the same solid surfaces the
+   prefers-reduced-transparency fallbacks use, because re-blurring the page
+   under a fixed bar on every scrolled frame is what makes those devices
+   drop frames. !important because each material sets its own fill in
+   several theme/breakpoint rules across style.css, reader.css,
+   conversation.css and calendar-detail.css. */
+html.lite-device .library-shell {
+    --bar-fill: var(--surface-base) !important;
+}
+
+html.lite-device :is(
+    header.topbar,
+    #readerTopBar,
+    .mobile-bottom-tabs,
+    .sidebar-show-tab,
+    .reader-source-title,
+    .cal-detail__panel,
+    .conv-menu,
+    .conv-sharepop,
+    .conv-toast,
+    .conv-pop,
+    .conv-pip,
+    .mobile-search-tray,
+    .ai-tip,
+    .conv-scrim,
+    .turnstile-modal__scrim,
+    #mobileDrawerBackdrop,
+    #calendarModal,
+    #textsMenuModal,
+    #chapterGridModal,
+    #privacyDataModal,
+    #libraryCategoryModal
+) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+html.lite-device :is(
+    .reader-source-title,
+    .cal-detail__panel,
+    .conv-menu,
+    .conv-sharepop,
+    .conv-toast,
+    .conv-pop,
+    .conv-pip,
+    .mobile-search-tray,
+    .ai-tip
+) {
+    background: var(--surface-2) !important;
 }

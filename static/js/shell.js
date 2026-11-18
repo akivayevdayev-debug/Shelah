@@ -3696,6 +3696,22 @@ function hasParenthetical(text) {
         // own transform transition ends it: transitionend bubbles, and a
         // button's hover fade inside it used to hide it at once.
         const _drawerTokens = new WeakMap();
+        let _panelOpenToken = 0;
+
+        // Runs `fn` once the frame now being prepared has been drawn (rAF, then
+        // a task), so an animation started just before is already on screen
+        // when `fn` takes the main thread. A timer covers a hidden tab, where
+        // rAF does not fire.
+        function afterFirstFrame(fn) {
+            let done = false;
+            const run = () => {
+                if (done) return;
+                done = true;
+                fn();
+            };
+            globalThis.requestAnimationFrame?.(() => setTimeout(run, 0));
+            setTimeout(run, 100);
+        }
 
         function transitionMs(el) {
             const style = getComputedStyle(el);
@@ -3704,7 +3720,7 @@ function hasParenthetical(text) {
             return Math.max(0, ...style.transitionDuration.split(',').map((d, i) => toMs(d) + toMs(delays[i % delays.length])));
         }
 
-        function setMobileDrawerState(drawer, open) {
+        function setMobileDrawerState(drawer, open, onClosed) {
             if (!drawer) return;
             const token = (_drawerTokens.get(drawer) || 0) + 1;
             _drawerTokens.set(drawer, token);
@@ -3727,6 +3743,7 @@ function hasParenthetical(text) {
                 // Superseded, or the sidebars went back to desktop columns.
                 if (_drawerTokens.get(drawer) !== token || !isMobileViewport()) return;
                 drawer.classList.add('hidden');
+                onClosed?.();
             };
             const onEnd = (event) => {
                 if (event.target === drawer && event.propertyName === 'transform') finish();
@@ -3746,10 +3763,19 @@ function hasParenthetical(text) {
                 return;
             }
 
-            setMobileDrawerState(leftSidebar, false);
-            setMobileDrawerState(rightSidebar, false);
+            // mobile-panel-open lifts the drawers above the backdrop (style.css,
+            // .app-row). Dropping it while a drawer is still sliding away put the
+            // drawer under the fading backdrop for the rest of the slide: it
+            // darkened all at once, a blink. It goes when the drawer has gone.
+            const panelOpenToken = ++_panelOpenToken;
+            const dropPanelOpen = () => {
+                if (panelOpenToken === _panelOpenToken) document.body.classList.remove('mobile-panel-open');
+            };
+            const sliding = [leftSidebar, rightSidebar].filter((d) => d && !d.classList.contains('hidden'));
+            let pending = sliding.length;
+            sliding.forEach((d) => setMobileDrawerState(d, false, () => { if (--pending === 0) dropPanelOpen(); }));
+            if (!pending) dropPanelOpen();
             dismissEl(mobileDrawerBackdrop, { preset: 'fade' });
-            document.body.classList.remove('mobile-panel-open');
             // The Library tab lit up because its drawer was open; with the drawer
             // gone the screen underneath is what is current again.
             if (mobileBottomTabs?.querySelector('.mobile-tab-active')?.dataset.mobileTab === 'library') {
@@ -3762,11 +3788,12 @@ function hasParenthetical(text) {
 
             const openLeft = panel === 'left';
             const openRight = panel === 'right';
+            _panelOpenToken += 1;
+            document.body.classList.add('mobile-panel-open');
             setMobileDrawerState(leftSidebar, openLeft);
             setMobileDrawerState(rightSidebar, openRight);
 
             presentEl(mobileDrawerBackdrop, { preset: 'fade' });
-            document.body.classList.add('mobile-panel-open');
         }
 
         function toggleMobilePanel(panel) {
@@ -8287,27 +8314,37 @@ function hasParenthetical(text) {
         if (readerCommentaryTopBarBtn) {
             readerCommentaryTopBarBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (isCommentaryEligiblePrimaryText()
-                    && (selectionCommentaryState.mode === 'reading' || !commentaryAvailableForCurrentSelection)) {
-                    // No passage selected: list the commentary on the verse
-                    // being read (loaded ahead of time) and follow the reader.
-                    void startReadingCommentary();
-                } else if (!commentaryAvailableForCurrentSelection) {
-                    resetSelectionInsights();
-                    setCommentaryAvailability(true);
-                    showSelectionInsights();
-                }
+                // On a phone the sheet starts rising first and the commentary is
+                // built once its first frame is on screen: building it first held
+                // the main thread for the opening frames, so on a slower phone
+                // the slide was over before it was ever drawn and the sheet
+                // seemed to fade in.
                 if (isMobileViewport()) {
                     openMobilePanel('right');
-                } else {
-                    // Unconditional (not just when currently hidden): this is
-                    // what actually re-runs applySidebarVisibility() so the
-                    // commentaryAvailableForCurrentSelection flip above takes
-                    // effect and the column renders -- setting the state var
-                    // alone doesn't touch the DOM.
-                    setSidebarVisibility('right', true);
+                    afterFirstFrame(fillCommentaryForButton);
+                    return;
                 }
+                fillCommentaryForButton();
+                // Unconditional (not just when currently hidden): this is
+                // what actually re-runs applySidebarVisibility() so the
+                // commentaryAvailableForCurrentSelection flip above takes
+                // effect and the column renders -- setting the state var
+                // alone doesn't touch the DOM.
+                setSidebarVisibility('right', true);
             });
+        }
+
+        function fillCommentaryForButton() {
+            if (isCommentaryEligiblePrimaryText()
+                && (selectionCommentaryState.mode === 'reading' || !commentaryAvailableForCurrentSelection)) {
+                // No passage selected: list the commentary on the verse
+                // being read (loaded ahead of time) and follow the reader.
+                void startReadingCommentary();
+            } else if (!commentaryAvailableForCurrentSelection) {
+                resetSelectionInsights();
+                setCommentaryAvailability(true);
+                showSelectionInsights();
+            }
         }
 
         if (closeChapterGridModalBtn) {

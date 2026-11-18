@@ -197,7 +197,11 @@ test('on a phone the commentary button opens the sources drawer instead', async 
         page.media.set(MOBILE, true);
         commentaryState(page, { eligible: true, mode: 'reading', available: true });
         page.click('#readerCommentaryTopBarBtn');
-        assert.deepEqual(logOf(page), [['startReadingCommentary'], ['openMobilePanel', 'right']]);
+        // The drawer starts sliding first; the commentary fills in after a frame so
+        // building it doesn't stall the slide.
+        assert.deepEqual(logOf(page), [['openMobilePanel', 'right']]);
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        assert.deepEqual(logOf(page), [['openMobilePanel', 'right'], ['startReadingCommentary']]);
     } finally {
         page.close();
     }
