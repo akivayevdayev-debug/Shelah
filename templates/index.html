@@ -685,7 +685,7 @@
                         <span class="reader-topbar-settings-icon" aria-hidden="true">&#9776;</span>
                         <span id="readerSettingsBtnLabel" class="reader-topbar-settings-label"
                             {{ lang_attrs('home.reader_settings') }}>{{ _('home.reader_settings') }}</span>
-                        {# Phones show the open text's name here instead (shell.js labelReaderTopBar). #}
+                        {# shell.js labelReaderTopBar fills this with the open text's name; no width shows it now (the title below names the text). #}
                         <span id="readerSettingsBtnRef" class="reader-topbar-ref" aria-hidden="true"></span>
                         {{ phosphor('caret-down', size=12, class='reader-topbar-ref-caret h-3 w-3') }}
                     </button>

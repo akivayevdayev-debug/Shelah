@@ -6069,8 +6069,10 @@ body.theme-dark #analyticsConsentAccept {
 }
 
 /* Phone reader bar: back arrow at the far left, forward arrow at the far
-   right, the open text's name centred between them (it opens Reader
-   Settings), commentary as a smaller icon beside the forward arrow. A
+   right, the Reader Settings button centred between them (icon + label, as
+   on desktop; the page title right below already names the text, so the
+   bar does not repeat it), commentary as a smaller icon beside the forward
+   arrow. A
    disabled arrow stays in place, faded, so nothing shifts. */
 .reader-topbar-ref,
 .reader-topbar-ref-caret {
@@ -6102,9 +6104,9 @@ body.theme-dark #analyticsConsentAccept {
         height: 15px;
     }
 
-    #readerTopBar .reader-topbar-settings-icon,
-    #readerSettingsBtn:has(.reader-topbar-ref:not(:empty)) .reader-topbar-settings-label {
-        display: none;
+    #readerTopBar .reader-topbar-settings-label {
+        font-size: var(--text-sm);
+        color: var(--ink-heading);
     }
 
     .library-shell .reader-topbar-shell #readerSettingsBtn.reader-topbar-settings-btn {
@@ -6118,23 +6120,7 @@ body.theme-dark #analyticsConsentAccept {
         box-shadow: none;
     }
 
-    #readerTopBar .reader-topbar-ref {
-        display: block;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-family: var(--font-serif);
-        font-size: var(--text-base, 1rem);
-        font-weight: 700;
-        color: var(--ink-heading);
-    }
-
-    #readerTopBar .reader-topbar-ref:empty + .reader-topbar-ref-caret {
-        display: none;
-    }
-
-    #readerTopBar .reader-topbar-ref:not(:empty) + .reader-topbar-ref-caret {
+    #readerTopBar .reader-topbar-ref-caret {
         display: block;
         flex-shrink: 0;
         opacity: 0.6;

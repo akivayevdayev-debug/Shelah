@@ -461,3 +461,17 @@ html.rtl .segment-row.verse-target::after {
         opacity: 1;
     }
 }
+
+/* Phone and tablet: the chapter title sat ~60px above verse 1 (title margin,
+   header margin, then #readerSources' mt-12 + pt-10). Keep one modest step. */
+@media (max-width: 1023px) {
+    #reader[data-view="text"] > header,
+    #reader[data-view="text"] #readerTitle {
+        margin-bottom: var(--sp-2);
+    }
+
+    #reader[data-view="text"] #readerSources {
+        margin-top: var(--sp-2);
+        padding-top: 0;
+    }
+}
