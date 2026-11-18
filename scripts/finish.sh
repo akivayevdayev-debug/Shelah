@@ -6,6 +6,8 @@
 #   scripts/finish.sh --no-tests rebuild only (assets, critical CSS, fixture, graphify)
 #
 # What it does, each step only when the change needs it:
+#   0. npm run build:css         templates/, static/js or the Tailwind input
+#                                changed (they decide which utilities ship)
 #   1. npm run build:assets      static/js, static/css or static/style.css changed
 #   2. npm run build:critical    static/css or static/style.css changed
 #   3. page fixture              templates/ or static/js changed; rebuilt from a
@@ -40,6 +42,15 @@ has() { printf '%s\n' "$CHANGED" | grep -Eq "$1"; }
 
 if [ -z "$CHANGED" ]; then
     echo "Nothing changed against HEAD."
+fi
+
+# 0. Tailwind. Its output is committed, so a template, script or theme change
+#    that is not rebuilt leaves static/css/tailwind.css stale (it once kept
+#    Inter for .font-sans after the theme moved to Hanken Grotesk).
+if has '^(templates/|static/js/|static/css/tailwind\.(input|palette-v3)\.css$)'; then
+    step "build:css"
+    npm run -s build:css >/dev/null 2>&1 || fail "build:css"
+    CHANGED="$(changed)"
 fi
 
 # 1-2. Assets

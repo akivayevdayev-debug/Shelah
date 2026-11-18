@@ -13,6 +13,7 @@
 //                                      a screenshot (returning visitor)
 //   ... --url http://localhost:5002    use a server that is already running
 //   ... --mobile                       375x812 phone viewport
+//   ... --size 1440x900                any other viewport (default 800x600)
 //
 // Without --url it starts its own uvicorn (asgi:fastapi_app) on a free port
 // from this checkout and stops it afterwards, so it never reads a stale dev
@@ -234,6 +235,10 @@ let problems = [];
 try {
     const page = await browser.newPage();
     if (flag('--mobile')) await page.setViewport({ width: 375, height: 812, isMobile: true, hasTouch: true });
+    else if (/^\d+x\d+$/.test(option('--size') || '')) {
+        const [width, height] = option('--size').split('x').map(Number);
+        await page.setViewport({ width, height });
+    }
     problems = await checks[mode](page, server.base);
 } finally {
     await Promise.race([browser.close(), sleep(3000)]);
