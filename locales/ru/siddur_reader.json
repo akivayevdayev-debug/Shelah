@@ -1,0 +1,14 @@
+{
+  "ashkenaz_not_here_yet": "Нусах Ашкеназ в этом сидуре пока не представлен. Это сидур: {rite}.",
+  "attribution": "Текст: {index} из Sefaria. Оригинал на иврите: {heTitle} ({heLicense}). Английский перевод: {enTitle} ({enLicense}), если перевод существует.",
+  "breadcrumb": "Путь по разделам",
+  "keep_screen_on": "Не гасить экран",
+  "next": "Далее",
+  "no_english_translation_for_this_section": "Английского перевода этого раздела пока нет.",
+  "other_services": "Другие молитвы",
+  "previous": "Назад",
+  "sections": "Разделы",
+  "siddur": "Сидур",
+  "today": "Сегодня",
+  "siddur_with_rite": "Сидур · {rite}"
+}

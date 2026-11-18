@@ -96,6 +96,6 @@ test('the real catalogs carry Hebrew for the shell', () => {
     assert.equal(tFor('he')('shell.places', { count: 3 }), '3 מקומות');
 });
 
-test('the real catalogs ship English and Hebrew to the page', () => {
-    assert.deepEqual(catalog.locales.map((l) => l.code), ['en', 'he']);
+test('the real catalogs ship every enabled language to the page, English first', () => {
+    assert.deepEqual(catalog.locales.map((l) => l.code), ['en', 'he', 'es', 'ru', 'fr', 'de', 'ar']);
 });

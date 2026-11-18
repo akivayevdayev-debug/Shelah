@@ -1,0 +1,14 @@
+{
+  "ashkenaz_not_here_yet": "Le nossa'h achkénaze n'est pas encore dans ce siddour. Voici le siddour {rite}.",
+  "attribution": "Texte : {index} de Sefaria. Hébreu : {heTitle} ({heLicense}). Anglais : {enTitle} ({enLicense}), là où une traduction existe.",
+  "breadcrumb": "Fil d'Ariane",
+  "keep_screen_on": "Garder l'écran allumé",
+  "next": "Suivant",
+  "no_english_translation_for_this_section": "Pas encore de traduction anglaise pour cette section.",
+  "other_services": "Autres offices",
+  "previous": "Précédent",
+  "sections": "Sections",
+  "siddur": "Siddour",
+  "today": "Aujourd'hui",
+  "siddur_with_rite": "Siddour · {rite}"
+}

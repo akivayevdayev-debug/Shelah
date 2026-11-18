@@ -1,0 +1,14 @@
+{
+  "ashkenaz_not_here_yet": "El nusaj Ashkenaz aún no está en este sidur. Este es el sidur {rite}.",
+  "attribution": "Texto: {index} de Sefaria. Hebreo: {heTitle} ({heLicense}). Inglés: {enTitle} ({enLicense}), donde existe traducción.",
+  "breadcrumb": "Ruta de navegación",
+  "keep_screen_on": "Mantener la pantalla encendida",
+  "next": "Siguiente",
+  "no_english_translation_for_this_section": "Aún no hay traducción al inglés para esta sección.",
+  "other_services": "Otros servicios",
+  "previous": "Anterior",
+  "sections": "Secciones",
+  "siddur": "Sidur",
+  "today": "Hoy",
+  "siddur_with_rite": "Sidur · {rite}"
+}

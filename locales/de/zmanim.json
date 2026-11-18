@@ -1,0 +1,12 @@
+{
+  "couldnt_load_zmanim_times": "Zmanim konnten nicht geladen werden.",
+  "in_countdown": "in {countdown}",
+  "latest_shacharit_gra": "Späteste Zeit für Schacharit (GRA)",
+  "latest_shacharit_gra_baal_hatanya": "Späteste Zeit für Schacharit (GRA / Baal HaTanja)",
+  "latest_shema_gra": "Späteste Zeit für Schma (GRA)",
+  "latest_shema_gra_baal_hatanya": "Späteste Zeit für Schma (GRA / Baal HaTanja)",
+  "open_today_in_the_calendar": "Heute im Kalender öffnen",
+  "retry": "Erneut versuchen",
+  "unavailable": "Nicht verfügbar",
+  "local_time_zone": "Lokal"
+}

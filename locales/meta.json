@@ -3,13 +3,13 @@
   "locales": [
     {"code": "en", "name": "English", "dir": "ltr", "script": "Latin", "fallback": null, "enabled": true},
     {"code": "he", "name": "עברית", "dir": "rtl", "script": "Hebrew", "fallback": "en", "enabled": true},
-    {"code": "es", "name": "Español", "dir": "ltr", "script": "Latin", "fallback": "en", "enabled": false},
-    {"code": "ru", "name": "Русский", "dir": "ltr", "script": "Cyrillic", "fallback": "en", "enabled": false},
-    {"code": "fr", "name": "Français", "dir": "ltr", "script": "Latin", "fallback": "en", "enabled": false},
-    {"code": "de", "name": "Deutsch", "dir": "ltr", "script": "Latin", "fallback": "en", "enabled": false},
-    {"code": "ar", "name": "العربية", "dir": "rtl", "script": "Arabic", "fallback": "en", "enabled": false}
+    {"code": "es", "name": "Español", "dir": "ltr", "script": "Latin", "fallback": "en", "enabled": true},
+    {"code": "ru", "name": "Русский", "dir": "ltr", "script": "Cyrillic", "fallback": "en", "enabled": true},
+    {"code": "fr", "name": "Français", "dir": "ltr", "script": "Latin", "fallback": "en", "enabled": true},
+    {"code": "de", "name": "Deutsch", "dir": "ltr", "script": "Latin", "fallback": "en", "enabled": true},
+    {"code": "ar", "name": "العربية", "dir": "rtl", "script": "Arabic", "fallback": "en", "enabled": true}
   ],
-  "_enabled": "A language goes live by setting enabled to true once its catalog is complete and reviewed. Portuguese is left out until Sefaria's Portuguese texts have clear licences.",
+  "_enabled": "A language goes live by setting enabled to true once its catalog is complete and reviewed. Portuguese is left out until Sefaria's Portuguese texts have clear licences. Legal pages (privacy, terms, acceptable use, DMCA, AI disclosure, licences, accessibility) stay English in es/ru/fr/de/ar until the owner decides; their keys fall back to English.",
   "_client_namespaces": "Namespaces the browser scripts look up (static/js/i18n.js). Only these are written into the page, as the #i18n-catalog data block.",
   "client_namespaces": ["answer_link", "answer_share", "ask_history", "conversation", "keyboard", "shell", "siddur", "siddur_day", "siddur_reader", "text_versions", "zmanim"],
   "_keep_names":"Names written the same in every language; the script check ignores them.",

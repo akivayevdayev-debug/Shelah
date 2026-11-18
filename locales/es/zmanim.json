@@ -1,0 +1,12 @@
+{
+  "couldnt_load_zmanim_times": "No se pudieron cargar los horarios de zmanim.",
+  "in_countdown": "en {countdown}",
+  "latest_shacharit_gra": "Último Shajarit (GRA)",
+  "latest_shacharit_gra_baal_hatanya": "Último Shajarit (GRA / Baal HaTanya)",
+  "latest_shema_gra": "Último Shemá (GRA)",
+  "latest_shema_gra_baal_hatanya": "Último Shemá (GRA / Baal HaTanya)",
+  "open_today_in_the_calendar": "Abrir hoy en el calendario",
+  "retry": "Reintentar",
+  "unavailable": "No disponible",
+  "local_time_zone": "Local"
+}

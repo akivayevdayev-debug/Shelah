@@ -1,0 +1,12 @@
+{
+  "couldnt_load_zmanim_times": "Не удалось загрузить зманим.",
+  "in_countdown": "через {countdown}",
+  "latest_shacharit_gra": "Конец времени Шахарит (ГРА)",
+  "latest_shacharit_gra_baal_hatanya": "Конец времени Шахарит (ГРА / Бааль а-Тания)",
+  "latest_shema_gra": "Конец времени Шма (ГРА)",
+  "latest_shema_gra_baal_hatanya": "Конец времени Шма (ГРА / Бааль а-Тания)",
+  "open_today_in_the_calendar": "Открыть сегодня в календаре",
+  "retry": "Повторить",
+  "unavailable": "Недоступно",
+  "local_time_zone": "Местное"
+}

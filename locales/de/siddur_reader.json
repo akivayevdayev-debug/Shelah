@@ -1,0 +1,14 @@
+{
+  "ashkenaz_not_here_yet": "Nusach Aschkenas ist in diesem Siddur noch nicht enthalten. Das hier ist der Siddur im Ritus {rite}.",
+  "attribution": "Text: {index} von Sefaria. Hebräisch: {heTitle} ({heLicense}). Englisch: {enTitle} ({enLicense}), wo es eine Übersetzung gibt.",
+  "breadcrumb": "Brotkrumenpfad",
+  "keep_screen_on": "Bildschirm anlassen",
+  "next": "Weiter",
+  "no_english_translation_for_this_section": "Für diesen Abschnitt gibt es noch keine englische Übersetzung.",
+  "other_services": "Andere Gebete",
+  "previous": "Zurück",
+  "sections": "Abschnitte",
+  "siddur": "Siddur",
+  "today": "Heute",
+  "siddur_with_rite": "Siddur · {rite}"
+}

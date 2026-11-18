@@ -1,0 +1,12 @@
+{
+  "couldnt_load_zmanim_times": "تعذّر تحميل أوقات الزمانيم.",
+  "in_countdown": "خلال {countdown} من الآن",
+  "latest_shacharit_gra": "آخر وقت لشاحريت (الغرا)",
+  "latest_shacharit_gra_baal_hatanya": "آخر وقت لشاحريت (الغرا / بعل التانيا)",
+  "latest_shema_gra": "آخر وقت لشمع (الغرا)",
+  "latest_shema_gra_baal_hatanya": "آخر وقت لشمع (الغرا / بعل التانيا)",
+  "open_today_in_the_calendar": "فتح اليوم في التقويم",
+  "retry": "إعادة المحاولة",
+  "unavailable": "غير متاح",
+  "local_time_zone": "محلي"
+}

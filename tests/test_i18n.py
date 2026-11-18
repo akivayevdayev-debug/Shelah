@@ -310,3 +310,11 @@ def test_legal_pages_carry_the_language_list():
 
     body = flask_app.app.test_client().get("/about").get_data(as_text=True)
     assert 'id="i18n-catalog"' in body
+
+
+# ── Languages beyond English and Hebrew ──────────────────────────────────────
+
+@pytest.mark.parametrize("code", [c for c in i18n.CATALOGS.enabled if c not in ("en", "he")])
+def test_each_switched_on_language_passes_the_catalog_check(code):
+    from scripts.check_locale import check
+    assert check(code) == []

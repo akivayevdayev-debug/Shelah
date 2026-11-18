@@ -1,0 +1,14 @@
+{
+  "ashkenaz_not_here_yet": "نوساح أشكناز غير متوفر في هذا السيدور بعد. هذا هو سيدور {rite}.",
+  "attribution": "النص: {index} من Sefaria. العبرية: {heTitle} ({heLicense}). الإنجليزية: {enTitle} ({enLicense})، حيثما توجد ترجمة.",
+  "breadcrumb": "مسار التنقل",
+  "keep_screen_on": "إبقاء الشاشة مضاءة",
+  "next": "التالي",
+  "no_english_translation_for_this_section": "لا توجد ترجمة إنجليزية لهذا القسم بعد.",
+  "other_services": "صلوات أخرى",
+  "previous": "السابق",
+  "sections": "الأقسام",
+  "siddur": "السيدور",
+  "today": "اليوم",
+  "siddur_with_rite": "السيدور · {rite}"
+}

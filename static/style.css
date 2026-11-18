@@ -126,6 +126,15 @@ h6 {
     font-display: swap;
 }
 
+/* Arabic interface text. The site's faces carry no Arabic, so name the
+   platforms' own Arabic fonts ahead of the sans stack: Geeza Pro (Apple),
+   Noto Naskh/Sans Arabic (Android), Segoe UI and Tahoma (Windows). A touch more
+   line height keeps the marks above and below clear of the next line. */
+:root[lang="ar"] body {
+    font-family: 'Geeza Pro', 'Noto Naskh Arabic', 'Noto Sans Arabic', 'Segoe UI', Tahoma, var(--font-sans);
+    line-height: 1.7;
+}
+
 /* Hebrew text support */
 [lang="he"],
 .font-hebrew {
@@ -899,6 +908,12 @@ button.topbar-user-menu-item:focus-visible {
     display: flex;
     flex-direction: column;
     min-width: 0;
+}
+
+/* A right-to-left name (עברית, العربية) sits at the row's start like the others,
+   instead of right-aligning over the wider gloss below it. */
+.lang-menu-name {
+    align-self: flex-start;
 }
 
 .lang-menu-gloss {
@@ -3654,6 +3669,11 @@ html.rtl .home-main-layout #popularTextsGrid {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        /* Room above and below for marks the tight line box would clip under
+           overflow: hidden (the umlaut in TÄGLICH, Arabic dots); the negative
+           margin keeps the tab the same height. */
+        padding-block: 0.2em;
+        margin-block: -0.2em;
     }
 
     @media (hover: hover) {
