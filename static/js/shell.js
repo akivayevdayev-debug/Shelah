@@ -405,21 +405,31 @@ function hasParenthetical(text) {
             return '';
         }
 
+        // A mouse-only hint: shown after a beat of real hovering, above the
+        // control (below when there is no room), never on touch. A tap sends
+        // compatibility mouse events with no pointerType, so the hover is
+        // read from pointer events and gated on a fine, hovering pointer.
+        const hoverPointer = window.matchMedia?.('(hover: hover) and (pointer: fine)');
+        let delayedTooltipTarget = null;
+
         function showDelayedTooltip(el) {
             const text = getTooltipText(el);
-            if (!text) return;
+            if (!text || !el.isConnected) return;
             if (!delayedTooltipEl) {
                 delayedTooltipEl = document.createElement('div');
                 delayedTooltipEl.id = 'delayedTooltip';
                 delayedTooltipEl.className = 'delayed-tooltip';
+                delayedTooltipEl.setAttribute('role', 'tooltip');
                 document.body.appendChild(delayedTooltipEl);
             }
             delayedTooltipEl.textContent = text;
             const rect = el.getBoundingClientRect();
+            const tipHeight = delayedTooltipEl.offsetHeight || 32;
+            const below = rect.top - tipHeight - 8 < 8;
             const left = Math.min(window.innerWidth - 16, Math.max(16, rect.left + rect.width / 2));
-            const top = Math.max(16, rect.top - 10);
+            delayedTooltipEl.classList.toggle('is-below', below);
             delayedTooltipEl.style.left = `${left}px`;
-            delayedTooltipEl.style.top = `${top}px`;
+            delayedTooltipEl.style.top = `${below ? rect.bottom : rect.top}px`;
             delayedTooltipEl.classList.add('visible');
         }
 
@@ -428,33 +438,39 @@ function hasParenthetical(text) {
                 clearTimeout(delayedTooltipTimer);
                 delayedTooltipTimer = null;
             }
+            delayedTooltipTarget = null;
             if (delayedTooltipEl) {
                 delayedTooltipEl.classList.remove('visible');
             }
         }
 
-        document.addEventListener('mouseover', function (e) {
-            const target = e.target.closest(DELAYED_TOOLTIP_SELECTORS);
-            if (!target || !e.isTrusted || (e.pointerType && e.pointerType !== 'mouse')) return;
-            const text = getTooltipText(target);
-            if (!text) return;
+        document.addEventListener('pointerover', function (e) {
+            if (e.pointerType !== 'mouse' || !e.isTrusted || hoverPointer?.matches === false) return;
+            const target = e.target.closest?.(DELAYED_TOOLTIP_SELECTORS);
+            // Moving between a control's own children is still the same hover.
+            if (target === delayedTooltipTarget) return;
+            hideDelayedTooltip();
+            if (!target || !getTooltipText(target)) return;
             if (target.title && !target.dataset.tooltip) {
                 target.dataset.tooltip = target.title;
                 target.removeAttribute('title');
             }
+            delayedTooltipTarget = target;
             delayedTooltipTimer = setTimeout(() => showDelayedTooltip(target), 1100);
-        });
+        }, { passive: true });
 
-        document.addEventListener('mouseout', function (e) {
-            const target = e.target.closest(DELAYED_TOOLTIP_SELECTORS);
-            if (!target) return;
+        document.addEventListener('pointerout', function (e) {
+            if (!delayedTooltipTarget) return;
             const related = e.relatedTarget;
-            if (related && target.contains(related)) return;
+            if (related && delayedTooltipTarget.contains(related)) return;
             hideDelayedTooltip();
-        });
+        }, { passive: true });
 
-        document.addEventListener('scroll', hideDelayedTooltip, true);
-        document.addEventListener('mousedown', hideDelayedTooltip);
+        document.addEventListener('scroll', hideDelayedTooltip, { capture: true, passive: true });
+        ['pointerdown', 'keydown'].forEach((type) => {
+            document.addEventListener(type, hideDelayedTooltip, { passive: true });
+        });
+        ['blur', 'popstate'].forEach((type) => window.addEventListener(type, hideDelayedTooltip));
 
         if (window.marked && typeof window.marked.setOptions === 'function') {
             marked.setOptions({

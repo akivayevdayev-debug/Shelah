@@ -242,9 +242,11 @@ test('renderDisclaimerBanner: the message is text, never markup', async () => {
 
 // --- delayed tooltips --------------------------------------------------------
 
-/** The page's listeners see isTrusted=false for synthetic events; wrap mouseover so tests can pass as the user. */
-async function openTooltipPage() {
-    return openShellPage({
+const FINE_HOVER = '(hover: hover) and (pointer: fine)';
+
+/** The page's listeners see isTrusted=false for synthetic events; wrap pointerover so tests can pass as the user. A desktop mouse unless `touchOnly`. */
+async function openTooltipPage({ touchOnly = false } = {}) {
+    const page = await openShellPage({
         before: (window) => {
             const add = window.document.addEventListener.bind(window.document);
             const asUser = (event) => new Proxy(event, {
@@ -255,18 +257,24 @@ async function openTooltipPage() {
                 },
             });
             window.document.addEventListener = (type, listener, options) => (
-                type === 'mouseover' ? add(type, (event) => listener(asUser(event)), options) : add(type, listener, options)
+                type === 'pointerover' ? add(type, (event) => listener(asUser(event)), options) : add(type, listener, options)
             );
         },
     });
+    if (!touchOnly) page.media.set(FINE_HOVER, true);
+    return page;
 }
 
 const addButton = (page, html) => {
     page.document.body.insertAdjacentHTML('beforeend', html);
     return page.document.body.lastElementChild;
 };
-const hover = (page, element, type = 'mouseover', init = {}) => {
-    element.dispatchEvent(new page.window.MouseEvent(type, { bubbles: true, cancelable: true, ...init }));
+// jsdom has no PointerEvent: a MouseEvent carrying pointerType stands in.
+const hover = (page, element, type = 'pointerover', init = {}) => {
+    const { pointerType = 'mouse', ...rest } = init;
+    const event = new page.window.MouseEvent(type, { bubbles: true, cancelable: true, ...rest });
+    Object.defineProperty(event, 'pointerType', { value: pointerType });
+    element.dispatchEvent(event);
 };
 const tooltip = (page) => page.$('#delayedTooltip');
 
@@ -287,28 +295,31 @@ test('getTooltipText: language data attribute, then data-tooltip, then data-titl
     }
 });
 
-test('hovering a chapter button for a moment shows its tooltip above it, clamped to the window', async () => {
+test('hovering a chapter button for a moment shows its tooltip above it, below when there is no room, clamped to the window', async () => {
     const page = await openTooltipPage();
     try {
         const timers = [];
         page.window.setTimeout = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };
         const button = addButton(page, '<button class="chapter-grid-item" data-tooltip="Chapter one">1</button>');
-        button.getBoundingClientRect = () => ({ left: 100, top: 200, width: 40, height: 30 });
+        button.getBoundingClientRect = () => ({ left: 100, top: 200, bottom: 230, width: 40, height: 30 });
         hover(page, button);
         assert.equal(tooltip(page), null, 'nothing shows at once');
         assert.deepEqual(timers.map((timer) => timer.ms), [1100]);
         timers[0].fn();
         const bubble = tooltip(page);
         assert.equal(bubble.textContent, 'Chapter one');
+        assert.equal(bubble.getAttribute('role'), 'tooltip');
         assert.equal(bubble.className, 'delayed-tooltip visible');
-        assert.deepEqual([bubble.style.left, bubble.style.top], ['120px', '190px']);
+        assert.deepEqual([bubble.style.left, bubble.style.top], ['120px', '200px'], 'anchored to the top edge; CSS lifts it above');
 
-        button.getBoundingClientRect = () => ({ left: -50, top: 4, width: 10, height: 30 });
+        button.getBoundingClientRect = () => ({ left: -50, top: 4, bottom: 34, width: 10, height: 30 });
         page.call('showDelayedTooltip', button);
-        assert.deepEqual([bubble.style.left, bubble.style.top], ['16px', '16px'], 'kept inside the top-left margin');
-        button.getBoundingClientRect = () => ({ left: 5000, top: 300, width: 40, height: 30 });
+        assert.deepEqual([bubble.style.left, bubble.style.top], ['16px', '34px'], 'no room above: under it, inside the left margin');
+        assert.equal(bubble.classList.contains('is-below'), true);
+        button.getBoundingClientRect = () => ({ left: 5000, top: 300, bottom: 330, width: 40, height: 30 });
         page.call('showDelayedTooltip', button);
         assert.equal(bubble.style.left, `${page.window.innerWidth - 16}px`, 'kept inside the right margin');
+        assert.equal(bubble.classList.contains('is-below'), false);
         assert.equal(page.$$('#delayedTooltip').length, 1, 'the one bubble is reused');
     } finally {
         page.close();
@@ -347,9 +358,31 @@ test('hovering anything else, or something with no tooltip text, schedules nothi
     }
 });
 
+test('moving across a button\'s own children keeps one pending tooltip, not a stray one per child', async () => {
+    const page = await openTooltipPage();
+    try {
+        const timers = [];
+        const cleared = [];
+        page.window.setTimeout = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };
+        page.window.clearTimeout = (id) => cleared.push(id);
+        const button = addButton(page, '<button class="chapter-grid-item" data-tooltip="Tip"><span class="n">1</span><span class="l">Ch</span></button>');
+        hover(page, button.querySelector('.n'));
+        hover(page, button.querySelector('.l'));
+        hover(page, button);
+        assert.equal(timers.length, 1, 'one timer for the one hover');
+        const other = addButton(page, '<button class="chapter-grid-item" data-tooltip="Other">2</button>');
+        hover(page, other);
+        assert.equal(timers.length, 2);
+        assert.ok(cleared.includes(1), 'the first button\'s timer is cancelled before the next starts');
+    } finally {
+        page.close();
+    }
+});
+
 test('a script-made hover (not the reader\'s mouse) is ignored', async () => {
     const page = await openShellPage();
     try {
+        page.media.set(FINE_HOVER, true);
         const timers = [];
         page.window.setTimeout = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };
         const button = addButton(page, '<button class="chapter-grid-item" data-tooltip="Tip">1</button>');
@@ -360,26 +393,36 @@ test('a script-made hover (not the reader\'s mouse) is ignored', async () => {
     }
 });
 
-test('a touch or pen hover is ignored', async () => {
+test('a tap never shows a tooltip: touch, pen and pointer-less compatibility mouse events are ignored', async () => {
     const page = await openTooltipPage();
     try {
         const timers = [];
         page.window.setTimeout = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };
         const button = addButton(page, '<button class="chapter-grid-item" data-tooltip="Tip">1</button>');
-        const touch = new page.window.MouseEvent('mouseover', { bubbles: true });
-        Object.defineProperty(touch, 'pointerType', { value: 'touch' });
-        button.dispatchEvent(touch);
+        hover(page, button, 'pointerover', { pointerType: 'touch' });
+        hover(page, button, 'pointerover', { pointerType: 'pen' });
+        button.dispatchEvent(new page.window.MouseEvent('mouseover', { bubbles: true }));
         assert.deepEqual(timers, []);
-        const mouse = new page.window.MouseEvent('mouseover', { bubbles: true });
-        Object.defineProperty(mouse, 'pointerType', { value: 'mouse' });
-        button.dispatchEvent(mouse);
-        assert.equal(timers.length, 1);
+        hover(page, button);
+        assert.equal(timers.length, 1, 'a real mouse still does');
     } finally {
         page.close();
     }
 });
 
-test('leaving the button, scrolling or pressing the mouse hides the tooltip and cancels a pending one', async () => {
+test('on a touch-only screen even a mouse-typed hover shows nothing', async () => {
+    const page = await openTooltipPage({ touchOnly: true });
+    try {
+        const timers = [];
+        page.window.setTimeout = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };
+        hover(page, addButton(page, '<button class="chapter-grid-item" data-tooltip="Tip">1</button>'));
+        assert.deepEqual(timers, []);
+    } finally {
+        page.close();
+    }
+});
+
+test('leaving the button, scrolling, pressing, a key or leaving the window hides the tooltip and cancels a pending one', async () => {
     const page = await openTooltipPage();
     try {
         const timers = [];
@@ -388,27 +431,35 @@ test('leaving the button, scrolling or pressing the mouse hides the tooltip and 
         page.window.clearTimeout = (id) => cleared.push(id);
         const button = addButton(page, '<button class="chapter-grid-item" data-tooltip="Tip"><span class="inner">1</span></button>');
         const outside = addButton(page, '<p>elsewhere</p>');
+        const visible = () => tooltip(page).classList.contains('visible');
+        const show = () => { hover(page, button); timers.at(-1).fn(); };
 
         hover(page, button);
-        hover(page, button, 'mouseout', { relatedTarget: outside });
+        hover(page, button, 'pointerout', { relatedTarget: outside });
         assert.deepEqual(cleared, [1], 'the pending tooltip is cancelled');
 
-        timers[0].fn();
-        assert.equal(tooltip(page).classList.contains('visible'), true);
-        hover(page, button, 'mouseout', { relatedTarget: button.querySelector('.inner') });
-        assert.equal(tooltip(page).classList.contains('visible'), true, 'moving onto a child keeps it');
-        hover(page, button, 'mouseout', { relatedTarget: null });
-        assert.equal(tooltip(page).classList.contains('visible'), false, 'leaving the page hides it');
+        show();
+        assert.equal(visible(), true);
+        hover(page, button, 'pointerout', { relatedTarget: button.querySelector('.inner') });
+        assert.equal(visible(), true, 'moving onto a child keeps it');
+        hover(page, button, 'pointerout', { relatedTarget: null });
+        assert.equal(visible(), false, 'leaving the page hides it');
 
-        timers[0].fn();
+        show();
         page.document.dispatchEvent(new page.window.Event('scroll'));
-        assert.equal(tooltip(page).classList.contains('visible'), false, 'scrolling hides it');
-        timers[0].fn();
-        page.document.dispatchEvent(new page.window.MouseEvent('mousedown', { bubbles: true }));
-        assert.equal(tooltip(page).classList.contains('visible'), false, 'pressing hides it');
+        assert.equal(visible(), false, 'scrolling hides it');
+        show();
+        page.document.dispatchEvent(new page.window.MouseEvent('pointerdown', { bubbles: true }));
+        assert.equal(visible(), false, 'pressing hides it');
+        show();
+        page.document.dispatchEvent(new page.window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+        assert.equal(visible(), false, 'a key hides it');
+        show();
+        page.window.dispatchEvent(new page.window.Event('blur'));
+        assert.equal(visible(), false, 'leaving the window hides it');
 
-        hover(page, outside, 'mouseout');
-        assert.equal(tooltip(page).classList.contains('visible'), false, 'leaving a plain element does nothing');
+        hover(page, outside, 'pointerout');
+        assert.equal(visible(), false, 'leaving a plain element does nothing');
         page.call('hideDelayedTooltip');
     } finally {
         page.close();

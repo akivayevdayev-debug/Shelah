@@ -337,36 +337,74 @@ html {
 }
 
 
+/* Mouse-only hover hint (shell.js showDelayedTooltip): the footer's navy
+   with cream text and a gold hairline in light mode, the raised warm surface
+   in dark. Anchored at the control's top edge and lifted above it (.is-below:
+   under it when there is no room), so it never covers what it describes.
+   Touch screens never get one. */
 .delayed-tooltip {
+    --tip-bg: var(--ink-heading, #002147);
+    --tip-ink: #faf7f0;
+    --tip-rule: color-mix(in srgb, var(--accent-gold, #d4af37) 45%, transparent);
+    --tip-lift: calc(-100% - var(--sp-2, 0.5rem));
     position: fixed;
     z-index: 9999;
-    max-width: 20rem;
-    padding: 0.42rem 0.6rem;
-    border-radius: 0.75rem;
-    background: rgba(15, 23, 42, 0.92);
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    color: #f8fafc;
-    font-size: 0.82rem;
-    line-height: 1.35;
+    max-width: min(20rem, calc(100vw - 2rem));
+    padding: var(--sp-1, 0.25rem) var(--sp-2, 0.5rem);
+    border-radius: var(--sp-2, 0.5rem);
+    background: var(--tip-bg);
+    border: 1px solid var(--tip-rule);
+    color: var(--tip-ink);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.4;
     pointer-events: none;
     opacity: 0;
-    transform: translate(-50%, -0.45rem) scale(0.98);
-    transition: opacity var(--motion-dur-fast) var(--motion-ease-out), transform var(--motion-dur-fast) var(--motion-ease-out);
-    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.22);
+    transform: translate(-50%, var(--tip-lift)) translateY(2px) scale(0.98);
+    transform-origin: 50% 100%;
+    transition:
+        opacity var(--motion-dur-fast) var(--motion-ease-out),
+        transform var(--motion-dur-fast) var(--motion-ease-out);
+    box-shadow: 0 8px 24px rgb(0 33 71 / 0.2);
     white-space: normal;
     overflow-wrap: break-word;
-    backdrop-filter: blur(8px);
+}
+
+.delayed-tooltip.is-below {
+    --tip-lift: var(--sp-2, 0.5rem);
+    transform-origin: 50% 0;
 }
 
 :is([data-theme="dark"], body.theme-dark) .delayed-tooltip {
-    background: rgba(15, 23, 42, 0.96);
-    border-color: rgba(148, 163, 184, 0.2);
-    color: var(--tooltip-text);
+    --tip-bg: var(--surface-elevated, #1e1d1a);
+    --tip-ink: var(--tooltip-text, #e0d8cc);
+    --tip-rule: color-mix(in srgb, var(--accent-gold, #c9ac5e) 32%, transparent);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
 }
 
 .delayed-tooltip.visible {
     opacity: 1;
-    transform: translate(-50%, -0.45rem) scale(1);
+    transform: translate(-50%, var(--tip-lift)) scale(1);
+}
+
+@media (hover: none) {
+    .delayed-tooltip {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .delayed-tooltip,
+    .delayed-tooltip.visible {
+        transform: translate(-50%, var(--tip-lift));
+        transition: opacity var(--motion-dur-fast) linear;
+    }
+}
+
+@media (prefers-contrast: more) {
+    .delayed-tooltip {
+        --tip-rule: var(--tip-ink);
+    }
 }
 
 @media (min-width: 1024px) {
