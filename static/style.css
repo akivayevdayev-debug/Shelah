@@ -5160,7 +5160,9 @@ html.theme-dark,
     color: var(--text-muted) !important;
 }
 
-:is([data-theme="dark"], body.theme-dark) .home-library-link:hover .home-library-title,
+/* The library titles keep their corpus colour on hover (the underline
+   above is the hover cue, as in light mode); only the neutral titles
+   brighten. */
 :is([data-theme="dark"], body.theme-dark) .home-topic-title:hover,
 :is([data-theme="dark"], body.theme-dark) .home-daily-link:hover {
     color: var(--control-text-strong);
