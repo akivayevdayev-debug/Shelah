@@ -88,7 +88,7 @@
         "source": "sha256:755e7ac383b5b2992940179fcdb0157a55be1b34b86374aa252e08f3c9f74936"
       },
       "topbar_shared.js": {
-        "source": "sha256:518acb8175af0844d0ada46d3fbb577db6d7e0b5781f38318170cbd3557cac5c"
+        "source": "sha256:1d9d1a77e649d1d7786bd17ebae21162cdc5092b10e9f47c6641b3d2f9e831b8"
       }
     },
     "modules": {
@@ -148,7 +148,7 @@
         "js/reveal.js": "a44a70067bf6",
         "js/sentry-init.js": "dda06e431a09",
         "js/shell.js": "b231591c7116",
-        "js/topbar_shared.js": "4c074658db9c"
+        "js/topbar_shared.js": "427c7d662dff"
       },
       "unreached": []
     }

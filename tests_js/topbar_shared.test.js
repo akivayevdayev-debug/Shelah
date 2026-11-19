@@ -343,6 +343,15 @@ function revealDocument(t, { reduce = false, lite = false } = {}) {
     return { doc, animations };
 }
 
+test('withThemeReveal runs on lite-device phones too', async (t) => {
+    const { doc, animations } = revealDocument(t, { lite: true });
+    withThemeReveal(() => {});
+    assert.equal(doc.attrs.get('data-vt-theme'), 'reveal');
+    await doc.started[0].ready;
+    await Promise.resolve();
+    assert.equal(animations.length, 1);
+});
+
 test('withThemeReveal grows the new theme as a circle from the top inline-end corner when nothing was pressed', async (t) => {
     const { doc, animations } = revealDocument(t);
     const change = () => {};
@@ -364,8 +373,8 @@ test('withThemeReveal grows the new theme as a circle from the top inline-end co
     assert.equal(doc.attrs.has('data-vt-theme'), false);
 });
 
-test('withThemeReveal falls back to the plain fade for reduced motion and lite devices', (t) => {
-    for (const options of [{ reduce: true }, { lite: true }]) {
+test('withThemeReveal falls back to the plain fade for reduced motion', (t) => {
+    for (const options of [{ reduce: true }]) {
         const { doc, animations } = revealDocument(t, options);
         withThemeReveal(() => {});
         assert.equal(doc.started.length, 1, JSON.stringify(options));

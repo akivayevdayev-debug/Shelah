@@ -253,16 +253,17 @@
     // A theme the visitor chose spreads over the page as a growing circle
     // from the button they pressed: the new theme's picture is clipped to a
     // circle that grows until it covers the farthest corner (View Transitions,
-    // tokens.css data-vt-theme="reveal" turns the browser's fade off). Reduced
-    // motion, a phone marked lite-device and engines without WAAPI on the
-    // transition's pseudo-elements get withThemeFade's short cross-fade.
+    // tokens.css data-vt-theme="reveal" turns the browser's fade off). It runs
+    // on lite-device phones too: it moves one flat picture of the page, which
+    // costs far less than the glass that class turns off. Reduced motion and
+    // engines without WAAPI on the transition's pseudo-elements get
+    // withThemeFade's short cross-fade.
     function withThemeReveal(change) {
         const doc = typeof document !== 'undefined' ? document : null;
         const win = typeof window !== 'undefined' ? window : null;
         const html = doc && doc.documentElement;
         const reduce = !!(win && win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches);
-        const lite = !!(html && html.classList && html.classList.contains('lite-device'));
-        if (!doc || !win || reduce || lite || typeof html.animate !== 'function') {
+        if (!doc || !win || reduce || typeof html.animate !== 'function') {
             withThemeFade(change);
             return;
         }
@@ -286,7 +287,7 @@
         transition.ready.then(() => {
             html.animate(
                 { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
-                { duration: 620, easing: 'cubic-bezier(0.65, 0, 0.35, 1)', pseudoElement: '::view-transition-new(root)' },
+                { duration: 480, easing: 'cubic-bezier(0.65, 0, 0.35, 1)', pseudoElement: '::view-transition-new(root)' },
             );
         }, () => {});
         transition.finished.then(done, done);
