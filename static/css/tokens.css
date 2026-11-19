@@ -848,21 +848,22 @@ body.theme-dark {
     --tw-dark-focus-border:     #504840;
     --tw-dark-checkbox-accent:  #807050;
 
-    /* ── Corpus accent tokens: a lighter tint of each light-mode corpus
-       colour, so every library keeps its own hue in dark mode (all ≥ 9:1).
-       Kept low in chroma (OKLCH L 0.77, C ≤ 0.062) so they read as muted
-       inks beside --accent-cream, the way the light-mode inks sit on paper;
-       the earlier pastels (C ~0.1) looked neon on the near-black page. */
+    /* ── Corpus accent tokens: each light-mode corpus ink at the same hue,
+       lifted for the dark page like an old pigment (verdigris, lapis, ochre,
+       madder, murex, malachite): OKLCH L 0.68-0.76, C 0.075-0.10, cool hues
+       nudged warm so nothing reads cyan (all >= 6.5:1 on --surface-0). The
+       bright pastels (L ~0.8, C ~0.1) looked neon; the C <= 0.062 tints that
+       replaced them lost their colour. */
     --accent-menu:              #b8b2a8;
     --accent-zmanim:            #b0ada4;
-    --accent-tanakh:            #91bdc7;
-    --accent-mishnah:           #9ab8d5;
-    --accent-talmud:            #c7b187;
-    --accent-talmud-hover:      #dcc8a1;
-    --accent-halakhah:          #d8a4ab;
-    --accent-customs:           #bcabd5;
-    --accent-thought:           #8ec0b3;
-    --accent-siddur:            #a9b2d9;
+    --accent-tanakh:            #63abba;
+    --accent-mishnah:           #74a4cd;
+    --accent-talmud:            #d1ab69;
+    --accent-talmud-hover:      #e3c287;
+    --accent-halakhah:          #cf7e81;
+    --accent-customs:           #a78ec6;
+    --accent-thought:           #67aea0;
+    --accent-siddur:            #85a3d1;
 
     /* ── Reader ─────────────────────────────────────────────────────── */
     --range-complete:           #8b6f47;   /* keep — non-grey slider accent */
@@ -1064,14 +1065,14 @@ body.theme-dark {
         /* ── Corpus accent tokens ─────────────────────────────────── */
         --accent-menu:              #b8b2a8;
         --accent-zmanim:            #b0ada4;
-        --accent-tanakh:            #91bdc7;
-        --accent-mishnah:           #9ab8d5;
-        --accent-talmud:            #c7b187;
-        --accent-talmud-hover:      #dcc8a1;
-        --accent-halakhah:          #d8a4ab;
-        --accent-customs:           #bcabd5;
-        --accent-thought:           #8ec0b3;
-        --accent-siddur:            #a9b2d9;
+        --accent-tanakh:            #63abba;
+        --accent-mishnah:           #74a4cd;
+        --accent-talmud:            #d1ab69;
+        --accent-talmud-hover:      #e3c287;
+        --accent-halakhah:          #cf7e81;
+        --accent-customs:           #a78ec6;
+        --accent-thought:           #67aea0;
+        --accent-siddur:            #85a3d1;
 
         /* ── Reader ───────────────────────────────────────────────── */
         --range-complete:           #8b6f47;
