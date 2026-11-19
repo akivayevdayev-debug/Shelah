@@ -657,6 +657,17 @@ html[data-vt-theme]::view-transition-new(root) {
     animation-duration: var(--motion-dur-base);
     animation-timing-function: var(--motion-ease-out);
 }
+/* Theme reveal (topbar_shared.js withThemeReveal): no fade at all; the new
+   theme's picture sits on top and JS grows a clip-path circle over it from
+   the button that was pressed. */
+html[data-vt-theme="reveal"]::view-transition-group(root),
+html[data-vt-theme="reveal"]::view-transition-old(root),
+html[data-vt-theme="reveal"]::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+html[data-vt-theme="reveal"]::view-transition-old(root) { z-index: 0; }
+html[data-vt-theme="reveal"]::view-transition-new(root) { z-index: 1; }
 @media (prefers-reduced-motion: reduce) {
     html[data-vt-theme]::view-transition-group(root) { animation: none !important; }
     html[data-vt-theme]::view-transition-old(root) { animation: shelah-overlay-in 120ms linear reverse both !important; }

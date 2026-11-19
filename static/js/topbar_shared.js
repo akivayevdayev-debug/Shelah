@@ -227,6 +227,71 @@
         transition.finished.then(done, done);
     }
 
+    // Where the visitor last pressed, so a theme switch can spread out from
+    // the button they used. A press older than this is not the one that
+    // asked for the switch (a keyboard toggle, a call from elsewhere).
+    const REVEAL_PRESS_MS = 1500;
+    let lastPress = null;
+    if (typeof document !== 'undefined' && document.addEventListener) {
+        document.addEventListener('pointerdown', (event) => {
+            lastPress = { x: event.clientX, y: event.clientY, at: Date.now() };
+        }, { capture: true, passive: true });
+    }
+
+    function revealOrigin(doc, win) {
+        if (lastPress && Date.now() - lastPress.at < REVEAL_PRESS_MS) return { x: lastPress.x, y: lastPress.y };
+        const focused = doc.activeElement;
+        if (focused && focused !== doc.body && typeof focused.getBoundingClientRect === 'function') {
+            const r = focused.getBoundingClientRect();
+            if (r.width || r.height) return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }
+        // No press and nothing focused: the top corner on the inline end, where the toggle lives.
+        const rtl = doc.documentElement.getAttribute('dir') === 'rtl';
+        return { x: rtl ? 0 : win.innerWidth, y: 0 };
+    }
+
+    // A theme the visitor chose spreads over the page as a growing circle
+    // from the button they pressed: the new theme's picture is clipped to a
+    // circle that grows until it covers the farthest corner (View Transitions,
+    // tokens.css data-vt-theme="reveal" turns the browser's fade off). Reduced
+    // motion, a phone marked lite-device and engines without WAAPI on the
+    // transition's pseudo-elements get withThemeFade's short cross-fade.
+    function withThemeReveal(change) {
+        const doc = typeof document !== 'undefined' ? document : null;
+        const win = typeof window !== 'undefined' ? window : null;
+        const html = doc && doc.documentElement;
+        const reduce = !!(win && win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        const lite = !!(html && html.classList && html.classList.contains('lite-device'));
+        if (!doc || !win || reduce || lite || typeof html.animate !== 'function') {
+            withThemeFade(change);
+            return;
+        }
+        if (typeof doc.startViewTransition !== 'function' || doc.hidden || html.hasAttribute('data-vt-active')) {
+            change();
+            return;
+        }
+        const { x, y } = revealOrigin(doc, win);
+        const radius = Math.hypot(Math.max(x, win.innerWidth - x), Math.max(y, win.innerHeight - y));
+        const done = () => html.removeAttribute('data-vt-theme');
+        html.setAttribute('data-vt-theme', 'reveal');
+        let transition;
+        try {
+            transition = doc.startViewTransition(change);
+        } catch (_) {
+            done();
+            change();
+            return;
+        }
+        lastPress = null;
+        transition.ready.then(() => {
+            html.animate(
+                { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+                { duration: 620, easing: 'cubic-bezier(0.65, 0, 0.35, 1)', pseudoElement: '::view-transition-new(root)' },
+            );
+        }, () => {});
+        transition.finished.then(done, done);
+    }
+
     // A language the visitor picks crosses over like a theme change instead
     // of the text and the page direction jumping at once. The page's own
     // toggleLanguage() does the work; picking the language already shown
@@ -242,7 +307,7 @@
         withThemeFade(() => toggle(lang));
     }
 
-    const api = { applyLanguagePreference, applyHtmlLanguage, siteLanguage, swapLanguageText, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade, chooseLanguage };
+    const api = { applyLanguagePreference, applyHtmlLanguage, siteLanguage, swapLanguageText, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade, withThemeReveal, chooseLanguage };
 
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = api;
@@ -253,6 +318,7 @@
         root.swapPendingLanguage = swapPendingLanguage;
         root.computeFloatingMenuPosition = computeFloatingMenuPosition;
         root.withThemeFade = withThemeFade;
+        root.withThemeReveal = withThemeReveal;
         root.chooseLanguage = chooseLanguage;
     }
 })(typeof window !== 'undefined' ? window : globalThis);

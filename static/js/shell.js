@@ -1355,7 +1355,7 @@ function hasParenthetical(text) {
                 updateThemeToggleUi();
             };
             // A switch the visitor made crosses over; applying a saved or system theme does not.
-            if (persist && typeof withThemeFade === 'function') withThemeFade(apply);
+            if (persist && typeof withThemeReveal === 'function') withThemeReveal(apply);
             else apply();
             if (persist) {
                 savePrefs();

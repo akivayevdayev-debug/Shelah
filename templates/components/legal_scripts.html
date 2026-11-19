@@ -109,7 +109,7 @@
             updateThemeToggleUi();
         };
         // A switch the visitor made crosses over (topbar_shared.js); a saved theme does not.
-        if (persist && typeof withThemeFade === 'function') withThemeFade(apply);
+        if (persist && typeof withThemeReveal === 'function') withThemeReveal(apply);
         else apply();
         if (persist) {
             // Merge into the shared prefs blob rather than overwrite it —

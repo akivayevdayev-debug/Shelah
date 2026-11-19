@@ -14,7 +14,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { applyLanguagePreference, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade, chooseLanguage } = require('../static/js/topbar_shared.js');
+const { applyLanguagePreference, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade, withThemeReveal, chooseLanguage } = require('../static/js/topbar_shared.js');
 
 function createFakeLocalStorage() {
     const store = new Map();
@@ -318,6 +318,60 @@ test('withThemeFade hands the change to a view transition and scopes it with dat
     await doc.started[0].finished;
     await Promise.resolve();
     assert.equal(doc.attrs.has('data-vt-theme'), false, 'the scope is gone once the fade has finished');
+});
+
+// ── withThemeReveal ─────────────────────────────────────────────────────
+
+function revealDocument(t, { reduce = false, lite = false } = {}) {
+    const doc = fakeThemeDocument();
+    const animations = [];
+    doc.documentElement.classList = { contains: (name) => lite && name === 'lite-device' };
+    doc.documentElement.animate = (keyframes, options) => { animations.push({ keyframes, options }); };
+    doc.activeElement = null;
+    doc.body = {};
+    for (const transitionFactory of [doc.startViewTransition]) {
+        doc.startViewTransition = (update) => {
+            const transition = transitionFactory(update);
+            transition.ready = Promise.resolve();
+            return transition;
+        };
+    }
+    withThemeDocument(t, doc);
+    const savedWindow = globalThis.window;
+    globalThis.window = { innerWidth: 400, innerHeight: 300, matchMedia: () => ({ matches: reduce }) };
+    t.after(() => { globalThis.window = savedWindow; });
+    return { doc, animations };
+}
+
+test('withThemeReveal grows the new theme as a circle from the top inline-end corner when nothing was pressed', async (t) => {
+    const { doc, animations } = revealDocument(t);
+    const change = () => {};
+    withThemeReveal(change);
+    assert.equal(doc.started.length, 1);
+    assert.equal(doc.started[0].update, change);
+    assert.equal(doc.attrs.get('data-vt-theme'), 'reveal');
+    await doc.started[0].ready;
+    await Promise.resolve();
+    assert.equal(animations.length, 1);
+    const { keyframes, options } = animations[0];
+    assert.equal(options.pseudoElement, '::view-transition-new(root)');
+    assert.equal(keyframes.clipPath[0], 'circle(0px at 400px 0px)');
+    assert.equal(keyframes.clipPath[1], 'circle(500px at 400px 0px)', 'reaches the farthest corner (400×300 → 500)');
+
+    doc.started[0].finish();
+    await doc.started[0].finished;
+    await Promise.resolve();
+    assert.equal(doc.attrs.has('data-vt-theme'), false);
+});
+
+test('withThemeReveal falls back to the plain fade for reduced motion and lite devices', (t) => {
+    for (const options of [{ reduce: true }, { lite: true }]) {
+        const { doc, animations } = revealDocument(t, options);
+        withThemeReveal(() => {});
+        assert.equal(doc.started.length, 1, JSON.stringify(options));
+        assert.equal(doc.attrs.get('data-vt-theme'), '', 'the fade scope, not the reveal');
+        assert.equal(animations.length, 0);
+    }
 });
 
 test('withThemeFade still applies the change, once, when starting the transition throws', (t) => {
