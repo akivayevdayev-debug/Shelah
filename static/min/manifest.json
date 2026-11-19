@@ -3,7 +3,7 @@
   "esbuild": "0.28.2",
   "css": {
     "sources": {
-      "css/tokens.css": "sha256:21f2c556e255ad80792a4759272d9fa2a7d63226074d25a3e2a055c28fc50f7e",
+      "css/tokens.css": "sha256:36ba61898aa1cf370abf2c98df8af9db8fec39079c0045b472bc22bd7cea5697",
       "style.css": "sha256:bfffe136a0a63981985f865e775de32cadcd3799e2882ed56e7124fe5ba557c2",
       "css/typography.css": "sha256:000d5096d5c7322aff99d2fd1ef679d209f50c963a21f37fa38b28ed03ded543",
       "css/reader.css": "sha256:caafa2917b7adec185830051727222599176d43437f5637f614fe088cffd7fc9",
@@ -20,19 +20,19 @@
       "css/site-footer.css": "sha256:1dde9eb5e9e5ba1aa51e1aabcf82be66a39fdaddffd9282f505c532c070c2ba1",
       "css/tailwind.css": "sha256:04f7fe53c84b67f798e7891a7abd99476dc4d2040ad1fdae3be4e5b253b3b951"
     },
-    "sourcesHash": "7124716d9538980df332cddf239f1078a6ef77146618ce3fe8595132b29769b3",
+    "sourcesHash": "ea9b2f75f2b5b6dda149c274f62d66465cb3641e71b2a0515e99632b51f1f0c6",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "7124716d9538980df332cddf239f1078a6ef77146618ce3fe8595132b29769b3",
+        "sourcesHash": "ea9b2f75f2b5b6dda149c274f62d66465cb3641e71b2a0515e99632b51f1f0c6",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "7124716d9538980df332cddf239f1078a6ef77146618ce3fe8595132b29769b3",
+        "sourcesHash": "ea9b2f75f2b5b6dda149c274f62d66465cb3641e71b2a0515e99632b51f1f0c6",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -40,7 +40,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "7124716d9538980df332cddf239f1078a6ef77146618ce3fe8595132b29769b3",
+        "sourcesHash": "ea9b2f75f2b5b6dda149c274f62d66465cb3641e71b2a0515e99632b51f1f0c6",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",
