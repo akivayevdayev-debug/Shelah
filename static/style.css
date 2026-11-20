@@ -6312,7 +6312,7 @@ body.theme-dark #analyticsConsentAccept {
 
 
 /* ── Lite devices (html.lite-device, set in index.html's head) ─────────
-   Data Saver, low-memory or low-core phones and Samsung Internet: every
+   Data Saver, 2 GB phones, Samsung Internet and phones caught lagging: every
    backdrop blur is swapped for the same solid surfaces the
    prefers-reduced-transparency fallbacks use, because re-blurring the page
    under a fixed bar on every scrolled frame is what makes those devices

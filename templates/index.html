@@ -86,11 +86,13 @@
          behind a flag: VIEW_TRANSITIONS=true on the server (app.py), or this
          browser's localStorage "shelah.viewTransitions" = "on" / "off". -->
     {#- Weak or battery-saving devices get solid bars and panels instead of live
-        backdrop blur (style.css "lite-device"): Data Saver, Chrome's deviceMemory
-        or core count at 4 or less, and Samsung Internet, whose blur is known to
-        stutter while content scrolls under it. Motion itself stays; it only
+        backdrop blur (style.css "lite-device"): Data Saver, 2 GB of memory or
+        less, Samsung Internet (its blur stutters while content scrolls under
+        it), or a device topbar_shared.js caught lagging in the last week. Core
+        count is not used: Safari reports a small fixed number on every iPhone,
+        and every iPhone draws the glass smoothly. Motion itself stays; it only
         animates transform and opacity, which the GPU handles on any phone. #}
-    <script>(function(){try{var n=navigator,c=n.connection||{};if(c.saveData||(n.deviceMemory&&n.deviceMemory<=4)||(n.hardwareConcurrency&&n.hardwareConcurrency<=4)||/SamsungBrowser/.test(n.userAgent))document.documentElement.classList.add('lite-device');}catch(e){}})()</script>
+    <script>(function(){try{var n=navigator,c=n.connection||{},lag=+localStorage.getItem('shelah.liteDevice')>Date.now();if(lag||c.saveData||(n.deviceMemory&&n.deviceMemory<=2)||/SamsungBrowser/.test(n.userAgent))document.documentElement.classList.add('lite-device');}catch(e){}})()</script>
     <script>try{var v=localStorage.getItem('shelah.viewTransitions'),r=document.documentElement;if(v==='on')r.setAttribute('data-view-transitions','');else if(v==='off')r.removeAttribute('data-view-transitions');}catch(e){}</script>
     <!-- The analytics consent banner is in the HTML and painted with the first
          frame (it is the page's largest text block, so it is also what LCP

@@ -308,11 +308,71 @@
         withThemeFade(() => toggle(lang));
     }
 
-    const api = { applyLanguagePreference, applyHtmlLanguage, siteLanguage, swapLanguageText, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade, withThemeReveal, chooseLanguage };
+    // Glass that stutters. Phones keep the frosted bars unless they report
+    // Data Saver or very little memory (index.html's head); this catches the
+    // rest by watching the first scrolls. A device that drops below ~25 fps on
+    // over 30% of scrolled frames gets html.lite-device (solid bars) now and
+    // on its next visits for a week. Frames in the first seconds after load
+    // (fonts, Motion arriving) and gaps over 250 ms (a paused tab) don't count.
+    const LAG_STORE_KEY = 'shelah.liteDevice';
+    const LAG_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    const LAG_SETTLE_MS = 4000;
+    const LAG_SAMPLE_FRAMES = 120;
+    const LAG_SLOW_FRAME_MS = 40;
+    const LAG_SLOW_SHARE = 0.3;
+
+    function watchScrollLag(win, doc, storage) {
+        const html = doc && doc.documentElement;
+        if (!html || !win || typeof win.requestAnimationFrame !== 'function') return null;
+        if (html.classList.contains('lite-device')) return null;
+        const clock = win.performance || Date;
+        let frames = 0;
+        let slow = 0;
+        let last = 0;
+        let running = false;
+        let stopAt = 0;
+        let done = false;
+
+        function finish() {
+            done = true;
+            win.removeEventListener('scroll', onScroll, true);
+            if (slow / frames <= LAG_SLOW_SHARE) return;
+            html.classList.add('lite-device');
+            try { storage && storage.setItem(LAG_STORE_KEY, String(Date.now() + LAG_WEEK_MS)); } catch { /* private mode */ }
+        }
+
+        function frame(time) {
+            if (done) return;
+            if (last && time >= LAG_SETTLE_MS) {
+                const gap = time - last;
+                if (gap < 250) {
+                    frames += 1;
+                    if (gap > LAG_SLOW_FRAME_MS) slow += 1;
+                }
+            }
+            last = time;
+            if (frames >= LAG_SAMPLE_FRAMES) { finish(); return; }
+            if (clock.now() < stopAt) win.requestAnimationFrame(frame);
+            else { running = false; last = 0; }
+        }
+
+        function onScroll() {
+            stopAt = clock.now() + 500;
+            if (running || done) return;
+            running = true;
+            win.requestAnimationFrame(frame);
+        }
+
+        win.addEventListener('scroll', onScroll, { capture: true, passive: true });
+        return { onScroll, frame, stats: () => ({ frames, slow, done }) };
+    }
+
+    const api = { applyLanguagePreference, applyHtmlLanguage, siteLanguage, swapLanguageText, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade, withThemeReveal, chooseLanguage, watchScrollLag };
 
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = api;
     } else {
+        try { watchScrollLag(root, root.document, root.localStorage); } catch { /* no storage */ }
         root.applyLanguagePreference = applyLanguagePreference;
         root.applyHtmlLanguage = applyHtmlLanguage;
         root.siteLanguage = siteLanguage;

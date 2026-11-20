@@ -14,7 +14,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { applyLanguagePreference, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade, withThemeReveal, chooseLanguage } = require('../static/js/topbar_shared.js');
+const { applyLanguagePreference, swapPendingLanguage, computeFloatingMenuPosition, withThemeFade, withThemeReveal, chooseLanguage, watchScrollLag } = require('../static/js/topbar_shared.js');
 
 function createFakeLocalStorage() {
     const store = new Map();
@@ -480,4 +480,52 @@ test('swapLanguageText keeps a text-free icon child at the start of the line', (
     const doc = withDom(t, '<button id="p" data-en="Save" data-he="שמור"><svg class="i"></svg>Save</button>');
     swapLanguageText('he', doc);
     assert.equal(doc.getElementById('p').innerHTML, '<svg class="i"></svg>שמור');
+});
+
+function lagHarness() {
+    const classes = new Set();
+    const stored = {};
+    let clockNow = 0;
+    const win = {
+        requestAnimationFrame: () => 1,
+        addEventListener() {},
+        removeEventListener() {},
+        performance: { now: () => clockNow },
+    };
+    const doc = { documentElement: { classList: { contains: (c) => classes.has(c), add: (c) => classes.add(c) } } };
+    const storage = { setItem: (k, v) => { stored[k] = v; } };
+    const watcher = watchScrollLag(win, doc, storage);
+    // Scroll keeps the sampler running; each frame is `gap` ms after the last.
+    const scrollFrames = (count, gap, start = 5000) => {
+        let time = start;
+        for (let i = 0; i <= count; i += 1) {
+            clockNow = time;
+            watcher.onScroll();
+            watcher.frame(time);
+            time += gap;
+        }
+    };
+    return { classes, stored, watcher, scrollFrames };
+}
+
+test('watchScrollLag drops the glass on a phone that scrolls under 25 fps', () => {
+    const { classes, stored, scrollFrames } = lagHarness();
+    scrollFrames(130, 50);
+    assert.ok(classes.has('lite-device'));
+    assert.ok(Number(stored['shelah.liteDevice']) > Date.now());
+});
+
+test('watchScrollLag keeps the glass on a phone that scrolls smoothly', () => {
+    const { classes, stored, watcher, scrollFrames } = lagHarness();
+    scrollFrames(130, 16);
+    assert.equal(classes.has('lite-device'), false);
+    assert.equal(stored['shelah.liteDevice'], undefined);
+    assert.equal(watcher.stats().done, true);
+});
+
+test('watchScrollLag ignores frames in the first seconds after load', () => {
+    const { classes, watcher, scrollFrames } = lagHarness();
+    scrollFrames(60, 60, 0);
+    assert.equal(classes.has('lite-device'), false);
+    assert.equal(watcher.stats().done, false);
 });
