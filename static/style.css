@@ -4294,6 +4294,12 @@ html.theme-dark,
         --bar-blur: blur(7px) saturate(1.8);
     }
 
+    /* Dark: a 1.8x boost turned whatever warm colour scrolled under the bars
+       reddish on the near-black; 1.2 keeps the frosting without the cast. */
+    :is([data-theme="dark"], body.theme-dark) .library-shell {
+        --bar-blur: blur(7px) saturate(1.2);
+    }
+
     @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
         .library-shell {
             --bar-fill: color-mix(in srgb, var(--surface-base) 66%, transparent);

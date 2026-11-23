@@ -697,11 +697,11 @@ body.theme-dark {
                                          surface-2 on purpose, so settings/menu
                                          panels read as a distinct, deeper layer
                                          behind the buttons that sit on them */
-    --surface-2:          #1e1d1a;   /* elevated cards / buttons — matches the
+    --surface-2:          #1e1d1b;   /* elevated cards / buttons — matches the
                                          sidebar panel's own lighter gradient stop */
-    --surface-3:          #161410;   /* topbar */
-    --surface-pill:       #23211f;   /* chips, tags */
-    --surface-border:     #2e2c2a;   /* dark dividers */
+    --surface-3:          #151412;   /* topbar */
+    --surface-pill:       #22211f;   /* chips, tags */
+    --surface-border:     #2d2c2a;   /* dark dividers */
     --surface-scrim:      rgba(0, 0, 0, 0.72);
 
     /* ── Ink / text ─────────────────────────────────────────────────── */
@@ -752,9 +752,9 @@ body.theme-dark {
     --viz-series-2:       #d95926;   /* not helpful */
 
     /* ── Controls ───────────────────────────────────────────────────── */
-    --ctrl-bg:            #23211f;
-    --ctrl-bg-hover:      #2d2b28;
-    --ctrl-border:        #373532;
+    --ctrl-bg:            #22211f;
+    --ctrl-bg-hover:      #2c2b29;
+    --ctrl-border:        #363533;
     /* Lightened from #888070 2026-08-20 for the same reason as
        --ink-secondary above: the dark-theme
        pa11y-ci run caught the topbar language button at 4.10:1 against
@@ -780,8 +780,8 @@ body.theme-dark {
     --ai-trust-border:    var(--surface-border);
 
     /* ── Loading / skeleton — dark theme ────────────────────────────── */
-    --load-skeleton-base:      #23211f;
-    --load-skeleton-highlight: #2d2b28;
+    --load-skeleton-base:      #22211f;
+    --load-skeleton-highlight: #2c2b29;
     --load-skeleton-shimmer:   rgba(255,255,255,0.04);
 
     /* ── Elevation ──────────────────────────────────────────────────── */
@@ -821,9 +821,9 @@ body.theme-dark {
 
     /* ── Tailwind utility remaps ────────────────────────────────────── */
     --tw-dark-bg-slate-100:     #1a1917;
-    --tw-dark-bg-slate-200:     #211f1d;
+    --tw-dark-bg-slate-200:     #201f1d;
     --tw-dark-bg-white-85:      rgba(16, 14, 10, 0.90);
-    --tw-dark-border-slate-400: #373532;
+    --tw-dark-border-slate-400: #363533;
     --tw-dark-text-slate-900:   #e4dcd0;
     --tw-dark-text-slate-800:   #d4ccbf;
     --tw-dark-text-white:       #d0c8b8;
@@ -832,7 +832,7 @@ body.theme-dark {
     --tw-dark-text-slate-500:   #97918a;
     --tw-dark-text-slate-400:   #908983;
     --tw-dark-text-slate-300:   #908880;
-    --tw-dark-bg-hover:         #282420;
+    --tw-dark-bg-hover:         #262522;
     --tw-dark-bg-emerald:       #121a14;
     --tw-dark-border-emerald:   #1e3022;
     --tw-dark-text-emerald:     #60a870;
@@ -844,7 +844,7 @@ body.theme-dark {
     --tw-dark-text-red:         #a87080;
     --tw-dark-text-blue:        #909aab;
     --tw-dark-bg-blue:          #131211;
-    --tw-dark-border-blue:      #282420;
+    --tw-dark-border-blue:      #262522;
     --tw-dark-focus-border:     #504840;
     --tw-dark-checkbox-accent:  #807050;
 
@@ -855,6 +855,9 @@ body.theme-dark {
        pigment on vellum (all >= 5.6:1 on --surface-0). Neon pastels, C <= 0.062
        grey tints, and saturated C 0.10-0.15 inks were each tried and rejected
        (too bright, colourless, too colourful). */
+    /* Glass boost: 1.7 pulled warm content under the panels toward red. */
+    --glass-sat:                1.2;
+
     --accent-menu:              #b8b2a8;
     --accent-zmanim:            #b0ada4;
     --accent-tanakh:            #6e9b9e;
@@ -957,10 +960,10 @@ body.theme-dark {
 
         --surface-0:          #0c0c0b;
         --surface-1:          #131211;
-        --surface-2:          #1e1d1a;
-        --surface-3:          #161410;
-        --surface-pill:       #23211f;
-        --surface-border:     #2e2c2a;
+        --surface-2:          #1e1d1b;
+        --surface-3:          #151412;
+        --surface-pill:       #22211f;
+        --surface-border:     #2d2c2a;
         --surface-scrim:      rgba(0, 0, 0, 0.72);
 
         --ink-primary:        #c0bab0;
@@ -983,9 +986,9 @@ body.theme-dark {
         --viz-series-1:       #3987e5;
         --viz-series-2:       #d95926;
 
-        --ctrl-bg:            #23211f;
-        --ctrl-bg-hover:      #2d2b28;
-        --ctrl-border:        #373532;
+        --ctrl-bg:            #22211f;
+        --ctrl-bg-hover:      #2c2b29;
+        --ctrl-border:        #363533;
         /* Keep in sync with --ctrl-text in the [data-theme="dark"] block
            above -- see that block's comment (pa11y-ci contrast fix). */
         --ctrl-text:          #999181;
@@ -993,19 +996,19 @@ body.theme-dark {
         --ctrl-filled-bg:     #6888a8;
         --ctrl-filled-hover:  #789ab8;
 
-        --ai-surface:         #1e1d1a;
-        --ai-border:          #2e2c2a;
-        --ai-src-header-bg:   #23211f;
-        --ai-src-body-bg:     #1e1d1a;
-        --ai-src-he-bg:       #1e1d1a;
-        --ai-src-en-bg:       #23211f;
+        --ai-surface:         #1e1d1b;
+        --ai-border:          #2d2c2a;
+        --ai-src-header-bg:   #22211f;
+        --ai-src-body-bg:     #1e1d1b;
+        --ai-src-he-bg:       #1e1d1b;
+        --ai-src-en-bg:       #22211f;
         --ai-wiki-accent:     #6888a8;
         --ai-custom-accent:   #8868c0;
-        --ai-trust-bg:        #23211f;
-        --ai-trust-border:    #2e2c2a;
+        --ai-trust-bg:        #22211f;
+        --ai-trust-border:    #2d2c2a;
 
-        --load-skeleton-base:      #23211f;
-        --load-skeleton-highlight: #2d2b28;
+        --load-skeleton-base:      #22211f;
+        --load-skeleton-highlight: #2c2b29;
         --load-skeleton-shimmer:   rgba(255,255,255,0.04);
 
         --shadow-sm:  0 1px 3px rgba(0,0,0,0.50), 0 1px 2px rgba(0,0,0,0.35);
@@ -1014,8 +1017,8 @@ body.theme-dark {
 
         --surface-base:     #0c0c0b;
         --surface-subtle:   #131211;
-        --surface-elevated: #1e1d1a;
-        --surface-topbar:   #161410;
+        --surface-elevated: #1e1d1b;
+        --surface-topbar:   #151412;
         --text-main:        #c0bab0;
         /* Keep in sync with --ink-secondary above (pa11y-ci contrast fix) --
            this legacy-alias section duplicates literals instead of var()
@@ -1025,9 +1028,9 @@ body.theme-dark {
         --accent-blue:      #6888a8;
         --accent-deep-blue: #6888a8;
         --accent-cream:     #ddd5c8;
-        --control-bg:       #23211f;
-        --control-bg-hover: #2d2b28;
-        --control-border:   #373532;
+        --control-bg:       #22211f;
+        --control-bg-hover: #2c2b29;
+        --control-border:   #363533;
         --control-text:     #999181;
         --control-accent:   #c9ac5e;
         --control-text-strong: #b8b0a0;
@@ -1036,9 +1039,9 @@ body.theme-dark {
 
         /* ── Tailwind utility remaps ──────────────────────────────── */
         --tw-dark-bg-slate-100:     #1a1917;
-        --tw-dark-bg-slate-200:     #211f1d;
+        --tw-dark-bg-slate-200:     #201f1d;
         --tw-dark-bg-white-85:      rgba(16,14,10,0.90);
-        --tw-dark-border-slate-400: #373532;
+        --tw-dark-border-slate-400: #363533;
         --tw-dark-text-slate-900:   #e4dcd0;
         --tw-dark-text-slate-800:   #d4ccbf;
         --tw-dark-text-white:       #d0c8b8;
@@ -1047,7 +1050,7 @@ body.theme-dark {
         --tw-dark-text-slate-500:   #97918a;
         --tw-dark-text-slate-400:   #908983;
         --tw-dark-text-slate-300:   #908880;
-        --tw-dark-bg-hover:         #282420;
+        --tw-dark-bg-hover:         #262522;
         --tw-dark-bg-emerald:       #121a14;
         --tw-dark-border-emerald:   #1e3022;
         --tw-dark-text-emerald:     #60a870;
@@ -1059,11 +1062,13 @@ body.theme-dark {
         --tw-dark-text-red:         #a87080;
         --tw-dark-text-blue:        #909aab;
         --tw-dark-bg-blue:          #131211;
-        --tw-dark-border-blue:      #282420;
+        --tw-dark-border-blue:      #262522;
         --tw-dark-focus-border:     #504840;
         --tw-dark-checkbox-accent:  #807050;
 
         /* ── Corpus accent tokens ─────────────────────────────────── */
+        --glass-sat:                1.2;
+
         --accent-menu:              #b8b2a8;
         --accent-zmanim:            #b0ada4;
         --accent-tanakh:            #6e9b9e;

@@ -3,8 +3,8 @@
   "esbuild": "0.28.2",
   "css": {
     "sources": {
-      "css/tokens.css": "sha256:36ba61898aa1cf370abf2c98df8af9db8fec39079c0045b472bc22bd7cea5697",
-      "style.css": "sha256:9f95ceea39f89aa4f9fa968e231bcacb1e9464526dcaca68af6eda53bb5bab45",
+      "css/tokens.css": "sha256:ad6e3ed76bec26f22cee28d564b50b8aba978724318c015514c80e9375f247bc",
+      "style.css": "sha256:0a32c7a275ebe5fa2b25001a438c408fb85bbb69b0d4cc801393b754ed5d8561",
       "css/typography.css": "sha256:000d5096d5c7322aff99d2fd1ef679d209f50c963a21f37fa38b28ed03ded543",
       "css/reader.css": "sha256:caafa2917b7adec185830051727222599176d43437f5637f614fe088cffd7fc9",
       "css/sidebar.css": "sha256:fc261c75dc4ba0abded264ec89ed57923c9db7264a21fc24b62a0186fe24a699",
@@ -17,22 +17,22 @@
       "css/calendar.css": "sha256:b811a93e2a2887b109155a86b650a97088260a8896935bac99a66a14fc9e2634",
       "css/calendar-detail.css": "sha256:bc1e8366430da81a76e4df08841b9150706b61c5086cb149805b72d36c96f2cb",
       "css/loading.css": "sha256:a77745f67cd45511d26a3d55fe58b68b77270a49eb29147210986078585cac4f",
-      "css/site-footer.css": "sha256:1dde9eb5e9e5ba1aa51e1aabcf82be66a39fdaddffd9282f505c532c070c2ba1",
+      "css/site-footer.css": "sha256:d4c55c2a0d03aeb02418fd78e3334938d3952fc0b78576c5906e46d6a2a9c5f7",
       "css/tailwind.css": "sha256:04f7fe53c84b67f798e7891a7abd99476dc4d2040ad1fdae3be4e5b253b3b951"
     },
-    "sourcesHash": "4b58ef16bd1639d9c0a23f4228cccb506ae9b9f2f458a46376a5ee0539aebbf3",
+    "sourcesHash": "56f4a7ea6a257191e16f003ee0bfc24be8d41a84fc38902a74b0854014f0d6ce",
     "bundle": "css/app.css",
     "critical": {
       "home": {
         "file": "css/critical-home.css",
-        "sourcesHash": "4b58ef16bd1639d9c0a23f4228cccb506ae9b9f2f458a46376a5ee0539aebbf3",
+        "sourcesHash": "56f4a7ea6a257191e16f003ee0bfc24be8d41a84fc38902a74b0854014f0d6ce",
         "routes": [
           "/"
         ]
       },
       "text": {
         "file": "css/critical-text.css",
-        "sourcesHash": "4b58ef16bd1639d9c0a23f4228cccb506ae9b9f2f458a46376a5ee0539aebbf3",
+        "sourcesHash": "56f4a7ea6a257191e16f003ee0bfc24be8d41a84fc38902a74b0854014f0d6ce",
         "routes": [
           "/text/Genesis.1",
           "/text/Berakhot.2a"
@@ -40,7 +40,7 @@
       },
       "app": {
         "file": "css/critical-app.css",
-        "sourcesHash": "4b58ef16bd1639d9c0a23f4228cccb506ae9b9f2f458a46376a5ee0539aebbf3",
+        "sourcesHash": "56f4a7ea6a257191e16f003ee0bfc24be8d41a84fc38902a74b0854014f0d6ce",
         "routes": [
           "/?text=Genesis.1",
           "/prayer/Shacharit",

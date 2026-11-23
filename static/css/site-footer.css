@@ -1,27 +1,28 @@
 /* ── Site footer (templates/components/site_footer.html) ─────────────────
    One footer for the home page, About/Help/Glossary/Tanakh, the legal pages
-   and the 404 page. A deep navy band (warm near-black in dark mode) closes
-   every page: the brand lockup from the top bar, a tagline, three labelled
-   link columns and a copyright row under a gold hairline. Gold is used for
-   rules, the mark's frame and the column headings only, all of which clear
-   AA on the band. Its own tokens so both themes change in one place. */
+   and the 404 page. A warm paper band, a shade deeper than the page (a
+   neutral near-black in dark mode), closes every page: the brand lockup from
+   the top bar, a tagline, three labelled link columns and a copyright row
+   under a gold hairline. Headings are a dark gold ink (5.4:1 on the band);
+   gold itself is only the hairlines. Its own tokens so both themes change in
+   one place. The old navy band read too heavy beside the paper pages. */
 .site-footer {
-    --footer-bg: var(--ink-heading, #002147);
-    --footer-ink: color-mix(in srgb, #f5efe5 78%, var(--footer-bg));
-    --footer-ink-strong: #faf7f0;
-    --footer-heading: var(--accent-gold-light, #f0d980);
-    --footer-rule: color-mix(in srgb, var(--accent-gold, #d4af37) 38%, transparent);
+    --footer-bg: var(--surface-1, #f5efe5);
+    --footer-ink: var(--ink-secondary, #5a6b85);
+    --footer-ink-strong: var(--ink-heading, #002147);
+    --footer-heading: #7a5c1e;
+    --footer-rule: color-mix(in srgb, var(--accent-gold, #d4af37) 55%, transparent);
 
     position: relative;
     background: var(--footer-bg);
     color: var(--footer-ink);
     border-top: 1px solid var(--footer-rule);
-    padding-block: var(--sp-12) var(--sp-6);
+    padding-block: var(--sp-10, 2.5rem) var(--sp-6);
     padding-bottom: calc(var(--sp-6) + env(safe-area-inset-bottom));
 }
 
 :is([data-theme="dark"], body.theme-dark) .site-footer {
-    --footer-bg: var(--surface-3, #161410);
+    --footer-bg: var(--surface-1, #131211);
     --footer-ink: var(--ink-secondary, #999188);
     --footer-ink-strong: var(--ink-heading, #d4cec4);
     --footer-heading: var(--accent-gold, #c9ac5e);
@@ -40,7 +41,7 @@
 @media (min-width: 768px) {
     .site-footer-inner {
         grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-        gap: var(--sp-12);
+        gap: var(--sp-8) var(--sp-10, 2.5rem);
         padding-inline: var(--sp-6);
     }
 }
@@ -60,8 +61,7 @@
 /* The full app icon (static/favicon.svg / apple-touch-icon.png): the navy to
    deep-teal tile with a white ש, not just an outline. On the navy band it is
    lifted by a gold hairline rim, a faint top highlight and a soft shadow, so
-   the tile still reads as its own object; in dark mode the same navy tile
-   sits on the warm near-black band. Radius matches the icon (rx 12 of 64). */
+   the tile reads as its own object on the paper band and on the dark one. Radius matches the icon (rx 12 of 64). */
 .site-footer-mark {
     display: inline-grid;
     place-items: center;
@@ -72,7 +72,7 @@
     background: linear-gradient(135deg, #002147 0%, #0b4d67 100%);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.14),
-        0 6px 18px rgba(0, 0, 0, 0.28);
+        0 4px 12px rgba(0, 33, 71, 0.18);
     color: #f8fafc;
     font-size: 1.75rem;
     font-weight: 600;
@@ -159,7 +159,21 @@
 
 @media (pointer: fine) {
     .site-footer-link {
-        min-height: var(--sp-8);
+        min-height: 1.75rem;
+    }
+}
+
+/* Desktop and tablet: Legal gets the wider track and lays its six links out
+   in two columns, so it no longer sets the footer's height on its own. */
+@media (min-width: 768px) {
+    .site-footer-cols {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr);
+    }
+
+    .site-footer-col:last-child ul {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, max-content));
+        column-gap: var(--sp-8);
     }
 }
 
