@@ -31,7 +31,12 @@ from backend.citation_markers import finalize_sources, note_head, place_markers,
 from backend.cost_meter import record_llm_call
 from backend.customs import runtime_config as _customs_runtime_config
 from backend.health_check import health
-from backend.logging_setup import get_request_id, log_security_block, submit_with_context
+from backend.logging_setup import (
+    attach_late_integrations,
+    get_request_id,
+    log_security_block,
+    submit_with_context,
+)
 from backend.query_guard import attack_categories
 from backend.retrieval_guard import withhold_injected
 
@@ -640,6 +645,7 @@ def _ensure_anthropic_loaded() -> None:
         _anthropic_module = None
     anthropic = _anthropic_module
     _anthropic_loaded = True
+    attach_late_integrations()
 
 
 def _ensure_genai_loaded() -> None:
@@ -656,6 +662,7 @@ def _ensure_genai_loaded() -> None:
     genai = _genai_module
     genai_types = _genai_types_module
     _genai_loaded = True
+    attach_late_integrations()
 
 
 def _get_client():

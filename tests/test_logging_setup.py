@@ -728,6 +728,50 @@ class TestSentryInitKwargs:
         assert kwargs["traces_sampler"] is logging_setup._traces_sampler
         assert "traces_sample_rate" not in kwargs
 
+    def test_startup_skips_the_ai_sdk_integrations(self):
+        # Auto-enabled integrations import the Anthropic and GenAI SDKs on
+        # every cold start; those are attached later (attach_late_integrations).
+        kwargs = logging_setup._build_sentry_init_kwargs("https://key@o1.ingest.us.sentry.io/1")
+        assert kwargs["auto_enabling_integrations"] is False
+        names = {type(i).__name__ for i in kwargs["integrations"]}
+        assert {"FastApiIntegration", "StarletteIntegration", "FlaskIntegration"} <= names
+        assert not names & {"AnthropicIntegration", "GoogleGenAIIntegration"}
+
+    def test_attach_late_integrations_is_a_no_op_with_sentry_off(self, monkeypatch):
+        monkeypatch.setattr(logging_setup, "_sentry_enabled", False)
+        logging_setup.attach_late_integrations()
+
+    def test_production_start_up_leaves_the_ai_sdks_unloaded(self):
+        # A real start-up with Sentry on: the app loads without anthropic or
+        # google.genai, and loading them attaches their Sentry integrations.
+        import os as _os
+        import subprocess
+        import sys as _sys
+        from pathlib import Path
+
+        script = (
+            "import sys, sentry_sdk\n"
+            "import api.index\n"
+            "assert 'anthropic' not in sys.modules, 'anthropic loaded at start-up'\n"
+            "assert 'google.genai' not in sys.modules, 'genai loaded at start-up'\n"
+            "assert 'fastapi' in sentry_sdk.get_client().integrations\n"
+            "from backend import claude\n"
+            "claude._ensure_anthropic_loaded(); claude._ensure_genai_loaded()\n"
+            "names = sentry_sdk.get_client().integrations\n"
+            "assert 'anthropic' in names and 'google_genai' in names, sorted(names)\n"
+        )
+        env = {
+            **_os.environ,
+            "SENTRY_DSN": "https://key@o1.ingest.us.sentry.io/1",
+            "VERCEL_ENV": "test",
+        }
+        result = subprocess.run(
+            [_sys.executable, "-c", script],
+            cwd=Path(__file__).resolve().parent.parent,
+            env=env, capture_output=True, text=True, timeout=120,
+        )
+        assert result.returncode == 0, result.stderr[-2000:]
+
     def test_dsn_is_passed_through_verbatim_never_hardcoded(self):
         dsn = "https://env-supplied-key@o1.ingest.us.sentry.io/1"
         kwargs = logging_setup._build_sentry_init_kwargs(dsn)

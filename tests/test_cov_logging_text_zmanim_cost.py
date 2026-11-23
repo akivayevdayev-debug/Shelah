@@ -291,8 +291,11 @@ class TestModuleLevelSentryInit:
         assert len(init_calls) == 1
         # Whitespace around the DSN is stripped before use.
         assert init_calls[0]["dsn"] == "https://key@o1.ingest.us.sentry.io/1"
-        assert init_calls[0] == module._build_sentry_init_kwargs(
-            "https://key@o1.ingest.us.sentry.io/1")
+        expected = module._build_sentry_init_kwargs("https://key@o1.ingest.us.sentry.io/1")
+        # Integration objects are new instances on each call: compare their types.
+        assert [type(i) for i in init_calls[0].pop("integrations")] == [
+            type(i) for i in expected.pop("integrations")]
+        assert init_calls[0] == expected
         assert init_calls[0]["send_default_pii"] is False
 
     @pytest.mark.parametrize("dsn", [None, "", "   "])

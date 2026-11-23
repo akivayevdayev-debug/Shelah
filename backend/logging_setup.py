@@ -19,6 +19,7 @@ import os
 import re
 import socket
 import sys
+import threading
 import time
 import uuid
 from collections import OrderedDict
@@ -164,7 +165,92 @@ def _build_sentry_init_kwargs(dsn: str) -> dict:
         "before_send": _sentry_before_send,
         "environment": os.environ.get("VERCEL_ENV", "development"),
         "release": os.environ.get("VERCEL_GIT_COMMIT_SHA") or None,
+        # Sentry's auto-enabled integrations import their libraries to set
+        # themselves up, and that list includes the Anthropic and Google GenAI
+        # SDKs: about 0.7 s here and several seconds on a cold Vercel instance,
+        # spent on every start-up although claude.py loads those SDKs only
+        # when an answer needs them. So start-up enables only the integrations
+        # whose libraries the app has loaded anyway, and
+        # attach_late_integrations() adds the AI ones once claude.py has
+        # imported the SDKs.
+        "auto_enabling_integrations": False,
+        "integrations": _startup_integrations(),
     }
+
+
+# (module, class) of the integrations for libraries every start-up loads
+# (Flask and FastAPI on Starlette, httpx and redis through backend/*).
+_STARTUP_INTEGRATIONS = (
+    ("sentry_sdk.integrations.starlette", "StarletteIntegration"),
+    ("sentry_sdk.integrations.fastapi", "FastApiIntegration"),
+    ("sentry_sdk.integrations.flask", "FlaskIntegration"),
+    ("sentry_sdk.integrations.httpx", "HttpxIntegration"),
+    ("sentry_sdk.integrations.redis", "RedisIntegration"),
+)
+
+# The ones whose libraries load later: the AI SDKs (anthropic brings httpx2).
+_LATE_INTEGRATIONS = (
+    ("sentry_sdk.integrations.anthropic", "AnthropicIntegration"),
+    ("sentry_sdk.integrations.httpx2", "Httpx2Integration"),
+    ("sentry_sdk.integrations.google_genai", "GoogleGenAIIntegration"),
+)
+
+
+def _make_integrations(specs) -> list:
+    """An instance of each integration whose library is installed."""
+    import importlib
+
+    made = []
+    for module_name, class_name in specs:
+        try:
+            made.append(getattr(importlib.import_module(module_name), class_name)())
+        except Exception:  # noqa: BLE001 - DidNotEnable or ImportError: library not installed
+            continue
+    return made
+
+
+def _startup_integrations() -> list:
+    return _make_integrations(_STARTUP_INTEGRATIONS)
+
+
+_late_lock = threading.Lock()
+
+
+def attach_late_integrations() -> None:
+    """Add Sentry's AI SDK integrations once the SDKs have been imported.
+
+    Called by claude.py's loaders. A no-op when Sentry is off, when the SDKs
+    are not loaded yet (the integration would import them) or once done."""
+    if not _sentry_enabled or sentry_sdk is None:
+        return
+    if "anthropic" not in sys.modules and "google.genai" not in sys.modules:
+        return
+    try:
+        from sentry_sdk.integrations import setup_integrations
+
+        with _late_lock:
+            client = sentry_sdk.get_client()
+            current = getattr(client, "integrations", None)
+            if current is None:
+                return
+            library_for = {
+                "AnthropicIntegration": "anthropic",
+                "Httpx2Integration": "httpx2",
+                "GoogleGenAIIntegration": "google.genai",
+            }
+            specs = [
+                spec for spec in _LATE_INTEGRATIONS
+                if library_for[spec[1]] in sys.modules
+            ]
+            new = [
+                integration for integration in _make_integrations(specs)
+                if integration.identifier not in current
+            ]
+            if new:
+                current.update(setup_integrations(
+                    new, with_defaults=False, options=client.options))
+    except Exception:  # noqa: BLE001 - tracing is optional; never break an answer
+        logging.getLogger(__name__).warning("sentry_late_integrations_failed", exc_info=True)
 
 
 # Sentry is a true no-op unless SENTRY_DSN is set: no import errors, no
