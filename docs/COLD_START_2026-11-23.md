@@ -76,3 +76,15 @@ the load finished 24 s before the request arrived.
 To check it afterwards, the cold-start numbers need somewhere to live past
 one hour. Hobby has no log drains, so a later step could send `cold_start`
 to the existing error-bot channel or a small Supabase table.
+
+## Follow-up, same day
+
+- Sentry's auto-enabled integrations imported the Anthropic and Google GenAI
+  SDKs on every start-up, which undid a3681a5's deferral of them. With
+  production settings the local import went from 1.55 s to 0.6 s once
+  start-up enabled only the integrations it needs
+  (`backend/logging_setup.py`). The AI ones attach when `claude.py` loads the
+  SDKs.
+- `.github/workflows/keep-warm.yml` requests `/api/async/health` every
+  5 minutes. That's the uptime ping recommended above, run by GitHub Actions
+  (free for this public repo) because Hobby crons can run only once a day.
