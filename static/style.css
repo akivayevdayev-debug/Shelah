@@ -5145,7 +5145,8 @@ html.theme-dark,
     color: var(--text-muted);
 }
 
-:is([data-theme="dark"], body.theme-dark) #popularTextsGrid button {
+/* div: the server-rendered placeholder cards shown while the list loads. */
+:is([data-theme="dark"], body.theme-dark) #popularTextsGrid > :is(button, div) {
     background: var(--surface-elevated);
     border-color: var(--surface-border);
     box-shadow: inset 0 0 0 1px rgba(202, 189, 168, 0.08);

@@ -38,7 +38,8 @@ test('an unreadable saved entry leaves the defaults in place', async () => {
     try {
         const saved = prefs(page);
         assert.equal(saved.mode, 'balanced');
-        assert.equal(saved.theme, 'light');
+        // The head script's default too: follow the system setting.
+        assert.equal(saved.theme, 'system');
         assert.equal(saved.shulScrollSpeed, 28);
         assert.equal(saved.showVowels, true);
         assert.equal(saved.showCantillation, true);
@@ -120,7 +121,7 @@ test('the reader layout is one the reader can draw', async () => {
     }
 });
 
-test('metadata filters are trimmed to strings, and an unknown theme is light', async () => {
+test('metadata filters are trimmed to strings, and an unknown theme follows the system', async () => {
     const page = await openWithSaved({
         theme: 'neon',
         metadataFilters: { era: ' Rishonim ', author: 5, category: null, junk: 'dropped' },
@@ -128,7 +129,7 @@ test('metadata filters are trimmed to strings, and an unknown theme is light', a
     try {
         const saved = prefs(page);
         assert.deepEqual(saved.metadataFilters, { era: 'Rishonim', author: '5', category: '', geography: '', nusach: '' });
-        assert.equal(saved.theme, 'light');
+        assert.equal(saved.theme, 'system');
     } finally {
         page.close();
     }

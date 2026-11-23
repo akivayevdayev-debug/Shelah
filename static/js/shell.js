@@ -1217,7 +1217,7 @@ function hasParenthetical(text) {
                 shulMode: false,
                 shulAutoScroll: false,
                 shulScrollSpeed: 28,
-                theme: 'light',
+                theme: 'system',
             },
             // Session-only "peek" state for the Shul-mode library sidebar -- NOT
             // persisted. Always starts collapsed whenever Shul mode is
@@ -1291,7 +1291,7 @@ function hasParenthetical(text) {
             if (THEME_PREFERENCE_OPTIONS.includes(normalized)) {
                 return normalized;
             }
-            return 'light';
+            return 'system';
         }
 
         function getSystemThemePreference() {
@@ -8002,7 +8002,7 @@ function hasParenthetical(text) {
             appState.prefs.shulMode = Boolean(appState.prefs.shulMode);
             appState.prefs.shulAutoScroll = Boolean(appState.prefs.shulAutoScroll);
             appState.prefs.shulScrollSpeed = Number(appState.prefs.shulScrollSpeed || 28);
-            appState.prefs.theme = normalizeThemePreference(appState.prefs.theme || 'light');
+            appState.prefs.theme = normalizeThemePreference(appState.prefs.theme || 'system');
 
             setThemePreference(appState.prefs.theme, { persist: false });
 
